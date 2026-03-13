@@ -26,6 +26,8 @@ for (let i = 0; i < args.length; i++) {
     flags.baseUrl = args[++i];
   } else if (args[i] === '--model' && args[i + 1]) {
     flags.model = args[++i];
+  } else if (args[i] === '--lsp-url' && args[i + 1]) {
+    flags.lspUrl = args[++i];
   } else if (args[i] === '--headless') {
     headless = true;
   }
@@ -67,6 +69,7 @@ if (headless) {
     apiKey: flags.apiKey,
     baseUrl: flags.baseUrl,
     model: flags.model,
+    lspUrl: flags.lspUrl || 'http://localhost:4388',
   }).catch((err: any) => {
     console.error(err.message);
     process.exit(1);

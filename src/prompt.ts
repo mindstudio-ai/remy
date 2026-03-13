@@ -12,6 +12,7 @@
  */
 
 import fs from 'node:fs';
+import { isLspConfigured } from './tools/lsp.js';
 
 export function buildSystemPrompt(): string {
   const parts: string[] = [];
@@ -27,6 +28,16 @@ Guidelines:
 - After making changes, verify them (e.g., run typecheck or read the file back).
 - Be concise in your responses. Lead with actions, not explanations.
 - If you're unsure about something, read more code to build context.`);
+
+  if (isLspConfigured()) {
+    parts.push(`
+## TypeScript Language Server
+You have access to LSP tools that provide IDE-level intelligence:
+- After editing files, use diagnostics to check for type errors before moving on.
+- Use definition and references to understand code relationships instead of grepping for symbols.
+- Use hover to check type signatures when unsure about a function's API.
+- Use symbols to get a file's outline before reading the entire file.`);
+  }
 
   // Project context: mindstudio.json (gives the agent awareness of
   // the app's methods, tables, roles, and interfaces)

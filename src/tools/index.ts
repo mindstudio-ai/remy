@@ -28,6 +28,7 @@ import { bashTool } from './bash.js';
 import { grepTool } from './grep.js';
 import { globTool } from './glob.js';
 import { listDirTool } from './listDir.js';
+import { getLspTools } from './lsp.js';
 
 export function getAllTools(): Tool[] {
   return [
@@ -38,6 +39,7 @@ export function getAllTools(): Tool[] {
     grepTool,
     globTool,
     listDirTool,
+    ...getLspTools(),
   ];
 }
 

@@ -9,6 +9,7 @@
 import { createInterface } from 'node:readline';
 import { resolveConfig } from './config.js';
 import { buildSystemPrompt } from './prompt.js';
+import { setLspBaseUrl } from './tools/lsp.js';
 import {
   createAgentState,
   runTurn,
@@ -20,6 +21,7 @@ export interface HeadlessOptions {
   apiKey?: string;
   baseUrl?: string;
   model?: string;
+  lspUrl?: string;
 }
 
 function emit(event: string, data?: Record<string, unknown>): void {
@@ -34,6 +36,10 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
   console.log = stderrWrite;
   console.warn = stderrWrite;
   console.info = stderrWrite;
+
+  if (opts.lspUrl) {
+    setLspBaseUrl(opts.lspUrl);
+  }
 
   const config = resolveConfig({
     apiKey: opts.apiKey,
