@@ -1,8 +1,8 @@
 /**
- * CLI entry point — parses flags and bootstraps the Ink TUI.
+ * CLI entry point — parses flags and dispatches to TUI or headless mode.
  *
  * Usage:
- *   remy [--api-key <key>] [--base-url <url>] [--model <id>]
+ *   remy [--api-key <key>] [--base-url <url>] [--model <id>] [--headless]
  *
  * Ctrl+C exits cleanly via Ink's exitOnCtrlC option.
  */
@@ -18,6 +18,7 @@ import { resolveConfig } from './config.js';
 // Parse CLI flags (simple positional parsing, no framework needed)
 const args = process.argv.slice(2);
 const flags: Record<string, string> = {};
+let headless = false;
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--api-key' && args[i + 1]) {
     flags.apiKey = args[++i];
@@ -25,6 +26,8 @@ for (let i = 0; i < args.length; i++) {
     flags.baseUrl = args[++i];
   } else if (args[i] === '--model' && args[i + 1]) {
     flags.model = args[++i];
+  } else if (args[i] === '--headless') {
+    headless = true;
   }
 }
 
@@ -58,24 +61,36 @@ function printDebugInfo(config: { apiKey: string; baseUrl: string }) {
   console.log('');
 }
 
-try {
-  const config = resolveConfig({
+if (headless) {
+  const { startHeadless } = await import('./headless.js');
+  startHeadless({
     apiKey: flags.apiKey,
     baseUrl: flags.baseUrl,
+    model: flags.model,
+  }).catch((err: any) => {
+    console.error(err.message);
+    process.exit(1);
   });
+} else {
+  try {
+    const config = resolveConfig({
+      apiKey: flags.apiKey,
+      baseUrl: flags.baseUrl,
+    });
 
-  printDebugInfo(config);
+    printDebugInfo(config);
 
-  const { waitUntilExit } = render(
-    <App
-      apiConfig={{ baseUrl: config.baseUrl, apiKey: config.apiKey }}
-      model={flags.model}
-    />,
-    { exitOnCtrlC: true },
-  );
+    const { waitUntilExit } = render(
+      <App
+        apiConfig={{ baseUrl: config.baseUrl, apiKey: config.apiKey }}
+        model={flags.model}
+      />,
+      { exitOnCtrlC: true },
+    );
 
-  await waitUntilExit();
-} catch (err: any) {
-  console.error(err.message);
-  process.exit(1);
+    await waitUntilExit();
+  } catch (err: any) {
+    console.error(err.message);
+    process.exit(1);
+  }
 }

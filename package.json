@@ -3,6 +3,14 @@
   "version": "0.1.0",
   "description": "MindStudio coding agent",
   "type": "module",
+  "main": "./dist/headless.js",
+  "types": "./dist/headless.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/headless.d.ts",
+      "import": "./dist/headless.js"
+    }
+  },
   "bin": {
     "remy": "./dist/index.js"
   },
