@@ -1,0 +1,41 @@
+{
+  "name": "remy",
+  "version": "0.1.0",
+  "description": "MindStudio coding agent",
+  "type": "module",
+  "bin": {
+    "remy": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "lint:fix": "prettier --write ./src",
+    "local-update": "npm run build && npm link",
+    "prepare": "husky"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "ink": "^6.6.0",
+    "react": "^19.1.0",
+    "ink-spinner": "^5.0.0",
+    "ink-text-input": "^6.0.0",
+    "chalk": "^5.4.1",
+    "fast-glob": "^3.3.3"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "tsup": "^8.5.0",
+    "@types/node": "^22.16.0",
+    "@types/react": "^19.1.8",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.3.2",
+    "prettier": "^3.8.1",
+    "prettier-plugin-curly": "^0.4.1"
+  },
+  "lint-staged": {
+    "**/*": "prettier --write --ignore-unknown"
+  }
+}
