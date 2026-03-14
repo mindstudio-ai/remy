@@ -14,6 +14,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { log } from './logger.js';
 
 interface TunnelConfig {
   environment?: string;
@@ -33,8 +34,13 @@ const DEFAULT_BASE_URL = 'https://seankoji.ngrok.io';
 function loadConfigFile(): TunnelConfig {
   try {
     const raw = fs.readFileSync(CONFIG_PATH, 'utf-8');
+    log.debug('Loaded config file', { path: CONFIG_PATH });
     return JSON.parse(raw);
-  } catch {
+  } catch (err: any) {
+    log.debug('No config file found', {
+      path: CONFIG_PATH,
+      error: err.message,
+    });
     return {};
   }
 }
@@ -57,10 +63,22 @@ export function resolveConfig(flags?: { apiKey?: string; baseUrl?: string }): {
     DEFAULT_BASE_URL;
 
   if (!apiKey) {
+    log.error('No API key found');
     throw new Error(
       'No API key found. Set MINDSTUDIO_API_KEY or configure ~/.mindstudio-local-tunnel/config.json.',
     );
   }
+
+  const keySource = flags?.apiKey
+    ? 'cli flag'
+    : process.env.MINDSTUDIO_API_KEY
+      ? 'env var'
+      : 'config file';
+  log.info('Config resolved', {
+    baseUrl,
+    keySource,
+    environment: activeEnv,
+  });
 
   return { apiKey, baseUrl };
 }

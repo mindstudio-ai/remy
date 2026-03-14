@@ -7,7 +7,7 @@ export const listDirTool: Tool = {
   definition: {
     name: 'listDir',
     description:
-      'List the contents of a directory. Shows file names with type indicators (/ for directories). Use this to understand project layout.',
+      "List the contents of a directory. Shows entries with / suffix for directories, sorted directories-first then alphabetically. Use this for a quick overview of a directory's contents. For finding files across the whole project, use glob instead.",
     inputSchema: {
       type: 'object',
       properties: {

@@ -8,7 +8,7 @@ export const writeFileTool: Tool = {
   definition: {
     name: 'writeFile',
     description:
-      'Create or overwrite a file with the given content. Parent directories are created automatically.',
+      "Create a new file or completely overwrite an existing one. Parent directories are created automatically. Use this only for new files or full rewrites. For targeted changes to existing files, use editFile or multiEdit instead — they preserve the parts you don't want to change and avoid errors from forgetting to include unchanged code.",
     inputSchema: {
       type: 'object',
       properties: {

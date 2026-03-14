@@ -14,6 +14,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { App } from './tui/App.js';
 import { resolveConfig } from './config.js';
+import {
+  initLoggerHeadless,
+  initLoggerInteractive,
+  type LogLevel,
+} from './logger.js';
 
 // Parse CLI flags (simple positional parsing, no framework needed)
 const args = process.argv.slice(2);
@@ -28,6 +33,8 @@ for (let i = 0; i < args.length; i++) {
     flags.model = args[++i];
   } else if (args[i] === '--lsp-url' && args[i + 1]) {
     flags.lspUrl = args[++i];
+  } else if (args[i] === '--log-level' && args[i + 1]) {
+    flags.logLevel = args[++i];
   } else if (args[i] === '--headless') {
     headless = true;
   }
@@ -63,18 +70,22 @@ function printDebugInfo(config: { apiKey: string; baseUrl: string }) {
   console.log('');
 }
 
+const logLevel = (flags.logLevel as LogLevel) || undefined;
+
 if (headless) {
+  initLoggerHeadless(logLevel);
   const { startHeadless } = await import('./headless.js');
   startHeadless({
     apiKey: flags.apiKey,
     baseUrl: flags.baseUrl,
     model: flags.model,
-    lspUrl: flags.lspUrl || 'http://localhost:4388',
+    lspUrl: flags.lspUrl,
   }).catch((err: any) => {
     console.error(err.message);
     process.exit(1);
   });
 } else {
+  initLoggerInteractive(logLevel);
   try {
     const config = resolveConfig({
       apiKey: flags.apiKey,

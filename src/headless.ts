@@ -16,6 +16,7 @@ import {
   type AgentState,
   type AgentEvent,
 } from './agent.js';
+import { loadSession, clearSession } from './session.js';
 
 export interface HeadlessOptions {
   apiKey?: string;
@@ -47,8 +48,15 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
   });
   const system = buildSystemPrompt();
   const state: AgentState = createAgentState();
+  const resumed = loadSession(state);
+  if (resumed) {
+    emit('session_restored', {
+      messageCount: state.messages.length,
+    });
+  }
 
   let running = false;
+  let currentAbort: AbortController | null = null;
 
   function onEvent(e: AgentEvent): void {
     switch (e.type) {
@@ -72,6 +80,9 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       case 'turn_done':
         emit('turn_done');
         break;
+      case 'turn_cancelled':
+        emit('turn_cancelled');
+        break;
       case 'error':
         emit('error', { error: e.error });
         break;
@@ -89,12 +100,33 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       return;
     }
 
+    if (parsed.action === 'get_history') {
+      emit('history', {
+        messages: state.messages,
+      });
+      return;
+    }
+
+    if (parsed.action === 'clear') {
+      clearSession(state);
+      emit('session_cleared');
+      return;
+    }
+
+    if (parsed.action === 'cancel') {
+      if (currentAbort) {
+        currentAbort.abort();
+      }
+      return;
+    }
+
     if (parsed.action === 'message' && parsed.text) {
       if (running) {
         emit('error', { error: 'Agent is already processing a message' });
         return;
       }
       running = true;
+      currentAbort = new AbortController();
       try {
         await runTurn({
           state,
@@ -102,11 +134,13 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
           apiConfig: config,
           system,
           model: opts.model,
+          signal: currentAbort.signal,
           onEvent,
         });
       } catch (err: any) {
         emit('error', { error: err.message });
       }
+      currentAbort = null;
       running = false;
     }
   });

@@ -10,6 +10,8 @@
  * provider's API (Anthropic, OpenAI, Gemini, etc.).
  */
 
+import { log } from './logger.js';
+
 // Normalized message format — matches the platform's ChatMessage type.
 // The platform translates to/from provider-specific formats.
 export interface Message {
@@ -63,17 +65,42 @@ export async function* streamChat(params: {
   maxTokens?: number;
   temperature?: number;
   config?: Record<string, any>;
+  signal?: AbortSignal;
 }): AsyncGenerator<StreamEvent> {
-  const { baseUrl, apiKey, ...body } = params;
+  const { baseUrl, apiKey, signal, ...body } = params;
+  const url = `${baseUrl}/_internal/v2/agent/chat`;
+  const startTime = Date.now();
 
-  const res = await fetch(`${baseUrl}/_internal/v2/agent/chat`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(body),
+  log.info('POST agent/chat', {
+    url,
+    model: body.model,
+    messageCount: body.messages.length,
+    toolCount: body.tools.length,
   });
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(body),
+      signal,
+    });
+  } catch (err: any) {
+    if (signal?.aborted) {
+      log.info('Request aborted by signal');
+      throw err;
+    }
+    log.error('Network error', { error: err.message });
+    yield { type: 'error', error: `Network error: ${err.message}` };
+    return;
+  }
+
+  const ttfb = Date.now() - startTime;
+  log.info(`Response ${res.status}`, { ttfb: `${ttfb}ms` });
 
   if (!res.ok) {
     let errorMessage = `HTTP ${res.status}`;
@@ -86,6 +113,7 @@ export async function* streamChat(params: {
         errorMessage = body.errorMessage;
       }
     } catch {}
+    log.error('API error', { status: res.status, error: errorMessage });
     yield { type: 'error', error: errorMessage };
     return;
   }
@@ -110,7 +138,17 @@ export async function* streamChat(params: {
         continue;
       }
       try {
-        yield JSON.parse(line.slice(6)) as StreamEvent;
+        const event = JSON.parse(line.slice(6)) as StreamEvent;
+        if (event.type === 'done') {
+          const elapsed = Date.now() - startTime;
+          log.info('Stream complete', {
+            elapsed: `${elapsed}ms`,
+            stopReason: event.stopReason,
+            inputTokens: event.usage.inputTokens,
+            outputTokens: event.usage.outputTokens,
+          });
+        }
+        yield event;
       } catch {
         // Skip malformed SSE lines
       }

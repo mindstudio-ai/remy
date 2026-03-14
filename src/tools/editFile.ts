@@ -11,7 +11,7 @@ export const editFileTool: Tool = {
   definition: {
     name: 'editFile',
     description:
-      'Replace a specific string in a file. The old_string must appear exactly once in the file. Use this for targeted edits instead of rewriting the entire file.',
+      "Replace a specific string in a file. The old_string must appear exactly once — if it's ambiguous, include more surrounding lines for context. Use this for single targeted edits. For multiple changes to the same file, use multiEdit instead to apply them all at once. Always read the file first so you know the exact text to match.",
     inputSchema: {
       type: 'object',
       properties: {

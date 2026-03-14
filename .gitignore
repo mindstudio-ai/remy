@@ -4,3 +4,5 @@ dist/
 .env.local
 .vscode/settings.json
 *.tsbuildinfo
+.remy-session.json
+.remy-debug.log

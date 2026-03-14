@@ -6,6 +6,7 @@
  */
 
 import type { Tool } from './index.js';
+import { log } from '../logger.js';
 
 let lspBaseUrl: string | null = null;
 
@@ -24,15 +25,26 @@ async function lspRequest(
   if (!lspBaseUrl) {
     throw new Error('LSP not available');
   }
-  const res = await fetch(`${lspBaseUrl}${endpoint}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    throw new Error(`LSP sidecar error: ${res.status}`);
+  const url = `${lspBaseUrl}${endpoint}`;
+  log.debug('LSP request', { endpoint, body });
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      log.error('LSP sidecar error', { endpoint, status: res.status });
+      throw new Error(`LSP sidecar error: ${res.status}`);
+    }
+    return res.json();
+  } catch (err: any) {
+    if (err.message.startsWith('LSP sidecar')) {
+      throw err;
+    }
+    log.error('LSP connection error', { endpoint, error: err.message });
+    throw new Error(`LSP connection error: ${err.message}`);
   }
-  return res.json();
 }
 
 // --- diagnostics ---

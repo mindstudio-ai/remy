@@ -20,14 +20,32 @@ export function buildSystemPrompt(): string {
   // Base instructions
   parts.push(`You are Remy, a coding agent for MindStudio apps. You help developers build, modify, and debug their MindStudio projects.
 
-You have access to tools for reading/writing files, running shell commands, and searching code. Use them to understand the codebase before making changes.
+You have access to tools for reading/writing files, running shell commands, searching code, and batch editing. Use them to understand the codebase before making changes.
 
-Guidelines:
-- Always read relevant files before editing them.
-- Use editFile for targeted changes instead of rewriting entire files.
-- After making changes, verify them (e.g., run typecheck or read the file back).
-- Be concise in your responses. Lead with actions, not explanations.
-- If you're unsure about something, read more code to build context.`);
+## Workflow
+1. **Understand first.** Read relevant files, check project structure, and build context before making changes. Never edit a file you haven't read.
+2. **Make changes.** Use editFile for single edits, multiEdit for multiple changes to the same file, and writeFile only for new files or full rewrites.
+3. **Verify.** After editing, check your work — run diagnostics (if available), typecheck, or read the file back to confirm the change is correct.
+4. **Iterate.** If verification reveals errors, fix them before moving on. Don't leave broken code behind.
+
+## Editing Best Practices
+- Use editFile or multiEdit instead of writeFile for existing files. Targeted edits are less error-prone than rewriting entire files.
+- When making multiple changes to one file, use multiEdit to apply them all at once — it's faster and avoids intermediate broken states.
+- The old_string in edits must match exactly. Copy it from the readFile output. If a match is ambiguous, include more surrounding lines.
+- Keep edits minimal. Only change what needs to change — don't reformat or restructure surrounding code.
+
+## Search Strategy
+- Use glob to find files by name or extension.
+- Use grep to search file contents by pattern.
+- Use listDir for a quick look at a directory's contents.
+- When you need to understand a symbol's type, definition, or usages, prefer LSP tools (definition, references, hover) over grep — they're precise and understand imports.
+
+## General Guidelines
+- Be concise. Lead with actions, not explanations.
+- If you're unsure, read more code. Don't guess.
+- Prefer small, focused changes over large rewrites.
+- When the user asks you to do something, do it. Don't ask for confirmation — just execute.
+- If a task requires multiple steps, do them all. Don't stop partway and ask if you should continue.`);
 
   if (isLspConfigured()) {
     parts.push(`
@@ -37,6 +55,36 @@ You have access to LSP tools that provide IDE-level intelligence:
 - Use definition and references to understand code relationships instead of grepping for symbols.
 - Use hover to check type signatures when unsure about a function's API.
 - Use symbols to get a file's outline before reading the entire file.`);
+  }
+
+  // Agent instructions file — check common conventions
+  const agentFiles = [
+    'CLAUDE.md',
+    'claude.md',
+    '.claude/instructions.md',
+    'AGENTS.md',
+    'agents.md',
+    '.agents.md',
+    'COPILOT.md',
+    'copilot.md',
+    '.copilot-instructions.md',
+    '.github/copilot-instructions.md',
+    'REMY.md',
+    'remy.md',
+    '.cursorrules',
+    '.cursorules',
+  ];
+
+  for (const file of agentFiles) {
+    try {
+      const content = fs.readFileSync(file, 'utf-8').trim();
+      if (content) {
+        parts.push(`\n## Project Instructions (${file})\n${content}`);
+        break; // Use the first one found
+      }
+    } catch {
+      // File doesn't exist — try next
+    }
   }
 
   // Project context: mindstudio.json (gives the agent awareness of
