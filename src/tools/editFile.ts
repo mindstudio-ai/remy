@@ -12,6 +12,7 @@ import {
   findOccurrences,
   flexibleMatch,
   formatOccurrenceError,
+  replaceAt,
 } from './editHelpers.js';
 
 export const editFileTool: Tool = {
@@ -61,11 +62,12 @@ export const editFileTool: Tool = {
         // Replace from end to start so indices stay valid
         let updated = content;
         for (let i = occurrences.length - 1; i >= 0; i--) {
-          const idx = occurrences[i].index;
-          updated =
-            updated.slice(0, idx) +
-            new_string +
-            updated.slice(idx + old_string.length);
+          updated = replaceAt(
+            updated,
+            occurrences[i].index,
+            old_string.length,
+            new_string,
+          );
         }
         await fs.writeFile(input.path, updated, 'utf-8');
         return `Replaced ${occurrences.length} occurrence${occurrences.length > 1 ? 's' : ''} in ${input.path}\n${unifiedDiff(input.path, content, updated)}`;
@@ -73,11 +75,12 @@ export const editFileTool: Tool = {
 
       // Single-match mode (default)
       if (occurrences.length === 1) {
-        const idx = occurrences[0].index;
-        const updated =
-          content.slice(0, idx) +
-          new_string +
-          content.slice(idx + old_string.length);
+        const updated = replaceAt(
+          content,
+          occurrences[0].index,
+          old_string.length,
+          new_string,
+        );
         await fs.writeFile(input.path, updated, 'utf-8');
         return `Updated ${input.path}\n${unifiedDiff(input.path, content, updated)}`;
       }
@@ -90,10 +93,12 @@ export const editFileTool: Tool = {
       // Exact match found nothing — try whitespace-flexible match
       const flex = flexibleMatch(content, old_string);
       if (flex) {
-        const updated =
-          content.slice(0, flex.index) +
-          new_string +
-          content.slice(flex.index + flex.matchedText.length);
+        const updated = replaceAt(
+          content,
+          flex.index,
+          flex.matchedText.length,
+          new_string,
+        );
         await fs.writeFile(input.path, updated, 'utf-8');
         return `Updated ${input.path} (matched with flexible whitespace at line ${flex.line})\n${unifiedDiff(input.path, content, updated)}`;
       }

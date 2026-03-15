@@ -2,7 +2,7 @@
  * Shared helpers for the editFile tool.
  *
  * Provides occurrence finding (with line numbers), whitespace-flexible
- * fallback matching, and error formatting.
+ * fallback matching, error formatting, and string replacement by index.
  */
 
 export interface Occurrence {
@@ -12,13 +12,9 @@ export interface Occurrence {
   line: number;
 }
 
-export interface FlexibleResult {
+export interface FlexibleResult extends Occurrence {
   /** The original text from the file (preserving actual whitespace). */
   matchedText: string;
-  /** Character offset in the full file content. */
-  index: number;
-  /** 1-based line number where the match starts. */
-  line: number;
 }
 
 /**
@@ -121,17 +117,25 @@ export function flexibleMatch(
     .slice(startIdx, startIdx + searchLines.length)
     .join('\n');
 
-  // Compute character offset of the matched start line
-  let charOffset = 0;
-  for (let i = 0; i < startIdx; i++) {
-    charOffset += contentLines[i].length + 1; // +1 for \n
-  }
+  const offsets = buildLineOffsets(content);
 
   return {
     matchedText,
-    index: charOffset,
+    index: offsets[startIdx],
     line: startIdx + 1, // 1-based
   };
+}
+
+/**
+ * Replace a substring at a specific character index.
+ */
+export function replaceAt(
+  content: string,
+  index: number,
+  oldLength: number,
+  newString: string,
+): string {
+  return content.slice(0, index) + newString + content.slice(index + oldLength);
 }
 
 /**

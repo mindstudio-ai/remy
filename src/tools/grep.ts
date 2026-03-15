@@ -5,6 +5,15 @@ import type { Tool } from './index.js';
 
 const DEFAULT_MAX = 50;
 
+function formatResults(stdout: string, max: number): string {
+  const lines = stdout.trim().split('\n');
+  let result = lines.join('\n');
+  if (lines.length >= max) {
+    result += `\n\n(truncated at ${max} results — increase maxResults to see more)`;
+  }
+  return result;
+}
+
 export const grepTool: Tool = {
   definition: {
     name: 'grep',
@@ -50,24 +59,14 @@ export const grepTool: Tool = {
     return new Promise<string>((resolve) => {
       exec(rgCmd, { maxBuffer: 512 * 1024 }, (err, stdout) => {
         if (stdout?.trim()) {
-          const lines = stdout.trim().split('\n');
-          let result = lines.join('\n');
-          if (lines.length >= max) {
-            result += `\n\n(truncated at ${max} results — increase maxResults to see more)`;
-          }
-          resolve(result);
+          resolve(formatResults(stdout, max));
           return;
         }
 
         // Fallback to grep
         exec(grepCmd, { maxBuffer: 512 * 1024 }, (_err, grepStdout) => {
           if (grepStdout?.trim()) {
-            const lines = grepStdout.trim().split('\n');
-            let result = lines.join('\n');
-            if (lines.length >= max) {
-              result += `\n\n(truncated at ${max} results — increase maxResults to see more)`;
-            }
-            resolve(result);
+            resolve(formatResults(grepStdout, max));
           } else {
             resolve('No matches found.');
           }

@@ -7,7 +7,7 @@ const DEFAULT_MAX_LINES = 500;
 
 /**
  * Check if a buffer likely contains binary content by looking for null bytes
- * or a high ratio of non-text bytes in the first 8KB.
+ * in the first 8KB.
  */
 function isBinary(buffer: Buffer): boolean {
   const sample = buffer.subarray(0, 8192);
@@ -23,7 +23,7 @@ export const readFileTool: Tool = {
   definition: {
     name: 'readFile',
     description:
-      "Read a file's contents with line numbers. Always read a file before editing it — never guess at contents. For large files, consider using symbols first to identify the relevant section, then use offset and maxLines to read just that section. Line numbers in the output correspond to what editFile and multiEdit expect. Defaults to first 500 lines. Use a negative offset to read from the end of the file (e.g., offset: -50 reads the last 50 lines).",
+      "Read a file's contents with line numbers. Always read a file before editing it — never guess at contents. For large files, consider using symbols first to identify the relevant section, then use offset and maxLines to read just that section. Line numbers in the output correspond to what editFile expects. Defaults to first 500 lines. Use a negative offset to read from the end of the file (e.g., offset: -50 reads the last 50 lines).",
     inputSchema: {
       type: 'object',
       properties: {
