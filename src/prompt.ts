@@ -31,8 +31,10 @@ You have access to tools for reading/writing files, running shell commands, sear
 
 ## Editing Best Practices
 - Use editFile or multiEdit instead of writeFile for existing files. Targeted edits are less error-prone than rewriting entire files.
-- When making multiple changes to one file, use multiEdit to apply them all at once — it's faster and avoids intermediate broken states.
-- The old_string in edits must match exactly. Copy it from the readFile output. If a match is ambiguous, include more surrounding lines.
+- When making multiple changes to one file, use multiEdit to apply them all at once — it's faster and atomic (if any edit fails, the file is unchanged).
+- Copy old_string from the readFile output. Minor indentation differences are handled automatically, but exact matches are most reliable.
+- If old_string matches multiple times, the error will show line numbers for each occurrence. Use start_line/end_line to target a specific one, or include more surrounding context to disambiguate.
+- Both editFile and multiEdit accept optional start_line and end_line parameters to restrict the search to a line range. Use these when the same string appears multiple times in the file.
 - Keep edits minimal. Only change what needs to change — don't reformat or restructure surrounding code.
 - Match the existing style of the codebase: naming conventions, indentation, patterns, structure. Don't introduce new conventions.
 
