@@ -127,6 +127,18 @@ Send a user message to the agent. The agent processes it and streams events back
 {"action": "message", "text": "fix the bug in auth.ts"}
 ```
 
+Optionally include file attachments. Each attachment has a `url` and an optional `extractedTextUrl` (for pre-extracted text from PDFs, images, etc.). These are passed through to the platform API.
+
+```json
+{
+  "action": "message",
+  "text": "here's the design spec",
+  "attachments": [
+    { "url": "https://files.example.com/spec.pdf", "extractedTextUrl": "https://files.example.com/spec.txt" }
+  ]
+}
+```
+
 Returns an error if the agent is already processing a message.
 
 #### `get_history`

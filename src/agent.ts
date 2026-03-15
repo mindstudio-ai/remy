@@ -18,7 +18,12 @@
  * stream and skips pending tool execution.
  */
 
-import { streamChat, type Message, type StreamEvent } from './api.js';
+import {
+  streamChat,
+  type Message,
+  type Attachment,
+  type StreamEvent,
+} from './api.js';
 import { executeTool, getToolDefinitions } from './tools/index.js';
 import { saveSession } from './session.js';
 import { log } from './logger.js';
@@ -56,14 +61,23 @@ export function createAgentState(): AgentState {
 export async function runTurn(params: {
   state: AgentState;
   userMessage: string;
+  attachments?: Attachment[];
   apiConfig: { baseUrl: string; apiKey: string };
   system: string;
   model?: string;
   signal?: AbortSignal;
   onEvent: (event: AgentEvent) => void;
 }): Promise<void> {
-  const { state, userMessage, apiConfig, system, model, signal, onEvent } =
-    params;
+  const {
+    state,
+    userMessage,
+    attachments,
+    apiConfig,
+    system,
+    model,
+    signal,
+    onEvent,
+  } = params;
   const tools = getToolDefinitions();
 
   log.info('Turn started', {
@@ -73,7 +87,11 @@ export async function runTurn(params: {
   });
 
   // Add user message to conversation
-  state.messages.push({ role: 'user', content: userMessage });
+  const userMsg: Message = { role: 'user', content: userMessage };
+  if (attachments && attachments.length > 0) {
+    userMsg.attachments = attachments;
+  }
+  state.messages.push(userMsg);
 
   // Tool-call loop: keep going until the model stops requesting tools
   while (true) {

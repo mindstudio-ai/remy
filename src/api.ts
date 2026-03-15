@@ -14,6 +14,11 @@ import { log } from './logger.js';
 
 // Normalized message format — matches the platform's ChatMessage type.
 // The platform translates to/from provider-specific formats.
+export interface Attachment {
+  url: string;
+  extractedTextUrl?: string;
+}
+
 export interface Message {
   role: 'system' | 'user' | 'assistant';
   content: string;
@@ -22,6 +27,8 @@ export interface Message {
   // User messages with toolCallId are tool results (not human messages)
   toolCallId?: string;
   isToolError?: boolean;
+  // User messages may include file attachments
+  attachments?: Attachment[];
 }
 
 // Tool definition sent to the LLM — vendor-agnostic JSON Schema format

@@ -92,7 +92,11 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
   const rl = createInterface({ input: process.stdin });
 
   rl.on('line', async (line: string) => {
-    let parsed: { action?: string; text?: string };
+    let parsed: {
+      action?: string;
+      text?: string;
+      attachments?: Array<{ url: string; extractedTextUrl?: string }>;
+    };
     try {
       parsed = JSON.parse(line);
     } catch {
@@ -131,6 +135,7 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
         await runTurn({
           state,
           userMessage: parsed.text,
+          attachments: parsed.attachments,
           apiConfig: config,
           system,
           model: opts.model,
