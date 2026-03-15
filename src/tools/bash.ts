@@ -1,22 +1,32 @@
-/** Run a shell command. 30s timeout. Returns stdout + stderr. */
+/** Run a shell command. 120s timeout by default. Returns stdout + stderr. */
 
 import { exec } from 'node:child_process';
 import type { Tool } from './index.js';
 
-const TIMEOUT_MS = 30_000;
+const DEFAULT_TIMEOUT_MS = 120_000;
 const DEFAULT_MAX_LINES = 500;
 
 export const bashTool: Tool = {
   definition: {
     name: 'bash',
     description:
-      'Run a shell command and return stdout + stderr. 30-second timeout. Use for: npm install/build/test, git operations, tsc --noEmit, or any CLI tool. Prefer dedicated tools over bash when available (use grep instead of bash + rg, readFile instead of bash + cat). For long-running commands, consider breaking them into smaller steps. Output is truncated to 500 lines by default.',
+      'Run a shell command and return stdout + stderr. 120-second timeout by default (configurable). Use for: npm install/build/test, git operations, tsc --noEmit, or any CLI tool. Prefer dedicated tools over bash when available (use grep instead of bash + rg, readFile instead of bash + cat). Output is truncated to 500 lines by default.',
     inputSchema: {
       type: 'object',
       properties: {
         command: {
           type: 'string',
           description: 'The shell command to execute.',
+        },
+        cwd: {
+          type: 'string',
+          description:
+            'Working directory to run the command in. Defaults to the project root.',
+        },
+        timeout: {
+          type: 'number',
+          description:
+            'Timeout in seconds. Defaults to 120. Use higher values for long-running commands like builds or test suites.',
         },
         maxLines: {
           type: 'number',
@@ -31,11 +41,16 @@ export const bashTool: Tool = {
   async execute(input) {
     const maxLines =
       input.maxLines === 0 ? Infinity : input.maxLines || DEFAULT_MAX_LINES;
+    const timeoutMs = input.timeout ? input.timeout * 1000 : DEFAULT_TIMEOUT_MS;
 
     return new Promise<string>((resolve) => {
       exec(
         input.command,
-        { timeout: TIMEOUT_MS, maxBuffer: 2 * 1024 * 1024 },
+        {
+          timeout: timeoutMs,
+          maxBuffer: 2 * 1024 * 1024,
+          ...(input.cwd ? { cwd: input.cwd } : {}),
+        },
         (err, stdout, stderr) => {
           let result = '';
           if (stdout) {
