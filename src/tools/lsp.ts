@@ -238,6 +238,28 @@ const symbolsTool: Tool = {
   },
 };
 
+// --- syncSchema ---
+
+const syncSchemaTool: Tool = {
+  definition: {
+    name: 'syncSchema',
+    description:
+      'Sync database table schemas to the platform. Call this after editing any table file that uses `db.defineTable` from `@mindstudio-ai/agent`. This pushes your local schema changes (new tables, added/removed columns, type changes) to the dev database so they take effect immediately.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+
+  async execute() {
+    const data = await lspRequest('/sync-schema', {});
+    if (data.ok) {
+      return 'Schema sync triggered. Changes will be applied to the dev database.';
+    }
+    return `Error: unexpected response from sync-schema: ${JSON.stringify(data)}`;
+  },
+};
+
 /** Returns LSP tools if configured, empty array otherwise. */
 export function getLspTools(): Tool[] {
   if (!lspBaseUrl) {
@@ -251,5 +273,6 @@ export function getLspTools(): Tool[] {
     referencesTool,
     hoverTool,
     symbolsTool,
+    syncSchemaTool,
   ];
 }
