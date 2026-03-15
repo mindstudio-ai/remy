@@ -66,7 +66,11 @@ export async function runTurn(params: {
     params;
   const tools = getToolDefinitions();
 
-  log.info('Turn started', { messageLength: userMessage.length });
+  log.info('Turn started', {
+    messageLength: userMessage.length,
+    toolCount: tools.length,
+    tools: tools.map((t) => t.name),
+  });
 
   // Add user message to conversation
   state.messages.push({ role: 'user', content: userMessage });

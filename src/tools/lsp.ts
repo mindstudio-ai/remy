@@ -12,6 +12,7 @@ let lspBaseUrl: string | null = null;
 
 export function setLspBaseUrl(url: string): void {
   lspBaseUrl = url;
+  log.info('LSP configured', { url });
 }
 
 export function isLspConfigured(): boolean {
@@ -240,8 +241,10 @@ const symbolsTool: Tool = {
 /** Returns LSP tools if configured, empty array otherwise. */
 export function getLspTools(): Tool[] {
   if (!lspBaseUrl) {
+    log.debug('LSP tools skipped — no URL configured');
     return [];
   }
+  log.debug('LSP tools registered', { url: lspBaseUrl });
   return [
     diagnosticsTool,
     definitionTool,

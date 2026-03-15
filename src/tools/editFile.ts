@@ -6,6 +6,7 @@
 
 import fs from 'node:fs/promises';
 import type { Tool } from './index.js';
+import { unifiedDiff } from './diff.js';
 
 export const editFileTool: Tool = {
   definition: {
@@ -47,7 +48,7 @@ export const editFileTool: Tool = {
 
       const updated = content.replace(input.old_string, input.new_string);
       await fs.writeFile(input.path, updated, 'utf-8');
-      return `Updated ${input.path}`;
+      return `Updated ${input.path}\n${unifiedDiff(input.path, content, updated)}`;
     } catch (err: any) {
       return `Error editing file: ${err.message}`;
     }

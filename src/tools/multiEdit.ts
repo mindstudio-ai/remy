@@ -5,6 +5,7 @@
 
 import fs from 'node:fs/promises';
 import type { Tool } from './index.js';
+import { unifiedDiff } from './diff.js';
 
 export const multiEditTool: Tool = {
   definition: {
@@ -45,7 +46,8 @@ export const multiEditTool: Tool = {
 
   async execute(input) {
     try {
-      let content = await fs.readFile(input.path, 'utf-8');
+      const original = await fs.readFile(input.path, 'utf-8');
+      let content = original;
       const edits: Array<{ old_string: string; new_string: string }> =
         input.edits;
 
@@ -68,7 +70,7 @@ export const multiEditTool: Tool = {
       }
 
       await fs.writeFile(input.path, content, 'utf-8');
-      return `Applied ${edits.length} edits to ${input.path}`;
+      return `Applied ${edits.length} edits to ${input.path}\n${unifiedDiff(input.path, original, content)}`;
     } catch (err: any) {
       return `Error editing file: ${err.message}`;
     }

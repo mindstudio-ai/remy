@@ -29,8 +29,16 @@ export const writeFileTool: Tool = {
     try {
       await fs.mkdir(path.dirname(input.path), { recursive: true });
       await fs.writeFile(input.path, input.content, 'utf-8');
-      const lines = input.content.split('\n').length;
-      return `Created ${input.path} (${lines} lines)`;
+      const allLines = input.content.split('\n');
+      const preview = allLines.slice(0, 10);
+      let result = `Created ${input.path} (${allLines.length} lines)\n`;
+      result += preview
+        .map((l: string, i: number) => `${String(i + 1).padStart(4)} ${l}`)
+        .join('\n');
+      if (allLines.length > 10) {
+        result += `\n     ...`;
+      }
+      return result;
     } catch (err: any) {
       return `Error writing file: ${err.message}`;
     }
