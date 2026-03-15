@@ -2,7 +2,7 @@
  * Targeted string replacement in a file.
  *
  * Matches exactly first, falls back to whitespace-flexible matching,
- * and supports optional line-range restriction.
+ * and supports optional line-range restriction and replace-all mode.
  */
 
 import fs from 'node:fs/promises';
@@ -18,7 +18,7 @@ export const editFileTool: Tool = {
   definition: {
     name: 'editFile',
     description:
-      "Replace a specific string in a file. The old_string must appear exactly once (minor indentation differences are handled automatically). If it's ambiguous, include more surrounding lines or use start_line/end_line to target a specific occurrence. Use this for single targeted edits. For multiple changes to the same file, use multiEdit instead. Always read the file first so you know the exact text to match.",
+      'Replace a string in a file. By default old_string must appear exactly once (minor indentation differences are handled automatically). Set replace_all to true to replace every occurrence. If ambiguous, include more surrounding lines or use start_line/end_line to target a specific occurrence. For bulk mechanical substitutions (e.g. renaming a variable, swapping colors), use replace_all or sed via bash. Always read the file first so you know the exact text to match.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -29,11 +29,16 @@ export const editFileTool: Tool = {
         old_string: {
           type: 'string',
           description:
-            'The exact string to find and replace. Must be unique in the file (or within the specified line range).',
+            'The exact string to find and replace. Must be unique in the file unless replace_all is true.',
         },
         new_string: {
           type: 'string',
           description: 'The replacement string.',
+        },
+        replace_all: {
+          type: 'boolean',
+          description:
+            'If true, replace every occurrence of old_string in the file (or within the line range). Defaults to false.',
         },
         start_line: {
           type: 'integer',
@@ -53,9 +58,10 @@ export const editFileTool: Tool = {
   async execute(input) {
     try {
       const content = await fs.readFile(input.path, 'utf-8');
-      const { old_string, new_string, start_line, end_line } = input;
+      const { old_string, new_string, start_line, end_line, replace_all } =
+        input;
 
-      // 1. Exact match
+      // 1. Find exact occurrences
       const occurrences = findOccurrences(
         content,
         old_string,
@@ -63,6 +69,28 @@ export const editFileTool: Tool = {
         end_line,
       );
 
+      // Replace-all mode
+      if (replace_all) {
+        if (occurrences.length === 0) {
+          const rangeNote = start_line
+            ? ` (searched lines ${start_line}–${end_line ?? 'EOF'})`
+            : '';
+          return `Error: old_string not found in ${input.path}${rangeNote}.`;
+        }
+        // Replace from end to start so indices stay valid
+        let updated = content;
+        for (let i = occurrences.length - 1; i >= 0; i--) {
+          const idx = occurrences[i].index;
+          updated =
+            updated.slice(0, idx) +
+            new_string +
+            updated.slice(idx + old_string.length);
+        }
+        await fs.writeFile(input.path, updated, 'utf-8');
+        return `Replaced ${occurrences.length} occurrence${occurrences.length > 1 ? 's' : ''} in ${input.path}\n${unifiedDiff(input.path, content, updated)}`;
+      }
+
+      // Single-match mode (default)
       if (occurrences.length === 1) {
         const idx = occurrences[0].index;
         const updated =
