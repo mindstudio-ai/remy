@@ -39,7 +39,16 @@ function resolveIncludes(template: string): string {
   return result.replace(/\n{3,}/g, '\n\n').trim();
 }
 
-export function buildSystemPrompt(projectHasCode?: boolean): string {
+export interface ViewContext {
+  mode: 'code' | 'spec';
+  openFiles?: string[];
+  activeFile?: string;
+}
+
+export function buildSystemPrompt(
+  projectHasCode?: boolean,
+  viewContext?: ViewContext,
+): string {
   const projectContext = [
     loadProjectInstructions(),
     loadProjectManifest(),
@@ -114,6 +123,11 @@ ${isLspConfigured() ? `<lsp>\n{{static/lsp.md}}\n</lsp>` : ''}
 <current_authoring_mode>
 ${projectHasCode ? 'Project has code - keep code and spec in sync.' : 'Project does not have code yet - focus on writing the spec.'}
 </current_authoring_mode>
+
+<view_context>
+The user is currently in ${viewContext?.mode ?? 'code'} editing mode.
+${viewContext?.activeFile && viewContext?.mode === 'spec' ? `Active file: ${viewContext.activeFile}` : ''}
+</view_context>
 `;
 
   return resolveIncludes(template);

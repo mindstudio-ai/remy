@@ -95,6 +95,11 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       action?: string;
       text?: string;
       projectHasCode?: boolean;
+      viewContext?: {
+        mode: 'code' | 'spec';
+        openFiles?: string[];
+        activeFile?: string;
+      };
       attachments?: Array<{ url: string; extractedTextUrl?: string }>;
     };
     try {
@@ -132,7 +137,7 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       running = true;
       currentAbort = new AbortController();
       const projectHasCode = parsed.projectHasCode ?? true;
-      const system = buildSystemPrompt(projectHasCode);
+      const system = buildSystemPrompt(projectHasCode, parsed.viewContext);
       try {
         await runTurn({
           state,
