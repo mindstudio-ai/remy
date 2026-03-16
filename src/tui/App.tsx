@@ -13,7 +13,7 @@ import { Box, Text, useApp, useInput } from 'ink';
 import { InputPrompt } from './InputPrompt.js';
 import { MessageList, type TurnState } from './MessageList.js';
 import { runTurn, createAgentState, type AgentEvent } from '../agent.js';
-import { buildSystemPrompt } from '../prompt.js';
+import { buildSystemPrompt } from '../prompt/index.js';
 import { loadSession, clearSession } from '../session.js';
 
 interface Props {
@@ -97,6 +97,7 @@ export function App({ apiConfig, model }: Props) {
           apiConfig,
           system,
           model,
+          projectHasCode: true,
           signal: abort.signal,
           onEvent: (event: AgentEvent) => {
             switch (event.type) {

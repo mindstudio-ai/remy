@@ -1,7 +1,7 @@
 /** Run a shell command. 120s timeout by default. Returns stdout + stderr. */
 
 import { exec } from 'node:child_process';
-import type { Tool } from './index.js';
+import type { Tool } from '../index.js';
 
 const DEFAULT_TIMEOUT_MS = 120_000;
 const DEFAULT_MAX_LINES = 500;

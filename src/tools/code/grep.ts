@@ -1,7 +1,7 @@
 /** Search file contents. Uses ripgrep if available, falls back to grep. */
 
 import { exec } from 'node:child_process';
-import type { Tool } from './index.js';
+import type { Tool } from '../index.js';
 
 const DEFAULT_MAX = 50;
 

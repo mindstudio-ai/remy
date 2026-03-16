@@ -8,8 +8,8 @@
 
 import { createInterface } from 'node:readline';
 import { resolveConfig } from './config.js';
-import { buildSystemPrompt } from './prompt.js';
-import { setLspBaseUrl } from './tools/lsp.js';
+import { buildSystemPrompt } from './prompt/index.js';
+import { setLspBaseUrl } from './tools/code/lsp.js';
 import {
   createAgentState,
   runTurn,
@@ -46,7 +46,6 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     apiKey: opts.apiKey,
     baseUrl: opts.baseUrl,
   });
-  const system = buildSystemPrompt();
   const state: AgentState = createAgentState();
   const resumed = loadSession(state);
   if (resumed) {
@@ -95,6 +94,7 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     let parsed: {
       action?: string;
       text?: string;
+      projectHasCode?: boolean;
       attachments?: Array<{ url: string; extractedTextUrl?: string }>;
     };
     try {
@@ -131,6 +131,8 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       }
       running = true;
       currentAbort = new AbortController();
+      const projectHasCode = parsed.projectHasCode ?? true;
+      const system = buildSystemPrompt(projectHasCode);
       try {
         await runTurn({
           state,
@@ -139,6 +141,7 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
           apiConfig: config,
           system,
           model: opts.model,
+          projectHasCode,
           signal: currentAbort.signal,
           onEvent,
         });

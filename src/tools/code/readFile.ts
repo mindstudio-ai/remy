@@ -1,7 +1,7 @@
 /** Read a file with line numbers (like `cat -n`). Detects binary files. */
 
 import fs from 'node:fs/promises';
-import type { Tool } from './index.js';
+import type { Tool } from '../index.js';
 
 const DEFAULT_MAX_LINES = 500;
 

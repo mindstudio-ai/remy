@@ -1,7 +1,7 @@
 /** Find files matching a glob pattern. Excludes node_modules and .git. */
 
 import fg from 'fast-glob';
-import type { Tool } from './index.js';
+import type { Tool } from '../index.js';
 
 const DEFAULT_MAX = 200;
 

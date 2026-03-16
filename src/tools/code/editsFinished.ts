@@ -6,7 +6,7 @@
  * it, the preview updates when the turn ends.
  */
 
-import type { Tool } from './index.js';
+import type { Tool } from '../index.js';
 
 export const editsFinishedTool: Tool = {
   definition: {

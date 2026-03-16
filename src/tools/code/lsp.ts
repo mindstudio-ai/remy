@@ -5,8 +5,8 @@
  * In interactive/local mode they're excluded from the tool list entirely.
  */
 
-import type { Tool } from './index.js';
-import { log } from '../logger.js';
+import type { Tool } from '../index.js';
+import { log } from '../../logger.js';
 
 let lspBaseUrl: string | null = null;
 

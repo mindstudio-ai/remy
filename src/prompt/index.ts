@@ -3,18 +3,16 @@
  *
  * Assembles the system prompt from:
  *   1. Base instructions (agent identity, guidelines)
- *   2. Project manifest (mindstudio.json from cwd, if present)
- *   3. Project file listing (top-level directory)
- *
- * This is the generic POC version. Later this becomes the full
- * platform-knowledge prompt with SDK docs, table/method patterns,
- * interface config reference, etc.
+ *   2. MSFM + phase-specific instructions (if authoring/iterating)
+ *   3. LSP section (if configured)
+ *   4. Project instructions file (CLAUDE.md etc.)
+ *   5. Project manifest (mindstudio.json)
+ *   6. Project file listing (top-level directory)
  */
 
 import fs from 'node:fs';
-import { isLspConfigured } from './tools/lsp.js';
-
-export function buildSystemPrompt(): string {
+import { isLspConfigured } from '../tools/code/lsp.js';
+export function buildSystemPrompt(projectHasCode?: boolean): string {
   const parts: string[] = [];
 
   // Base instructions
@@ -76,6 +74,74 @@ You have access to tools for reading/writing files, running shell commands, and 
 - Don't over-engineer. The simplest solution that works is the right one.
 - When the user asks you to do something, do it. Don't ask for confirmation — just execute.
 - If a task requires multiple steps, do them all. Don't stop partway and ask if you should continue.`);
+
+  // MSFM + phase-specific instructions
+  if (projectHasCode != null) {
+    parts.push(`
+## MSFM Format
+
+Specs are written in MSFM (MindStudio-Flavored Markdown), which extends standard Markdown with two annotation primitives:
+
+**Block annotations** — attach context to the preceding paragraph:
+\`\`\`
+Some prose paragraph.
+
+~~~
+Clarifying annotation: edge cases, data representations, business rules.
+Can contain any markdown — lists, code, tables.
+~~~
+\`\`\`
+
+**Inline annotations** — clarify a specific word or phrase:
+\`\`\`
+The [amount]{Total in USD cents, integer. No tax/shipping.} must not exceed the budget.
+\`\`\`
+
+**Pointers** — reference a shared block annotation from inline:
+\`\`\`
+See the [payment terms]{#payment-terms} for details.
+
+~~~#payment-terms
+Detailed annotation content referenced by multiple inline pointers.
+~~~
+\`\`\`
+
+**When to annotate:**
+- Ambiguity — where two engineers might implement different things
+- Edge cases — what happens when a reviewer rejects, when the amount is exactly on a threshold
+- Data representations — when "amount" could mean cents or dollars, when "status" needs an enum
+- Don't annotate the obvious. Let the spec breathe.`);
+  }
+
+  if (projectHasCode === false) {
+    parts.push(`
+## Spec Authoring
+
+You are helping the user write a spec for their MindStudio app. No generated code exists yet — you work only in \`src/\`.
+
+**Your job:** Guide the user toward a complete, well-annotated spec that can be compiled into code.
+
+- Use \`readSpec\`, \`writeSpec\`, \`editSpec\`, \`addAnnotation\`, and \`listSpecFiles\` to work with spec files.
+- Suggest missing sections: data models, workflows, roles, edge cases, interfaces.
+- Ask clarifying questions when the spec is ambiguous.
+- Recommend annotations for areas that could be interpreted multiple ways.
+- When the user asks "is this ready?" — evaluate against a completeness checklist: does it define data models, workflows, roles, edge cases, and at least one interface?
+- Only call \`compile\` when the spec is sufficient for meaningful code generation. If it's not ready, explain what's missing.`);
+  }
+
+  if (projectHasCode === true) {
+    parts.push(`
+## Spec + Code Sync
+
+Generated code exists in \`dist/\` compiled from the spec in \`src/\`. You have both spec tools and code tools.
+
+**Key principle: spec and code stay in sync.**
+- When editing the spec, also update the affected code in the same turn.
+- When the user asks for a code change that represents a behavioral change, also update the spec.
+- Use \`recompile\` only when the spec has diverged significantly from the code — it's destructive to manual code changes.
+- Spec tools (\`readSpec\`, \`writeSpec\`, \`editSpec\`, \`addAnnotation\`, \`listSpecFiles\`) work on \`src/\` files.
+- Code tools (\`readFile\`, \`writeFile\`, \`editFile\`, etc.) work on \`dist/\` and other project files.`);
+  }
 
   if (isLspConfigured()) {
     parts.push(`

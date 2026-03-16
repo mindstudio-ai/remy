@@ -65,6 +65,7 @@ export async function runTurn(params: {
   apiConfig: { baseUrl: string; apiKey: string };
   system: string;
   model?: string;
+  projectHasCode: boolean;
   signal?: AbortSignal;
   onEvent: (event: AgentEvent) => void;
 }): Promise<void> {
@@ -75,10 +76,11 @@ export async function runTurn(params: {
     apiConfig,
     system,
     model,
+    projectHasCode,
     signal,
     onEvent,
   } = params;
-  const tools = getToolDefinitions();
+  const tools = getToolDefinitions(projectHasCode);
 
   log.info('Turn started', {
     messageLength: userMessage.length,

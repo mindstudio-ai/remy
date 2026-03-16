@@ -1,7 +1,7 @@
 /** List directory contents. Directories first, then files. Excludes .git and node_modules. */
 
 import fs from 'node:fs/promises';
-import type { Tool } from './index.js';
+import type { Tool } from '../index.js';
 
 export const listDirTool: Tool = {
   definition: {

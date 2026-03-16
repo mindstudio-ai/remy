@@ -6,14 +6,14 @@
  */
 
 import fs from 'node:fs/promises';
-import type { Tool } from './index.js';
-import { unifiedDiff } from './diff.js';
+import type { Tool } from '../../index.js';
+import { unifiedDiff } from '../../_helpers/diff.js';
 import {
   findOccurrences,
   flexibleMatch,
   formatOccurrenceError,
   replaceAt,
-} from './editHelpers.js';
+} from './_helpers.js';
 
 export const editFileTool: Tool = {
   definition: {

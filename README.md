@@ -2,7 +2,7 @@
 
 A coding agent for MindStudio apps.
 
-Remy runs locally in your terminal and helps you build, modify, and debug MindStudio projects. It has tools for reading/writing files, running shell commands, searching code, and (in the sandbox) TypeScript language server integration. LLM calls are routed through the MindStudio platform for billing and model routing.
+Remy helps you build, modify, and debug MindStudio projects. It runs locally in your terminal or as a headless subprocess in the MindStudio sandbox. It has tools for reading/writing files, running shell commands, searching code, editing MSFM specs, and (in the sandbox) TypeScript language server integration. LLM calls are routed through the MindStudio platform for billing and model routing.
 
 ## Quick Start
 
@@ -65,16 +65,40 @@ Remy saves conversation history to `.remy-session.json` in the working directory
 
 ## Tools
 
+Remy's tool set depends on the project state. The sandbox server tells remy whether the project has generated code in `dist/` via the `projectHasCode` field on messages.
+
+### Spec Tools
+
+Available in all sandbox sessions. Used for authoring and editing MSFM specs in `src/`.
+
+| Tool | Description |
+|------|-------------|
+| `readSpec` | Read a spec file with line numbers (paths must start with `src/`) |
+| `writeSpec` | Create or overwrite a spec file (creates parent dirs) |
+| `editSpec` | Heading-addressed edits (replace, insert, delete by heading path) |
+| `addAnnotation` | Add MSFM block or inline annotations to spec content |
+| `listSpecFiles` | List all files in the `src/` directory tree |
+| `compile` | Trigger first code generation from spec (stub — authoring only) |
+| `recompile` | Re-generate code from spec, optionally scoped (stub — iterating only) |
+
+`editSpec` addresses locations by heading path (e.g., `"Vendors > Approval Flow"`) rather than line numbers, making edits stable across changes. Operations: `replace`, `insert_after`, `insert_before`, `delete`.
+
+`addAnnotation` supports block annotations (`~~~...~~~`) and inline annotations (`[text]{content}`). Long inline annotations automatically use the pointer form (`[text]{#id}` + `~~~#id` block).
+
+### Code Tools
+
+Available when the project has generated code (`projectHasCode: true`).
+
 | Tool | Description | Default Limit |
 |------|-------------|---------------|
 | `readFile` | Read a file with line numbers | 500 lines |
 | `writeFile` | Create or overwrite a file (creates parent dirs) | — |
 | `editFile` | Targeted string replacement (must be unique match) | — |
-| `multiEdit` | Batch multiple edits to one file in a single call | — |
 | `bash` | Run a shell command (30s timeout) | 500 lines output |
 | `grep` | Search file contents (ripgrep with grep fallback) | 50 matches |
 | `glob` | Find files by pattern | 200 files |
 | `listDir` | List directory contents | — |
+| `editsFinished` | Signal that file edits are complete for live preview | — |
 
 Tools with limits accept a `maxResults` or `maxLines` parameter to override the default. Set to `0` for unlimited. Truncated results include a message indicating how many results were omitted.
 
@@ -90,6 +114,13 @@ Available when `--lsp-url` is passed. These call the sandbox's LSP HTTP sidecar 
 | `hover` | Get type signature and documentation |
 | `symbols` | File outline (functions, classes, types with line numbers) |
 
+### Tool Availability by Phase
+
+| Phase | Spec Tools | Code Tools | Compile/Recompile |
+|-------|-----------|------------|-------------------|
+| Authoring (`projectHasCode: false`) | All | — | `compile` |
+| Iterating (`projectHasCode: true`) | All | All | `recompile` |
+
 ## Architecture
 
 ```
@@ -103,7 +134,53 @@ User input
     → Save session to .remy-session.json
 ```
 
-The agent core (`src/agent.ts`) is a pure async function with no UI dependencies. The TUI (`src/tui/`) is an Ink + React layer on top. Headless mode (`src/headless.ts`) provides the same agent over a stdin/stdout JSON protocol.
+The agent core (`src/agent.ts`) is a pure async function with no UI dependencies. The TUI (`src/tui/`) is an Ink + React layer on top. Headless mode (`src/headless.ts`) provides the same agent over a stdin/stdout JSON protocol for the sandbox.
+
+### Project Structure
+
+```
+src/
+  index.tsx              CLI entry point
+  agent.ts               Core tool-call loop (pure async, no UI)
+  api.ts                 SSE streaming to platform API
+  prompt/
+    index.ts             System prompt builder (phase-aware)
+  session.ts             .remy-session.json persistence
+  config.ts              API key/URL resolution
+  logger.ts              Structured logging
+  headless.ts            stdin/stdout JSON protocol
+  tui/                   Interactive terminal UI (Ink + React)
+    App.tsx
+    InputPrompt.tsx
+    MessageList.tsx
+    ThinkingBlock.tsx
+    ToolCall.tsx
+  tools/
+    index.ts             Tool registry: getTools(projectHasCode)
+    _helpers/
+      diff.ts            Unified diff generator
+    spec/                Spec tools (MSFM editing)
+      _helpers.ts        Heading resolution, path validation
+      readSpec.ts
+      writeSpec.ts
+      editSpec.ts
+      addAnnotation.ts
+      listSpecFiles.ts
+      compile.ts
+      recompile.ts
+    code/                Code tools (file editing, shell, search)
+      readFile.ts
+      writeFile.ts
+      editFile/
+        index.ts
+        _helpers.ts
+      bash.ts
+      grep.ts
+      glob.ts
+      listDir.ts
+      editsFinished.ts
+      lsp.ts
+```
 
 ### Project Instructions
 
@@ -127,12 +204,23 @@ Send a user message to the agent. The agent processes it and streams events back
 {"action": "message", "text": "fix the bug in auth.ts"}
 ```
 
-Optionally include file attachments. Each attachment has a `url` and an optional `extractedTextUrl` (for pre-extracted text from PDFs, images, etc.). These are passed through to the platform API.
+Include `projectHasCode` to control the agent's tool set and prompt:
+
+```json
+{"action": "message", "text": "add a vendors section", "projectHasCode": false}
+```
+
+- `projectHasCode: false` — spec tools only (authoring phase, no code in `dist/` yet)
+- `projectHasCode: true` — spec tools + code tools (iterating phase, code exists)
+- Omitted — defaults to `true` (all tools available)
+
+Optionally include file attachments:
 
 ```json
 {
   "action": "message",
   "text": "here's the design spec",
+  "projectHasCode": false,
   "attachments": [
     { "url": "https://files.example.com/spec.pdf", "extractedTextUrl": "https://files.example.com/spec.txt" }
   ]
@@ -211,15 +299,13 @@ Events are emitted as newline-delimited JSON.
 ```json
 ← {"event": "ready"}
 ← {"event": "session_restored", "messageCount": 12}
-→ {"action": "message", "text": "add a created_at field to the haikus table"}
-← {"event": "thinking", "text": "Let me read the table schema..."}
-← {"event": "tool_start", "id": "tc_1", "name": "readFile", "input": {"path": "dist/backend/src/tables/haikus.ts"}}
-← {"event": "tool_done", "id": "tc_1", "name": "readFile", "result": "...", "isError": false}
-← {"event": "tool_start", "id": "tc_2", "name": "editFile", "input": {"path": "dist/backend/src/tables/haikus.ts", "old_string": "...", "new_string": "..."}}
-← {"event": "tool_done", "id": "tc_2", "name": "editFile", "result": "Updated dist/backend/src/tables/haikus.ts", "isError": false}
-← {"event": "tool_start", "id": "tc_3", "name": "diagnostics", "input": {"file": "dist/backend/src/tables/haikus.ts"}}
-← {"event": "tool_done", "id": "tc_3", "name": "diagnostics", "result": "No diagnostics — file is clean.", "isError": false}
-← {"event": "text", "text": "Added `created_at` timestamp field to the haikus table."}
+→ {"action": "message", "text": "add a vendors section to the spec", "projectHasCode": false}
+← {"event": "thinking", "text": "Let me read the current spec..."}
+← {"event": "tool_start", "id": "tc_1", "name": "readSpec", "input": {"path": "src/app.md"}}
+← {"event": "tool_done", "id": "tc_1", "name": "readSpec", "result": "...", "isError": false}
+← {"event": "tool_start", "id": "tc_2", "name": "editSpec", "input": {"path": "src/app.md", "edits": [{"heading": "Invoices", "operation": "insert_after", "content": "## Vendors\n\n..."}]}}
+← {"event": "tool_done", "id": "tc_2", "name": "editSpec", "result": "--- src/app.md\n+++ src/app.md\n...", "isError": false}
+← {"event": "text", "text": "Added a Vendors section after Invoices with onboarding workflow and approval flow."}
 ← {"event": "turn_done"}
 → {"action": "clear"}
 ← {"event": "session_cleared"}
@@ -277,8 +363,12 @@ const remy = spawn('remy', ['--headless'], {
   stdio: ['pipe', 'pipe', 'pipe'],
 });
 
-// Send a message
-remy.stdin.write(JSON.stringify({ action: 'message', text: 'hello' }) + '\n');
+// Send a message with project phase
+remy.stdin.write(JSON.stringify({
+  action: 'message',
+  text: 'add a vendors section',
+  projectHasCode: false,
+}) + '\n');
 
 // Clear session
 remy.stdin.write(JSON.stringify({ action: 'clear' }) + '\n');

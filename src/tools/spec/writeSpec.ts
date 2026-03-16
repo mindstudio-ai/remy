@@ -1,25 +1,27 @@
-/** Create or overwrite a file. Auto-creates parent directories. */
+/** Create or overwrite a spec file in src/. Auto-creates parent directories. */
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import type { Tool } from './index.js';
-import { unifiedDiff } from './diff.js';
+import type { Tool } from '../index.js';
+import { validateSpecPath } from './_helpers.js';
+import { unifiedDiff } from '../_helpers/diff.js';
 
-export const writeFileTool: Tool = {
+export const writeSpecTool: Tool = {
   definition: {
-    name: 'writeFile',
+    name: 'writeSpec',
     description:
-      "Create a new file or completely overwrite an existing one. Parent directories are created automatically. Use this for new files or full rewrites. For targeted changes to existing files, use editFile instead — it preserves the parts you don't want to change and avoids errors from forgetting to include unchanged code.",
+      'Create a new spec file or completely overwrite an existing one in src/. Parent directories are created automatically. Use this for new spec files or full rewrites. For targeted changes to existing specs, use editSpec instead.',
     inputSchema: {
       type: 'object',
       properties: {
         path: {
           type: 'string',
-          description: 'The file path to write, relative to the project root.',
+          description:
+            'File path relative to project root, must start with src/ (e.g., src/app.md).',
         },
         content: {
           type: 'string',
-          description: 'The full content to write to the file.',
+          description: 'The full MSFM markdown content to write.',
         },
       },
       required: ['path', 'content'],
@@ -28,14 +30,19 @@ export const writeFileTool: Tool = {
 
   async execute(input) {
     try {
+      validateSpecPath(input.path);
+    } catch (err: any) {
+      return `Error: ${err.message}`;
+    }
+
+    try {
       await fs.mkdir(path.dirname(input.path), { recursive: true });
 
-      // Read existing content for diff (if file exists)
       let oldContent: string | null = null;
       try {
         oldContent = await fs.readFile(input.path, 'utf-8');
       } catch {
-        // New file — no old content
+        // New file
       }
 
       await fs.writeFile(input.path, input.content, 'utf-8');
