@@ -9,7 +9,7 @@
 import { createInterface } from 'node:readline';
 import { resolveConfig } from './config.js';
 import { buildSystemPrompt } from './prompt/index.js';
-import { setLspBaseUrl } from './tools/code/lsp.js';
+import { setLspBaseUrl } from './tools/_helpers/lsp.js';
 import {
   createAgentState,
   runTurn,

@@ -11,7 +11,7 @@
  */
 
 import fs from 'node:fs';
-import { isLspConfigured } from '../tools/code/lsp.js';
+import { isLspConfigured } from '../tools/_helpers/lsp.js';
 export function buildSystemPrompt(projectHasCode?: boolean): string {
   const parts: string[] = [];
 
@@ -40,7 +40,6 @@ You have access to tools for reading/writing files, running shell commands, and 
 - Use glob to find files by name or extension.
 - Use grep to search file contents by pattern.
 - Use listDir for a quick look at a directory's contents.
-- When you need to understand a symbol's type, definition, or usages, prefer LSP tools (definition, references, hover) over grep — they're precise and understand imports.
 - Tool results may be truncated. If you see a truncation message, use the maxResults/maxLines/offset parameters to get more.
 
 ## Git
@@ -146,11 +145,9 @@ Generated code exists in \`dist/\` compiled from the spec in \`src/\`. You have 
   if (isLspConfigured()) {
     parts.push(`
 ## TypeScript Language Server
-You have access to LSP tools that provide IDE-level intelligence:
-- After editing files, use diagnostics to check for type errors before moving on.
-- Use definition and references to understand code relationships instead of grepping for symbols.
-- Use hover to check type signatures when unsure about a function's API.
-- Use symbols to get a file's outline before reading the entire file.`);
+You have access to a diagnostics tool that checks files for type errors and suggests fixes.
+- After editing TypeScript files, use diagnostics to check for errors before moving on.
+- Diagnostics will include suggested quick fixes when available — use them instead of guessing at the fix.`);
   }
 
   // Agent instructions file — check common conventions

@@ -104,15 +104,12 @@ Tools with limits accept a `maxResults` or `maxLines` parameter to override the 
 
 ### LSP Tools (sandbox only)
 
-Available when `--lsp-url` is passed. These call the sandbox's LSP HTTP sidecar for IDE-level TypeScript intelligence.
+Available when `--lsp-url` is passed. These call the sandbox's LSP HTTP sidecar.
 
 | Tool | Description |
 |------|-------------|
-| `diagnostics` | Type errors and warnings for a file |
-| `definition` | Go to definition of a symbol at a position |
-| `references` | Find all usages of a symbol |
-| `hover` | Get type signature and documentation |
-| `symbols` | File outline (functions, classes, types with line numbers) |
+| `diagnostics` | Type errors and warnings for a file, with suggested quick fixes when available |
+| `restartProcess` | Restart a managed sandbox process (e.g., dev server after npm install) |
 
 ### Tool Availability by Phase
 

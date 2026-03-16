@@ -39,7 +39,9 @@ import { grepTool } from './code/grep.js';
 import { globTool } from './code/glob.js';
 import { listDirTool } from './code/listDir.js';
 import { editsFinishedTool } from './code/editsFinished.js';
-import { getLspTools } from './code/lsp.js';
+import { isLspConfigured } from './_helpers/lsp.js';
+import { lspDiagnosticsTool } from './code/lspDiagnostics.js';
+import { restartProcessTool } from './code/restartProcess.js';
 
 function getSpecTools(): Tool[] {
   return [
@@ -52,7 +54,7 @@ function getSpecTools(): Tool[] {
 }
 
 function getCodeTools(): Tool[] {
-  return [
+  const tools = [
     readFileTool,
     writeFileTool,
     editFileTool,
@@ -61,8 +63,13 @@ function getCodeTools(): Tool[] {
     globTool,
     listDirTool,
     editsFinishedTool,
-    ...getLspTools(),
   ];
+
+  if (isLspConfigured()) {
+    tools.push(lspDiagnosticsTool, restartProcessTool);
+  }
+
+  return tools;
 }
 
 /**
