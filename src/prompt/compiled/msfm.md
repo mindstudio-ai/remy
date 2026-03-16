@@ -80,6 +80,19 @@ Bad: "One table: `greetings` with two columns: `name` (string) and `greeting` (s
 
 The annotation for the good version might be: `~~~\nOne table. Columns: the person's name (string) and the generated greeting text (string).\n~~~`
 
+**Use inline annotations liberally.** Inline annotations (`[text]{content}`) are the primary annotation tool — use them the way you'd use comments in Google Docs, attached to the specific word or phrase that needs clarification. When the prose says "the user submits a [request]{Must include vendor name, contact email, and tax ID. All fields required.} for review," the annotation is pinned to exactly the word that's ambiguous.
+
+Block annotations (`~~~...~~~`) are for longer notes that don't attach to a single word — implementation notes, edge case lists, multi-line technical details. But most annotations should be inline. A spec where every annotation is a block annotation under a heading is under-annotated — it means the prose itself isn't being examined for ambiguity at the word level.
+
+**Annotations support full markdown.** Use backticks for code and variable names, lists for enumerating options, code blocks for snippets. This keeps the prose clean while giving the compiler precise technical detail:
+
+```markdown
+Each invoice has a [status]{One of: `pending_review`, `approved`, `rejected`, `paid`. Transitions:
+- `pending_review` → `approved` or `rejected` (by AP)
+- `approved` → `paid` (automatic on payment date)
+- `rejected` → `pending_review` (if resubmitted)} that tracks where it is in the review process.
+```
+
 **Annotate ambiguity, not the obvious.** If a statement has only one reasonable interpretation, leave it alone. Annotations resolve genuine ambiguity — places where two engineers might implement different things.
 
 **Pin down edge cases.** The most valuable annotations answer "what happens when...":
@@ -88,7 +101,7 @@ The annotation for the good version might be: `~~~\nOne table. Columns: the pers
 - What happens when no user has the required role?
 - What happens when this is called twice?
 
-**Specify data when it matters.** When "amount" could mean integer cents or decimal dollars, annotate the representation. When "status" could be any string, list the valid values. Put these details in annotations, not the prose.
+**Specify data when it matters.** When "amount" could mean integer cents or decimal dollars, annotate the representation. When "status" could be any string, list the valid values. These are perfect for inline annotations: `The PO [amount]{Total across all line items, in USD cents (integer). Does not include tax, shipping, or fees.} must not exceed the budget.`
 
 **Let the spec breathe.** A spec with more annotation than prose is over-specified. Annotate the hard parts. Trust the compiler on the straightforward parts.
 

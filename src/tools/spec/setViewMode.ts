@@ -11,7 +11,7 @@ export const setViewModeTool: Tool = {
   definition: {
     name: 'setViewMode',
     description:
-      'Switch the IDE view mode. Use this to navigate the user to the right context: "intake" for initial chat, "spec" for spec editing, "code" for code editing. For example, after finishing intake and generating specs, switch to "spec". After code generation, switch to "code".',
+      'Switch the IDE view mode. Use this to navigate the user to the right context: "intake" for initial chat, "spec" for spec editing, "code" for code editing. When transitioning from intake to spec, write the first spec file BEFORE calling this — the user needs something to see when the spec editor opens. After code generation, switch to "code".',
     inputSchema: {
       type: 'object',
       properties: {

@@ -136,26 +136,38 @@ Forms should feel like interactions, not paperwork.
 These are the hallmarks of generic AI-generated interfaces. Every one of
 them makes an interface look like it was auto-generated rather than designed.
 
-- **Generic fonts.** Overused defaults that strip away all personality and
-  make every interface look the same.
-- **Purple/indigo gradients on white.** The single most common AI aesthetic
-  cliché. Avoid it completely unless the brand specifically calls for it.
+- **Generic fonts.** Overused defaults that strip away all personality.
+  Instead: pick a distinctive Google Font that fits the app's character.
+- **Purple or indigo anything.** Purple gradients, purple buttons, purple
+  accents. This is the #1 AI-generated aesthetic cliché. Instead: use
+  a color palette that fits the app's domain — greens for finance, warm
+  neutrals for productivity, bold primaries for creative tools, or just
+  confident grayscale.
+- **Colored left-border callout boxes.** Rounded divs with a thick colored
+  `border-left` — the generic "info card" pattern. Instead: use typography,
+  spacing, and background tints to create hierarchy. If you need to call
+  something out, use a full subtle background or a top border.
 - **Three equal boxes with icons.** The default AI landing page layout.
-  Predictable, lifeless, immediately recognizable as generated.
-- **Timid color palettes.** Evenly distributed, non-committal colors that
-  don't convey any mood or direction. Pick a side and commit.
-- **Card-heavy nested layouts.** Cards inside cards, everything boxed, no
-  breathing room. Use space and hierarchy instead of containers.
+  Instead: use asymmetric layouts, varied column widths, or a single
+  focused content area.
+- **Timid color palettes.** Evenly distributed, non-committal colors.
+  Instead: one or two dominant colors with sharp accents. Commit to a
+  direction.
+- **Card-heavy nested layouts.** Cards inside cards, everything boxed.
+  Instead: use space, typography, and dividers to create hierarchy without
+  extra containers.
 - **Inconsistent spacing.** 12px here, 20px there, 8px somewhere else.
-  Every spacing value should come from the same scale.
+  Instead: define a spacing scale (4/8/12/16/24/32/48/64) and use it
+  everywhere.
 - **Components from different visual languages.** Rounded buttons next to
-  square inputs. Shadows in one place, flat design in another. Everything
-  must belong to the same system.
-- **Long scrolling forms with no visual grouping.** A flat list of labeled
-  inputs is not a designed form.
-- **Cramped layouts.** Text pressed against edges, elements too close
-  together, no room to breathe.
-- **Loading states that are just a centered spinner on a blank page.** Show
-  structure. Use skeletons. Maintain the layout.
+  square inputs, shadows mixed with flat design. Instead: pick one system
+  and apply it consistently.
+- **Long scrolling forms with no visual grouping.** Instead: group fields
+  into sections with clear headings, cards, or stepped flows.
+- **Cramped layouts.** Text pressed against edges, no room to breathe.
+  Instead: generous padding, comfortable margins, let the content float.
+- **Loading states that are just a centered spinner on a blank page.**
+  Instead: use skeletons that mirror the layout, or keep the existing
+  structure visible with a subtle loading indicator.
 - **Any interface where the first reaction is "this looks like a demo" or
   "this looks like it was made with a website builder."**

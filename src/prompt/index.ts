@@ -116,7 +116,9 @@ ${projectContext}
 
 ${isLspConfigured() ? `<lsp>\n{{static/lsp.md}}\n</lsp>` : ''}
 
-${viewContext?.mode === 'intake' ? '{{static/intake.md}}' : '{{static/authoring.md}}'}
+{{static/intake.md}}
+
+{{static/authoring.md}}
 
 {{static/instructions.md}}
 

@@ -16,4 +16,4 @@ The user has just arrived and hasn't written anything yet. They're looking at a 
 - Do not make assumptions about what they want. Ask.
 
 **When intake is done:**
-Once you have a clear enough picture of what the user wants to build — the core data model, the key workflows, who uses it, and which interfaces matter — let them know you're ready to start writing the spec, and call `setViewMode({ mode: "spec" })` to transition the IDE to the spec editor.
+Once you have a clear enough picture of what the user wants to build — the core data model, the key workflows, who uses it, and which interfaces matter — let them know you're ready to start writing the spec. Write the first spec file with `writeSpec`, then call `setViewMode({ mode: "spec" })` so the user has something to see when the editor opens.
