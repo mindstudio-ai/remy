@@ -73,6 +73,13 @@ Keep the block co-located (right after the paragraph containing the pointer). A 
 
 ## Authoring Conventions
 
+**Specs are written in human language for humans.** The prose should describe what the app does the way you'd explain it to a colleague — not in code. No variable names, table names, column types, or function signatures in the prose. Technical details like column types, data representations, and implementation notes belong in annotations, where they serve as precision hints for the compiler without cluttering the readable spec.
+
+Good: "The app remembers every greeting it generates, along with who it was for."
+Bad: "One table: `greetings` with two columns: `name` (string) and `greeting` (string)."
+
+The annotation for the good version might be: `~~~\nOne table. Columns: the person's name (string) and the generated greeting text (string).\n~~~`
+
 **Annotate ambiguity, not the obvious.** If a statement has only one reasonable interpretation, leave it alone. Annotations resolve genuine ambiguity — places where two engineers might implement different things.
 
 **Pin down edge cases.** The most valuable annotations answer "what happens when...":
@@ -81,7 +88,7 @@ Keep the block co-located (right after the paragraph containing the pointer). A 
 - What happens when no user has the required role?
 - What happens when this is called twice?
 
-**Specify data when it matters.** When "amount" could mean integer cents or decimal dollars, annotate the representation. When "status" could be any string, list the valid values.
+**Specify data when it matters.** When "amount" could mean integer cents or decimal dollars, annotate the representation. When "status" could be any string, list the valid values. Put these details in annotations, not the prose.
 
 **Let the spec breathe.** A spec with more annotation than prose is over-specified. Annotate the hard parts. Trust the compiler on the straightforward parts.
 

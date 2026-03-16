@@ -70,7 +70,7 @@
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `name` | `string` | Yes | Table name (must match `db.defineTable('name')`) |
+| `name` | `string` | Yes | Table name — snake_case, `[a-zA-Z0-9_]` only (must match `db.defineTable('name')`) |
 | `path` | `string` | Yes | Path to the TypeScript file (relative to project root) |
 | `export` | `string` | Yes | Named export from the file (e.g., `Vendors`) |
 

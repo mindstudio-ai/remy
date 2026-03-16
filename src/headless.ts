@@ -136,6 +136,12 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       }
       running = true;
       currentAbort = new AbortController();
+      if (parsed.attachments?.length) {
+        console.warn(
+          `[headless] Message has ${parsed.attachments.length} attachment(s):`,
+          parsed.attachments.map((a) => a.url),
+        );
+      }
       const projectHasCode = parsed.projectHasCode ?? true;
       const system = buildSystemPrompt(projectHasCode, parsed.viewContext);
       try {

@@ -2,7 +2,7 @@
 
 ## Defining a Table
 
-One file per table in `dist/methods/src/tables/`. Each table is a `defineTable<T>()` call with a typed interface:
+One file per table in `dist/methods/src/tables/`. Each table is a `defineTable<T>()` call with a typed interface. Table names must match `[a-zA-Z0-9_]` only (no hyphens, spaces, or special characters). Use `snake_case` for table names (e.g., `purchase_orders`, not `purchase-orders`).
 
 ```typescript
 import { db } from '@mindstudio-ai/agent';
@@ -18,7 +18,7 @@ interface Vendor {
 export const Vendors = db.defineTable<Vendor>('vendors');
 ```
 
-One export per file. The export name is referenced in `mindstudio.json` and imported in methods.
+One export per file. The export name is referenced in `mindstudio.json` and imported in methods. Only define your own columns in the interface — do not add `id`, `created_at`, `updated_at`, or `last_updated_by` (they're provided automatically, see below).
 
 ### Column Types
 
@@ -32,16 +32,27 @@ One export per file. The export name is referenced in `mindstudio.json` and impo
 
 ### System Columns
 
-Every table automatically has these columns. They're added by the platform — don't define them in the interface:
+Every table automatically has these columns. The SDK adds them to the TypeScript return type automatically — you can access them on any row returned from `get()`, `filter()`, `push()`, etc. without declaring them in your interface. They're also stripped from write inputs, so you never pass them to `push()` or `update()`.
 
 | Column | Type | Behavior |
 |--------|------|----------|
-| `id` | TEXT (UUID) | Auto-generated on insert if not provided |
-| `created_at` | INTEGER (unix ms) | Set on insert, never changes |
-| `updated_at` | INTEGER (unix ms) | Updated on every write |
-| `last_updated_by` | TEXT | Set from the current user's auth context |
+| `id` | `string` (UUID) | Auto-generated on insert if not provided |
+| `created_at` | `number` (unix ms) | Set on insert, never changes |
+| `updated_at` | `number` (unix ms) | Updated on every write |
+| `last_updated_by` | `string` | Set from the current user's auth context |
 
-System columns are automatically stripped from write inputs — don't include them in `push()` or `update()` calls.
+These are always available on read results:
+
+```typescript
+const vendor = await Vendors.get('some-id');
+vendor.id;          // string — always present
+vendor.created_at;  // number — unix ms
+vendor.name;        // string — your field
+
+// Sort/filter by system columns works too
+await Vendors.sortBy(v => v.created_at).reverse();
+await Vendors.filter(v => v.id === someId);
+```
 
 ## The `db` API
 

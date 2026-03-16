@@ -26,8 +26,6 @@ import { readSpecTool } from './spec/readSpec.js';
 import { writeSpecTool } from './spec/writeSpec.js';
 import { editSpecTool } from './spec/editSpec.js';
 import { listSpecFilesTool } from './spec/listSpecFiles.js';
-import { compileTool } from './spec/compile.js';
-import { recompileTool } from './spec/recompile.js';
 import { setViewModeTool } from './spec/setViewMode.js';
 
 // Code tools
@@ -69,19 +67,14 @@ function getCodeTools(): Tool[] {
 /**
  * Get the tool set based on project state.
  *
- * - projectHasCode = false: spec tools + compile (authoring)
- * - projectHasCode = true:  spec tools + recompile + code tools (iterating)
+ * - projectHasCode = false: spec tools (authoring)
+ * - projectHasCode = true:  spec tools + code tools (iterating)
  */
 export function getTools(projectHasCode: boolean): Tool[] {
   if (projectHasCode) {
-    return [
-      setViewModeTool,
-      ...getSpecTools(),
-      recompileTool,
-      ...getCodeTools(),
-    ];
+    return [setViewModeTool, ...getSpecTools(), ...getCodeTools()];
   }
-  return [setViewModeTool, ...getSpecTools(), compileTool];
+  return [setViewModeTool, ...getSpecTools()];
 }
 
 /** Tool definitions array — sent to the LLM in each request. */
@@ -99,13 +92,7 @@ export function executeTool(
   name: string,
   input: Record<string, any>,
 ): Promise<string> {
-  const allTools = [
-    setViewModeTool,
-    ...getSpecTools(),
-    compileTool,
-    recompileTool,
-    ...getCodeTools(),
-  ];
+  const allTools = [setViewModeTool, ...getSpecTools(), ...getCodeTools()];
 
   const tool = allTools.find((t) => t.definition.name === name);
   if (!tool) {

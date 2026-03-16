@@ -86,12 +86,21 @@ export async function runTurn(params: {
     messageLength: userMessage.length,
     toolCount: tools.length,
     tools: tools.map((t) => t.name),
+    ...(attachments &&
+      attachments.length > 0 && {
+        attachmentCount: attachments.length,
+        attachmentUrls: attachments.map((a) => a.url),
+      }),
   });
 
   // Add user message to conversation
   const userMsg: Message = { role: 'user', content: userMessage };
   if (attachments && attachments.length > 0) {
     userMsg.attachments = attachments;
+    log.debug('Attachments added to user message', {
+      count: attachments.length,
+      urls: attachments.map((a) => a.url),
+    });
   }
   state.messages.push(userMsg);
 

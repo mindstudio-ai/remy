@@ -78,11 +78,21 @@ export async function* streamChat(params: {
   const url = `${baseUrl}/_internal/v2/agent/chat`;
   const startTime = Date.now();
 
+  const messagesWithAttachments = body.messages.filter(
+    (m) => m.attachments && m.attachments.length > 0,
+  );
   log.info('POST agent/chat', {
     url,
     model: body.model,
     messageCount: body.messages.length,
     toolCount: body.tools.length,
+    ...(messagesWithAttachments.length > 0 && {
+      attachments: messagesWithAttachments.map((m) => ({
+        role: m.role,
+        attachmentCount: m.attachments!.length,
+        urls: m.attachments!.map((a) => a.url),
+      })),
+    }),
   });
 
   let res: Response;
