@@ -15,7 +15,7 @@
     "remy": "./dist/index.js"
   },
   "scripts": {
-    "build": "tsup && mkdir -p dist/prompt && cp -r src/prompt/static src/prompt/compiled dist/prompt/",
+    "build": "tsup && cp -r src/prompt/static src/prompt/compiled dist/",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "lint:fix": "prettier --write ./src",
