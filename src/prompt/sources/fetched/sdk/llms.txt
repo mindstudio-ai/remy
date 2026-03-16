@@ -1,0 +1,1618 @@
+# @mindstudio-ai/agent
+
+TypeScript SDK, CLI, and MCP server for MindStudio. One API key gives you access to 200+ AI models (OpenAI, Anthropic, Google, Meta, xAI, DeepSeek, etc.) and 1,000+ actions including 850+ connector actions across third-party services from the open-source MindStudio Connector Registry (https://github.com/mindstudio-ai/mscr). No separate provider API keys required.
+
+This file is the complete API reference. No other documentation is needed to use the SDK.
+
+## Recommended workflow
+
+There are 150+ actions available. Do NOT try to read or load them all at once. Follow this discovery flow:
+
+1. **Identify yourself** — Call `changeName` to set your display name (use your name or whatever your user calls you). If you have a profile picture or icon, call `uploadFile` to upload it, then `changeProfilePicture` with the returned URL. This helps users identify your requests in their logs.
+2. **Discover** — Call `listActions` (MCP tool) or `mindstudio list-actions --summary` (CLI) to get a compact `{ action: description }` map of everything available (~3k tokens).
+3. **Drill in** — Once you identify the right action, look up its full signature in the reference below, or call `mindstudio info <action>` (CLI) for parameter details.
+4. **Call it** — Invoke the action with the required parameters. All actions share the same calling convention (see below).
+
+For specific use cases:
+
+- **OAuth third-party integrations** (Slack, Google, HubSpot, etc.): These are optional OAuth connectors from the MindStudio Connector Registry — for most tasks, use actions directly instead. If you need a third-party integration: call `listConnectors()` to browse services → `getConnectorAction(serviceId, actionId)` for input fields → execute via `runFromConnectorRegistry`. Requires an OAuth connection set up in MindStudio first — call `listConnections()` to check available connections.
+- **Pre-built agents**: Call `listAgents()` to see what's available → `runAgent({ appId })` to execute one. **Important:** Not all agents are configured for API use. Do not try to run an agent just because it appears in the list — only run agents the user specifically asks you to run.
+- **Model selection**: Call `listModelsSummary()` or `listModelsSummaryByType("llm_chat")` to browse models, then pass the model ID as `modelOverride.model` to actions like `generateText`. Use the summary endpoints (not `listModels`) to keep token usage low.
+- **Cost estimation**: AI-powered actions (text generation, image generation, video, audio, etc.) cost money. Call `estimateStepCost(stepType, stepInput)` before running these and confirm with the user before proceeding — unless they've explicitly given permission to go ahead. Non-AI actions (data lookups, OAuth connectors, etc.) are generally free.
+
+## Install
+
+Standalone binary (CLI/MCP, no dependencies):
+```bash
+curl -fsSL https://msagent.ai/install.sh | bash
+```
+
+npm (SDK + CLI):
+```bash
+npm install @mindstudio-ai/agent
+```
+
+Requires Node.js >= 18.
+
+## CLI
+
+The package includes a CLI for executing steps from the command line or scripts:
+
+```bash
+# Execute with named flags (kebab-case)
+mindstudio generate-image --prompt "A mountain landscape"
+
+# Execute with JSON input (JSON5-tolerant)
+mindstudio generate-image '{prompt: "A mountain landscape"}'
+
+# Extract a single output field
+mindstudio generate-image --prompt "A sunset" --output-key imageUrl
+
+# List all methods (compact JSON — best for LLM discovery)
+mindstudio list --summary
+
+# List all methods (human-readable table)
+mindstudio list
+
+# Show method details (params, types, output)
+mindstudio info generate-image
+
+# Run via npx without installing
+npx @mindstudio-ai/agent generate-text --message "Hello"
+```
+
+Auth: run `mindstudio login`, set `MINDSTUDIO_API_KEY` env var, or pass `--api-key <key>`.
+Method names are kebab-case on the CLI (camelCase also accepted). Flags are kebab-case (`--video-url` for `videoUrl`).
+Use `--output-key <key>` to extract a single field, `--no-meta` to strip $-prefixed metadata.
+
+### Authentication
+
+```bash
+# Interactive login (opens browser, saves key to ~/.mindstudio/config.json)
+mindstudio login
+
+# Check current auth status
+mindstudio whoami
+
+# Clear stored credentials
+mindstudio logout
+```
+
+Auth resolution order: `--api-key` flag > `MINDSTUDIO_API_KEY` env > `~/.mindstudio/config.json` > `CALLBACK_TOKEN` env.
+
+## MCP server
+
+The package includes an MCP server exposing all methods as tools. Start by calling the `listSteps` tool to discover available methods.
+
+```bash
+mindstudio mcp
+```
+
+MCP client config (standalone binary — recommended):
+```json
+{
+  "mcpServers": {
+    "mindstudio": {
+      "command": "mindstudio",
+      "args": ["mcp"],
+      "env": { "MINDSTUDIO_API_KEY": "your-api-key" }
+    }
+  }
+}
+```
+
+## Setup
+
+```typescript
+import { MindStudioAgent } from '@mindstudio-ai/agent';
+
+// With API key (or set MINDSTUDIO_API_KEY env var)
+const agent = new MindStudioAgent({ apiKey: 'your-key' });
+```
+
+Your MindStudio API key authenticates all requests. MindStudio routes to the correct AI provider (OpenAI, Google, Anthropic, etc.) server-side — you do NOT need separate provider API keys.
+
+Constructor options:
+```typescript
+new MindStudioAgent({
+  apiKey?: string,     // Auth token. Falls back to MINDSTUDIO_API_KEY env var.
+  baseUrl?: string,    // API base URL. Defaults to "https://v1.mindstudio-api.com".
+  maxRetries?: number, // Retries on 429 rate limit (default: 3). Uses Retry-After header for delay.
+})
+```
+
+## Models
+
+Direct access to 200+ AI models from every major provider — all through a single API key, billed at cost with no markups.
+
+Use `listModels()` or `listModelsByType()` for full model details, or `listModelsSummary()` / `listModelsSummaryByType()` for a lightweight list (id, name, type, tags) suitable for LLM context windows. Pass a model ID to `modelOverride.model` in methods like `generateText` to select a specific model:
+
+```typescript
+const { models } = await agent.listModelsByType('llm_chat');
+const model = models.find(m => m.name.includes("Gemini"));
+
+const { content } = await agent.generateText({
+  message: 'Hello',
+  modelOverride: {
+    model: model.id,
+    temperature: 0.7,
+    maxResponseTokens: 1024,
+  },
+});
+```
+
+## Calling convention
+
+Every method has the signature:
+```typescript
+agent.methodName(input: InputType, options?: { appId?: string, threadId?: string }): Promise<OutputType & StepExecutionMeta>
+```
+
+The first argument is the step-specific input object. The optional second argument controls thread/app context.
+
+**Results are returned flat** — output fields are spread at the top level alongside metadata:
+
+```typescript
+const { content } = await agent.generateText({ message: 'Hello' });
+
+// Full result shape for any method:
+const result = await agent.generateText({ message: `Hello` });
+result.content;              // step-specific output field
+result.$appId;               // string — app ID for this execution
+result.$threadId;            // string — thread ID for this execution
+result.$rateLimitRemaining;  // number | undefined — API calls remaining in rate limit window
+result.$billingCost;         // number | undefined — cost in credits for this call
+result.$billingEvents;       // object[] | undefined — itemized billing events
+```
+
+## Thread persistence
+
+Pass `$appId`/`$threadId` from a previous result to maintain conversation state, variable state, or other context across calls:
+
+```typescript
+const r1 = await agent.generateText({ message: 'My name is Alice' });
+const r2 = await agent.generateText(
+  { message: 'What is my name?' },
+  { threadId: r1.$threadId, appId: r1.$appId },
+);
+// r2.content => "Your name is Alice"
+```
+
+## Error handling
+
+All errors throw `MindStudioError`:
+```typescript
+import { MindStudioError } from '@mindstudio-ai/agent';
+
+try {
+  await agent.generateImage({ prompt: '...' });
+} catch (err) {
+  if (err instanceof MindStudioError) {
+    err.message; // Human-readable error message
+    err.code;    // Machine-readable code: "invalid_step_config", "api_error", "call_cap_exceeded", "output_fetch_error"
+    err.status;  // HTTP status code (400, 401, 429, etc.)
+    err.details; // Raw error body from the API
+  }
+}
+```
+
+429 rate limit errors are retried automatically (configurable via `maxRetries`).
+
+## Low-level access
+
+For action types not covered by generated methods:
+```typescript
+const result = await agent.executeStep('stepType', { ...params });
+```
+
+## Batch execution
+
+Execute multiple steps in parallel in a single request. Maximum 50 steps per batch.
+Individual step failures do not affect other steps — partial success is possible.
+
+```typescript
+const result = await agent.executeStepBatch([
+  { stepType: 'generateImage', step: { prompt: 'a sunset' } },
+  { stepType: 'textToSpeech', step: { text: 'hello world' } },
+], { appId?, threadId? });
+
+// Result:
+result.results;          // BatchStepResult[] — same order as input
+result.results[0].stepType;  // string
+result.results[0].output;    // object | undefined (step output on success)
+result.results[0].error;     // string | undefined (error message on failure)
+result.results[0].billingCost; // number | undefined (cost on success)
+result.totalBillingCost;  // number | undefined
+result.appId;            // string
+result.threadId;         // string
+```
+
+CLI:
+```bash
+mindstudio batch '[{"stepType":"generateImage","step":{"prompt":"a cat"}}]'
+cat steps.json | mindstudio batch
+```
+
+## Methods
+
+All methods below are called on a `MindStudioAgent` instance (`agent.methodName(...)`).
+Input shows the first argument object. Output shows the fields available on the returned result.
+
+### General
+
+#### addSubtitlesToVideo
+Automatically add subtitles to a video
+- Can control style of text and animation
+- Input: `{ videoUrl: string, language: string, fontName: string, fontSize: number, fontWeight: "normal" | "bold" | "black", fontColor: "white" | "black" | "red" | "green" | "blue" | "yellow" | "orange" | "purple" | "pink" | "brown" | "gray" | "cyan" | "magenta", highlightColor: "white" | "black" | "red" | "green" | "blue" | "yellow" | "orange" | "purple" | "pink" | "brown" | "gray" | "cyan" | "magenta", strokeWidth: number, strokeColor: "black" | "white" | "red" | "green" | "blue" | "yellow" | "orange" | "purple" | "pink" | "brown" | "gray" | "cyan" | "magenta", backgroundColor: "black" | "white" | "red" | "green" | "blue" | "yellow" | "orange" | "purple" | "pink" | "brown" | "gray" | "cyan" | "magenta" | "none", backgroundOpacity: number, position: "top" | "center" | "bottom", yOffset: number, wordsPerSubtitle: number, enableAnimation: boolean, intermediateAsset?: boolean }`
+- Output: `{ videoUrl: string }`
+
+#### analyzeImage
+Analyze an image using a vision model based on a text prompt.
+- Uses the configured vision model to generate a text analysis of the image.
+- The prompt should describe what to look for or extract from the image.
+- Input: `{ prompt: string, imageUrl: string, visionModelOverride?: { model: string, config?: object } | { model: string, temperature: number, maxResponseTokens: number, ignorePreamble?: boolean, userMessagePreprocessor?: { dataSource?: string, messageTemplate?: string, maxResults?: number, enabled?: boolean, shouldInherit?: boolean }, preamble?: string, multiModelEnabled?: boolean, editResponseEnabled?: boolean, config?: object } }`
+- Output: `{ analysis: string }`
+
+#### analyzeVideo
+Analyze a video using a video analysis model based on a text prompt.
+- Uses the configured video analysis model to generate a text analysis of the video.
+- The prompt should describe what to look for or extract from the video.
+- Input: `{ prompt: string, videoUrl: string, videoAnalysisModelOverride?: { model: string, config?: object } | { model: string, temperature: number, maxResponseTokens: number, ignorePreamble?: boolean, userMessagePreprocessor?: { dataSource?: string, messageTemplate?: string, maxResults?: number, enabled?: boolean, shouldInherit?: boolean }, preamble?: string, multiModelEnabled?: boolean, editResponseEnabled?: boolean, config?: object } }`
+- Output: `{ analysis: string }`
+
+#### captureThumbnail
+Capture a thumbnail from a video at a specified timestamp
+- Input: `{ videoUrl: string, at: number | string }`
+- Output: `{ thumbnailUrl: string }`
+
+#### checkAppRole
+Check whether the current user has a specific app role and branch accordingly.
+- Checks if the current user has been assigned a specific role in this app.
+- If the user has the role, transitions to the "has role" path.
+- If the user does not have the role, transitions to the "no role" path, or errors if no path is configured.
+- Role names are defined by the app creator and assigned to users via the app roles system.
+- The roleName field supports {{variables}} for dynamic role checks.
+- Input: `{ roleName: string, hasRoleStepId?: string, hasRoleWorkflowId?: string, noRoleStepId?: string, noRoleWorkflowId?: string }`
+- Output: `{ hasRole: boolean, userRoles: string[] }`
+
+#### convertPdfToImages
+Convert each page of a PDF document into a PNG image.
+- Each page is converted to a separate PNG and re-hosted on the CDN.
+- Returns an array of image URLs, one per page.
+- Input: `{ pdfUrl: string }`
+- Output: `{ imageUrls: string[] }`
+
+#### createDataSource
+Create a new empty vector data source for the current app.
+- Creates a new data source (vector database) associated with the current app version.
+- The data source is created empty — use the "Upload Data Source Document" block to add documents.
+- Returns the new data source ID which can be used in subsequent blocks.
+- Input: `{ name: string }`
+- Output: `unknown`
+
+#### createGmailDraft
+Create a draft email in the connected Gmail account.
+- Requires a Google OAuth connection with Gmail compose scope.
+- The draft appears in the user's Gmail Drafts folder but is not sent.
+- messageType controls the body format: "plain" for plain text, "html" for raw HTML, "markdown" for auto-converted markdown.
+- Input: `{ to: string, subject: string, message: string, connectionId?: string, messageType: "plain" | "html" | "markdown" }`
+- Output: `{ draftId: string }`
+
+#### deleteDataSource
+Delete a vector data source from the current app.
+- Soft-deletes a data source (vector database) by marking it as deleted.
+- The Milvus partition is cleaned up asynchronously by a background cron job.
+- The data source must belong to the current app version.
+- Input: `{ dataSourceId: string }`
+- Output: `unknown`
+
+#### deleteDataSourceDocument
+Delete a single document from a data source.
+- Soft-deletes a document by marking it as deleted.
+- Requires both the data source ID and document ID.
+- After deletion, reloads vectors into Milvus so the data source reflects the change immediately.
+- Input: `{ dataSourceId: string, documentId: string }`
+- Output: `unknown`
+
+#### detectChanges
+Detect changes between runs by comparing current input against previously stored state. Routes execution based on whether a change occurred.
+- Persists state across runs using a global variable keyed to the step ID.
+- Two modes: "comparison" (default) uses strict string inequality; "ai" uses an LLM to determine if a meaningful change occurred.
+- First run always treats the value as "changed" since there is no previous state.
+- Each mode supports transitions to different steps/workflows for the "changed" and "unchanged" paths.
+- AI mode bills normally for the LLM call.
+- Input: `{ mode: "ai" | "comparison", input: string, prompt?: string, modelOverride?: { model: string, temperature: number, maxResponseTokens: number, ignorePreamble?: boolean, userMessagePreprocessor?: { dataSource?: string, messageTemplate?: string, maxResults?: number, enabled?: boolean, shouldInherit?: boolean }, preamble?: string, multiModelEnabled?: boolean, editResponseEnabled?: boolean, config?: object }, previousValueVariable?: string, changedStepId?: string, changedWorkflowId?: string, unchangedStepId?: string, unchangedWorkflowId?: string }`
+- Output: `{ hasChanged: boolean, currentValue: string, previousValue: string, isFirstRun: boolean }`
+
+#### detectPII
+Scan text for personally identifiable information using Microsoft Presidio.
+- In workflow mode, transitions to detectedStepId if PII is found, notDetectedStepId otherwise.
+- In direct execution, returns the detection results without transitioning.
+- If entities is empty, returns immediately with no detections.
+- Input: `{ input: string, language: string, entities: string[], detectedStepId?: string, notDetectedStepId?: string, outputLogVariable?: string | null }`
+- Output: `{ detected: boolean, detections: { entity_type: string, start: number, end: number, score: number }[] }`
+
+#### discordEditMessage
+Edit a previously sent Discord channel message. Use with the message ID returned by Send Discord Message.
+- Only messages sent by the bot can be edited.
+- The messageId is returned by the Send Discord Message step.
+- Optionally attach a file by providing a URL to attachmentUrl. The file is downloaded and uploaded to Discord.
+- When editing with an attachment, the new attachment replaces any previous attachments on the message.
+- URLs in the text are automatically embedded by Discord (link previews for images, videos, etc.).
+- Input: `{ botToken: string, channelId: string, messageId: string, text: string, attachmentUrl?: string }`
+- Output: `unknown`
+
+#### discordSendFollowUp
+Send a follow-up message to a Discord slash command interaction.
+- Requires the applicationId and interactionToken from the Discord trigger variables.
+- Follow-up messages appear as new messages in the channel after the initial response.
+- Returns the sent message ID.
+- Interaction tokens expire after 15 minutes.
+- Optionally attach a file by providing a URL to attachmentUrl. The file is downloaded and uploaded to Discord.
+- URLs in the text are automatically embedded by Discord (link previews for images, videos, etc.).
+- Input: `{ applicationId: string, interactionToken: string, text: string, attachmentUrl?: string }`
+- Output: `{ messageId: string }`
+
+#### discordSendMessage
+Send a message to Discord — either edit the loading message or send a new channel message.
+- mode "edit" replaces the loading message (interaction response) with the final result. Uses applicationId and interactionToken from trigger variables. No bot permissions required.
+- mode "send" sends a new message to a channel. Uses botToken and channelId from trigger variables. Returns a messageId that can be used with Edit Discord Message.
+- Optionally attach a file by providing a URL to attachmentUrl. The file is downloaded and uploaded to Discord.
+- URLs in the text are automatically embedded by Discord (link previews for images, videos, etc.).
+- Interaction tokens expire after 15 minutes.
+- Input: `{ mode: "edit" | "send", text: string, applicationId?: string, interactionToken?: string, botToken?: string, channelId?: string, attachmentUrl?: string }`
+- Output: `{ messageId?: string }`
+
+#### downloadVideo
+Download a video file
+- Works with YouTube, TikTok, etc., by using ytdlp behind the scenes
+- Can save as mp4 or mp3
+- Input: `{ videoUrl: string, format: "mp4" | "mp3" }`
+- Output: `{ videoUrl: string }`
+
+#### enhanceImageGenerationPrompt
+Generate or enhance an image generation prompt using a language model. Optionally generates a negative prompt.
+- Rewrites the user's prompt with added detail about style, lighting, colors, and composition.
+- Also useful for initial generation, it doesn't always need to be enhancing an existing prompt
+- When includeNegativePrompt is true, a second model call generates a negative prompt.
+- Input: `{ initialPrompt: string, includeNegativePrompt: boolean, negativePromptDestinationVariableName?: string, systemPrompt: string, modelOverride?: unknown }`
+- Output: `{ prompt: string, negativePrompt?: string }`
+
+#### enhanceVideoGenerationPrompt
+Generate or enhance a video generation prompt using a language model. Optionally generates a negative prompt.
+- Rewrites the user's prompt with added detail about style, camera movement, lighting, and composition.
+- Also useful for initial generation, it doesn't always need to be enhancing an existing prompt
+- When includeNegativePrompt is true, a second model call generates a negative prompt.
+- Input: `{ initialPrompt: string, includeNegativePrompt: boolean, negativePromptDestinationVariableName?: string, systemPrompt: string, modelOverride?: unknown }`
+- Output: `{ prompt: string, negativePrompt?: string }`
+
+#### extractAudioFromVideo
+Extract audio MP3 from a video file
+- Input: `{ videoUrl: string }`
+- Output: `{ audioUrl: string }`
+
+#### extractText
+Download a file from a URL and extract its text content. Supports PDFs, plain text files, and other document formats.
+- Best suited for PDFs and raw text/document files. For web pages, use the scrapeUrl step instead.
+- Accepts a single URL, a comma-separated list of URLs, or a JSON array of URLs.
+- Files are rehosted on the MindStudio CDN before extraction.
+- Maximum file size is 50MB per URL.
+- Input: `{ url: string | string[] }`
+- Output: `{ text: string | string[] }`
+
+#### fetchDataSourceDocument
+Fetch the full extracted text contents of a document in a data source.
+- Loads a document by ID and returns its full extracted text content.
+- The document must have been successfully processed (status "done").
+- Also returns document metadata (name, summary, word count).
+- Input: `{ dataSourceId: string, documentId: string }`
+- Output: `unknown`
+
+#### fetchSlackChannelHistory
+Fetch recent message history from a Slack channel.
+- The user is responsible for connecting their Slack workspace and selecting the channel
+- Input: `{ connectionId?: string, channelId: string, limit?: number, startDate?: string, endDate?: string, includeImages?: boolean, includeRawMessage?: boolean }`
+- Output: `{ messages: { from: string, content: string, timestamp?: string, images?: string[], rawMessage?: { app_id?: string, assistant_app_thread?: { first_user_thread_reply?: string, title?: string, title_blocks?: unknown[] }, attachments?: { actions?: unknown[], app_id?: string, app_unfurl_url?: string, author_icon?: string, author_id?: string, author_link?: string, author_name?: string, author_subname?: string, blocks?: unknown[], bot_id?: string, bot_team_id?: string, callback_id?: string, channel_id?: string, channel_name?: string, channel_team?: string, color?: string, fallback?: string, fields?: unknown[], file_id?: string, filename?: string, files?: unknown[], footer?: string, footer_icon?: string, from_url?: string, hide_border?: boolean, hide_color?: boolean, id?: number, image_bytes?: number, image_height?: number, image_url?: string, image_width?: number, indent?: boolean, is_app_unfurl?: boolean, is_file_attachment?: boolean, is_msg_unfurl?: boolean, is_reply_unfurl?: boolean, is_thread_root_unfurl?: boolean, list?: unknown, list_record?: unknown, list_record_id?: string, list_records?: unknown[], list_schema?: unknown[], list_view?: unknown, list_view_id?: string, message_blocks?: unknown[], metadata?: unknown, mimetype?: string, mrkdwn_in?: string[], msg_subtype?: string, original_url?: string, pretext?: string, preview?: unknown, service_icon?: string, service_name?: string, service_url?: string, size?: number, text?: string, thumb_height?: number, thumb_url?: string, thumb_width?: number, title?: string, title_link?: string, ts?: string, url?: string, video_html?: string, video_html_height?: number, video_html_width?: number, video_url?: string }[], blocks?: { accessory?: unknown, alt_text?: string, api_decoration_available?: boolean, app_collaborators?: string[], app_id?: string, author_name?: string, block_id?: string, bot_user_id?: string, button_label?: string, call?: unknown, call_id?: string, description?: unknown, developer_trace_id?: string, dispatch_action?: boolean, element?: unknown, elements?: unknown[], expand?: boolean, external_id?: string, fallback?: string, fields?: unknown[], file?: unknown, file_id?: string, function_trigger_id?: string, hint?: unknown, image_bytes?: number, image_height?: number, image_url?: string, image_width?: number, is_animated?: boolean, is_workflow_app?: boolean, label?: unknown, optional?: boolean, owning_team_id?: string, provider_icon_url?: string, provider_name?: string, sales_home_workflow_app_type?: number, share_url?: string, slack_file?: unknown, source?: string, text?: unknown, thumbnail_url?: string, title?: unknown, title_url?: string, trigger_subtype?: string, trigger_type?: string, type?: unknown, url?: string, video_url?: string, workflow_id?: string }[], bot_id?: string, bot_profile?: { app_id?: string, deleted?: boolean, icons?: unknown, id?: string, name?: string, team_id?: string, updated?: number }, client_msg_id?: string, display_as_bot?: boolean, edited?: { ts?: string, user?: string }, files?: { access?: string, alt_txt?: string, app_id?: string, app_name?: string, attachments?: unknown[], blocks?: unknown[], bot_id?: string, can_toggle_canvas_lock?: boolean, canvas_printing_enabled?: boolean, canvas_template_mode?: string, cc?: unknown[], channel_actions_count?: number, channel_actions_ts?: string, channels?: string[], comments_count?: number, converted_pdf?: string, created?: number, deanimate?: string, deanimate_gif?: string, display_as_bot?: boolean, dm_mpdm_users_with_file_access?: unknown[], duration_ms?: number, edit_link?: string, edit_timestamp?: number, editable?: boolean, editor?: string, editors?: string[], external_id?: string, external_type?: string, external_url?: string, favorites?: unknown[], file_access?: string, filetype?: string, from?: unknown[], groups?: string[], has_more?: boolean, has_more_shares?: boolean, has_rich_preview?: boolean, headers?: unknown, hls?: string, hls_embed?: string, id?: string, image_exif_rotation?: number, ims?: string[], initial_comment?: unknown, is_channel_space?: boolean, is_external?: boolean, is_public?: boolean, is_restricted_sharing_enabled?: boolean, is_starred?: boolean, last_editor?: string, last_read?: number, lines?: number, lines_more?: number, linked_channel_id?: string, list_csv_download_url?: string, list_limits?: unknown, list_metadata?: unknown, media_display_type?: string, media_progress?: unknown, mimetype?: string, mode?: string, mp4?: string, mp4_low?: string, name?: string, non_owner_editable?: boolean, num_stars?: number, org_or_workspace_access?: string, original_attachment_count?: number, original_h?: string, original_w?: string, permalink?: string, permalink_public?: string, pinned_to?: string[], pjpeg?: string, plain_text?: string, pretty_type?: string, preview?: string, preview_highlight?: string, preview_is_truncated?: boolean, preview_plain_text?: string, private_channels_with_file_access_count?: number, private_file_with_access_count?: number, public_url_shared?: boolean, quip_thread_id?: string, reactions?: unknown[], saved?: unknown, sent_to_self?: boolean, shares?: unknown, show_badge?: boolean, simplified_html?: string, size?: number, source_team?: string, subject?: string, subtype?: string, team_pref_version_history_enabled?: boolean, teams_shared_with?: unknown[], template_conversion_ts?: number, template_description?: string, template_icon?: string, template_name?: string, template_title?: string, thumb_1024?: string, thumb_1024_gif?: string, thumb_1024_h?: string, thumb_1024_w?: string, thumb_160?: string, thumb_160_gif?: string, thumb_160_h?: string, thumb_160_w?: string, thumb_360?: string, thumb_360_gif?: string, thumb_360_h?: string, thumb_360_w?: string, thumb_480?: string, thumb_480_gif?: string, thumb_480_h?: string, thumb_480_w?: string, thumb_64?: string, thumb_64_gif?: string, thumb_64_h?: string, thumb_64_w?: string, thumb_720?: string, thumb_720_gif?: string, thumb_720_h?: string, thumb_720_w?: string, thumb_80?: string, thumb_800?: string, thumb_800_gif?: string, thumb_800_h?: string, thumb_800_w?: string, thumb_80_gif?: string, thumb_80_h?: string, thumb_80_w?: string, thumb_960?: string, thumb_960_gif?: string, thumb_960_h?: string, thumb_960_w?: string, thumb_gif?: string, thumb_pdf?: string, thumb_pdf_h?: string, thumb_pdf_w?: string, thumb_tiny?: string, thumb_video?: string, thumb_video_h?: number, thumb_video_w?: number, timestamp?: number, title?: string, title_blocks?: unknown[], to?: unknown[], transcription?: unknown, update_notification?: number, updated?: number, url_private?: string, url_private_download?: string, url_static_preview?: string, user?: string, user_team?: string, username?: string, vtt?: string }[], icons?: { emoji?: string, image_36?: string, image_48?: string, image_64?: string, image_72?: string }, inviter?: string, is_locked?: boolean, latest_reply?: string, metadata?: { event_payload?: unknown, event_type?: string }, parent_user_id?: string, purpose?: string, reactions?: { count?: number, name?: string, url?: string, users?: string[] }[], reply_count?: number, reply_users?: string[], reply_users_count?: number, root?: { bot_id?: string, icons?: unknown, latest_reply?: string, parent_user_id?: string, reply_count?: number, reply_users?: string[], reply_users_count?: number, subscribed?: boolean, subtype?: string, text?: string, thread_ts?: string, ts?: string, type?: string, username?: string }, subscribed?: boolean, subtype?: string, team?: string, text?: string, thread_ts?: string, topic?: string, ts?: string, type?: string, upload?: boolean, user?: string, username?: string, x_files?: string[] } }[] }`
+
+#### generateAsset
+Generate an HTML asset and export it as a webpage, PDF, or image
+- Agents can generate HTML documents and export as webpage, PDFs, images, or videos. They do this by using the "generatePdf" block, which defines an HTML page with variables, and then the generation process renders the page to create the output and save its URL at the specified variable.
+- The template for the HTML page is generated by a separate process, and it can only use variables that have already been defined in the workflow at the time of its execution. It has full access to handlebars to render the HTML template, including a handlebars helper to render a markdown variable string as HTML (which can be useful for creating templates that render long strings). The template can also create its own simple JavaScript to do things like format dates and strings.
+- If PDF or composited image generation are part of the workflow, assistant adds the block and leaves the "source" empty. In a separate step, assistant generates a detailed request for the developer who will write the HTML.
+- Can also auto-generate HTML from a prompt (like a generate text block to generate HTML). In these cases, create a prompt with variables in the dynamicPrompt variable describing, in detail, the document to generate
+- Can either display output directly to user (foreground mode) or save the URL of the asset to a variable (background mode)
+- Input: `{ source: string, sourceType: "html" | "markdown" | "spa" | "raw" | "dynamic" | "customInterface", outputFormat: "pdf" | "png" | "html" | "mp4" | "openGraph", pageSize: "full" | "letter" | "A4" | "custom", testData: object, options?: { pageWidthPx?: number, pageHeightPx?: number, pageOrientation?: "portrait" | "landscape", rehostMedia?: boolean, videoDurationSeconds?: number }, spaSource?: { source?: string, lastCompiledSource?: string, files?: object, paths: string[], root: string, zipUrl: string }, rawSource?: string, dynamicPrompt?: string, dynamicSourceModelOverride?: { model: string, temperature: number, maxResponseTokens: number, ignorePreamble?: boolean, userMessagePreprocessor?: { dataSource?: string, messageTemplate?: string, maxResults?: number, enabled?: boolean, shouldInherit?: boolean }, preamble?: string, multiModelEnabled?: boolean, editResponseEnabled?: boolean, config?: object }, transitionControl?: "default" | "native", shareControl?: "default" | "hidden", shareImageUrl?: string, intermediateAsset?: boolean }`
+- Output: `{ url: string }`
+
+#### generateChart
+Create a chart image using QuickChart (Chart.js) and return the URL.
+- The data field must be a Chart.js-compatible JSON object serialized as a string.
+- Supported chart types: bar, line, pie.
+- Input: `{ chart: { chartType: "bar" | "line" | "pie", data: string, options: { width: string, height: string } } }`
+- Output: `{ chartUrl: string }`
+
+#### generateImage
+Generate an image from a text prompt using an AI model.
+- Prompts should be descriptive but concise (roughly 3–6 sentences).
+- Images are automatically hosted on a CDN.
+- In foreground mode, the image is displayed to the user. In background mode, the URL is saved to a variable.
+- When generateVariants is true with numVariants > 1, multiple images are generated in parallel.
+- In direct execution, foreground mode behaves as background, and userSelect variant behavior behaves as saveAll.
+- Input: `{ prompt: string, intermediateAsset?: boolean, imageModelOverride?: { model: string, config?: object }, generateVariants?: boolean, numVariants?: number, addWatermark?: boolean }`
+- Output: `{ imageUrl: string | string[] }`
+
+#### generateLipsync
+Generate a lip sync video from provided audio and image.
+- In foreground mode, the video is displayed to the user. In background mode, the URL is saved to a variable.
+- Input: `{ intermediateAsset?: boolean, addWatermark?: boolean, lipsyncModelOverride?: { model: string, config?: object } }`
+- Output: `unknown`
+
+#### generateMusic
+Generate an audio file from provided instructions (text) using a music model.
+- The text field contains the instructions (prompt) for the music generation.
+- In foreground mode, the audio is displayed to the user. In background mode, the URL is saved to a variable.
+- Input: `{ text: string, intermediateAsset?: boolean, musicModelOverride?: { model: string, config?: object } }`
+- Output: `unknown`
+
+#### generateStaticVideoFromImage
+Convert a static image to an MP4
+- Can use to create slides/intertitles/slates for video composition
+- Input: `{ imageUrl: string, duration: string }`
+- Output: `{ videoUrl: string }`
+
+#### generateText
+Send a message to an AI model and return the response, or echo a system message.
+- Source "user" sends the message to an LLM and returns the model's response.
+- Source "system" echoes the message content directly (no AI call).
+- Mode "background" saves the result to a variable. Mode "foreground" streams it to the user (not available in direct execution).
+- Structured output (JSON/CSV) can be enforced via structuredOutputType and structuredOutputExample.
+- Input: `{ message: string, source?: "user" | "system", modelOverride?: { model: string, temperature: number, maxResponseTokens: number, ignorePreamble?: boolean, userMessagePreprocessor?: { dataSource?: string, messageTemplate?: string, maxResults?: number, enabled?: boolean, shouldInherit?: boolean }, preamble?: string, multiModelEnabled?: boolean, editResponseEnabled?: boolean, config?: object }, structuredOutputType?: "text" | "json" | "csv", structuredOutputExample?: string, chatHistoryMode?: "include" | "exclude" }`
+- Output: `{ content: string }`
+
+#### generateVideo
+Generate a video from a text prompt using an AI model.
+- Prompts should be descriptive but concise (roughly 3–6 sentences).
+- Videos are automatically hosted on a CDN.
+- In foreground mode, the video is displayed to the user. In background mode, the URL is saved to a variable.
+- When generateVariants is true with numVariants > 1, multiple videos are generated in parallel.
+- In direct execution, foreground mode behaves as background, and userSelect variant behavior behaves as saveAll.
+- Input: `{ prompt: string, intermediateAsset?: boolean, videoModelOverride?: { model: string, config?: object }, generateVariants?: boolean, numVariants?: number, addWatermark?: boolean }`
+- Output: `{ videoUrl: string | string[] }`
+
+#### getGmailAttachments
+Download attachments from a Gmail email and re-host them on CDN.
+- Requires a Google OAuth connection with Gmail readonly scope.
+- Attachments are uploaded to CDN and returned as URLs.
+- Attachments larger than 25MB are skipped.
+- Use the message ID from Search Gmail Emails, List Recent Gmail Emails, or Get Gmail Email steps.
+- Input: `{ messageId: string, connectionId?: string }`
+- Output: `unknown`
+
+#### getGmailUnreadCount
+Get the number of unread emails in the connected Gmail inbox.
+- Requires a Google OAuth connection with Gmail readonly scope.
+- Returns the unread message count for the inbox label.
+- This is a lightweight call that does not fetch any email content.
+- Input: `{ connectionId?: string }`
+- Output: `unknown`
+
+#### getMediaMetadata
+Get info about a media file
+- Input: `{ mediaUrl: string }`
+- Output: `{ metadata: string }`
+
+#### httpRequest
+Make an HTTP request to an external endpoint and return the response.
+- Supports GET, POST, PATCH, DELETE, and PUT methods.
+- Body can be raw JSON/text, URL-encoded form data, or multipart form data.
+- Input: `{ url: string, method: string, headers: object, queryParams: object, body: string, bodyItems: object, contentType: "none" | "application/json" | "application/x-www-form-urlencoded" | "multipart/form-data" | "custom", customContentType: string, testData?: object }`
+- Output: `{ ok: boolean, status: number, statusText: string, response: string }`
+
+#### imageFaceSwap
+Replace a face in an image with a face from another image using AI.
+- Requires both a target image and a face source image.
+- Output is re-hosted on the CDN as a PNG.
+- Input: `{ imageUrl: string, faceImageUrl: string, engine: string }`
+- Output: `{ imageUrl: string }`
+
+#### imageRemoveWatermark
+Remove watermarks from an image using AI.
+- Output is re-hosted on the CDN as a PNG.
+- Input: `{ imageUrl: string, engine: string, intermediateAsset?: boolean }`
+- Output: `{ imageUrl: string }`
+
+#### insertVideoClips
+Insert b-roll clips into a base video at a timecode, optionally with an xfade transition.
+- Input: `{ baseVideoUrl: string, overlayVideos: { videoUrl: string, startTimeSec: number }[], transition?: string, transitionDuration?: number, useOverlayAudio?: boolean, intermediateAsset?: boolean }`
+- Output: `{ videoUrl: string }`
+
+#### listDataSources
+List all data sources for the current app.
+- Returns metadata for every data source associated with the current app version.
+- Each entry includes the data source ID, name, description, status, and document list.
+- Input: `object`
+- Output: `unknown`
+
+#### listGmailLabels
+List all labels in the connected Gmail account. Use these label IDs or names with the Update Gmail Labels step.
+- Requires a Google OAuth connection with Gmail readonly scope.
+- Returns both system labels (INBOX, SENT, TRASH, etc.) and user-created labels.
+- Label type is "system" for built-in labels or "user" for custom labels.
+- Input: `{ connectionId?: string }`
+- Output: `unknown`
+
+#### listRecentGmailEmails
+List recent emails from the connected Gmail inbox.
+- Requires a Google OAuth connection with Gmail readonly scope.
+- Returns up to 100 emails (default 5), ordered by most recent first.
+- Functionally equivalent to Search Gmail Emails with an "in:inbox" query.
+- Input: `{ connectionId?: string, exportType: "json" | "text", limit: string }`
+- Output: `unknown`
+
+#### logic
+Route execution to different branches based on AI evaluation, comparison operators, or workflow jumps.
+- Supports two modes: "ai" (default) uses an AI model to pick the most accurate statement; "comparison" uses operator-based checks.
+- In AI mode, the model picks the most accurate statement from the list. All possible cases must be specified.
+- In comparison mode, the context is the left operand and each case's condition is the right operand. First matching case wins. Use operator "default" as a fallback.
+- Requires at least two cases.
+- Each case can transition to a step in the current workflow (destinationStepId) or jump to another workflow (destinationWorkflowId).
+- Input: `{ mode?: "ai" | "comparison", context: string, cases: ({ id: string, condition: string, operator?: "eq" | "neq" | "gt" | "lt" | "gte" | "lte" | "exists" | "not_exists" | "contains" | "not_contains" | "default", destinationStepId?: string, destinationWorkflowId?: string } | string)[], modelOverride?: { model: string, temperature: number, maxResponseTokens: number, ignorePreamble?: boolean, userMessagePreprocessor?: { dataSource?: string, messageTemplate?: string, maxResults?: number, enabled?: boolean, shouldInherit?: boolean }, preamble?: string, multiModelEnabled?: boolean, editResponseEnabled?: boolean, config?: object } }`
+- Output: `{ selectedCase: number }`
+
+#### makeDotComRunScenario
+Trigger a Make.com (formerly Integromat) scenario via webhook and return the response.
+- The webhook URL must be configured in your Make.com scenario.
+- Input key-value pairs are sent as JSON in the POST body.
+- Response format depends on the Make.com scenario configuration.
+- Input: `{ webhookUrl: string, input: object }`
+- Output: `{ data: unknown }`
+
+#### mergeAudio
+Merge one or more clips into a single audio file.
+- Input: `{ mp3Urls: string[], fileMetadata?: object, albumArtUrl?: string, intermediateAsset?: boolean }`
+- Output: `{ audioUrl: string }`
+
+#### mergeVideos
+Merge one or more clips into a single video.
+- Input: `{ videoUrls: string[], transition?: string, transitionDuration?: number, intermediateAsset?: boolean }`
+- Output: `{ videoUrl: string }`
+
+#### mixAudioIntoVideo
+Mix an audio track into a video
+- Input: `{ videoUrl: string, audioUrl: string, options: { keepVideoAudio?: boolean, audioGainDb?: number, videoGainDb?: number, loopAudio?: boolean }, intermediateAsset?: boolean }`
+- Output: `{ videoUrl: string }`
+
+#### muteVideo
+Mute a video file
+- Input: `{ videoUrl: string, intermediateAsset?: boolean }`
+- Output: `{ videoUrl: string }`
+
+#### n8nRunNode
+Trigger an n8n workflow node via webhook and return the response.
+- The webhook URL must be configured in your n8n workflow.
+- Supports GET and POST methods with optional Basic authentication.
+- For GET requests, input values are sent as query parameters. For POST, they are sent as JSON body.
+- Input: `{ method: string, authentication: "none" | "basic" | "string", user: string, password: string, webhookUrl: string, input: object }`
+- Output: `{ data: unknown }`
+
+#### postToSlackChannel
+Send a message to a Slack channel via a connected bot.
+- The user is responsible for connecting their Slack workspace and selecting the channel
+- Supports both simple text messages and slack blocks messages
+- Text messages can use limited markdown (slack-only fomatting—e.g., headers are just rendered as bold)
+- Input: `{ channelId: string, messageType: "string" | "blocks", message: string, connectionId?: string }`
+- Output: `unknown`
+
+#### postToZapier
+Send data to a Zapier Zap via webhook and return the response.
+- The webhook URL must be configured in the Zapier Zap settings
+- Input keys and values are sent as the JSON body of the POST request
+- The webhook response (JSON or plain text) is returned as the output
+- Input: `{ webhookUrl: string, input: object }`
+- Output: `{ data: unknown }`
+
+#### queryAppDatabase
+Execute a SQL query against the app managed database.
+- Executes raw SQL against a SQLite database managed by the app.
+- For SELECT queries, returns rows as JSON.
+- For INSERT/UPDATE/DELETE, returns the number of affected rows.
+- Use {{variables}} directly in your SQL. By default they are automatically extracted
+and passed as safe parameterized values (preventing SQL injection).
+Example: INSERT INTO contacts (name, comment) VALUES ({{name}}, {{comment}})
+- Full MindStudio handlebars syntax is supported, including helpers like {{json myVar}},
+{{get myVar "$.path"}}, {{global.orgName}}, etc.
+- Set parameterize to false for raw/dynamic SQL where variables are interpolated directly
+into the query string. Use this when another step generates full or partial SQL, e.g.
+a bulk INSERT with a precomputed VALUES list. The user is responsible for sanitization
+when parameterize is false.
+- Input: `{ databaseId: string, sql: string, parameterize?: boolean }`
+- Output: `{ rows: unknown[], changes: number }`
+
+#### queryDataSource
+Search a vector data source (RAG) and return relevant document chunks.
+- Queries a vectorized data source and returns the most relevant chunks.
+- Useful for retrieval-augmented generation (RAG) workflows.
+- Input: `{ dataSourceId: string, query: string, maxResults: number }`
+- Output: `{ text: string, chunks: string[], query: string, citations: unknown[], latencyMs: number }`
+
+#### queryExternalDatabase
+Execute a SQL query against an external database connected to the workspace.
+- Requires a database connection configured in the workspace.
+- Supports PostgreSQL (including Supabase), MySQL, and MSSQL.
+- Results can be returned as JSON or CSV.
+- Input: `{ connectionId?: string, query: string, outputFormat: "json" | "csv" }`
+- Output: `{ data: unknown }`
+
+#### redactPII
+Replace personally identifiable information in text with placeholders using Microsoft Presidio.
+- PII is replaced with entity type placeholders (e.g. "Call me at <PHONE_NUMBER>").
+- If entities is empty, returns empty text immediately without processing.
+- Input: `{ input: string, language: string, entities: string[] }`
+- Output: `{ text: string }`
+
+#### removeBackgroundFromImage
+Remove the background from an image using AI, producing a transparent PNG.
+- Uses the Bria background removal model via fal.ai.
+- Output is re-hosted on the CDN as a PNG with transparency.
+- Input: `{ imageUrl: string }`
+- Output: `{ imageUrl: string }`
+
+#### resizeVideo
+Resize a video file
+- Input: `{ videoUrl: string, mode: "fit" | "exact", maxWidth?: number, maxHeight?: number, width?: number, height?: number, strategy?: "pad" | "crop", intermediateAsset?: boolean }`
+- Output: `{ videoUrl: string }`
+
+#### runFromConnectorRegistry
+Run a raw API connector to a third-party service
+- Use the /developer/v2/helpers/connectors endpoint to list available services and actions.
+- Use /developer/v2/helpers/connectors/{serviceId}/{actionId} to get the full input configuration for an action.
+- Use /developer/v2/helpers/connections to list your available OAuth connections.
+- The actionId format is "serviceId/actionId" (e.g., "slack/send-message").
+- Pass a __connectionId to authenticate the request with a specific OAuth connection, otherwise the default will be used (if configured).
+- Input: `{ actionId: string, displayName: string, icon: string, configurationValues: object, __connectionId?: string }`
+- Output: `{ data: object }`
+
+#### runPackagedWorkflow
+Run a packaged workflow ("custom block")
+- From the user's perspective, packaged workflows are just ordinary blocks. Behind the scenes, they operate like packages/libraries in a programming language, letting the user execute custom functionality.
+- Some of these packaged workflows are available as part of MindStudio's "Standard Library" and available to every user.
+- Available packaged workflows are documented here as individual blocks, but the runPackagedWorkflow block is how they need to be wrapped in order to be executed correctly.
+- Input: `{ appId: string, workflowId: string, inputVariables: object, outputVariables: object, name: string }`
+- Output: `{ data: unknown }`
+
+#### scrapeLinkedInCompany
+Scrape public company data from a LinkedIn company page.
+- Requires a LinkedIn company URL (e.g. https://www.linkedin.com/company/mindstudioai).
+- Returns structured company data including description, employees, updates, and similar companies.
+- Input: `{ url: string }`
+- Output: `{ company: unknown }`
+
+#### scrapeLinkedInProfile
+Scrape public profile data from a LinkedIn profile page.
+- Requires a LinkedIn profile URL (e.g. https://www.linkedin.com/in/username).
+- Returns structured profile data including experience, education, articles, and activities.
+- Input: `{ url: string }`
+- Output: `{ profile: unknown }`
+
+#### scrapeUrl
+Extract text, HTML, or structured content from one or more web pages.
+- Accepts a single URL or multiple URLs (as a JSON array, comma-separated, or newline-separated).
+- Output format controls the result shape: "text" returns markdown, "html" returns raw HTML, "json" returns structured scraper data.
+- Can optionally capture a screenshot of each page.
+- Input: `{ url: string, service?: "default" | "firecrawl", autoEnhance?: boolean, pageOptions?: { onlyMainContent: boolean, screenshot: boolean, waitFor: number, replaceAllPathsWithAbsolutePaths: boolean, headers: object, removeTags: string[], mobile: boolean } }`
+- Output: `{ content: string | string[] | { text: string, html: string, json?: object, screenshotUrl?: string, metadata?: { title: string, description: string, url: string, image: string } } | { text: string, html: string, json?: object, screenshotUrl?: string, metadata?: { title: string, description: string, url: string, image: string } }[], screenshot?: string }`
+
+#### scrapeXPost
+Scrape data from a single X (Twitter) post by URL.
+- Returns structured post data (text, html, optional json/screenshot/metadata).
+- Optionally saves the text content to a variable.
+- Input: `{ url: string }`
+- Output: `{ post: { text: string, html: string, json?: object, screenshotUrl?: string, metadata?: { title: string, description: string, url: string, image: string } } }`
+
+#### scrapeXProfile
+Scrape public profile data from an X (Twitter) account by URL.
+- Returns structured profile data.
+- Optionally saves the result to a variable.
+- Input: `{ url: string }`
+- Output: `{ profile: { text: string, html: string, json?: object, screenshotUrl?: string, metadata?: { title: string, description: string, url: string, image: string } } }`
+
+#### searchGmailEmails
+Search for emails in the connected Gmail account using a Gmail search query. To list recent inbox emails, pass an empty query string.
+- Requires a Google OAuth connection with Gmail readonly scope.
+- Uses Gmail search syntax (e.g. "from:user@example.com", "subject:invoice", "is:unread").
+- To list recent inbox emails, use an empty query string or "in:inbox".
+- Returns up to 100 emails (default 5). The variable receives text or JSON depending on exportType.
+- The direct execution output always returns structured email objects.
+- Input: `{ query: string, connectionId?: string, exportType: "json" | "text", limit: string }`
+- Output: `{ emails: { id: string, subject: string, from: string, to: string, date: string, plainBody: string, htmlBody: string, labels: string }[] }`
+
+#### searchGoogle
+Search the web using Google and return structured results.
+- Defaults to us/english, but can optionally specify country and/or language.
+- Defaults to any time, but can optionally specify last hour, last day, week, month, or year.
+- Defaults to top 30 results, but can specify 1 to 100 results to return.
+- Input: `{ query: string, exportType: "text" | "json", countryCode?: string, languageCode?: string, dateRange?: "hour" | "day" | "week" | "month" | "year" | "any", numResults?: number }`
+- Output: `{ results: { title: string, description: string, url: string }[] }`
+
+#### searchGoogleImages
+Search Google Images and return image results with URLs and metadata.
+- Defaults to us/english, but can optionally specify country and/or language.
+- Defaults to any time, but can optionally specify last hour, last day, week, month, or year.
+- Defaults to top 30 results, but can specify 1 to 100 results to return.
+- Input: `{ query: string, exportType: "text" | "json", countryCode?: string, languageCode?: string, dateRange?: "hour" | "day" | "week" | "month" | "year" | "any", numResults?: number }`
+- Output: `{ images: { title: string, imageUrl: string, imageWidth: number, imageHeight: number, thumbnailUrl: string, thumbnailWidth: number, thumbnailHeight: number, source: string, domain: string, link: string, googleUrl: string, position: number }[] }`
+
+#### searchGoogleNews
+Search Google News for recent news articles matching a query.
+- Defaults to top 30 results, but can specify 1 to 100 results to return.
+- Input: `{ text: string, exportType: "text" | "json", numResults?: number }`
+- Output: `{ articles: { title: string, link: string, date: string, source: { name: string }, snippet?: string }[] }`
+
+#### searchGoogleTrends
+Fetch Google Trends data for a search term.
+- date accepts shorthand ("now 1-H", "today 1-m", "today 5-y", etc.) or custom "yyyy-mm-dd yyyy-mm-dd" ranges.
+- data_type controls the shape of returned data: TIMESERIES, GEO_MAP, GEO_MAP_0, RELATED_TOPICS, or RELATED_QUERIES.
+- Input: `{ text: string, hl: string, geo: string, data_type: "TIMESERIES" | "GEO_MAP" | "GEO_MAP_0" | "RELATED_TOPICS" | "RELATED_QUERIES", cat: string, date: string, ts: string }`
+- Output: `{ trends: object }`
+
+#### searchPerplexity
+Search the web using the Perplexity API and return structured results.
+- Defaults to US results. Use countryCode (ISO code) to filter by country.
+- Returns 10 results by default, configurable from 1 to 20.
+- The variable receives text or JSON depending on exportType. The direct execution output always returns structured results.
+- Input: `{ query: string, exportType: "text" | "json", countryCode?: string, numResults?: number }`
+- Output: `{ results: { title: string, description: string, url: string }[] }`
+
+#### sendEmail
+Send an email to one or more configured recipient addresses.
+- Recipient email addresses are resolved from OAuth connections configured by the app creator. The user running the workflow does not specify the recipient directly.
+- If the body is a URL to a hosted HTML file on the CDN, the HTML is fetched and used as the email body.
+- When generateHtml is enabled, the body text is converted to a styled HTML email using an AI model.
+- connectionId can be a comma-separated list to send to multiple recipients.
+- The special connectionId "trigger_email" uses the email address that triggered the workflow.
+- Input: `{ subject: string, body: string, connectionId?: string, generateHtml?: boolean, generateHtmlInstructions?: string, generateHtmlModelOverride?: { model: string, temperature: number, maxResponseTokens: number, ignorePreamble?: boolean, userMessagePreprocessor?: { dataSource?: string, messageTemplate?: string, maxResults?: number, enabled?: boolean, shouldInherit?: boolean }, preamble?: string, multiModelEnabled?: boolean, editResponseEnabled?: boolean, config?: object }, attachments?: string[] }`
+- Output: `{ recipients: string[] }`
+
+#### sendGmailDraft
+Send an existing draft from the connected Gmail account.
+- Requires a Google OAuth connection with Gmail compose scope.
+- The draft is sent and removed from the Drafts folder.
+- Use the draft ID returned by the Create Gmail Draft or List Gmail Drafts steps.
+- Input: `{ draftId: string, connectionId?: string }`
+- Output: `unknown`
+
+#### sendGmailMessage
+Send an email from the connected Gmail account.
+- Requires a Google OAuth connection with Gmail compose scope.
+- messageType controls the body format: "plain" for plain text, "html" for raw HTML, "markdown" for auto-converted markdown.
+- Input: `{ to: string, subject: string, message: string, connectionId?: string, messageType: "plain" | "html" | "markdown" }`
+- Output: `{ messageId: string }`
+
+#### sendSMS
+Send an SMS or MMS message to a phone number configured via OAuth connection.
+- User is responsible for configuring the connection to the number (MindStudio requires double opt-in to prevent spam)
+- If mediaUrls are provided, the message is sent as MMS instead of SMS
+- MMS supports up to 10 media URLs (images, video, audio, PDF) with a 5MB limit per file
+- MMS is only supported on US and Canadian carriers; international numbers will receive SMS only (media silently dropped)
+- Input: `{ body: string, connectionId?: string, mediaUrls?: string[] }`
+- Output: `unknown`
+
+#### setGmailReadStatus
+Mark one or more Gmail emails as read or unread.
+- Requires a Google OAuth connection with Gmail modify scope.
+- Accepts one or more message IDs as a comma-separated string or array.
+- Set markAsRead to true to mark as read, false to mark as unread.
+- Input: `{ messageIds: string, markAsRead: boolean, connectionId?: string }`
+- Output: `unknown`
+
+#### setRunTitle
+Set the title of the agent run for the user's history
+- Input: `{ title: string }`
+- Output: `unknown`
+
+#### setVariable
+Explicitly set a variable to a given value.
+- Useful for bootstrapping global variables or setting constants.
+- The variable name and value both support variable interpolation.
+- The type field is a UI hint only (controls input widget in the editor).
+- Input: `{ value: string | string[] }`
+- Output: `object`
+
+#### telegramEditMessage
+Edit a previously sent Telegram message. Use with the message ID returned by Send Telegram Message.
+- Only text messages sent by the bot can be edited.
+- The messageId is returned by the Send Telegram Message step.
+- Common pattern: send a "Processing..." message, do work, then edit it with the result.
+- Input: `{ botToken: string, chatId: string, messageId: string, text: string }`
+- Output: `unknown`
+
+#### telegramReplyToMessage
+Send a reply to a specific Telegram message. The reply will be visually threaded in the chat.
+- Use the rawMessage.message_id from the incoming trigger variables to reply to the user's message.
+- Especially useful in group chats where replies provide context.
+- Returns the sent message ID, which can be used with Edit Telegram Message.
+- Input: `{ botToken: string, chatId: string, replyToMessageId: string, text: string }`
+- Output: `{ messageId: number }`
+
+#### telegramSendAudio
+Send an audio file to a Telegram chat as music or a voice note via a bot.
+- "audio" mode sends as a standard audio file. "voice" mode sends as a voice message (re-uploads the file for large file support).
+- Input: `{ botToken: string, chatId: string, audioUrl: string, mode: "audio" | "voice", caption?: string }`
+- Output: `unknown`
+
+#### telegramSendFile
+Send a document/file to a Telegram chat via a bot.
+- Input: `{ botToken: string, chatId: string, fileUrl: string, caption?: string }`
+- Output: `unknown`
+
+#### telegramSendImage
+Send an image to a Telegram chat via a bot.
+- Input: `{ botToken: string, chatId: string, imageUrl: string, caption?: string }`
+- Output: `unknown`
+
+#### telegramSendMessage
+Send a text message to a Telegram chat via a bot.
+- Messages are sent using MarkdownV2 formatting. Special characters are auto-escaped.
+- botToken format is "botId:token" — both parts are required.
+- Returns the sent message ID, which can be used with Edit Telegram Message to update the message later.
+- Input: `{ botToken: string, chatId: string, text: string }`
+- Output: `{ messageId: number }`
+
+#### telegramSendVideo
+Send a video to a Telegram chat via a bot.
+- Input: `{ botToken: string, chatId: string, videoUrl: string, caption?: string }`
+- Output: `unknown`
+
+#### telegramSetTyping
+Show the "typing..." indicator in a Telegram chat via a bot.
+- The typing indicator automatically expires after a few seconds. Use this right before sending a message for a natural feel.
+- Input: `{ botToken: string, chatId: string }`
+- Output: `unknown`
+
+#### textToSpeech
+Generate an audio file from provided text using a speech model.
+- The text field contains the exact words to be spoken (not instructions).
+- In foreground mode, the audio is displayed to the user. In background mode, the URL is saved to a variable.
+- Input: `{ text: string, intermediateAsset?: boolean, speechModelOverride?: { model: string, config?: object } }`
+- Output: `{ audioUrl: string }`
+
+#### transcribeAudio
+Convert an audio file to text using a transcription model.
+- The prompt field provides optional context to improve transcription accuracy (e.g. language, speaker names, domain).
+- Input: `{ audioUrl: string, prompt: string, transcriptionModelOverride?: { model: string, config?: object } }`
+- Output: `{ text: string }`
+
+#### trimMedia
+Trim an audio or video clip
+- Input: `{ inputUrl: string, start?: number | string, duration?: string | number, intermediateAsset?: boolean }`
+- Output: `{ mediaUrl: string }`
+
+#### updateGmailLabels
+Add or remove labels on Gmail messages, identified by message IDs or a search query.
+- Requires a Google OAuth connection with Gmail modify scope.
+- Provide either a query (Gmail search syntax) or explicit messageIds to target messages.
+- Label IDs can be label names or Gmail label IDs — names are resolved automatically.
+- Input: `{ query: string, connectionId?: string, messageIds: string, addLabelIds: string, removeLabelIds: string }`
+- Output: `{ updatedMessageIds: string[] }`
+
+#### uploadDataSourceDocument
+Upload a file into an existing data source from a URL or raw text content.
+- If "file" is a single URL, the file is downloaded from that URL and uploaded.
+- If "file" is any other string, a .txt document is created from that content and uploaded.
+- The block waits (polls) for processing to complete before transitioning, up to 5 minutes.
+- Once processing finishes, vectors are loaded into Milvus so the data source is immediately queryable.
+- Supported file types (when using a URL) are the same as the data source upload UI (PDF, DOCX, TXT, etc.).
+- Input: `{ dataSourceId: string, file: string, fileName: string }`
+- Output: `unknown`
+
+#### upscaleImage
+Increase the resolution of an image using AI upscaling.
+- Output is re-hosted on the CDN as a PNG.
+- Input: `{ imageUrl: string, targetResolution: "2k" | "4k" | "8k", engine: "standard" | "pro" }`
+- Output: `{ imageUrl: string }`
+
+#### upscaleVideo
+Upscale a video file
+- Input: `{ videoUrl: string, targetResolution: "720p" | "1080p" | "2K" | "4K", engine: "standard" | "pro" | "ultimate" | "flashvsr" | "seedance" | "seedvr2" | "runwayml/upscale-v1", intermediateAsset?: boolean }`
+- Output: `{ videoUrl: string }`
+
+#### videoFaceSwap
+Swap faces in a video file
+- Input: `{ videoUrl: string, faceImageUrl: string, targetIndex: number, engine: string, intermediateAsset?: boolean }`
+- Output: `{ videoUrl: string }`
+
+#### videoRemoveBackground
+Remove or replace background from a video
+- Input: `{ videoUrl: string, newBackground: "transparent" | "image", newBackgroundImageUrl?: string, engine: string, intermediateAsset?: boolean }`
+- Output: `{ videoUrl: string }`
+
+#### videoRemoveWatermark
+Remove a watermark from a video
+- Input: `{ videoUrl: string, engine: string, intermediateAsset?: boolean }`
+- Output: `{ videoUrl: string }`
+
+#### watermarkImage
+Overlay a watermark image onto another image.
+- The watermark is placed at the specified corner with configurable padding and width.
+- Input: `{ imageUrl: string, watermarkImageUrl: string, corner: "top-left" | "top-right" | "bottom-left" | "bottom-right", paddingPx: number, widthPx: number, intermediateAsset?: boolean }`
+- Output: `{ imageUrl: string }`
+
+#### watermarkVideo
+Add an image watermark to a video
+- Input: `{ videoUrl: string, imageUrl: string, corner: "top-left" | "top-right" | "bottom-left" | "bottom-right", paddingPx: number, widthPx: number, intermediateAsset?: boolean }`
+- Output: `{ videoUrl: string }`
+
+### ActiveCampaign
+
+#### activeCampaignAddNote
+Add a note to an existing contact in ActiveCampaign.
+- Requires an ActiveCampaign OAuth connection (connectionId).
+- The contact must already exist — use the contact ID from a previous create or search step.
+- Input: `{ contactId: string, note: string, connectionId?: string }`
+- Output: `unknown`
+
+#### activeCampaignCreateContact
+Create or sync a contact in ActiveCampaign.
+- Requires an ActiveCampaign OAuth connection (connectionId).
+- If a contact with the email already exists, it may be updated depending on ActiveCampaign settings.
+- Custom fields are passed as a key-value map where keys are field IDs.
+- Input: `{ email: string, firstName: string, lastName: string, phone: string, accountId: string, customFields: object, connectionId?: string }`
+- Output: `{ contactId: string }`
+
+### Airtable
+
+#### airtableCreateUpdateRecord
+Create a new record or update an existing record in an Airtable table.
+- If recordId is provided, updates that record. Otherwise, creates a new one.
+- When updating with updateMode "onlySpecified", unspecified fields are left as-is. With "all", unspecified fields are cleared.
+- Array fields (e.g. multipleAttachments) accept arrays of values.
+- Input: `{ connectionId?: string, baseId: string, tableId: string, recordId?: string, updateMode?: "onlySpecified" | "all", fields: unknown, recordData: object }`
+- Output: `{ recordId: string }`
+
+#### airtableDeleteRecord
+Delete a record from an Airtable table by its record ID.
+- Requires an active Airtable OAuth connection (connectionId).
+- Silently succeeds if the record does not exist.
+- Input: `{ connectionId?: string, baseId: string, tableId: string, recordId: string }`
+- Output: `{ deleted: boolean }`
+
+#### airtableGetRecord
+Fetch a single record from an Airtable table by its record ID.
+- Requires an active Airtable OAuth connection (connectionId).
+- If the record is not found, returns a string message instead of a record object.
+- Input: `{ connectionId?: string, baseId: string, tableId: string, recordId: string }`
+- Output: `{ record: { id: string, createdTime: string, fields: object } | null }`
+
+#### airtableGetTableRecords
+Fetch multiple records from an Airtable table with optional pagination.
+- Requires an active Airtable OAuth connection (connectionId).
+- Default limit is 100 records. Maximum is 1000.
+- When outputFormat is 'csv', the variable receives CSV text. The direct execution output always returns parsed records.
+- Input: `{ connectionId?: string, baseId: string, tableId: string, outputFormat?: "json" | "csv", limit?: number }`
+- Output: `{ records: { id: string, createdTime: string, fields: object }[] }`
+
+### Apollo
+
+#### enrichPerson
+Look up professional information about a person using Apollo.io. Search by ID, name, LinkedIn URL, email, or domain.
+- At least one search parameter must be provided.
+- Returns enriched data from Apollo including contact details, employment info, and social profiles.
+- Input: `{ params: { id: string, name: string, linkedinUrl: string, email: string, domain: string } }`
+- Output: `{ data: unknown }`
+
+#### peopleSearch
+Search for people matching specific criteria using Apollo.io. Supports natural language queries and advanced filters.
+- Can use a natural language "smartQuery" which is converted to Apollo search parameters by an AI model.
+- Advanced params can override or supplement the smart query results.
+- Optionally enriches returned people and/or their organizations for additional detail.
+- Results are paginated. Use limit and page to control the result window.
+- Input: `{ smartQuery: string, enrichPeople: boolean, enrichOrganizations: boolean, limit: string, page: string, params: { personTitles: string, includeSimilarTitles: string, qKeywords: string, personLocations: string, personSeniorities: string, organizationLocations: string, qOrganizationDomainsList: string, contactEmailStatus: string, organizationNumEmployeesRanges: string, revenueRangeMin: string, revenueRangeMax: string, currentlyUsingAllOfTechnologyUids: string, currentlyUsingAnyOfTechnologyUids: string, currentlyNotUsingAnyOfTechnologyUids: string } }`
+- Output: `{ results: unknown }`
+
+### Coda
+
+#### codaCreateUpdatePage
+Create a new page or update an existing page in a Coda document.
+- Requires a Coda OAuth connection (connectionId).
+- If pageData.pageId is provided, updates that page. Otherwise, creates a new one.
+- Page content is provided as markdown and converted to Coda's canvas format.
+- When updating, insertionMode controls how content is applied (default: 'append').
+- Input: `{ connectionId?: string, pageData: { docId: string, pageId?: string, name: string, subtitle: string, iconName: string, imageUrl: string, parentPageId?: string, pageContent: string | unknown, contentUpdate?: unknown, insertionMode?: string } }`
+- Output: `{ pageId: string }`
+
+#### codaCreateUpdateRow
+Create a new row or update an existing row in a Coda table.
+- Requires a Coda OAuth connection (connectionId).
+- If rowId is provided, updates that row. Otherwise, creates a new one.
+- Row data keys are column IDs. Empty values are excluded.
+- Input: `{ connectionId?: string, docId: string, tableId: string, rowId?: string, rowData: object }`
+- Output: `{ rowId: string }`
+
+#### codaFindRow
+Search for a row in a Coda table by matching column values.
+- Requires a Coda OAuth connection (connectionId).
+- Returns the first row matching all specified column values, or null if no match.
+- Search criteria in rowData are ANDed together.
+- Input: `{ connectionId?: string, docId: string, tableId: string, rowData: object }`
+- Output: `{ row: { id: string, values: object } | null }`
+
+#### codaGetPage
+Export and read the contents of a page from a Coda document.
+- Requires a Coda OAuth connection (connectionId).
+- Page export is asynchronous on Coda's side — there may be a brief delay while it processes.
+- If a page was just created in a prior step, there is an automatic 20-second retry if the first export attempt fails.
+- Input: `{ connectionId?: string, docId: string, pageId: string, outputFormat?: "html" | "markdown" }`
+- Output: `{ content: string }`
+
+#### codaGetTableRows
+Fetch rows from a Coda table with optional pagination.
+- Requires a Coda OAuth connection (connectionId).
+- Default limit is 10000 rows. Rows are fetched in pages of 500.
+- When outputFormat is 'csv', the variable receives CSV text. The direct execution output always returns parsed rows.
+- Input: `{ connectionId?: string, docId: string, tableId: string, limit?: number | string, outputFormat?: "json" | "csv" }`
+- Output: `{ rows: { id: string, values: object }[] }`
+
+### Facebook
+
+#### scrapeFacebookPage
+Scrape a Facebook page
+- Input: `{ pageUrl: string }`
+- Output: `{ data: unknown }`
+
+#### scrapeFacebookPosts
+Get all the posts for a Facebook page
+- Input: `{ pageUrl: string }`
+- Output: `{ data: unknown }`
+
+### Gmail
+
+#### deleteGmailEmail
+Move an email to trash in the connected Gmail account (recoverable delete).
+- Requires a Google OAuth connection with Gmail modify scope.
+- Uses trash (recoverable) rather than permanent delete.
+- Input: `{ messageId: string, connectionId?: string }`
+- Output: `unknown`
+
+#### getGmailDraft
+Retrieve a specific draft from Gmail by draft ID.
+- Requires a Google OAuth connection with Gmail readonly scope.
+- Returns the draft content including subject, recipients, sender, and body.
+- Input: `{ draftId: string, connectionId?: string }`
+- Output: `{ draftId: string, messageId: string, subject: string, to: string, from: string, body: string }`
+
+#### getGmailEmail
+Retrieve a specific email from Gmail by message ID.
+- Requires a Google OAuth connection with Gmail readonly scope.
+- Returns the email subject, sender, recipient, date, body (plain text preferred, falls back to HTML), and labels.
+- Input: `{ messageId: string, connectionId?: string }`
+- Output: `{ messageId: string, subject: string, from: string, to: string, date: string, body: string, labels: string }`
+
+#### listGmailDrafts
+List drafts in the connected Gmail account.
+- Requires a Google OAuth connection with Gmail readonly scope.
+- Returns up to 50 drafts (default 10).
+- The variable receives text or JSON depending on exportType.
+- Input: `{ connectionId?: string, limit?: string, exportType: "json" | "text" }`
+- Output: `{ drafts: { draftId: string, messageId: string, subject: string, to: string, snippet: string }[] }`
+
+#### replyToGmailEmail
+Reply to an existing email in Gmail. The reply is threaded under the original message.
+- Requires a Google OAuth connection with Gmail compose and readonly scopes.
+- The reply is sent to the original sender and threaded under the original message.
+- messageType controls the body format: "plain", "html", or "markdown".
+- Input: `{ messageId: string, message: string, messageType: "plain" | "html" | "markdown", connectionId?: string }`
+- Output: `{ messageId: string }`
+
+### Google
+
+#### createGoogleDoc
+Create a new Google Document and optionally populate it with content.
+- textType determines how the text field is interpreted: "plain" for plain text, "html" for HTML markup, "markdown" for Markdown.
+- Input: `{ title: string, text: string, connectionId?: string, textType: "plain" | "html" | "markdown" }`
+- Output: `{ documentUrl: string }`
+
+#### createGoogleSheet
+Create a new Google Spreadsheet and populate it with CSV data.
+- Input: `{ title: string, text: string, connectionId?: string }`
+- Output: `{ spreadsheetUrl: string }`
+
+#### deleteGoogleSheetRows
+Delete a range of rows from a Google Spreadsheet.
+- Requires a Google OAuth connection with Drive scope.
+- startRow and endRow are 1-based row numbers (inclusive).
+- If sheetName is omitted, operates on the first sheet.
+- Input: `{ documentId: string, sheetName?: string, startRow: string, endRow: string, connectionId?: string }`
+- Output: `unknown`
+
+#### fetchGoogleDoc
+Fetch the contents of an existing Google Document.
+- exportType controls the output format: "html" for HTML markup, "markdown" for Markdown, "json" for structured JSON, "plain" for plain text.
+- Input: `{ documentId: string, connectionId?: string, exportType: "html" | "markdown" | "json" | "plain" }`
+- Output: `{ content: string }`
+
+#### fetchGoogleSheet
+Fetch contents of a Google Spreadsheet range.
+- range uses A1 notation (e.g. "Sheet1!A1:C10"). Omit to fetch the entire first sheet.
+- exportType controls the output format: "csv" for comma-separated values, "json" for structured JSON.
+- Input: `{ spreadsheetId: string, range: string, connectionId?: string, exportType: "csv" | "json" }`
+- Output: `{ content: string }`
+
+#### getGoogleSheetInfo
+Get metadata about a Google Spreadsheet including sheet names, row counts, and column counts.
+- Requires a Google OAuth connection with Drive scope.
+- Returns the spreadsheet title and a list of all sheets with their dimensions.
+- Input: `{ documentId: string, connectionId?: string }`
+- Output: `{ title: string, sheets: { sheetId: number, title: string, rowCount: number, columnCount: number }[] }`
+
+#### updateGoogleDoc
+Update the contents of an existing Google Document.
+- operationType controls how content is applied: "addToTop" prepends, "addToBottom" appends, "overwrite" replaces all content.
+- textType determines how the text field is interpreted: "plain" for plain text, "html" for HTML markup, "markdown" for Markdown.
+- Input: `{ documentId: string, connectionId?: string, text: string, textType: "plain" | "html" | "markdown", operationType: "addToTop" | "addToBottom" | "overwrite" }`
+- Output: `{ documentUrl: string }`
+
+#### updateGoogleSheet
+Update a Google Spreadsheet with new data.
+- operationType controls how data is written: "addToBottom" appends rows, "overwrite" replaces all data, "range" writes to a specific cell range.
+- Data should be provided as CSV in the text field.
+- Input: `{ text: string, connectionId?: string, spreadsheetId: string, range: string, operationType: "addToBottom" | "overwrite" | "range" }`
+- Output: `{ spreadsheetUrl: string }`
+
+### Google Calendar
+
+#### createGoogleCalendarEvent
+Create a new event on a Google Calendar.
+- Requires a Google OAuth connection with Calendar events scope.
+- Date/time values must be ISO 8601 format (e.g. "2025-07-02T10:00:00-07:00").
+- Attendees are specified as one email address per line in a single string.
+- Set addMeetLink to true to automatically attach a Google Meet video call.
+- Input: `{ connectionId?: string, summary: string, description?: string, location?: string, startDateTime: string, endDateTime: string, attendees?: string, addMeetLink?: boolean, calendarId?: string }`
+- Output: `{ eventId: string, htmlLink: string }`
+
+#### deleteGoogleCalendarEvent
+Retrieve a specific event from a Google Calendar by event ID.
+- Requires a Google OAuth connection with Calendar events scope.
+- The variable receives JSON or XML-like text depending on exportType. The direct execution output always returns the structured event.
+- Input: `{ connectionId?: string, eventId: string, calendarId?: string }`
+- Output: `unknown`
+
+#### getGoogleCalendarEvent
+Retrieve a specific event from a Google Calendar by event ID.
+- Requires a Google OAuth connection with Calendar events scope.
+- The variable receives JSON or XML-like text depending on exportType. The direct execution output always returns the structured event.
+- Input: `{ connectionId?: string, eventId: string, exportType: "json" | "text", calendarId?: string }`
+- Output: `{ event: { id?: string | null, status?: string | null, htmlLink?: string | null, created?: string | null, updated?: string | null, summary?: string | null, description?: string | null, location?: string | null, organizer?: { displayName?: string | null, email?: string | null } | null, start?: { dateTime?: string | null, timeZone?: string | null } | null, end?: { dateTime?: string | null, timeZone?: string | null } | null, attendees?: ({ displayName?: string | null, email?: string | null, responseStatus?: string | null })[] | null } }`
+
+#### listGoogleCalendarEvents
+List upcoming events from a Google Calendar, ordered by start time.
+- Requires a Google OAuth connection with Calendar events scope.
+- Only returns future events (timeMin = now).
+- The variable receives JSON or XML-like text depending on exportType. The direct execution output always returns structured events.
+- Input: `{ connectionId?: string, limit: number, exportType: "json" | "text", calendarId?: string }`
+- Output: `{ events: ({ id?: string | null, status?: string | null, htmlLink?: string | null, created?: string | null, updated?: string | null, summary?: string | null, description?: string | null, location?: string | null, organizer?: { displayName?: string | null, email?: string | null } | null, start?: { dateTime?: string | null, timeZone?: string | null } | null, end?: { dateTime?: string | null, timeZone?: string | null } | null, attendees?: ({ displayName?: string | null, email?: string | null, responseStatus?: string | null })[] | null })[] }`
+
+#### searchGoogleCalendarEvents
+Search for events in a Google Calendar by keyword, date range, or both.
+- Requires a Google OAuth connection with Calendar events scope.
+- Supports keyword search via "query" and date filtering via "timeMin"/"timeMax" (ISO 8601 format).
+- Unlike "List Events" which only shows future events, this allows searching past events too.
+- Input: `{ query?: string, timeMin?: string, timeMax?: string, calendarId?: string, limit?: number, exportType: "json" | "text", connectionId?: string }`
+- Output: `{ events: ({ id?: string | null, status?: string | null, htmlLink?: string | null, created?: string | null, updated?: string | null, summary?: string | null, description?: string | null, location?: string | null, organizer?: { displayName?: string | null, email?: string | null } | null, start?: { dateTime?: string | null, timeZone?: string | null } | null, end?: { dateTime?: string | null, timeZone?: string | null } | null, attendees?: ({ displayName?: string | null, email?: string | null, responseStatus?: string | null })[] | null })[] }`
+
+#### updateGoogleCalendarEvent
+Update an existing event on a Google Calendar. Only specified fields are changed.
+- Requires a Google OAuth connection with Calendar events scope.
+- Fetches the existing event first, then applies only the provided updates. Omitted fields are left unchanged.
+- Attendees are specified as one email address per line, and replace the entire attendee list.
+- Input: `{ connectionId?: string, eventId: string, summary?: string, description?: string, location?: string, startDateTime?: string, endDateTime?: string, attendees?: string, calendarId?: string }`
+- Output: `{ eventId: string, htmlLink: string }`
+
+### Google Drive
+
+#### getGoogleDriveFile
+Download a file from Google Drive and rehost it on the CDN. Returns a public CDN URL.
+- Requires a Google OAuth connection with Drive scope.
+- Google-native files (Docs, Sheets, Slides) cannot be downloaded — use dedicated steps instead.
+- Maximum file size: 200MB.
+- The file is downloaded and re-uploaded to the CDN; the returned URL is publicly accessible.
+- Input: `{ fileId: string, connectionId?: string }`
+- Output: `{ url: string, name: string, mimeType: string, size: number }`
+
+#### listGoogleDriveFiles
+List files in a Google Drive folder.
+- Requires a Google OAuth connection with Drive scope.
+- If folderId is omitted, lists files in the root folder.
+- Returns file metadata including name, type, size, and links.
+- Input: `{ folderId?: string, limit?: number, connectionId?: string, exportType: "json" | "text" }`
+- Output: `{ files: { id: string, name: string, mimeType: string, size: string, webViewLink: string, createdTime: string, modifiedTime: string }[] }`
+
+#### searchGoogleDrive
+Search for files in Google Drive by keyword.
+- Requires a Google OAuth connection with Drive scope.
+- Searches file content and names using Google Drive's fullText search.
+- Input: `{ query: string, limit?: number, connectionId?: string, exportType: "json" | "text" }`
+- Output: `{ files: { id: string, name: string, mimeType: string, size: string, webViewLink: string, createdTime: string, modifiedTime: string }[] }`
+
+### HubSpot
+
+#### hubspotCreateCompany
+Create a new company or update an existing one in HubSpot. Matches by domain.
+- Requires a HubSpot OAuth connection (connectionId).
+- If a company with the given domain already exists, it is updated. Otherwise, a new one is created.
+- Property values are type-checked against enabledProperties before being sent to HubSpot.
+- Input: `{ connectionId?: string, company: { domain: string, name: string }, enabledProperties: ({ label: string, value: string, type: "string" | "number" | "bool" })[] }`
+- Output: `{ companyId: string }`
+
+#### hubspotCreateContact
+Create a new contact or update an existing one in HubSpot. Matches by email address.
+- Requires a HubSpot OAuth connection (connectionId).
+- If a contact with the given email already exists, it is updated. Otherwise, a new one is created.
+- If companyDomain is provided, the contact is associated with that company (creating the company if needed).
+- Property values are type-checked against enabledProperties before being sent to HubSpot.
+- Input: `{ connectionId?: string, contact: { email: string, firstname: string, lastname: string }, enabledProperties: ({ label: string, value: string, type: "string" | "number" | "bool" })[], companyDomain: string }`
+- Output: `{ contactId: string }`
+
+#### hubspotGetCompany
+Look up a HubSpot company by domain name or company ID.
+- Requires a HubSpot OAuth connection (connectionId).
+- Returns null if the company is not found.
+- When searching by domain, performs a search query then fetches the full company record.
+- Use additionalProperties to request specific HubSpot properties beyond the defaults.
+- Input: `{ connectionId?: string, searchBy: "domain" | "id", companyDomain: string, companyId: string, additionalProperties: string[] }`
+- Output: `{ company: { id: string, properties: object, createdAt: string, updatedAt: string, archived: boolean } | null }`
+
+#### hubspotGetContact
+Look up a HubSpot contact by email address or contact ID.
+- Requires a HubSpot OAuth connection (connectionId).
+- Returns null if the contact is not found.
+- Use additionalProperties to request specific HubSpot properties beyond the defaults.
+- Input: `{ connectionId?: string, searchBy: "email" | "id", contactEmail: string, contactId: string, additionalProperties: string[] }`
+- Output: `{ contact: { id: string, properties: object, createdAt: string, updatedAt: string, archived: boolean } | null }`
+
+### Hunter.io
+
+#### hunterApiCompanyEnrichment
+Look up company information by domain using Hunter.io.
+- Returns company name, description, location, industry, size, technologies, and more.
+- If the domain input is a full URL, the hostname is automatically extracted.
+- Returns null if the company is not found.
+- Input: `{ domain: string }`
+- Output: `{ data: { name: string, domain: string, description: string | null, country: string | null, state: string | null, city: string | null, industry: string | null, employees_range: string | null, logo_url: string | null, technologies: string[] } | null }`
+
+#### hunterApiDomainSearch
+Search for email addresses associated with a domain using Hunter.io.
+- If the domain input is a full URL, the hostname is automatically extracted.
+- Returns a list of email addresses found for the domain along with organization info.
+- Input: `{ domain: string }`
+- Output: `{ data: { domain: string, disposable: boolean, webmail: boolean, accept_all: boolean, pattern: string, organization: string, country: string | null, state: string | null, emails: ({ value: string, type: string, confidence: number, first_name: string | null, last_name: string | null, position: string | null, seniority: string | null, department: string | null, linkedin: string | null, twitter: string | null, phone_number: string | null })[], linked_domains: string[] } }`
+
+#### hunterApiEmailFinder
+Find an email address for a specific person at a domain using Hunter.io.
+- Requires a first name, last name, and domain.
+- If the domain input is a full URL, the hostname is automatically extracted.
+- Returns the most likely email address with a confidence score.
+- Input: `{ domain: string, firstName: string, lastName: string }`
+- Output: `{ data: { first_name: string, last_name: string, email: string, score: number, domain: string, accept_all: boolean, position: string | null, twitter: string | null, linkedin_url: string | null, phone_number: string | null, company: string | null, sources: { domain: string, uri: string, extracted_on: string }[] } }`
+
+#### hunterApiEmailVerification
+Verify whether an email address is valid and deliverable using Hunter.io.
+- Checks email format, MX records, SMTP server, and mailbox deliverability.
+- Returns a status ("valid", "invalid", "accept_all", "webmail", "disposable", "unknown") and a score.
+- Input: `{ email: string }`
+- Output: `{ data: { status: string, result: string, score: number, email: string, regexp: boolean, gibberish: boolean, disposable: boolean, webmail: boolean, mx_records: boolean, smtp_server: boolean, smtp_check: boolean, accept_all: boolean, block: boolean, sources: { domain: string, uri: string, extracted_on: string }[] } }`
+
+#### hunterApiPersonEnrichment
+Look up professional information about a person by their email address using Hunter.io.
+- Returns name, job title, social profiles, and company information.
+- If the person is not found, returns an object with an error message instead of throwing.
+- Input: `{ email: string }`
+- Output: `{ data: { first_name: string, last_name: string, email: string, position: string | null, seniority: string | null, department: string | null, linkedin_url: string | null, twitter: string | null, phone_number: string | null, company: { name: string, domain: string, industry: string | null } | null } | { error: string } }`
+
+### Instagram
+
+#### scrapeInstagramComments
+Get all the comments for an Instagram post
+- Input: `{ postUrl: string, resultsLimit: string }`
+- Output: `{ data: unknown }`
+
+#### scrapeInstagramMentions
+Scrape an Instagram profile's mentions
+- Input: `{ profileUrl: string, resultsLimit: string }`
+- Output: `{ data: unknown }`
+
+#### scrapeInstagramPosts
+Get all the posts for an Instagram profile
+- Input: `{ profileUrl: string, resultsLimit: string, onlyPostsNewerThan: string }`
+- Output: `{ data: unknown }`
+
+#### scrapeInstagramProfile
+Scrape an Instagram profile
+- Input: `{ profileUrl: string }`
+- Output: `{ data: unknown }`
+
+#### scrapeInstagramReels
+Get all the reels for an Instagram profile
+- Input: `{ profileUrl: string, resultsLimit: string }`
+- Output: `{ data: unknown }`
+
+### LinkedIn
+
+#### postToLinkedIn
+Create a post on LinkedIn from the connected account.
+- Requires a LinkedIn OAuth connection (connectionId).
+- Supports text posts, image posts, video posts, document posts, and article posts.
+- Attach one media type per post: image, video, document, or article.
+- Documents support PDF, PPT, PPTX, DOC, DOCX (max 100MB, 300 pages). Displays as a slideshow carousel.
+- Articles create a link preview with optional custom title, description, and thumbnail.
+- Visibility controls who can see the post.
+- Input: `{ message: string, visibility: "PUBLIC" | "CONNECTIONS", imageUrl?: string, videoUrl?: string, documentUrl?: string, articleUrl?: string, titleText?: string, descriptionText?: string, connectionId?: string }`
+- Output: `unknown`
+
+### Meta Threads
+
+#### scrapeMetaThreadsProfile
+Scrape a Meta Threads profile
+- Input: `{ profileUrl: string }`
+- Output: `{ data: unknown }`
+
+### Notion
+
+#### notionCreatePage
+Create a new page in Notion as a child of an existing page.
+- Requires a Notion OAuth connection (connectionId).
+- Content is provided as markdown and converted to Notion blocks (headings, paragraphs, lists, code, quotes).
+- The page is created as a child of the specified parent page (pageId).
+- Input: `{ pageId: string, content: string, title: string, connectionId?: string }`
+- Output: `{ pageId: string, pageUrl: string }`
+
+#### notionUpdatePage
+Update the content of an existing Notion page.
+- Requires a Notion OAuth connection (connectionId).
+- Content is provided as markdown and converted to Notion blocks.
+- "append" mode adds content to the end of the page. "overwrite" mode deletes all existing blocks first.
+- Input: `{ pageId: string, content: string, mode: "append" | "overwrite", connectionId?: string }`
+- Output: `{ pageId: string, pageUrl: string }`
+
+### X
+
+#### postToX
+Create a post on X (Twitter) from the connected account.
+- Requires an X OAuth connection (connectionId).
+- Maximum 280 characters of text.
+- Optionally attach up to 4 media items (images, GIFs, or videos) via mediaUrls.
+- Media URLs must be publicly accessible. The service fetches and uploads them to X.
+- Supported formats: JPEG, PNG, GIF, WEBP, MP4. Images up to 5MB, videos up to 512MB.
+- Input: `{ text: string, connectionId?: string, mediaUrls?: string[] }`
+- Output: `unknown`
+
+#### searchXPosts
+Search recent X (Twitter) posts matching a query.
+- Searches only the past 7 days of posts.
+- Query supports X API v2 search operators (up to 512 characters).
+Available search operators in query:
+| Operator         | Description                                      |
+| -----------------| -------------------------------------------------|
+| from:            | Posts from a specific user (e.g., from:elonmusk) |
+| to:              | Posts sent to a specific user (e.g., to:NASA)    |
+| @                | Mentions a user (e.g., @openai)                  |
+| #                | Hashtag search (e.g., #AI)                       |
+| is:retweet       | Filters retweets                                 |
+| is:reply         | Filters replies                                  |
+| has:media        | Posts containing media (images, videos, or GIFs) |
+| has:links        | Posts containing URLs                            |
+| lang:            | Filters by language (e.g., lang:en)              |
+| -                | Excludes specific terms (e.g., -spam)            |
+| ()               | Groups terms or operators (e.g., (AI OR ML))     |
+| AND, OR, NOT     | Boolean logic for combining or excluding terms   |
+Conjunction-Required Operators (must be combined with a standalone operator):
+| Operator     | Description                                    |
+| ------------ | -----------------------------------------------|
+| has:media  | Posts containing media (images, videos, or GIFs) |
+| has:links  | Posts containing URLs                            |
+| is:retweet | Filters retweets                                 |
+| is:reply   | Filters replies                                  |
+For example, has:media alone is invalid, but #AI has:media is valid.
+- Input: `{ query: string, scope: "recent" | "all", options: { startTime?: string, endTime?: string, maxResults?: number } }`
+- Output: `{ posts: { id: string, authorId: string, dateCreated: string, text: string, stats: { retweets: number, replies: number, likes: number } }[] }`
+
+### YouTube
+
+#### fetchYoutubeCaptions
+Retrieve the captions/transcript for a YouTube video.
+- Supports multiple languages via the language parameter.
+- "text" export produces timestamped plain text; "json" export produces structured transcript data.
+- Input: `{ videoUrl: string, exportType: "text" | "json", language: string }`
+- Output: `{ transcripts: { text: string, start: number }[] }`
+
+#### fetchYoutubeChannel
+Retrieve metadata and recent videos for a YouTube channel.
+- Accepts a YouTube channel URL (e.g. https://www.youtube.com/@ChannelName or /channel/ID).
+- Returns channel info and video listings as a JSON object.
+- Input: `{ channelUrl: string }`
+- Output: `{ channel: object }`
+
+#### fetchYoutubeComments
+Retrieve comments for a YouTube video.
+- Paginates through comments (up to 5 pages).
+- "text" export produces markdown-formatted text; "json" export produces structured comment data.
+- Input: `{ videoUrl: string, exportType: "text" | "json", limitPages: string }`
+- Output: `{ comments: { id: string, link: string, publishedDate: string, text: string, likes: number, replies: number, author: string, authorLink: string, authorImg: string }[] }`
+
+#### fetchYoutubeVideo
+Retrieve metadata for a YouTube video (title, description, stats, channel info).
+- Returns video metadata, channel info, and engagement stats.
+- Video format data is excluded from the response.
+- Input: `{ videoUrl: string }`
+- Output: `{ video: object }`
+
+#### searchYoutube
+Search for YouTube videos by keyword.
+- Supports pagination (up to 5 pages) and country/language filters.
+- Use the filter/filterType fields for YouTube search parameter (sp) filters.
+- Input: `{ query: string, limitPages: string, filter: string, filterType: string, countryCode?: string, languageCode?: string }`
+- Output: `{ results: object }`
+
+#### searchYoutubeTrends
+Retrieve trending videos on YouTube by category and region.
+- Categories: "now" (trending now), "music", "gaming", "films".
+- Supports country and language filtering.
+- Input: `{ bp: "now" | "music" | "gaming" | "films", hl: string, gl: string }`
+- Output: `{ trends: object }`
+
+### Helpers
+
+#### `listModels()`
+List all available AI models across all categories.
+
+Output:
+```typescript
+{
+  models: {
+    id: string;
+    name: string;            // Display name
+    type: "llm_chat" | "image_generation" | "video_generation" | "video_analysis" | "text_to_speech" | "vision" | "transcription";
+    maxTemperature: number;
+    maxResponseSize: number;
+    inputs: object[];        // Accepted input types
+  }[]
+}
+```
+
+#### `listModelsByType(modelType)`
+List AI models filtered by type.
+- `modelType`: `"llm_chat"` | `"image_generation"` | `"video_generation"` | `"video_analysis"` | `"text_to_speech"` | `"vision"` | `"transcription"`
+- Output: same as `listModels()`
+
+#### `listModelsSummary()`
+List all available AI models (summary). Returns only id, name, type, and tags. Suitable for display or consumption inside a model context window.
+
+Output:
+```typescript
+{
+  models: {
+    id: string;
+    name: string;
+    type: "llm_chat" | "image_generation" | "video_generation" | "video_analysis" | "text_to_speech" | "vision" | "transcription";
+    tags: string;            // Comma-separated tags
+  }[]
+}
+```
+
+#### `listModelsSummaryByType(modelType)`
+List AI models (summary) filtered by type.
+- `modelType`: `"llm_chat"` | `"image_generation"` | `"video_generation"` | `"video_analysis"` | `"text_to_speech"` | `"vision"` | `"transcription"`
+- Output: same as `listModelsSummary()`
+
+#### `listConnectors()`
+List available OAuth connector services (Slack, Google, HubSpot, etc.) and their actions. These are third-party integrations — for most tasks, use actions directly instead.
+
+Output:
+```typescript
+{
+  services: {
+    id: string;
+    name: string;
+    icon: string;
+    actions: { id: string; name: string }[];
+  }[]
+}
+```
+
+#### `getConnector(serviceId)`
+Get details for a single OAuth connector service by ID.
+
+Output:
+```typescript
+{
+  service: {
+    id: string;
+    name: string;
+    icon: string;
+    actions: { id: string; name: string }[];
+  }
+}
+```
+
+#### `getConnectorAction(serviceId, actionId)`
+Get the full configuration for an OAuth connector action, including all input fields needed to call it via `runFromConnectorRegistry`. OAuth connectors are sourced from the open-source MindStudio Connector Registry (MSCR) with 850+ actions across third-party services.
+
+Output:
+```typescript
+{
+  action: {
+    id: string;
+    name: string;
+    description: string;
+    quickHelp: string;
+    configuration: { title: string; items: { label: string; helpText: string; variable: string; type: string; defaultValue: string; placeholder: string; selectOptions?: object }[] }[];
+  }
+}
+```
+
+#### `listConnections()`
+List OAuth connections for the organization (authenticated third-party service links). Use the returned connection IDs when calling OAuth connector actions. Connectors require the user to connect to the third-party service in MindStudio before they can be used.
+
+Output:
+```typescript
+{
+  connections: {
+    id: string;       // Connection ID to pass to connector actions
+    provider: string; // Integration provider (e.g. slack, google)
+    name: string;     // Display name or account identifier
+  }[]
+}
+```
+
+#### `estimateStepCost(stepType, step?, options?)`
+Estimate the cost of executing a step before running it. Pass the same step config you would use for execution.
+
+```typescript
+const estimate = await agent.estimateStepCost('generateText', { message: 'Hello' });
+```
+
+- `stepType`: string — The action name (e.g. `"generateText"`).
+- `step`: object — Optional action input parameters for more accurate estimates.
+- `options`: `{ appId?: string, workflowId?: string }` — Optional context for pricing.
+
+Output:
+```typescript
+{
+  costType?: string;  // "free" when the step has no cost
+  estimates?: {
+    eventType: string;       // Billing event type
+    label: string;           // Human-readable cost label
+    unitPrice: number;       // Price per unit in billing units
+    unitType: string;        // What constitutes a unit (e.g. "token", "request")
+    estimatedCost?: number;  // Estimated total cost, or null if not estimable
+    quantity: number;        // Number of billable units
+  }[]
+}
+```
+
+#### `changeName(displayName)`
+Update the display name of the authenticated agent. Useful for agents to set their own name after connecting.
+
+```typescript
+await agent.changeName('My Agent');
+```
+
+#### `changeProfilePicture(profilePictureUrl)`
+Update the profile picture of the authenticated agent. Useful for agents to set their own avatar after connecting.
+
+```typescript
+await agent.changeProfilePicture('https://example.com/avatar.png');
+```
+
+#### `uploadFile(content, options)`
+Upload a file to the MindStudio CDN. Gets a signed upload URL, PUTs the file content, and returns the permanent public URL.
+
+```typescript
+import { readFileSync } from 'fs';
+const { url } = await agent.uploadFile(readFileSync('photo.png'), { extension: 'png', type: 'image/png' });
+```
+
+- `content`: `Buffer | Uint8Array` — The file content.
+- `options.extension`: string — File extension without the dot (e.g. `"png"`, `"jpg"`, `"mp4"`).
+- `options.type`: string (optional) — MIME type (e.g. `"image/png"`). Determines which CDN subdomain is used.
+
+Output: `{ url: string }` — The permanent public CDN URL.

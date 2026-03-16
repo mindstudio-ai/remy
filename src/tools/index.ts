@@ -25,7 +25,6 @@ export interface Tool {
 import { readSpecTool } from './spec/readSpec.js';
 import { writeSpecTool } from './spec/writeSpec.js';
 import { editSpecTool } from './spec/editSpec.js';
-import { addAnnotationTool } from './spec/addAnnotation.js';
 import { listSpecFilesTool } from './spec/listSpecFiles.js';
 import { compileTool } from './spec/compile.js';
 import { recompileTool } from './spec/recompile.js';
@@ -44,13 +43,7 @@ import { lspDiagnosticsTool } from './code/lspDiagnostics.js';
 import { restartProcessTool } from './code/restartProcess.js';
 
 function getSpecTools(): Tool[] {
-  return [
-    readSpecTool,
-    writeSpecTool,
-    editSpecTool,
-    addAnnotationTool,
-    listSpecFilesTool,
-  ];
+  return [readSpecTool, writeSpecTool, editSpecTool, listSpecFilesTool];
 }
 
 function getCodeTools(): Tool[] {

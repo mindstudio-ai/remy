@@ -2,8 +2,8 @@
  * Spec helpers — heading resolution and path validation for spec tools.
  *
  * Parses markdown heading hierarchy and resolves heading paths like
- * "Vendors > Approval Flow" to line ranges. Used by editSpec and
- * addAnnotation to address locations in MSFM spec files.
+ * "Vendors > Approval Flow" to line ranges. Used by editSpec to
+ * address locations in MSFM spec files.
  */
 
 export interface HeadingNode {

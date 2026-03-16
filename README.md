@@ -76,14 +76,11 @@ Available in all sandbox sessions. Used for authoring and editing MSFM specs in 
 | `readSpec` | Read a spec file with line numbers (paths must start with `src/`) |
 | `writeSpec` | Create or overwrite a spec file (creates parent dirs) |
 | `editSpec` | Heading-addressed edits (replace, insert, delete by heading path) |
-| `addAnnotation` | Add MSFM block or inline annotations to spec content |
 | `listSpecFiles` | List all files in the `src/` directory tree |
 | `compile` | Trigger first code generation from spec (stub — authoring only) |
 | `recompile` | Re-generate code from spec, optionally scoped (stub — iterating only) |
 
-`editSpec` addresses locations by heading path (e.g., `"Vendors > Approval Flow"`) rather than line numbers, making edits stable across changes. Operations: `replace`, `insert_after`, `insert_before`, `delete`.
-
-`addAnnotation` supports block annotations (`~~~...~~~`) and inline annotations (`[text]{content}`). Long inline annotations automatically use the pointer form (`[text]{#id}` + `~~~#id` block).
+`editSpec` addresses locations by heading path (e.g., `"Vendors > Approval Flow"`) rather than line numbers, making edits stable across changes. Operations: `replace`, `insert_after`, `insert_before`, `delete`. MSFM annotations (`~~~...~~~` blocks, `[text]{content}` inline) are written as regular markdown content via `editSpec`.
 
 ### Code Tools
 
@@ -161,7 +158,6 @@ src/
       readSpec.ts
       writeSpec.ts
       editSpec.ts
-      addAnnotation.ts
       listSpecFiles.ts
       compile.ts
       recompile.ts
