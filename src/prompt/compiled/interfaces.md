@@ -41,13 +41,15 @@ dist/interfaces/web/
 ```typescript
 import { createClient, platform, auth } from '@mindstudio-ai/interface';
 
-// Typed RPC to backend methods
+// Typed RPC to backend methods — use the camelCase export function names,
+// NOT the kebab-case method IDs from mindstudio.json. The client maps
+// export names to method IDs automatically.
 const api = createClient<{
-  submitVendor(input: { name: string }): Promise<{ vendorId: string }>;
+  submitVendorRequest(input: { name: string }): Promise<{ vendorId: string }>;
   listVendors(): Promise<{ vendors: Vendor[] }>;
 }>();
 
-const { vendorId } = await api.submitVendor({ name: 'Acme' });
+const { vendorId } = await api.submitVendorRequest({ name: 'Acme' });
 const { vendors } = await api.listVendors();
 
 // File operations
@@ -59,6 +61,8 @@ auth.userId;
 auth.name;
 auth.email;
 ```
+
+The project uses `"jsx": "react-jsx"` (automatic JSX transform) — do not `import React from 'react'`. Only import the specific hooks and types you need (e.g., `import { useState, useEffect } from 'react'`).
 
 On deploy, the platform runs `npm install && npm run build` in the web directory and hosts the output on CDN.
 

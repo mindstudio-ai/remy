@@ -57,6 +57,15 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
   let running = false;
   let currentAbort: AbortController | null = null;
 
+  // Pending external tool results — keyed by tool call id.
+  // When the agent calls an external tool (promptUser, setViewMode),
+  // we store a resolve function here. When the sandbox sends a
+  // tool_result action, we resolve the matching promise.
+  const pendingToolResults = new Map<
+    string,
+    { resolve: (result: string) => void }
+  >();
+
   function onEvent(e: AgentEvent): void {
     switch (e.type) {
       case 'text':
@@ -88,6 +97,16 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     }
   }
 
+  function resolveExternalTool(
+    id: string,
+    _name: string,
+    _input: Record<string, any>,
+  ): Promise<string> {
+    return new Promise<string>((resolve) => {
+      pendingToolResults.set(id, { resolve });
+    });
+  }
+
   const rl = createInterface({ input: process.stdin });
 
   rl.on('line', async (line: string) => {
@@ -96,16 +115,29 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       text?: string;
       projectHasCode?: boolean;
       viewContext?: {
-        mode: 'code' | 'spec';
+        mode: 'intake' | 'code' | 'spec';
         openFiles?: string[];
         activeFile?: string;
       };
       attachments?: Array<{ url: string; extractedTextUrl?: string }>;
+      // tool_result fields
+      id?: string;
+      result?: string;
     };
     try {
       parsed = JSON.parse(line);
     } catch {
       emit('error', { error: 'Invalid JSON on stdin' });
+      return;
+    }
+
+    // --- tool_result: external tool response from sandbox ---
+    if (parsed.action === 'tool_result' && parsed.id) {
+      const pending = pendingToolResults.get(parsed.id);
+      if (pending) {
+        pendingToolResults.delete(parsed.id);
+        pending.resolve(parsed.result ?? '');
+      }
       return;
     }
 
@@ -125,6 +157,11 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     if (parsed.action === 'cancel') {
       if (currentAbort) {
         currentAbort.abort();
+      }
+      // Also resolve any pending external tools so the agent doesn't hang
+      for (const [id, pending] of pendingToolResults) {
+        pending.resolve('Error: cancelled');
+        pendingToolResults.delete(id);
       }
       return;
     }
@@ -155,6 +192,7 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
           projectHasCode,
           signal: currentAbort.signal,
           onEvent,
+          resolveExternalTool,
         });
       } catch (err: any) {
         emit('error', { error: err.message });

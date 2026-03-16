@@ -40,7 +40,8 @@ export async function submitVendorRequest(input: {
 }
 ```
 
-- `id` — kebab-case, used in API URLs and frontend method map
+- `id` — kebab-case, used in API URLs (the platform maps these internally)
+- **Important:** the frontend `createClient` uses the camelCase `export` name, not the kebab-case `id`. Call `api.submitVendorRequest()`, not `api['submit-vendor-request']()`.
 - `path` — relative to project root
 - `export` — must match the function name
 

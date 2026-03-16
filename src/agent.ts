@@ -28,6 +28,9 @@ import { executeTool, getToolDefinitions } from './tools/index.js';
 import { saveSession } from './session.js';
 import { log } from './logger.js';
 
+// Tools where the result comes from outside (sandbox/user), not local execution.
+const EXTERNAL_TOOLS = new Set(['promptUser', 'setViewMode']);
+
 // Events emitted to the UI layer
 export type AgentEvent =
   | { type: 'text'; text: string }
@@ -54,6 +57,19 @@ export function createAgentState(): AgentState {
 }
 
 /**
+ * Callback for resolving external tool results. The agent emits
+ * tool_start, then calls this function which returns a promise that
+ * resolves when the external system (sandbox) provides the result.
+ *
+ * If not provided, external tools fall back to local execution.
+ */
+export type ExternalToolResolver = (
+  id: string,
+  name: string,
+  input: Record<string, any>,
+) => Promise<string>;
+
+/**
  * Run one user turn — may involve multiple LLM round-trips if the
  * model requests tool calls. Returns when the model is done responding
  * or the signal is aborted.
@@ -68,6 +84,7 @@ export async function runTurn(params: {
   projectHasCode: boolean;
   signal?: AbortSignal;
   onEvent: (event: AgentEvent) => void;
+  resolveExternalTool?: ExternalToolResolver;
 }): Promise<void> {
   const {
     state,
@@ -79,6 +96,7 @@ export async function runTurn(params: {
     projectHasCode,
     signal,
     onEvent,
+    resolveExternalTool,
   } = params;
   const tools = getToolDefinitions(projectHasCode);
 
@@ -219,7 +237,20 @@ export async function runTurn(params: {
         }
         const toolStart = Date.now();
         try {
-          const result = await executeTool(tc.name, tc.input);
+          let result: string;
+
+          if (EXTERNAL_TOOLS.has(tc.name) && resolveExternalTool) {
+            // External tool — wait for the sandbox/user to provide the result
+            log.debug('Waiting for external tool result', {
+              name: tc.name,
+              id: tc.id,
+            });
+            result = await resolveExternalTool(tc.id, tc.name, tc.input);
+          } else {
+            // Local tool — execute directly
+            result = await executeTool(tc.name, tc.input);
+          }
+
           const isError = result.startsWith('Error');
           log.debug('Tool completed', {
             name: tc.name,
