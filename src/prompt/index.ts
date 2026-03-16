@@ -40,7 +40,7 @@ function resolveIncludes(template: string): string {
 }
 
 export interface ViewContext {
-  mode: 'code' | 'spec';
+  mode: 'intake' | 'spec' | 'code';
   openFiles?: string[];
   activeFile?: string;
 }
@@ -116,7 +116,7 @@ ${projectContext}
 
 ${isLspConfigured() ? `<lsp>\n{{static/lsp.md}}\n</lsp>` : ''}
 
-{{static/authoring.md}}
+${viewContext?.mode === 'intake' ? '{{static/intake.md}}' : '{{static/authoring.md}}'}
 
 {{static/instructions.md}}
 
@@ -125,8 +125,8 @@ ${projectHasCode ? 'Project has code - keep code and spec in sync.' : 'Project d
 </current_authoring_mode>
 
 <view_context>
-The user is currently in ${viewContext?.mode ?? 'code'} editing mode.
-${viewContext?.activeFile && viewContext?.mode === 'spec' ? `Active file: ${viewContext.activeFile}` : ''}
+The user is currently in ${viewContext?.mode ?? 'code'} mode.
+${viewContext?.activeFile ? `Active file: ${viewContext.activeFile}` : ''}
 </view_context>
 `;
 

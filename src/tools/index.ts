@@ -28,6 +28,7 @@ import { editSpecTool } from './spec/editSpec.js';
 import { listSpecFilesTool } from './spec/listSpecFiles.js';
 import { compileTool } from './spec/compile.js';
 import { recompileTool } from './spec/recompile.js';
+import { setViewModeTool } from './spec/setViewMode.js';
 
 // Code tools
 import { readFileTool } from './code/readFile.js';
@@ -73,9 +74,14 @@ function getCodeTools(): Tool[] {
  */
 export function getTools(projectHasCode: boolean): Tool[] {
   if (projectHasCode) {
-    return [...getSpecTools(), recompileTool, ...getCodeTools()];
+    return [
+      setViewModeTool,
+      ...getSpecTools(),
+      recompileTool,
+      ...getCodeTools(),
+    ];
   }
-  return [...getSpecTools(), compileTool];
+  return [setViewModeTool, ...getSpecTools(), compileTool];
 }
 
 /** Tool definitions array — sent to the LLM in each request. */
@@ -94,6 +100,7 @@ export function executeTool(
   input: Record<string, any>,
 ): Promise<string> {
   const allTools = [
+    setViewModeTool,
     ...getSpecTools(),
     compileTool,
     recompileTool,
