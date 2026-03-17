@@ -78,7 +78,12 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
         emit('tool_input_delta', { id: e.id, name: e.name, result: e.result });
         break;
       case 'tool_start':
-        emit('tool_start', { id: e.id, name: e.name, input: e.input });
+        emit('tool_start', {
+          id: e.id,
+          name: e.name,
+          input: e.input,
+          ...(e.partial && { partial: true }),
+        });
         break;
       case 'tool_done':
         emit('tool_done', {

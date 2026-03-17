@@ -16,10 +16,16 @@ export const promptUserTool: Tool = {
   definition: {
     name: 'promptUser',
     description:
-      'Prompt the user with structured questions. Renders as an inline form in the chat. Use this instead of plain-text questions when answers are predictable (multiple choice, yes/no, pick from a list). Also use this as a gate before major actions — e.g., confirming the spec looks good before building code. The tool blocks until the user responds.',
+      'Prompt the user with structured questions. Use this instead of plain-text questions when answers are predictable (multiple choice, yes/no, pick from a list). Also use this as a gate before major actions — e.g., confirming the spec looks good before building code. Use type "form" when collecting structured information (5+ questions, intake-style). Omit type or use "inline" for quick clarifications or confirmations mid-conversation. The tool blocks until the user responds.',
     inputSchema: {
       type: 'object',
       properties: {
+        type: {
+          type: 'string',
+          enum: ['form', 'inline'],
+          description:
+            'Layout hint. form: full form for structured intake with many questions. inline: compact in-chat display. Defaults to inline if omitted.',
+        },
         questions: {
           type: 'array',
           items: {

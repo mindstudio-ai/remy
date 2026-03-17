@@ -34,15 +34,24 @@ import { parsePartialJson } from './parsePartialJson.js';
 // Tools where the result comes from outside (sandbox/user), not local execution.
 const EXTERNAL_TOOLS = new Set(['promptUser', 'setViewMode']);
 
-// Tools where we stream the content field progressively to the UI.
-const STREAMABLE_TOOLS = new Set(['writeSpec', 'writeFile']);
+// Tools where we stream the content field as a progressive diff.
+const STREAMABLE_FILE_TOOLS = new Set(['writeSpec', 'writeFile']);
+
+// Tools where we stream progressive tool_start events with partial input.
+const STREAMABLE_INPUT_TOOLS = new Set(['promptUser']);
 
 // Events emitted to the UI layer
 export type AgentEvent =
   | { type: 'text'; text: string }
   | { type: 'thinking'; text: string }
   | { type: 'tool_input_delta'; id: string; name: string; result: string }
-  | { type: 'tool_start'; id: string; name: string; input: Record<string, any> }
+  | {
+      type: 'tool_start';
+      id: string;
+      name: string;
+      input: Record<string, any>;
+      partial?: boolean;
+    }
   | {
       type: 'tool_done';
       id: string;
@@ -146,16 +155,7 @@ export async function runTurn(params: {
       name: string;
       input: Record<string, any>;
     }> = [];
-    const toolInputAccumulators = new Map<
-      string,
-      {
-        name: string;
-        json: string;
-        started: boolean;
-        path: string | null;
-        oldContentPromise: Promise<string | null> | null;
-      }
-    >();
+    const toolInputAccumulators = new Map<string, ToolInputAcc>();
     let stopReason = 'end_turn';
 
     type ToolInputAcc = {
@@ -164,6 +164,7 @@ export async function runTurn(params: {
       started: boolean;
       path: string | null;
       oldContentPromise: Promise<string | null> | null;
+      lastQuestionCount: number;
     };
 
     function getOrCreateAccumulator(id: string, name: string): ToolInputAcc {
@@ -175,25 +176,30 @@ export async function runTurn(params: {
           started: false,
           path: null,
           oldContentPromise: null,
+          lastQuestionCount: 0,
         };
         toolInputAccumulators.set(id, acc);
       }
       return acc;
     }
 
-    async function handlePartialToolInput(
+    async function handlePartialFileInput(
       acc: ToolInputAcc,
       id: string,
       name: string,
       partial: Record<string, any>,
     ): Promise<void> {
-      // Emit tool_start once we have the path
       if (!acc.started && typeof partial.path === 'string') {
         acc.started = true;
         acc.path = partial.path;
         acc.oldContentPromise = fs
           .readFile(partial.path, 'utf-8')
           .catch(() => null);
+        log.debug('Streaming file tool: emitting early tool_start', {
+          id,
+          name,
+          path: partial.path,
+        });
         onEvent({
           type: 'tool_start',
           id,
@@ -202,7 +208,6 @@ export async function runTurn(params: {
         });
       }
 
-      // Emit progressive result once we have content
       if (
         acc.path &&
         acc.oldContentPromise &&
@@ -211,6 +216,13 @@ export async function runTurn(params: {
         const oldContent = await acc.oldContentPromise;
         const lineCount = partial.content.split('\n').length;
         const diff = unifiedDiff(acc.path, oldContent ?? '', partial.content);
+        log.debug('Streaming file tool: emitting tool_input_delta', {
+          id,
+          name,
+          path: acc.path,
+          lineCount,
+          contentLength: partial.content.length,
+        });
         onEvent({
           type: 'tool_input_delta',
           id,
@@ -218,6 +230,47 @@ export async function runTurn(params: {
           result: `Writing ${acc.path} (${lineCount} lines)\n${diff}`,
         });
       }
+    }
+
+    function handlePartialPromptUser(
+      acc: ToolInputAcc,
+      id: string,
+      name: string,
+      partial: Record<string, any>,
+    ): void {
+      const questions = partial.questions;
+      if (!Array.isArray(questions) || questions.length === 0) {
+        return;
+      }
+
+      // Only emit when the array has grown — the parser moving to the
+      // next item proves the previous item's strings are fully closed.
+      // Exclude the last item (may be mid-parse with truncated strings).
+      const confirmed = questions.length > 1 ? questions.slice(0, -1) : [];
+
+      // For the very last item, we can't be sure it's complete until
+      // tool_use arrives. But if the array grew, everything before
+      // the last item is safe.
+      if (confirmed.length <= acc.lastQuestionCount) {
+        return;
+      }
+
+      log.debug('Streaming promptUser: emitting partial tool_start', {
+        id,
+        confirmedQuestions: confirmed.length,
+        totalParsed: questions.length,
+        previousCount: acc.lastQuestionCount,
+      });
+      acc.lastQuestionCount = confirmed.length;
+
+      acc.started = true;
+      onEvent({
+        type: 'tool_start',
+        id,
+        name,
+        input: { ...partial, questions: confirmed },
+        partial: true,
+      });
     }
 
     // Stream one LLM turn
@@ -248,19 +301,27 @@ export async function runTurn(params: {
             // Anthropic: raw JSON string fragments
             const acc = getOrCreateAccumulator(event.id, event.name);
             acc.json += event.delta;
+            log.debug('Received tool_input_delta', {
+              id: event.id,
+              name: event.name,
+              deltaLength: event.delta.length,
+              accumulatedLength: acc.json.length,
+            });
 
-            if (STREAMABLE_TOOLS.has(event.name)) {
-              try {
-                const partial = parsePartialJson(acc.json);
-                await handlePartialToolInput(
+            try {
+              const partial = parsePartialJson(acc.json);
+              if (STREAMABLE_FILE_TOOLS.has(event.name)) {
+                await handlePartialFileInput(
                   acc,
                   event.id,
                   event.name,
                   partial,
                 );
-              } catch {
-                // Not enough data to parse yet
+              } else if (STREAMABLE_INPUT_TOOLS.has(event.name)) {
+                handlePartialPromptUser(acc, event.id, event.name, partial);
               }
+            } catch {
+              // Not enough data to parse yet
             }
             break;
           }
@@ -268,26 +329,44 @@ export async function runTurn(params: {
           case 'tool_input_args': {
             // Gemini: accumulated partial object snapshot
             const acc = getOrCreateAccumulator(event.id, event.name);
+            log.debug('Received tool_input_args', {
+              id: event.id,
+              name: event.name,
+              keys: Object.keys(event.args),
+            });
 
-            if (STREAMABLE_TOOLS.has(event.name)) {
-              await handlePartialToolInput(
+            if (STREAMABLE_FILE_TOOLS.has(event.name)) {
+              await handlePartialFileInput(
                 acc,
                 event.id,
                 event.name,
                 event.args,
               );
+            } else if (STREAMABLE_INPUT_TOOLS.has(event.name)) {
+              handlePartialPromptUser(acc, event.id, event.name, event.args);
             }
             break;
           }
 
-          case 'tool_use':
+          case 'tool_use': {
             toolCalls.push({
               id: event.id,
               name: event.name,
               input: event.input,
             });
-            // Skip tool_start if already emitted during streaming
-            if (!toolInputAccumulators.has(event.id)) {
+            const acc = toolInputAccumulators.get(event.id);
+            const wasStreamed = acc?.started ?? false;
+            const emitFinal =
+              !wasStreamed || STREAMABLE_INPUT_TOOLS.has(event.name);
+            log.debug('Received tool_use', {
+              id: event.id,
+              name: event.name,
+              wasStreamed,
+              emitToolStart: emitFinal,
+            });
+            // For file tools that streamed, skip — tool_start already emitted.
+            // For everything else (including promptUser), emit final tool_start.
+            if (emitFinal) {
               onEvent({
                 type: 'tool_start',
                 id: event.id,
@@ -296,6 +375,7 @@ export async function runTurn(params: {
               });
             }
             break;
+          }
 
           case 'done':
             stopReason = event.stopReason;
@@ -361,7 +441,8 @@ export async function runTurn(params: {
           let result: string;
 
           if (EXTERNAL_TOOLS.has(tc.name) && resolveExternalTool) {
-            // External tool — wait for the sandbox/user to provide the result
+            // External tool — save before blocking on user/sandbox response
+            saveSession(state);
             log.debug('Waiting for external tool result', {
               name: tc.name,
               id: tc.id,
