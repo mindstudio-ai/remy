@@ -85,6 +85,11 @@ export const promptUserTool: Tool = {
                 description:
                   'For select: allow picking multiple options (returns array). For file: allow multiple uploads (returns array of URLs). Defaults to false.',
               },
+              allowOther: {
+                type: 'boolean',
+                description:
+                  'For select type: adds an "Other" option with a free-form text input. Defaults to false.',
+              },
               format: {
                 type: 'string',
                 enum: ['email', 'url', 'phone', 'number'],
