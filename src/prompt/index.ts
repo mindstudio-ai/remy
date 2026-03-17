@@ -17,6 +17,7 @@ import {
   loadProjectInstructions,
   loadProjectManifest,
   loadProjectFileListing,
+  loadSpecFileMetadata,
 } from './static/projectContext.js';
 
 const PROMPT_DIR =
@@ -52,6 +53,7 @@ export function buildSystemPrompt(
   const projectContext = [
     loadProjectInstructions(),
     loadProjectManifest(),
+    loadSpecFileMetadata(),
     loadProjectFileListing(),
   ]
     .filter(Boolean)
