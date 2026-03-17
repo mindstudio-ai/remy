@@ -16,7 +16,7 @@ export const promptUserTool: Tool = {
   definition: {
     name: 'promptUser',
     description:
-      'Prompt the user with structured questions. Use this instead of plain-text questions when answers are predictable (multiple choice, yes/no, pick from a list). Also use this as a gate before major actions — e.g., confirming the spec looks good before building code. Choose the type first before writing questions. Use "form" when collecting structured information (5+ questions, intake-style). Use "inline" for quick clarifications or confirmations mid-conversation. The tool blocks until the user responds. If the user dismisses the prompt without answering, the result will contain `_dismissed: true` — handle gracefully by making reasonable assumptions or asking differently.',
+      'Ask the user structured questions. Choose type first: "form" for structured intake (5+ questions, takes over screen), "inline" for quick clarifications or confirmations. Blocks until the user responds. Result contains `_dismissed: true` if the user dismisses without answering.',
     inputSchema: {
       type: 'object',
       properties: {
