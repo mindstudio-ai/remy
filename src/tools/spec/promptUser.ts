@@ -16,7 +16,7 @@ export const promptUserTool: Tool = {
   definition: {
     name: 'promptUser',
     description:
-      'Prompt the user with structured questions. Use this instead of plain-text questions when answers are predictable (multiple choice, yes/no, pick from a list). Also use this as a gate before major actions — e.g., confirming the spec looks good before building code. Use type "form" when collecting structured information (5+ questions, intake-style). Omit type or use "inline" for quick clarifications or confirmations mid-conversation. The tool blocks until the user responds.',
+      'Prompt the user with structured questions. Use this instead of plain-text questions when answers are predictable (multiple choice, yes/no, pick from a list). Also use this as a gate before major actions — e.g., confirming the spec looks good before building code. Choose the type first before writing questions. Use "form" when collecting structured information (5+ questions, intake-style). Use "inline" for quick clarifications or confirmations mid-conversation. The tool blocks until the user responds.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -24,7 +24,7 @@ export const promptUserTool: Tool = {
           type: 'string',
           enum: ['form', 'inline'],
           description:
-            'Layout hint. form: full form for structured intake with many questions. inline: compact in-chat display. Defaults to inline if omitted.',
+            'Choose this first, before writing questions. form: full form for structured intake with many questions. inline: compact in-chat display.',
         },
         questions: {
           type: 'array',
@@ -40,16 +40,21 @@ export const promptUserTool: Tool = {
                 type: 'string',
                 description: 'The question to ask.',
               },
-              context: {
-                type: 'string',
-                description:
-                  'Optional extra detail rendered below the question in smaller text.',
-              },
               type: {
                 type: 'string',
-                enum: ['choice', 'multi', 'text', 'confirm'],
+                enum: ['select', 'text', 'confirm', 'file', 'color'],
                 description:
-                  'choice: pick one from a list. multi: pick one or more. text: free-form input. confirm: yes/no.',
+                  'select: pick from options. text: free-form input. confirm: yes/no. file: file/image upload — returns CDN URL(s) that can be referenced directly or curled onto disk. color: color picker (returns hex).',
+              },
+              helpText: {
+                type: 'string',
+                description:
+                  'Optional detail rendered below the question as a subtitle.',
+              },
+              required: {
+                type: 'boolean',
+                description:
+                  'Whether the user must answer this question. Defaults to false.',
               },
               options: {
                 type: 'array',
@@ -73,7 +78,27 @@ export const promptUserTool: Tool = {
                   ],
                 },
                 description:
-                  'Options for choice and multi types. Each can be a string or { label, description }. Not needed for text or confirm.',
+                  'Options for select type. Each can be a string or { label, description }.',
+              },
+              multiple: {
+                type: 'boolean',
+                description:
+                  'For select: allow picking multiple options (returns array). For file: allow multiple uploads (returns array of URLs). Defaults to false.',
+              },
+              format: {
+                type: 'string',
+                enum: ['email', 'url', 'phone', 'number'],
+                description:
+                  'For text type: adds input validation and mobile keyboard hints.',
+              },
+              placeholder: {
+                type: 'string',
+                description: 'For text type: placeholder hint text.',
+              },
+              accept: {
+                type: 'string',
+                description:
+                  'For file type: comma-separated mime types, like HTML input accept (e.g. "image/*", "image/*,video/*", "application/pdf"). Omit to accept all file types.',
               },
             },
             required: ['id', 'question', 'type'],
@@ -81,7 +106,7 @@ export const promptUserTool: Tool = {
           description: 'One or more questions to present.',
         },
       },
-      required: ['questions'],
+      required: ['type', 'questions'],
     },
   },
 
@@ -93,17 +118,24 @@ export const promptUserTool: Tool = {
       question: string;
       type: string;
       options?: Array<string | { label: string }>;
+      multiple?: boolean;
     }>;
 
     const lines = questions.map((q) => {
       let line = `- ${q.question}`;
-      if (q.type === 'choice' || q.type === 'multi') {
+      if (q.type === 'select') {
         const opts = (q.options || []).map((o) =>
           typeof o === 'string' ? o : o.label,
         );
-        line += ` (${opts.join(' / ')})`;
+        line += q.multiple
+          ? ` (pick one or more: ${opts.join(' / ')})`
+          : ` (${opts.join(' / ')})`;
       } else if (q.type === 'confirm') {
         line += ' (yes / no)';
+      } else if (q.type === 'file') {
+        line += ' (upload file)';
+      } else if (q.type === 'color') {
+        line += ' (pick a color)';
       }
       return line;
     });

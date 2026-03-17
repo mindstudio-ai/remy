@@ -243,6 +243,19 @@ export async function runTurn(params: {
         return;
       }
 
+      // Buffer until we know the display type. The model should emit
+      // type before questions (it's required and listed first in the
+      // schema), but if it doesn't, fall back to 'inline' once we
+      // have 2+ confirmed questions (type was likely omitted).
+      const hasType = typeof partial.type === 'string';
+      if (!hasType && questions.length < 3) {
+        log.debug('Streaming promptUser: buffering, waiting for type', {
+          id,
+          parsedQuestions: questions.length,
+        });
+        return;
+      }
+
       // Only emit when the array has grown — the parser moving to the
       // next item proves the previous item's strings are fully closed.
       // Exclude the last item (may be mid-parse with truncated strings).
@@ -255,8 +268,10 @@ export async function runTurn(params: {
         return;
       }
 
+      const resolvedType = partial.type ?? 'inline';
       log.debug('Streaming promptUser: emitting partial tool_start', {
         id,
+        type: resolvedType,
         confirmedQuestions: confirmed.length,
         totalParsed: questions.length,
         previousCount: acc.lastQuestionCount,
@@ -268,7 +283,7 @@ export async function runTurn(params: {
         type: 'tool_start',
         id,
         name,
-        input: { ...partial, questions: confirmed },
+        input: { ...partial, type: resolvedType, questions: confirmed },
         partial: true,
       });
     }
