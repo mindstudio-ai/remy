@@ -59,8 +59,15 @@ export function buildSystemPrompt(
     .filter(Boolean)
     .join('\n');
 
+  const now = new Date().toLocaleString('en-US', {
+    dateStyle: 'full',
+    timeStyle: 'long',
+  });
+
   const template = `
 {{static/identity.md}}
+
+The current date is ${now}.
 
 <platform_docs>
   <platform>
