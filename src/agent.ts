@@ -24,17 +24,24 @@ import {
   type Attachment,
   type StreamEvent,
 } from './api.js';
+import fs from 'node:fs/promises';
 import { executeTool, getToolDefinitions } from './tools/index.js';
+import { unifiedDiff } from './tools/_helpers/diff.js';
 import { saveSession } from './session.js';
 import { log } from './logger.js';
+import { parsePartialJson } from './parsePartialJson.js';
 
 // Tools where the result comes from outside (sandbox/user), not local execution.
 const EXTERNAL_TOOLS = new Set(['promptUser', 'setViewMode']);
+
+// Tools where we stream the content field progressively to the UI.
+const STREAMABLE_TOOLS = new Set(['writeSpec', 'writeFile']);
 
 // Events emitted to the UI layer
 export type AgentEvent =
   | { type: 'text'; text: string }
   | { type: 'thinking'; text: string }
+  | { type: 'tool_input_delta'; id: string; name: string; result: string }
   | { type: 'tool_start'; id: string; name: string; input: Record<string, any> }
   | {
       type: 'tool_done';
@@ -43,6 +50,7 @@ export type AgentEvent =
       result: string;
       isError: boolean;
     }
+  | { type: 'turn_started' }
   | { type: 'turn_done' }
   | { type: 'turn_cancelled' }
   | { type: 'error'; error: string };
@@ -111,6 +119,8 @@ export async function runTurn(params: {
       }),
   });
 
+  onEvent({ type: 'turn_started' });
+
   // Add user message to conversation
   const userMsg: Message = { role: 'user', content: userMessage };
   if (attachments && attachments.length > 0) {
@@ -136,6 +146,16 @@ export async function runTurn(params: {
       name: string;
       input: Record<string, any>;
     }> = [];
+    const toolInputAccumulators = new Map<
+      string,
+      {
+        name: string;
+        json: string;
+        started: boolean;
+        path: string | null;
+        oldContentPromise: Promise<string | null> | null;
+      }
+    >();
     let stopReason = 'end_turn';
 
     // Stream one LLM turn
@@ -162,18 +182,86 @@ export async function runTurn(params: {
             onEvent({ type: 'thinking', text: event.text });
             break;
 
+          case 'tool_input_delta': {
+            let acc = toolInputAccumulators.get(event.id);
+            if (!acc) {
+              acc = {
+                name: event.name,
+                json: '',
+                started: false,
+                path: null,
+                oldContentPromise: null,
+              };
+              toolInputAccumulators.set(event.id, acc);
+            }
+            acc.json += event.delta;
+
+            if (STREAMABLE_TOOLS.has(event.name)) {
+              try {
+                const partial = parsePartialJson(acc.json);
+
+                // Emit tool_start once we have the path
+                if (
+                  !acc.started &&
+                  partial &&
+                  typeof partial.path === 'string'
+                ) {
+                  acc.started = true;
+                  acc.path = partial.path;
+                  acc.oldContentPromise = fs
+                    .readFile(partial.path, 'utf-8')
+                    .catch(() => null);
+                  onEvent({
+                    type: 'tool_start',
+                    id: event.id,
+                    name: event.name,
+                    input: { path: partial.path },
+                  });
+                }
+
+                // Emit progressive result once we have content
+                if (
+                  acc.path &&
+                  acc.oldContentPromise &&
+                  partial &&
+                  typeof partial.content === 'string'
+                ) {
+                  const oldContent = await acc.oldContentPromise;
+                  const lineCount = partial.content.split('\n').length;
+                  const diff = unifiedDiff(
+                    acc.path,
+                    oldContent ?? '',
+                    partial.content,
+                  );
+                  onEvent({
+                    type: 'tool_input_delta',
+                    id: event.id,
+                    name: event.name,
+                    result: `Writing ${acc.path} (${lineCount} lines)\n${diff}`,
+                  });
+                }
+              } catch {
+                // Not enough data to parse yet
+              }
+            }
+            break;
+          }
+
           case 'tool_use':
             toolCalls.push({
               id: event.id,
               name: event.name,
               input: event.input,
             });
-            onEvent({
-              type: 'tool_start',
-              id: event.id,
-              name: event.name,
-              input: event.input,
-            });
+            // Skip tool_start if already emitted during streaming
+            if (!toolInputAccumulators.has(event.id)) {
+              onEvent({
+                type: 'tool_start',
+                id: event.id,
+                name: event.name,
+                input: event.input,
+              });
+            }
             break;
 
           case 'done':

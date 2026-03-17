@@ -74,6 +74,9 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       case 'thinking':
         emit('thinking', { text: e.text });
         break;
+      case 'tool_input_delta':
+        emit('tool_input_delta', { id: e.id, name: e.name, result: e.result });
+        break;
       case 'tool_start':
         emit('tool_start', { id: e.id, name: e.name, input: e.input });
         break;
@@ -84,6 +87,9 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
           result: e.result,
           isError: e.isError,
         });
+        break;
+      case 'turn_started':
+        emit('turn_started');
         break;
       case 'turn_done':
         emit('turn_done');
