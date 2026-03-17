@@ -44,6 +44,12 @@ export type StreamEvent =
   | { type: 'thinking'; text: string }
   | { type: 'tool_input_delta'; id: string; name: string; delta: string }
   | {
+      type: 'tool_input_args';
+      id: string;
+      name: string;
+      args: Record<string, any>;
+    }
+  | {
       type: 'tool_use';
       id: string;
       name: string;

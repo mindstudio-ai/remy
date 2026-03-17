@@ -158,6 +158,68 @@ export async function runTurn(params: {
     >();
     let stopReason = 'end_turn';
 
+    type ToolInputAcc = {
+      name: string;
+      json: string;
+      started: boolean;
+      path: string | null;
+      oldContentPromise: Promise<string | null> | null;
+    };
+
+    function getOrCreateAccumulator(id: string, name: string): ToolInputAcc {
+      let acc = toolInputAccumulators.get(id);
+      if (!acc) {
+        acc = {
+          name,
+          json: '',
+          started: false,
+          path: null,
+          oldContentPromise: null,
+        };
+        toolInputAccumulators.set(id, acc);
+      }
+      return acc;
+    }
+
+    async function handlePartialToolInput(
+      acc: ToolInputAcc,
+      id: string,
+      name: string,
+      partial: Record<string, any>,
+    ): Promise<void> {
+      // Emit tool_start once we have the path
+      if (!acc.started && typeof partial.path === 'string') {
+        acc.started = true;
+        acc.path = partial.path;
+        acc.oldContentPromise = fs
+          .readFile(partial.path, 'utf-8')
+          .catch(() => null);
+        onEvent({
+          type: 'tool_start',
+          id,
+          name,
+          input: { path: partial.path },
+        });
+      }
+
+      // Emit progressive result once we have content
+      if (
+        acc.path &&
+        acc.oldContentPromise &&
+        typeof partial.content === 'string'
+      ) {
+        const oldContent = await acc.oldContentPromise;
+        const lineCount = partial.content.split('\n').length;
+        const diff = unifiedDiff(acc.path, oldContent ?? '', partial.content);
+        onEvent({
+          type: 'tool_input_delta',
+          id,
+          name,
+          result: `Writing ${acc.path} (${lineCount} lines)\n${diff}`,
+        });
+      }
+    }
+
     // Stream one LLM turn
     try {
       for await (const event of streamChat({
@@ -183,66 +245,37 @@ export async function runTurn(params: {
             break;
 
           case 'tool_input_delta': {
-            let acc = toolInputAccumulators.get(event.id);
-            if (!acc) {
-              acc = {
-                name: event.name,
-                json: '',
-                started: false,
-                path: null,
-                oldContentPromise: null,
-              };
-              toolInputAccumulators.set(event.id, acc);
-            }
+            // Anthropic: raw JSON string fragments
+            const acc = getOrCreateAccumulator(event.id, event.name);
             acc.json += event.delta;
 
             if (STREAMABLE_TOOLS.has(event.name)) {
               try {
                 const partial = parsePartialJson(acc.json);
-
-                // Emit tool_start once we have the path
-                if (
-                  !acc.started &&
-                  partial &&
-                  typeof partial.path === 'string'
-                ) {
-                  acc.started = true;
-                  acc.path = partial.path;
-                  acc.oldContentPromise = fs
-                    .readFile(partial.path, 'utf-8')
-                    .catch(() => null);
-                  onEvent({
-                    type: 'tool_start',
-                    id: event.id,
-                    name: event.name,
-                    input: { path: partial.path },
-                  });
-                }
-
-                // Emit progressive result once we have content
-                if (
-                  acc.path &&
-                  acc.oldContentPromise &&
-                  partial &&
-                  typeof partial.content === 'string'
-                ) {
-                  const oldContent = await acc.oldContentPromise;
-                  const lineCount = partial.content.split('\n').length;
-                  const diff = unifiedDiff(
-                    acc.path,
-                    oldContent ?? '',
-                    partial.content,
-                  );
-                  onEvent({
-                    type: 'tool_input_delta',
-                    id: event.id,
-                    name: event.name,
-                    result: `Writing ${acc.path} (${lineCount} lines)\n${diff}`,
-                  });
-                }
+                await handlePartialToolInput(
+                  acc,
+                  event.id,
+                  event.name,
+                  partial,
+                );
               } catch {
                 // Not enough data to parse yet
               }
+            }
+            break;
+          }
+
+          case 'tool_input_args': {
+            // Gemini: accumulated partial object snapshot
+            const acc = getOrCreateAccumulator(event.id, event.name);
+
+            if (STREAMABLE_TOOLS.has(event.name)) {
+              await handlePartialToolInput(
+                acc,
+                event.id,
+                event.name,
+                event.args,
+              );
             }
             break;
           }
