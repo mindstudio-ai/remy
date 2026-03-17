@@ -7,6 +7,8 @@
  */
 
 import { createInterface } from 'node:readline';
+import fs from 'node:fs';
+import path from 'node:path';
 import { resolveConfig } from './config.js';
 import { buildSystemPrompt } from './prompt/index.js';
 import { setLspBaseUrl } from './tools/_helpers/lsp.js';
@@ -23,6 +25,14 @@ export interface HeadlessOptions {
   baseUrl?: string;
   model?: string;
   lspUrl?: string;
+}
+
+const ACTIONS_DIR =
+  (import.meta.dirname ?? path.dirname(new URL(import.meta.url).pathname)) +
+  '/prompt/actions';
+
+function loadActionPrompt(name: string): string {
+  return fs.readFileSync(path.join(ACTIONS_DIR, `${name}.md`), 'utf-8').trim();
 }
 
 function emit(event: string, data?: Record<string, unknown>): void {
@@ -124,9 +134,17 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     let parsed: {
       action?: string;
       text?: string;
+      runCommand?: string;
       projectHasCode?: boolean;
       viewContext?: {
-        mode: 'intake' | 'code' | 'spec';
+        mode:
+          | 'intake'
+          | 'preview'
+          | 'spec'
+          | 'code'
+          | 'databases'
+          | 'scenarios'
+          | 'logs';
         openFiles?: string[];
         activeFile?: string;
       };
@@ -177,7 +195,7 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       return;
     }
 
-    if (parsed.action === 'message' && parsed.text) {
+    if (parsed.action === 'message' && (parsed.text || parsed.runCommand)) {
       if (running) {
         emit('error', { error: 'Agent is already processing a message' });
         return;
@@ -190,12 +208,20 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
           parsed.attachments.map((a) => a.url),
         );
       }
+
+      // Resolve the user message — runCommand may substitute a built-in prompt
+      let userMessage = parsed.text ?? '';
+      const isCommand = !!parsed.runCommand;
+      if (parsed.runCommand === 'sync') {
+        userMessage = loadActionPrompt('sync');
+      }
+
       const projectHasCode = parsed.projectHasCode ?? true;
       const system = buildSystemPrompt(projectHasCode, parsed.viewContext);
       try {
         await runTurn({
           state,
-          userMessage: parsed.text,
+          userMessage,
           attachments: parsed.attachments,
           apiConfig: config,
           system,
@@ -204,6 +230,7 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
           signal: currentAbort.signal,
           onEvent,
           resolveExternalTool,
+          hidden: isCommand,
         });
       } catch (err: any) {
         emit('error', { error: err.message });

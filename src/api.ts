@@ -29,6 +29,8 @@ export interface Message {
   isToolError?: boolean;
   // User messages may include file attachments
   attachments?: Attachment[];
+  // Hidden messages are sent to the LLM but not shown in the UI
+  hidden?: boolean;
 }
 
 // Tool definition sent to the LLM — vendor-agnostic JSON Schema format

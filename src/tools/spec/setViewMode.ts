@@ -11,13 +11,21 @@ export const setViewModeTool: Tool = {
   definition: {
     name: 'setViewMode',
     description:
-      'Switch the IDE view mode. Use this to navigate the user to the right context: "intake" for initial chat, "spec" for spec editing, "code" for code editing. When transitioning from intake to spec, write the first spec file BEFORE calling this — the user needs something to see when the spec editor opens. After code generation, switch to "code".',
+      'Switch the IDE view mode. Use this to navigate the user to the right context. When transitioning from intake to spec, write the first spec file BEFORE calling this — the user needs something to see when the spec editor opens. Switch to "code" during code generation, then to "preview" when done so the user sees the result.',
     inputSchema: {
       type: 'object',
       properties: {
         mode: {
           type: 'string',
-          enum: ['intake', 'spec', 'code'],
+          enum: [
+            'intake',
+            'preview',
+            'spec',
+            'code',
+            'databases',
+            'scenarios',
+            'logs',
+          ],
           description: 'The view mode to switch to.',
         },
       },

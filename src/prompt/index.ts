@@ -41,7 +41,14 @@ function resolveIncludes(template: string): string {
 }
 
 export interface ViewContext {
-  mode: 'intake' | 'spec' | 'code';
+  mode:
+    | 'intake'
+    | 'preview'
+    | 'spec'
+    | 'code'
+    | 'databases'
+    | 'scenarios'
+    | 'logs';
   openFiles?: string[];
   activeFile?: string;
 }

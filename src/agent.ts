@@ -32,7 +32,11 @@ import { log } from './logger.js';
 import { parsePartialJson } from './parsePartialJson.js';
 
 // Tools where the result comes from outside (sandbox/user), not local execution.
-const EXTERNAL_TOOLS = new Set(['promptUser', 'setViewMode']);
+const EXTERNAL_TOOLS = new Set([
+  'promptUser',
+  'setViewMode',
+  'clearSyncStatus',
+]);
 
 // Tools where we stream the content field as a progressive diff.
 const STREAMABLE_FILE_TOOLS = new Set(['writeSpec', 'writeFile']);
@@ -102,6 +106,7 @@ export async function runTurn(params: {
   signal?: AbortSignal;
   onEvent: (event: AgentEvent) => void;
   resolveExternalTool?: ExternalToolResolver;
+  hidden?: boolean;
 }): Promise<void> {
   const {
     state,
@@ -114,6 +119,7 @@ export async function runTurn(params: {
     signal,
     onEvent,
     resolveExternalTool,
+    hidden,
   } = params;
   const tools = getToolDefinitions(projectHasCode);
 
@@ -132,6 +138,9 @@ export async function runTurn(params: {
 
   // Add user message to conversation
   const userMsg: Message = { role: 'user', content: userMessage };
+  if (hidden) {
+    userMsg.hidden = true;
+  }
   if (attachments && attachments.length > 0) {
     userMsg.attachments = attachments;
     log.debug('Attachments added to user message', {

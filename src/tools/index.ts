@@ -28,6 +28,7 @@ import { editSpecTool } from './spec/editSpec.js';
 import { listSpecFilesTool } from './spec/listSpecFiles.js';
 import { setViewModeTool } from './spec/setViewMode.js';
 import { promptUserTool } from './spec/promptUser.js';
+import { clearSyncStatusTool } from './spec/clearSyncStatus.js';
 
 // Code tools
 import { readFileTool } from './code/readFile.js';
@@ -76,11 +77,17 @@ export function getTools(projectHasCode: boolean): Tool[] {
     return [
       setViewModeTool,
       promptUserTool,
+      clearSyncStatusTool,
       ...getSpecTools(),
       ...getCodeTools(),
     ];
   }
-  return [setViewModeTool, promptUserTool, ...getSpecTools()];
+  return [
+    setViewModeTool,
+    promptUserTool,
+    clearSyncStatusTool,
+    ...getSpecTools(),
+  ];
 }
 
 /** Tool definitions array — sent to the LLM in each request. */
@@ -101,6 +108,7 @@ export function executeTool(
   const allTools = [
     setViewModeTool,
     promptUserTool,
+    clearSyncStatusTool,
     ...getSpecTools(),
     ...getCodeTools(),
   ];
