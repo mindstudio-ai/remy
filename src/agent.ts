@@ -24,9 +24,11 @@ import {
   type Attachment,
   type StreamEvent,
 } from './api.js';
-import fs from 'node:fs/promises';
-import { executeTool, getToolDefinitions } from './tools/index.js';
-import { unifiedDiff } from './tools/_helpers/diff.js';
+import {
+  executeTool,
+  getToolByName,
+  getToolDefinitions,
+} from './tools/index.js';
 import { saveSession } from './session.js';
 import { log } from './logger.js';
 import { parsePartialJson } from './parsePartialJson.js';
@@ -36,13 +38,8 @@ const EXTERNAL_TOOLS = new Set([
   'promptUser',
   'setViewMode',
   'clearSyncStatus',
+  'presentSyncPlan',
 ]);
-
-// Tools where we stream the content field as a progressive diff.
-const STREAMABLE_FILE_TOOLS = new Set(['writeSpec', 'writeFile']);
-
-// Tools where we stream progressive tool_start events with partial input.
-const STREAMABLE_INPUT_TOOLS = new Set(['promptUser']);
 
 // Events emitted to the UI layer
 export type AgentEvent =
@@ -107,6 +104,7 @@ export async function runTurn(params: {
   onEvent: (event: AgentEvent) => void;
   resolveExternalTool?: ExternalToolResolver;
   hidden?: boolean;
+  extraTools?: import('./tools/index.js').Tool[];
 }): Promise<void> {
   const {
     state,
@@ -120,8 +118,17 @@ export async function runTurn(params: {
     onEvent,
     resolveExternalTool,
     hidden,
+    extraTools,
   } = params;
-  const tools = getToolDefinitions(projectHasCode);
+  const tools = [
+    ...getToolDefinitions(projectHasCode),
+    ...(extraTools ?? []).map((t) => t.definition),
+  ];
+
+  // Build a local tool lookup that includes extra tools
+  const lookupTool = (name: string) =>
+    (extraTools ?? []).find((t) => t.definition.name === name) ??
+    getToolByName(name);
 
   log.info('Turn started', {
     messageLength: userMessage.length,
@@ -171,130 +178,89 @@ export async function runTurn(params: {
       name: string;
       json: string;
       started: boolean;
-      path: string | null;
-      oldContentPromise: Promise<string | null> | null;
-      lastQuestionCount: number;
+      lastEmittedCount: number;
     };
 
     function getOrCreateAccumulator(id: string, name: string): ToolInputAcc {
       let acc = toolInputAccumulators.get(id);
       if (!acc) {
-        acc = {
-          name,
-          json: '',
-          started: false,
-          path: null,
-          oldContentPromise: null,
-          lastQuestionCount: 0,
-        };
+        acc = { name, json: '', started: false, lastEmittedCount: 0 };
         toolInputAccumulators.set(id, acc);
       }
       return acc;
     }
 
-    async function handlePartialFileInput(
+    async function handlePartialInput(
       acc: ToolInputAcc,
       id: string,
       name: string,
       partial: Record<string, any>,
     ): Promise<void> {
-      if (!acc.started && typeof partial.path === 'string') {
+      const tool = lookupTool(name);
+      if (!tool?.streaming) {
+        return;
+      }
+
+      const {
+        contentField = 'content',
+        transform,
+        partialInput,
+      } = tool.streaming;
+
+      // Input streaming mode (progressive tool_start with partial: true)
+      if (partialInput) {
+        const result = partialInput(partial, acc.lastEmittedCount);
+        if (!result) {
+          return;
+        }
+        acc.lastEmittedCount = result.emittedCount;
         acc.started = true;
-        acc.path = partial.path;
-        acc.oldContentPromise = fs
-          .readFile(partial.path, 'utf-8')
-          .catch(() => null);
-        log.debug('Streaming file tool: emitting early tool_start', {
+        log.debug('Streaming partial tool_start', {
           id,
           name,
-          path: partial.path,
+          emittedCount: result.emittedCount,
         });
         onEvent({
           type: 'tool_start',
           id,
           name,
-          input: { path: partial.path },
+          input: result.input,
+          partial: true,
         });
+        return;
       }
 
-      if (
-        acc.path &&
-        acc.oldContentPromise &&
-        typeof partial.content === 'string'
-      ) {
-        const oldContent = await acc.oldContentPromise;
-        const lineCount = partial.content.split('\n').length;
-        const diff = unifiedDiff(acc.path, oldContent ?? '', partial.content);
-        log.debug('Streaming file tool: emitting tool_input_delta', {
+      // Content streaming mode (tool_input_delta)
+      const content = partial[contentField];
+      if (typeof content !== 'string') {
+        return;
+      }
+
+      if (!acc.started) {
+        acc.started = true;
+        log.debug('Streaming content tool: emitting early tool_start', {
           id,
           name,
-          path: acc.path,
-          lineCount,
-          contentLength: partial.content.length,
         });
-        onEvent({
-          type: 'tool_input_delta',
+        onEvent({ type: 'tool_start', id, name, input: partial });
+      }
+
+      if (transform) {
+        const result = await transform(partial);
+        log.debug('Streaming content tool: emitting tool_input_delta', {
           id,
           name,
-          result: `Writing ${acc.path} (${lineCount} lines)\n${diff}`,
+          resultLength: result.length,
         });
-      }
-    }
-
-    function handlePartialPromptUser(
-      acc: ToolInputAcc,
-      id: string,
-      name: string,
-      partial: Record<string, any>,
-    ): void {
-      const questions = partial.questions;
-      if (!Array.isArray(questions) || questions.length === 0) {
-        return;
-      }
-
-      // Buffer until we know the display type. The model should emit
-      // type before questions (it's required and listed first in the
-      // schema), but if it doesn't, fall back to 'inline' once we
-      // have 2+ confirmed questions (type was likely omitted).
-      const hasType = typeof partial.type === 'string';
-      if (!hasType && questions.length < 3) {
-        log.debug('Streaming promptUser: buffering, waiting for type', {
+        onEvent({ type: 'tool_input_delta', id, name, result });
+      } else {
+        log.debug('Streaming content tool: emitting tool_input_delta', {
           id,
-          parsedQuestions: questions.length,
+          name,
+          contentLength: content.length,
         });
-        return;
+        onEvent({ type: 'tool_input_delta', id, name, result: content });
       }
-
-      // Only emit when the array has grown — the parser moving to the
-      // next item proves the previous item's strings are fully closed.
-      // Exclude the last item (may be mid-parse with truncated strings).
-      const confirmed = questions.length > 1 ? questions.slice(0, -1) : [];
-
-      // For the very last item, we can't be sure it's complete until
-      // tool_use arrives. But if the array grew, everything before
-      // the last item is safe.
-      if (confirmed.length <= acc.lastQuestionCount) {
-        return;
-      }
-
-      const resolvedType = partial.type ?? 'inline';
-      log.debug('Streaming promptUser: emitting partial tool_start', {
-        id,
-        type: resolvedType,
-        confirmedQuestions: confirmed.length,
-        totalParsed: questions.length,
-        previousCount: acc.lastQuestionCount,
-      });
-      acc.lastQuestionCount = confirmed.length;
-
-      acc.started = true;
-      onEvent({
-        type: 'tool_start',
-        id,
-        name,
-        input: { ...partial, type: resolvedType, questions: confirmed },
-        partial: true,
-      });
     }
 
     // Stream one LLM turn
@@ -334,16 +300,7 @@ export async function runTurn(params: {
 
             try {
               const partial = parsePartialJson(acc.json);
-              if (STREAMABLE_FILE_TOOLS.has(event.name)) {
-                await handlePartialFileInput(
-                  acc,
-                  event.id,
-                  event.name,
-                  partial,
-                );
-              } else if (STREAMABLE_INPUT_TOOLS.has(event.name)) {
-                handlePartialPromptUser(acc, event.id, event.name, partial);
-              }
+              await handlePartialInput(acc, event.id, event.name, partial);
             } catch {
               // Not enough data to parse yet
             }
@@ -359,16 +316,7 @@ export async function runTurn(params: {
               keys: Object.keys(event.args),
             });
 
-            if (STREAMABLE_FILE_TOOLS.has(event.name)) {
-              await handlePartialFileInput(
-                acc,
-                event.id,
-                event.name,
-                event.args,
-              );
-            } else if (STREAMABLE_INPUT_TOOLS.has(event.name)) {
-              handlePartialPromptUser(acc, event.id, event.name, event.args);
-            }
+            await handlePartialInput(acc, event.id, event.name, event.args);
             break;
           }
 
@@ -379,18 +327,18 @@ export async function runTurn(params: {
               input: event.input,
             });
             const acc = toolInputAccumulators.get(event.id);
+            const tool = lookupTool(event.name);
             const wasStreamed = acc?.started ?? false;
-            const emitFinal =
-              !wasStreamed || STREAMABLE_INPUT_TOOLS.has(event.name);
+            const isInputStreaming = !!tool?.streaming?.partialInput;
             log.debug('Received tool_use', {
               id: event.id,
               name: event.name,
               wasStreamed,
-              emitToolStart: emitFinal,
+              isInputStreaming,
             });
-            // For file tools that streamed, skip — tool_start already emitted.
-            // For everything else (including promptUser), emit final tool_start.
-            if (emitFinal) {
+            // Emit tool_start if: not streamed yet, OR input-streaming
+            // tool that needs a final non-partial emission.
+            if (!wasStreamed || isInputStreaming) {
               onEvent({
                 type: 'tool_start',
                 id: event.id,

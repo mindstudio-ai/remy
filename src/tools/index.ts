@@ -19,6 +19,27 @@ export interface ToolDefinition {
 export interface Tool {
   definition: ToolDefinition;
   execute: (input: Record<string, any>) => Promise<string>;
+
+  /** Streaming configuration. Omit for tools that don't stream. */
+  streaming?: {
+    /** Which input field contains the streamable content (default: 'content'). */
+    contentField?: string;
+    /**
+     * Transform partial input into the streaming result string.
+     * If omitted, raw content from contentField is emitted as-is.
+     */
+    transform?: (partial: Record<string, any>) => Promise<string> | string;
+    /**
+     * For tools that emit progressive tool_start events (like promptUser).
+     * Return the input to emit, or null to skip this delta.
+     * When provided, tool_start fires with partial:true on each emission,
+     * and a final tool_start (no partial) fires on tool_use.
+     */
+    partialInput?: (
+      partial: Record<string, any>,
+      lastEmittedCount: number,
+    ) => { input: Record<string, any>; emittedCount: number } | null;
+  };
 }
 
 // Spec tools
@@ -95,6 +116,18 @@ export function getToolDefinitions(projectHasCode: boolean): ToolDefinition[] {
   return getTools(projectHasCode).map((t) => t.definition);
 }
 
+/** Look up a tool by name from ALL known tools. */
+export function getToolByName(name: string): Tool | undefined {
+  const allTools = [
+    setViewModeTool,
+    promptUserTool,
+    clearSyncStatusTool,
+    ...getSpecTools(),
+    ...getCodeTools(),
+  ];
+  return allTools.find((t) => t.definition.name === name);
+}
+
 /**
  * Execute a tool by name. Returns the tool's string output.
  *
@@ -105,15 +138,7 @@ export function executeTool(
   name: string,
   input: Record<string, any>,
 ): Promise<string> {
-  const allTools = [
-    setViewModeTool,
-    promptUserTool,
-    clearSyncStatusTool,
-    ...getSpecTools(),
-    ...getCodeTools(),
-  ];
-
-  const tool = allTools.find((t) => t.definition.name === name);
+  const tool = getToolByName(name);
   if (!tool) {
     return Promise.resolve(`Error: Unknown tool "${name}"`);
   }

@@ -115,6 +115,37 @@ export const promptUserTool: Tool = {
     },
   },
 
+  streaming: {
+    partialInput: (partial, lastCount) => {
+      const questions = partial.questions;
+      if (!Array.isArray(questions) || questions.length === 0) {
+        return null;
+      }
+
+      // Buffer until we know the display type
+      const hasType = typeof partial.type === 'string';
+      if (!hasType && questions.length < 3) {
+        return null;
+      }
+
+      // Only emit when the array has grown — exclude the last item
+      // (may be mid-parse with truncated strings)
+      const confirmed = questions.length > 1 ? questions.slice(0, -1) : [];
+      if (confirmed.length <= lastCount) {
+        return null;
+      }
+
+      return {
+        input: {
+          ...partial,
+          type: partial.type ?? 'inline',
+          questions: confirmed,
+        },
+        emittedCount: confirmed.length,
+      };
+    },
+  },
+
   async execute(input) {
     // The sandbox intercepts this tool and handles the UI.
     // This fallback runs outside the sandbox (e.g., local CLI).

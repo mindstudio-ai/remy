@@ -1,8 +1,8 @@
 # Remy
 
-A coding agent for MindStudio apps.
+A spec-building and coding agent for MindStudio apps.
 
-Remy helps you build, modify, and debug MindStudio projects. It runs locally in your terminal or as a headless subprocess in the MindStudio sandbox. It has tools for reading/writing files, running shell commands, searching code, editing MSFM specs, and (in the sandbox) TypeScript language server integration. LLM calls are routed through the MindStudio platform for billing and model routing.
+Remy helps users design, spec, build, and iterate on MindStudio projects. It runs locally in a terminal or as a headless subprocess in the MindStudio sandbox. It has tools for reading/writing specs and code, running shell commands, searching code, prompting users with structured forms, and (in the sandbox) TypeScript language server integration. LLM calls are routed through the MindStudio platform for billing and model routing.
 
 ## Quick Start
 
@@ -30,28 +30,6 @@ Options:
   --lsp-url <url>    LSP sidecar URL (enables LSP tools when set)
 ```
 
-Remy starts an interactive session. Type a message and press Enter. The agent reads your project, makes changes, and verifies them — all in a loop.
-
-```
-$ remy
-Remy v0.1.0 — MindStudio coding agent
-
-> Add a delete method for haikus with soft-delete
-
-  ⟡ readFile src/tables/haikus.ts
-    → 12 lines
-  ⟡ readFile mindstudio.json
-    → 28 lines
-  ⟡ writeFile src/deleteHaiku.ts
-    → Created (24 lines)
-  ⟡ editFile mindstudio.json
-    → Updated
-
-  Done. Created deleteHaiku method with soft-delete via deleted_at timestamp.
-
->
-```
-
 ### Slash Commands
 
 | Command | Description |
@@ -61,15 +39,23 @@ Remy v0.1.0 — MindStudio coding agent
 
 ### Session Persistence
 
-Remy saves conversation history to `.remy-session.json` in the working directory after each turn. On restart, it picks up where you left off. Use `/clear` to start fresh.
+Remy saves conversation history to `.remy-session.json` in the working directory after each turn and before blocking on external tools. On restart, it picks up where you left off. Use `/clear` to start fresh.
 
 ## Tools
 
-Remy's tool set depends on the project state. The sandbox server tells remy whether the project has generated code in `dist/` via the `projectHasCode` field on messages.
+Remy's tool set depends on the project state. The sandbox tells remy whether the project has generated code in `dist/` via the `projectHasCode` field on messages.
+
+### Always Available
+
+| Tool | Description |
+|------|-------------|
+| `setViewMode` | Switch the IDE view (intake, preview, spec, code, databases, scenarios, logs) |
+| `promptUser` | Ask the user structured questions (form or inline display) |
+| `clearSyncStatus` | Clear sync flags after syncing spec and code |
 
 ### Spec Tools
 
-Available in all sandbox sessions. Used for authoring and editing MSFM specs in `src/`.
+Available in all sessions. Used for authoring and editing MSFM specs in `src/`.
 
 | Tool | Description |
 |------|-------------|
@@ -77,43 +63,48 @@ Available in all sandbox sessions. Used for authoring and editing MSFM specs in 
 | `writeSpec` | Create or overwrite a spec file (creates parent dirs) |
 | `editSpec` | Heading-addressed edits (replace, insert, delete by heading path) |
 | `listSpecFiles` | List all files in the `src/` directory tree |
-| `compile` | Trigger first code generation from spec (stub — authoring only) |
-| `recompile` | Re-generate code from spec, optionally scoped (stub — iterating only) |
-
-`editSpec` addresses locations by heading path (e.g., `"Vendors > Approval Flow"`) rather than line numbers, making edits stable across changes. Operations: `replace`, `insert_after`, `insert_before`, `delete`. MSFM annotations (`~~~...~~~` blocks, `[text]{content}` inline) are written as regular markdown content via `editSpec`.
 
 ### Code Tools
 
 Available when the project has generated code (`projectHasCode: true`).
 
-| Tool | Description | Default Limit |
-|------|-------------|---------------|
-| `readFile` | Read a file with line numbers | 500 lines |
-| `writeFile` | Create or overwrite a file (creates parent dirs) | — |
-| `editFile` | Targeted string replacement (must be unique match) | — |
-| `bash` | Run a shell command (30s timeout) | 500 lines output |
-| `grep` | Search file contents (ripgrep with grep fallback) | 50 matches |
-| `glob` | Find files by pattern | 200 files |
-| `listDir` | List directory contents | — |
-| `editsFinished` | Signal that file edits are complete for live preview | — |
-
-Tools with limits accept a `maxResults` or `maxLines` parameter to override the default. Set to `0` for unlimited. Truncated results include a message indicating how many results were omitted.
+| Tool | Description |
+|------|-------------|
+| `readFile` | Read a file with line numbers |
+| `writeFile` | Create or overwrite a file (creates parent dirs) |
+| `editFile` | Targeted string replacement (must be unique match) |
+| `bash` | Run a shell command |
+| `grep` | Search file contents |
+| `glob` | Find files by pattern |
+| `listDir` | List directory contents |
+| `editsFinished` | Signal that file edits are complete for live preview |
 
 ### LSP Tools (sandbox only)
 
-Available when `--lsp-url` is passed. These call the sandbox's LSP HTTP sidecar.
+Available when `--lsp-url` is passed.
 
 | Tool | Description |
 |------|-------------|
-| `diagnostics` | Type errors and warnings for a file, with suggested quick fixes when available |
+| `lspDiagnostics` | Type errors and warnings for a file, with suggested quick fixes |
 | `restartProcess` | Restart a managed sandbox process (e.g., dev server after npm install) |
 
-### Tool Availability by Phase
+### Sync Tools (sync turns only)
 
-| Phase | Spec Tools | Code Tools | Compile/Recompile |
-|-------|-----------|------------|-------------------|
-| Authoring (`projectHasCode: false`) | All | — | `compile` |
-| Iterating (`projectHasCode: true`) | All | All | `recompile` |
+Available when the sandbox sends a `runCommand: "sync"` message.
+
+| Tool | Description |
+|------|-------------|
+| `presentSyncPlan` | Present a markdown sync plan to the user for approval (streams content) |
+
+### Tool Streaming
+
+Tools can opt into streaming via a `streaming` config on the tool definition:
+
+- **Content streaming** (writeSpec, writeFile, presentSyncPlan): Streams `tool_input_delta` events with progressive content as the LLM generates tool arguments. Tools can provide a `transform` function to customize the streamed output (e.g., writeSpec/writeFile compute a progressive diff).
+- **Input streaming** (promptUser): Streams progressive `tool_start` events with `partial: true` as structured input (like a questions array) builds up.
+- **No streaming** (all other tools): `tool_start` fires once when the complete tool arguments are available.
+
+Streaming is driven by `tool_input_delta` (Anthropic) or `tool_input_args` (Gemini) SSE events from the platform.
 
 ## Architecture
 
@@ -121,8 +112,9 @@ Available when `--lsp-url` is passed. These call the sandbox's LSP HTTP sidecar.
 User input
   → Agent loop (src/agent.ts)
     → POST /_internal/v2/agent/chat (SSE stream)
-      ← text, thinking, tool_use events
+      ← text, thinking, tool_input_delta, tool_input_args, tool_use events
     → Execute tools locally in parallel
+      → External tools (promptUser, setViewMode, etc.) wait for sandbox response
     → Send tool results back
     → Loop until done
     → Save session to .remy-session.json
@@ -136,31 +128,42 @@ The agent core (`src/agent.ts`) is a pure async function with no UI dependencies
 src/
   index.tsx              CLI entry point
   agent.ts               Core tool-call loop (pure async, no UI)
-  api.ts                 SSE streaming to platform API
-  prompt/
-    index.ts             System prompt builder (phase-aware)
+  api.ts                 SSE streaming client for platform API
+  parsePartialJson.ts    Partial JSON parser for streaming tool input
   session.ts             .remy-session.json persistence
   config.ts              API key/URL resolution
   logger.ts              Structured logging
-  headless.ts            stdin/stdout JSON protocol
-  tui/                   Interactive terminal UI (Ink + React)
-    App.tsx
-    InputPrompt.tsx
-    MessageList.tsx
-    ThinkingBlock.tsx
-    ToolCall.tsx
+  headless.ts            stdin/stdout JSON protocol for sandbox
+
+  prompt/
+    index.ts             System prompt builder (mode-aware)
+    actions/             Built-in prompts for runCommand actions
+      sync.md
+    static/              Behavioral instruction fragments
+      identity.md
+      intake.md
+      authoring.md
+      instructions.md
+      lsp.md
+      projectContext.ts  Reads manifest, spec metadata, file listing at runtime
+    compiled/            Platform docs distilled for agent consumption
+    sources/             Raw source docs (fetched + manual)
+
   tools/
-    index.ts             Tool registry: getTools(projectHasCode)
+    index.ts             Tool registry with streaming config interface
     _helpers/
       diff.ts            Unified diff generator
-    spec/                Spec tools (MSFM editing)
-      _helpers.ts        Heading resolution, path validation
+      lsp.ts             LSP sidecar HTTP client
+    spec/                Spec and external tools
       readSpec.ts
       writeSpec.ts
       editSpec.ts
       listSpecFiles.ts
-      compile.ts
-      recompile.ts
+      setViewMode.ts
+      promptUser.ts
+      clearSyncStatus.ts
+      presentSyncPlan.ts
+      _helpers.ts        Heading resolution, path validation
     code/                Code tools (file editing, shell, search)
       readFile.ts
       writeFile.ts
@@ -172,14 +175,31 @@ src/
       glob.ts
       listDir.ts
       editsFinished.ts
-      lsp.ts
+      lspDiagnostics.ts
+      restartProcess.ts
+
+  tui/                   Interactive terminal UI (Ink + React)
+    App.tsx
+    InputPrompt.tsx
+    MessageList.tsx
+    ThinkingBlock.tsx
+    ToolCall.tsx
 ```
+
+### External Tools
+
+Some tools are resolved by the sandbox rather than executed locally. Remy emits `tool_start`, then waits for the sandbox to send back a `tool_result` via stdin. This is used for tools that require sandbox/user interaction:
+
+- `promptUser` — renders a form or inline prompt, blocks until user responds
+- `setViewMode` — switches the IDE view mode
+- `clearSyncStatus` — clears sync dirty flags and updates git sync ref
+- `presentSyncPlan` — renders a full-screen markdown plan for user approval
 
 ### Project Instructions
 
-Remy automatically detects and loads project-level agent instructions on startup. It checks for these files in order (first match wins):
+Remy automatically loads project-level agent instructions on startup. It checks for these files in order (first match wins):
 
-`CLAUDE.md`, `.claude/instructions.md`, `AGENTS.md`, `.agents.md`, `COPILOT.md`, `.copilot-instructions.md`, `.github/copilot-instructions.md`, `REMY.md`, `.cursorrules`
+`CLAUDE.md`, `claude.md`, `.claude/instructions.md`, `AGENTS.md`, `agents.md`, `.agents.md`, `COPILOT.md`, `copilot.md`, `.copilot-instructions.md`, `.github/copilot-instructions.md`, `REMY.md`, `remy.md`, `.cursorrules`, `.cursorules`
 
 ## Headless Mode
 
@@ -191,75 +211,54 @@ Send JSON commands, one per line.
 
 #### `message`
 
-Send a user message to the agent. The agent processes it and streams events back.
+Send a user message to the agent.
 
 ```json
-{"action": "message", "text": "fix the bug in auth.ts"}
+{"action": "message", "text": "fix the bug in auth.ts", "projectHasCode": true}
 ```
 
-Include `projectHasCode` to control the agent's tool set and prompt:
+Fields:
+- `text` — the user message (required unless `runCommand` is set)
+- `projectHasCode` — controls tool availability (default: `true`)
+- `viewContext` — `{ mode, openFiles?, activeFile? }` for prompt context
+- `attachments` — array of `{ url, extractedTextUrl? }` for file attachments
+- `runCommand` — triggers a built-in action prompt (e.g., `"sync"`)
+
+When `runCommand` is set, the message text is replaced with a built-in prompt and the user message is marked as `hidden` in conversation history (sent to the LLM but not shown in the UI).
+
+#### `tool_result`
+
+Send the result of an external tool back to the agent.
 
 ```json
-{"action": "message", "text": "add a vendors section", "projectHasCode": false}
+{"action": "tool_result", "id": "toolu_abc123", "result": "ok"}
 ```
-
-- `projectHasCode: false` — spec tools only (authoring phase, no code in `dist/` yet)
-- `projectHasCode: true` — spec tools + code tools (iterating phase, code exists)
-- Omitted — defaults to `true` (all tools available)
-
-Optionally include file attachments:
-
-```json
-{
-  "action": "message",
-  "text": "here's the design spec",
-  "projectHasCode": false,
-  "attachments": [
-    { "url": "https://files.example.com/spec.pdf", "extractedTextUrl": "https://files.example.com/spec.txt" }
-  ]
-}
-```
-
-Returns an error if the agent is already processing a message.
 
 #### `get_history`
 
-Return the full conversation history. This is the raw LLM-level message array — the same format persisted in `.remy-session.json`. Use this to hydrate a frontend on reconnect without tracking history separately.
+Return the full conversation history.
 
 ```json
 {"action": "get_history"}
 ```
 
-Response:
-```json
-{"event": "history", "messages": [
-  {"role": "user", "content": "add a created_at field"},
-  {"role": "assistant", "content": "I'll update the table schema.", "toolCalls": [{"id": "tc_1", "name": "editFile", "input": {...}}]},
-  {"role": "user", "content": "Updated dist/backend/src/tables/haikus.ts", "toolCallId": "tc_1"}
-]}
-```
-
-Messages include `toolCalls` on assistant messages and `toolCallId`/`isToolError` on tool result messages. Safe to call while a turn is running — returns the history accumulated so far.
+Messages with `hidden: true` were generated by `runCommand` actions and should not be displayed in the UI.
 
 #### `cancel`
 
-Cancel the current turn. Aborts the SSE stream and skips pending tool execution. Any partial assistant response is saved to the session with a `(cancelled)` marker.
+Cancel the current turn.
 
 ```json
 {"action": "cancel"}
 ```
 
-Emits `{"event": "turn_cancelled"}` when the turn is stopped. Silently ignored if no turn is running.
-
 #### `clear`
 
-Clear conversation history and delete the session file. Starts a fresh session.
+Clear conversation history and delete the session file.
 
 ```json
 {"action": "clear"}
 ```
-
-Emits `{"event": "session_cleared"}` on success.
 
 ### Output Events (stdout)
 
@@ -270,114 +269,31 @@ Events are emitted as newline-delimited JSON.
 | Event | Fields | Description |
 |-------|--------|-------------|
 | `ready` | | Headless mode initialized, ready for input |
-| `session_restored` | `messageCount` | Previous session loaded from `.remy-session.json` |
+| `session_restored` | `messageCount` | Previous session loaded |
 | `session_cleared` | | Session history cleared |
-| `turn_cancelled` | | Current turn was cancelled |
-| `stopping` | | Shutdown initiated (stdin closed or signal received) |
+| `stopping` | | Shutdown initiated |
 | `stopped` | | Shutdown complete |
 
 #### Agent Events (streamed during message processing)
 
 | Event | Fields | Description |
 |-------|--------|-------------|
-| `text` | `text` | Streaming text chunk from the agent |
-| `thinking` | `text` | Agent's internal reasoning (streaming chunks) |
-| `tool_start` | `id`, `name`, `input` | Tool execution started |
+| `turn_started` | | Agent began processing a message |
+| `text` | `text` | Streaming text chunk |
+| `thinking` | `text` | Agent's internal reasoning |
+| `tool_start` | `id`, `name`, `input`, `partial?` | Tool execution started. `partial: true` means more `tool_start` events will follow for this id (progressive input streaming). |
+| `tool_input_delta` | `id`, `name`, `result` | Progressive tool content (streaming tools only) |
 | `tool_done` | `id`, `name`, `result`, `isError` | Tool execution completed |
-| `turn_done` | | Agent finished responding to a message |
+| `turn_done` | | Agent finished responding |
+| `turn_cancelled` | | Turn was cancelled |
 | `error` | `error` | Error message |
-
-### Example Session
-
-```json
-← {"event": "ready"}
-← {"event": "session_restored", "messageCount": 12}
-→ {"action": "message", "text": "add a vendors section to the spec", "projectHasCode": false}
-← {"event": "thinking", "text": "Let me read the current spec..."}
-← {"event": "tool_start", "id": "tc_1", "name": "readSpec", "input": {"path": "src/app.md"}}
-← {"event": "tool_done", "id": "tc_1", "name": "readSpec", "result": "...", "isError": false}
-← {"event": "tool_start", "id": "tc_2", "name": "editSpec", "input": {"path": "src/app.md", "edits": [{"heading": "Invoices", "operation": "insert_after", "content": "## Vendors\n\n..."}]}}
-← {"event": "tool_done", "id": "tc_2", "name": "editSpec", "result": "--- src/app.md\n+++ src/app.md\n...", "isError": false}
-← {"event": "text", "text": "Added a Vendors section after Invoices with onboarding workflow and approval flow."}
-← {"event": "turn_done"}
-→ {"action": "clear"}
-← {"event": "session_cleared"}
-```
-
-`→` = stdin (parent → remy), `←` = stdout (remy → parent)
+| `history` | `messages` | Response to `get_history` |
 
 ### Logging
 
-In headless mode, structured logs are written to **stderr** at `info` level by default. Stdout is reserved for the JSON protocol. The parent process can capture stderr for debugging:
+In headless mode, structured logs go to **stderr**. Stdout is reserved for the JSON protocol. Log levels: `error`, `warn`, `info`, `debug`.
 
-```javascript
-const remy = spawn('remy', ['--headless', '--log-level', 'debug'], {
-  cwd: '/path/to/project',
-  stdio: ['pipe', 'pipe', 'pipe'],
-});
-
-// JSON events from stdout
-remy.stdout.on('data', handleEvents);
-
-// Logs from stderr
-remy.stderr.on('data', (chunk) => {
-  console.error('[remy]', chunk.toString().trimEnd());
-});
-```
-
-Log levels: `error`, `warn`, `info`, `debug`. At `info` you get request/response timing, token usage, config resolution, and tool execution counts. At `debug` you get individual tool timings, LSP requests, and config file details.
-
-In interactive mode, logs go to `.remy-debug.log` in the working directory (default level: `error`). Override with `--log-level`:
-
-```bash
-remy --log-level debug   # writes verbose logs to .remy-debug.log
-```
-
-### Programmatic API
-
-Import the headless mode directly as a library:
-
-```typescript
-import { startHeadless } from 'remy';
-
-await startHeadless({
-  apiKey: 'sk...',
-  baseUrl: 'https://api.mindstudio.ai',
-  model: 'my-model',
-  lspUrl: 'http://localhost:4388',
-});
-```
-
-### Spawning from a Parent Process
-
-```javascript
-const remy = spawn('remy', ['--headless'], {
-  cwd: '/path/to/project',
-  stdio: ['pipe', 'pipe', 'pipe'],
-});
-
-// Send a message with project phase
-remy.stdin.write(JSON.stringify({
-  action: 'message',
-  text: 'add a vendors section',
-  projectHasCode: false,
-}) + '\n');
-
-// Clear session
-remy.stdin.write(JSON.stringify({ action: 'clear' }) + '\n');
-
-// Read events
-let buffer = '';
-remy.stdout.on('data', (chunk) => {
-  buffer += chunk.toString();
-  let idx;
-  while ((idx = buffer.indexOf('\n')) !== -1) {
-    const event = JSON.parse(buffer.slice(0, idx));
-    buffer = buffer.slice(idx + 1);
-    console.log(event);
-  }
-});
-```
+In interactive mode, logs go to `.remy-debug.log` in the working directory (default level: `error`). Override with `--log-level`.
 
 ## Development
 
@@ -386,7 +302,6 @@ npm install
 npm run build         # Build with tsup
 npm run dev           # Watch mode
 npm run typecheck     # Type check only
-npm run local-update  # Build + npm link for local testing
 ```
 
 ## Config

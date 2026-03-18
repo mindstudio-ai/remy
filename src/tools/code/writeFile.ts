@@ -26,6 +26,16 @@ export const writeFileTool: Tool = {
     },
   },
 
+  streaming: {
+    transform: async (partial) => {
+      const oldContent = await fs
+        .readFile(partial.path, 'utf-8')
+        .catch(() => '');
+      const lineCount = partial.content.split('\n').length;
+      return `Writing ${partial.path} (${lineCount} lines)\n${unifiedDiff(partial.path, oldContent, partial.content)}`;
+    },
+  },
+
   async execute(input) {
     try {
       await fs.mkdir(path.dirname(input.path), { recursive: true });
