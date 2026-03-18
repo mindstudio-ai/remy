@@ -29,7 +29,7 @@ const CONFIG_PATH = path.join(
   '.mindstudio-local-tunnel',
   'config.json',
 );
-const DEFAULT_BASE_URL = 'https://seankoji.ngrok.io';
+const DEFAULT_BASE_URL = 'https://api.mindstudio.ai';
 
 function loadConfigFile(): TunnelConfig {
   try {
