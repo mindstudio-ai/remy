@@ -52,6 +52,7 @@ import { promptUserTool } from './spec/promptUser.js';
 import { clearSyncStatusTool } from './spec/clearSyncStatus.js';
 import { presentSyncPlanTool } from './spec/presentSyncPlan.js';
 import { presentPublishPlanTool } from './spec/presentPublishPlan.js';
+import { presentPlanTool } from './spec/presentPlan.js';
 
 // Code tools
 import { readFileTool } from './code/readFile.js';
@@ -103,6 +104,7 @@ export function getTools(projectHasCode: boolean): Tool[] {
       clearSyncStatusTool,
       presentSyncPlanTool,
       presentPublishPlanTool,
+      presentPlanTool,
       ...getSpecTools(),
       ...getCodeTools(),
     ];
@@ -130,6 +132,7 @@ export function getToolByName(name: string): Tool | undefined {
     clearSyncStatusTool,
     presentSyncPlanTool,
     presentPublishPlanTool,
+    presentPlanTool,
     ...getSpecTools(),
     ...getCodeTools(),
   ];

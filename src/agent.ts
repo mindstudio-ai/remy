@@ -40,6 +40,7 @@ const EXTERNAL_TOOLS = new Set([
   'clearSyncStatus',
   'presentSyncPlan',
   'presentPublishPlan',
+  'presentPlan',
 ]);
 
 // Events emitted to the UI layer
