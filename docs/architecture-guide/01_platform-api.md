@@ -44,7 +44,7 @@ Short-lived tokens (1hr TTL, Redis) created when loading a web interface. Carry 
 
 The token is embedded in the iframe URL via `__ms_token=` and used by the frontend SDK for method invocation. This is how the frontend knows which release to execute against without the user managing API keys.
 
-Used by: method invocation from web SPAs.
+Used by: method invocation from web interfaces.
 
 ### Hook Authorization Tokens (`InternalCallbackAuthorization@@...`)
 
@@ -106,7 +106,7 @@ Triggers a build from the current HEAD of the default branch. The response retur
 4. Mirror files to S3 (`v2-git-files/{appId}/{branch}/...`) for instant editor access
 5. Fire-and-forget: `compileRelease()` handles the rest:
    - Bundle each method → single-file JS (esbuild, in-memory from git)
-   - Build web interface (SPA build service → archive → S3)
+   - Build web interface (build service → archive → S3)
    - Parse table schemas (TypeScript AST → DDL diff)
    - Compute pending effects (roles, cron, Discord, Telegram, etc.)
    - On default branch: auto-promote to `live`, apply all effects

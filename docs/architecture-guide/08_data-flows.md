@@ -28,7 +28,7 @@ Developer
        │
        └─ compileRelease() (async)
             ├─ Bundle each method → JS (esbuild, from git)
-            ├─ Build web interface (SPA build service → S3)
+            ├─ Build web interface (build service → S3)
             ├─ Parse table schemas (TypeScript AST)
             ├─ Compute pending effects (roles, cron, bots, tables)
             ├─ Create database (clone live if exists, apply DDL)
@@ -40,7 +40,7 @@ Developer
 ## Method Execution (Live)
 
 ```
-User clicks button in web SPA
+User clicks button in web interface
   │
   ├─ Frontend SDK: api.submitVendor({ name: 'Acme' })
   │    └─ Looks up 'submitVendor' in __MINDSTUDIO__.methods → methodId
@@ -90,7 +90,7 @@ User clicks button in web SPA
 ## Method Execution (Dev — Local CLI)
 
 ```
-User clicks button in web SPA (served via tunnel proxy)
+User clicks button in web interface (served via tunnel proxy)
   │
   ├─ Frontend SDK: api.submitVendor({ name: 'Acme' })
   │    └─ Same as live — __MINDSTUDIO__ was injected by tunnel proxy
@@ -237,7 +237,7 @@ git push to default branch
   │    │    └─ Track bundle size
   │    │
   │    ├─ 3. Compile interfaces (parallel):
-  │    │    ├─ web: SPA build service → archive → S3
+  │    │    ├─ web: build service → archive → S3
   │    │    ├─ api/mcp: generate method index with schemas
   │    │    └─ cron/email/webhook/discord/telegram: generate config
   │    │

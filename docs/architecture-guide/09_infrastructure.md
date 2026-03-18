@@ -91,7 +91,7 @@ After each push, files from the default branch are mirrored to S3 at `v2-git-fil
 | V2 stream chunks | Token streaming from method execution |
 | Dev request results | Tunnel posts result → resolves waiting API request |
 | Cache invalidation | Cross-worker cache busting |
-| App event bus | SPA build server status, etc. |
+| App event bus | Web build server status, etc. |
 
 ---
 

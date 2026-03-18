@@ -14,9 +14,9 @@ An app has three layers, and the hierarchy matters:
 
 **The backend contract** — methods, tables, and roles — is a compiled derivation of the spec, just as `.js` is a compiled derivation of `.ts`. Methods are TypeScript functions that implement the logic. Tables define the data model. Roles define access control. The code is real, it runs, it matters — but the spec is the source of truth. An AI agent can regenerate the contract from the spec. A human can modify the code directly and the spec can be updated to match. This is why TypeScript lives in `dist/` — it's the compiled output.
 
-**Interfaces** are projections of the contract into different modalities. A web SPA, a REST API, a Discord bot, a Telegram bot, a cron job, a webhook, an email trigger, an MCP tool server. The same methods power all of them. Interfaces come and go as the world changes — today it's web and API, tomorrow it might be voice or whatever platform emerges next. The contract endures. The spec endures longer.
+**Interfaces** are projections of the contract into different modalities. A web app, a REST API, a Discord bot, a Telegram bot, a cron job, a webhook, an email trigger, an MCP tool server. The same methods power all of them. Interfaces come and go as the world changes — today it's web and API, tomorrow it might be voice or whatever platform emerges next. The contract endures. The spec endures longer.
 
-The platform provides the abstractions that make all of this work: a typed database with a clean SDK, role-based auth enforced automatically, sandboxed execution, a deployment pipeline triggered by git push, interfaces that connect your backend to any modality — plus thousands of pre-built connectors, AI model integrations, and platform actions via the MindStudio SDK. The agent and the human focus on the real meat — the logic, the data model, the experience — instead of getting lost in everything else required to ship an application.
+The platform provides the abstractions that make all of this work: a typed database with a clean SDK, role-based auth enforced automatically, sandboxed execution, a deployment pipeline triggered by git push, interfaces that connect your backend to any modality — plus 200+ AI models, 1000+ integrations, and platform actions via the MindStudio SDK. The agent and the human focus on the real meat — the logic, the data model, the experience — instead of getting lost in everything else required to ship an application.
 
 Push to git, the platform compiles and deploys. Every release is a snapshot. Rollback is a git revert.
 
@@ -181,4 +181,4 @@ The key design principle: **zero divergence between local and hosted development
 
 **Read [vision-and-roadmap.md](10_vision-and-roadmap.md)** for where this is all going — the thesis, the aspirations, and the design principles that guide future work.
 
-For **building apps** (not the platform), see the [App Guide](../app-guide/00_overview.md) instead.
+For **building apps** (not the platform), see the [Developer Guide](../developer-guide/00_overview.md) instead.
