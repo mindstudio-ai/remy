@@ -39,6 +39,7 @@ const EXTERNAL_TOOLS = new Set([
   'setViewMode',
   'clearSyncStatus',
   'presentSyncPlan',
+  'presentPublishPlan',
 ]);
 
 // Events emitted to the UI layer

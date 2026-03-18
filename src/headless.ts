@@ -20,6 +20,7 @@ import {
 } from './agent.js';
 import { loadSession, clearSession } from './session.js';
 import { presentSyncPlanTool } from './tools/spec/presentSyncPlan.js';
+import { presentPublishPlanTool } from './tools/spec/presentPublishPlan.js';
 
 export interface HeadlessOptions {
   apiKey?: string;
@@ -215,6 +216,8 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       const isCommand = !!parsed.runCommand;
       if (parsed.runCommand === 'sync') {
         userMessage = loadActionPrompt('sync');
+      } else if (parsed.runCommand === 'publish') {
+        userMessage = loadActionPrompt('publish');
       }
 
       const projectHasCode = parsed.projectHasCode ?? true;
@@ -233,7 +236,11 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
           resolveExternalTool,
           hidden: isCommand,
           extraTools:
-            parsed.runCommand === 'sync' ? [presentSyncPlanTool] : undefined,
+            parsed.runCommand === 'sync'
+              ? [presentSyncPlanTool]
+              : parsed.runCommand === 'publish'
+                ? [presentPublishPlanTool]
+                : undefined,
         });
       } catch (err: any) {
         emit('error', { error: err.message });
