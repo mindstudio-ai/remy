@@ -50,6 +50,8 @@ import { listSpecFilesTool } from './spec/listSpecFiles.js';
 import { setViewModeTool } from './spec/setViewMode.js';
 import { promptUserTool } from './spec/promptUser.js';
 import { clearSyncStatusTool } from './spec/clearSyncStatus.js';
+import { presentSyncPlanTool } from './spec/presentSyncPlan.js';
+import { presentPublishPlanTool } from './spec/presentPublishPlan.js';
 
 // Code tools
 import { readFileTool } from './code/readFile.js';
@@ -99,6 +101,8 @@ export function getTools(projectHasCode: boolean): Tool[] {
       setViewModeTool,
       promptUserTool,
       clearSyncStatusTool,
+      presentSyncPlanTool,
+      presentPublishPlanTool,
       ...getSpecTools(),
       ...getCodeTools(),
     ];
@@ -107,6 +111,8 @@ export function getTools(projectHasCode: boolean): Tool[] {
     setViewModeTool,
     promptUserTool,
     clearSyncStatusTool,
+    presentSyncPlanTool,
+    presentPublishPlanTool,
     ...getSpecTools(),
   ];
 }
@@ -122,6 +128,8 @@ export function getToolByName(name: string): Tool | undefined {
     setViewModeTool,
     promptUserTool,
     clearSyncStatusTool,
+    presentSyncPlanTool,
+    presentPublishPlanTool,
     ...getSpecTools(),
     ...getCodeTools(),
   ];

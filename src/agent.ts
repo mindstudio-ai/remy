@@ -105,7 +105,6 @@ export async function runTurn(params: {
   onEvent: (event: AgentEvent) => void;
   resolveExternalTool?: ExternalToolResolver;
   hidden?: boolean;
-  extraTools?: import('./tools/index.js').Tool[];
 }): Promise<void> {
   const {
     state,
@@ -119,17 +118,8 @@ export async function runTurn(params: {
     onEvent,
     resolveExternalTool,
     hidden,
-    extraTools,
   } = params;
-  const tools = [
-    ...getToolDefinitions(projectHasCode),
-    ...(extraTools ?? []).map((t) => t.definition),
-  ];
-
-  // Build a local tool lookup that includes extra tools
-  const lookupTool = (name: string) =>
-    (extraTools ?? []).find((t) => t.definition.name === name) ??
-    getToolByName(name);
+  const tools = getToolDefinitions(projectHasCode);
 
   log.info('Turn started', {
     messageLength: userMessage.length,
@@ -197,7 +187,7 @@ export async function runTurn(params: {
       name: string,
       partial: Record<string, any>,
     ): Promise<void> {
-      const tool = lookupTool(name);
+      const tool = getToolByName(name);
       if (!tool?.streaming) {
         return;
       }
@@ -328,7 +318,7 @@ export async function runTurn(params: {
               input: event.input,
             });
             const acc = toolInputAccumulators.get(event.id);
-            const tool = lookupTool(event.name);
+            const tool = getToolByName(event.name);
             const wasStreamed = acc?.started ?? false;
             const isInputStreaming = !!tool?.streaming?.partialInput;
             log.debug('Received tool_use', {

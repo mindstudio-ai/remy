@@ -1,6 +1,6 @@
 This is an automated action triggered by the user pressing "Sync" in the editor.
 
-The user has manually edited files since the last sync. The `refs/sync-point` git ref marks the last known-good sync state (captures the full working tree, including unstaged changes). Diff against it to see what changed in `src/` and `dist/`.
+The user has manually edited files since the last sync. The `refs/sync-point` git ref marks the last known-good sync state — it captures a snapshot of the full working tree, including unstaged changes (not just committed state). Diff the sync-point against the current working tree (not HEAD) to see what changed in `src/` and `dist/`.
 
 Analyze the changes and write a sync plan with `presentSyncPlan` — a clear markdown summary of what changed and what you intend to update. The user will review and approve before you make changes.
 

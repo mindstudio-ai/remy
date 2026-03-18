@@ -19,8 +19,6 @@ import {
   type AgentEvent,
 } from './agent.js';
 import { loadSession, clearSession } from './session.js';
-import { presentSyncPlanTool } from './tools/spec/presentSyncPlan.js';
-import { presentPublishPlanTool } from './tools/spec/presentPublishPlan.js';
 
 export interface HeadlessOptions {
   apiKey?: string;
@@ -235,12 +233,6 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
           onEvent,
           resolveExternalTool,
           hidden: isCommand,
-          extraTools:
-            parsed.runCommand === 'sync'
-              ? [presentSyncPlanTool]
-              : parsed.runCommand === 'publish'
-                ? [presentPublishPlanTool]
-                : undefined,
         });
       } catch (err: any) {
         emit('error', { error: err.message });
