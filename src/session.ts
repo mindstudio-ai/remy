@@ -17,13 +17,59 @@ export function loadSession(state: AgentState): boolean {
     const raw = fs.readFileSync(SESSION_FILE, 'utf-8');
     const data = JSON.parse(raw);
     if (Array.isArray(data.messages) && data.messages.length > 0) {
-      state.messages = data.messages as Message[];
+      state.messages = sanitizeMessages(data.messages as Message[]);
       return true;
     }
   } catch {
     // No session file or invalid — start fresh
   }
   return false;
+}
+
+/**
+ * Ensure every tool_use has a matching tool_result.
+ *
+ * If an assistant message has toolCalls but the following messages
+ * don't include matching tool_result entries (e.g., due to a crash
+ * or cancellation bug), inject synthetic error results so the API
+ * doesn't reject the conversation.
+ */
+function sanitizeMessages(messages: Message[]): Message[] {
+  const result: Message[] = [];
+
+  for (let i = 0; i < messages.length; i++) {
+    result.push(messages[i]);
+    const msg = messages[i];
+
+    if (msg.role !== 'assistant' || !msg.toolCalls?.length) {
+      continue;
+    }
+
+    // Collect tool_result ids from the messages immediately following
+    const resultIds = new Set<string>();
+    for (let j = i + 1; j < messages.length; j++) {
+      const next = messages[j];
+      if (next.role === 'user' && next.toolCallId) {
+        resultIds.add(next.toolCallId);
+      } else {
+        break; // tool_results must be immediately after the assistant message
+      }
+    }
+
+    // Inject missing tool_results
+    for (const tc of msg.toolCalls) {
+      if (!resultIds.has(tc.id)) {
+        result.push({
+          role: 'user',
+          content: 'Error: tool result lost (session recovered)',
+          toolCallId: tc.id,
+          isToolError: true,
+        });
+      }
+    }
+  }
+
+  return result;
 }
 
 export function saveSession(state: AgentState): void {
