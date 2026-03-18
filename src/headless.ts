@@ -67,13 +67,13 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
   let running = false;
   let currentAbort: AbortController | null = null;
 
-  // Pending external tool results — keyed by tool call id.
-  // When the agent calls an external tool (promptUser, setViewMode),
-  // we store a resolve function here. When the sandbox sends a
-  // tool_result action, we resolve the matching promise.
-  const pendingToolResults = new Map<
+  // External tool results — keyed by tool call id.
+  // The promise is created when tool_start fires (during stream processing)
+  // so it's ready before the sandbox can respond. The agent's
+  // resolveExternalTool just returns the pre-created promise.
+  const externalToolPromises = new Map<
     string,
-    { resolve: (result: string) => void }
+    { promise: Promise<string>; resolve: (result: string) => void }
   >();
 
   function onEvent(e: AgentEvent): void {
@@ -87,14 +87,26 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       case 'tool_input_delta':
         emit('tool_input_delta', { id: e.id, name: e.name, result: e.result });
         break;
-      case 'tool_start':
+      case 'tool_start': {
         emit('tool_start', {
           id: e.id,
           name: e.name,
           input: e.input,
           ...(e.partial && { partial: true }),
         });
+        // Pre-register a promise for this tool call so it's ready
+        // before the sandbox can respond. Only for non-partial starts
+        // (partial tool_start events are progressive updates, not
+        // actionable tool calls yet).
+        if (!e.partial && !externalToolPromises.has(e.id)) {
+          let resolve: (result: string) => void;
+          const promise = new Promise<string>((r) => {
+            resolve = r;
+          });
+          externalToolPromises.set(e.id, { promise, resolve: resolve! });
+        }
         break;
+      }
       case 'tool_done':
         emit('tool_done', {
           id: e.id,
@@ -123,15 +135,22 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     _name: string,
     _input: Record<string, any>,
   ): Promise<string> {
-    return new Promise<string>((resolve) => {
-      pendingToolResults.set(id, { resolve });
+    const entry = externalToolPromises.get(id);
+    if (entry) {
+      return entry.promise;
+    }
+    // Fallback: promise wasn't pre-registered (shouldn't happen)
+    let resolve: (result: string) => void;
+    const promise = new Promise<string>((r) => {
+      resolve = r;
     });
+    externalToolPromises.set(id, { promise, resolve: resolve! });
+    return promise;
   }
 
   const rl = createInterface({ input: process.stdin });
 
   rl.on('line', async (line: string) => {
-    console.warn(`[headless] stdin: ${line.slice(0, 120)}`);
     let parsed: {
       action?: string;
       text?: string;
@@ -163,13 +182,10 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
 
     // --- tool_result: external tool response from sandbox ---
     if (parsed.action === 'tool_result' && parsed.id) {
-      const pending = pendingToolResults.get(parsed.id);
-      console.warn(
-        `[headless] tool_result id=${parsed.id} pending=${!!pending}`,
-      );
-      if (pending) {
-        pendingToolResults.delete(parsed.id);
-        pending.resolve(parsed.result ?? '');
+      const entry = externalToolPromises.get(parsed.id);
+      if (entry) {
+        externalToolPromises.delete(parsed.id);
+        entry.resolve(parsed.result ?? '');
       }
       return;
     }
@@ -192,9 +208,9 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
         currentAbort.abort();
       }
       // Also resolve any pending external tools so the agent doesn't hang
-      for (const [id, pending] of pendingToolResults) {
-        pending.resolve('Error: cancelled');
-        pendingToolResults.delete(id);
+      for (const [id, entry] of externalToolPromises) {
+        entry.resolve('Error: cancelled');
+        externalToolPromises.delete(id);
       }
       return;
     }
