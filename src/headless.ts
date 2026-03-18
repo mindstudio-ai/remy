@@ -29,9 +29,9 @@ export interface HeadlessOptions {
   lspUrl?: string;
 }
 
-const ACTIONS_DIR =
-  (import.meta.dirname ?? path.dirname(new URL(import.meta.url).pathname)) +
-  '/prompt/actions';
+const BASE_DIR =
+  import.meta.dirname ?? path.dirname(new URL(import.meta.url).pathname);
+const ACTIONS_DIR = path.join(BASE_DIR, 'actions');
 
 function loadActionPrompt(name: string): string {
   return fs.readFileSync(path.join(ACTIONS_DIR, `${name}.md`), 'utf-8').trim();
