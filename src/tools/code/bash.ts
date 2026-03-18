@@ -50,6 +50,7 @@ export const bashTool: Tool = {
           timeout: timeoutMs,
           maxBuffer: 2 * 1024 * 1024,
           ...(input.cwd ? { cwd: input.cwd } : {}),
+          env: { ...process.env, FORCE_COLOR: '1' },
         },
         (err, stdout, stderr) => {
           let result = '';
