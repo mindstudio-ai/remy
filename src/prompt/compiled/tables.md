@@ -173,15 +173,17 @@ const [vendors, orders] = await db.batch(
 
 ## Migrations
 
-Migrations are additive only:
+No migration files. Migrations are automatic:
 - **New tables** — `CREATE TABLE` applied automatically
 - **New columns** — `ALTER TABLE ADD COLUMN` applied automatically
-- **No destructive changes** — column drops, type changes, and renames are not supported in the automatic migration path
+- **Dropped columns** — `ALTER TABLE DROP COLUMN` applied automatically when a column is removed from the interface
+- **Dropped tables** — `DROP TABLE` applied automatically when a table file is removed from the manifest
+- **Type changes and renames** — not supported in the automatic migration path
 
 On deploy, the platform:
 1. Parses your table definition files (TypeScript AST — the interface IS the schema)
 2. Diffs against the current live database schema
-3. Generates DDL (CREATE TABLE, ALTER TABLE ADD COLUMN)
+3. Generates DDL (`CREATE TABLE`, `ALTER TABLE ADD COLUMN`, `ALTER TABLE DROP COLUMN`, `DROP TABLE`)
 4. Applies to a staging copy of the database
 5. Promotes the staging copy to live
 

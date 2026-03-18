@@ -2,13 +2,9 @@
 
 ## What is a Method?
 
-A method is a named async function that runs on the platform. It's the
-universal unit of backend logic — every interface (web, API, Discord,
-cron, webhook) is just a different way to invoke a method.
+A method is a named async function that runs on the platform. It's the universal unit of backend logic — every interface (web, API, Discord, cron, webhook) is just a different way to invoke a method.
 
-Methods run in isolated sandboxes. You don't manage servers, configure
-runtimes, or worry about cold starts. Write the function, declare it
-in the manifest, push to git.
+Methods run in isolated sandboxes. No servers to manage, no runtimes to configure. Write the function, declare it in the manifest, push to git.
 
 ---
 
@@ -52,14 +48,13 @@ export async function submitVendorRequest(input: {
 }
 ```
 
-- `id` — kebab-case identifier, used in API URLs and frontend method map
+- `id` — kebab-case identifier, used in API URLs and the frontend method map
 - `path` — relative to project root
 - `export` — the named export (must match the function name)
 
 ### Input and Output
 
-Methods receive a single `input` parameter (an object) and return an
-object. Both are JSON-serializable.
+Methods receive a single `input` parameter (an object) and return an object. Both must be JSON-serializable.
 
 ```typescript
 export async function getDashboard(input: {
@@ -131,11 +126,7 @@ See [Roles & Auth](06_roles-and-auth.md).
 
 ### Platform Capabilities
 
-The `@mindstudio-ai/agent` SDK provides access to 200+ AI models and
-1,000+ actions (email, SMS, web scraping, file uploads, third-party
-integrations, and more). Inside a method, create an instance and call
-actions directly. No constructor arguments needed — credentials are
-picked up automatically from the execution environment:
+The SDK provides access to 200+ AI models and 1,000+ actions — email, SMS, web scraping, file uploads, image/video generation, third-party integrations, and more. Create an instance and call actions directly. No constructor arguments needed — credentials come from the execution environment:
 
 ```typescript
 import { MindStudioAgent } from '@mindstudio-ai/agent';
@@ -176,17 +167,13 @@ const { displayName, email } = await agent.resolveUser({
 });
 ```
 
-No separate API keys needed — the platform routes to the correct
-provider (OpenAI, Anthropic, Google, etc.) automatically. See the
-`@mindstudio-ai/agent` SDK reference for the full list of available
-actions.
+No separate API keys needed — the platform routes to the correct provider (OpenAI, Anthropic, Google, etc.) automatically. See the [SDK reference](https://github.com/mindstudio-ai/mindstudio-agent) for the full list of available actions.
 
 ---
 
 ## Error Handling
 
-Throw errors with messages that make sense to end users — these may
-surface in the UI:
+Throw errors with messages that make sense to end users — these may surface in the UI:
 
 ```typescript
 export async function approveVendor(input: { vendorId: string }) {
@@ -205,36 +192,32 @@ export async function approveVendor(input: { vendorId: string }) {
 }
 ```
 
-`auth.requireRole()` throws a 403 automatically if the user doesn't
-have the required role.
+`auth.requireRole()` throws a 403 automatically if the user doesn't have the required role.
 
 ---
 
 ## Execution Lifecycle
 
-### Production (live)
+### Production
 
-1. Interface invokes method (web SPA, API key, Discord command, etc.)
+1. Interface invokes method (web app, API key, Discord command, etc.)
 2. Platform resolves the live release
 3. Loads compiled JavaScript from S3 (cached)
 4. Dispatches to an isolated sandbox container
-5. Sandbox runs the method with `globalThis.ai` pre-configured
-6. Method's `db` and `auth` calls route back to the platform
-7. Result returned to the calling interface
+5. Method's `db` and `auth` calls route back to the platform
+6. Result returned to the calling interface
 
 ### Development (local CLI or sandbox)
 
 1. Interface invokes method (through the tunnel proxy)
 2. Platform queues the request
-3. Tunnel (local or in sandbox) polls, receives the request
+3. Tunnel polls, receives the request
 4. Transpiles the TypeScript source with esbuild
 5. Executes in an isolated child process
 6. `db` and `auth` calls route to the platform via `CALLBACK_TOKEN`
 7. Result posted back, returned to the interface
 
-The key difference is *where* the code runs — sandbox container in
-production, local process in development. The database, auth, and SDK
-are the same.
+The key difference is *where* the code runs — sandbox container in production, local process in development. The database, auth, and SDK are the same.
 
 ---
 
@@ -316,15 +299,13 @@ export function getApprovalState(approvals: Approval[]) {
 }
 ```
 
-Helpers are not listed in the manifest — they're internal to the
-backend, imported by methods but not directly invocable.
+Helpers are not listed in the manifest — they're internal to the backend, imported by methods but not directly invocable.
 
 ---
 
 ## Streaming
 
-Methods can stream token-by-token output (useful for AI-generated
-content):
+Methods can stream token-by-token output (useful for AI-generated content):
 
 ```typescript
 // Frontend
@@ -337,5 +318,4 @@ const result = await api.generateReport(
 );
 ```
 
-The platform handles the SSE transport. The method returns normally —
-streaming is managed by the SDK and platform, not by your method code.
+The platform handles the SSE transport. Streaming is managed by the SDK and platform, not by your method code.

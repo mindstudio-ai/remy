@@ -1,8 +1,6 @@
 # Manifest Reference (`mindstudio.json`)
 
-The manifest declares everything the platform needs to know about your
-app. It's read on every `git push` to determine what to compile and
-deploy.
+The manifest declares everything the platform needs to know about your app — methods, tables, roles, interfaces, scenarios. It's read on every `git push` to determine what to compile and deploy.
 
 ---
 
@@ -80,9 +78,7 @@ deploy.
 | Type | `string` (UUID) |
 | Required | Yes |
 
-The app's UUID, assigned when created on the platform. Ties this
-project to the platform app record. Found in the git remote URL:
-`https://git.mscdn.ai/{appId}.git`.
+The app's UUID, assigned when created on the platform. Found in the git remote URL: `https://git.mscdn.ai/{appId}.git`.
 
 ### `name`
 
@@ -91,8 +87,7 @@ project to the platform app record. Found in the git remote URL:
 | Type | `string` |
 | Required | Yes |
 
-Display name. Shown in the editor, workspace listings, and session
-context.
+Display name. Shown in the editor, workspace listings, and session context.
 
 ### `roles`
 
@@ -109,8 +104,7 @@ Defines the app's roles for access control. Each role:
 | `name` | `string` | No | Display name |
 | `description` | `string` | No | What this role can do (shown in editor, useful context for the agent) |
 
-Roles are synced to the platform on deploy. Users are assigned to roles
-in the editor. See [Roles & Auth](06_roles-and-auth.md).
+Roles are synced to the platform on deploy. Users are assigned to roles in the editor. See [Roles & Auth](06_roles-and-auth.md).
 
 ### `tables`
 
@@ -127,8 +121,7 @@ Declares database tables. Each entry:
 | `path` | `string` | Yes | Path to the TypeScript file (relative to project root) |
 | `export` | `string` | Yes | Named export from the file (e.g., `Vendors`) |
 
-The platform parses the TypeScript to extract the schema. See
-[Tables & Database](04_tables-and-database.md).
+The platform parses the TypeScript to extract the schema. See [Tables & Database](04_tables-and-database.md).
 
 ### `methods`
 

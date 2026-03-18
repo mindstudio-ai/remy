@@ -6,8 +6,7 @@ MindStudio has three CDN hosts:
 - **Videos:** `v.mscdn.ai`
 - **Files:** `f.mscdn.ai`
 
-Always use CDN transform parameters to request appropriately sized images
-rather than CSS-scaling full-resolution originals.
+Always use CDN transform parameters to request appropriately sized images rather than CSS-scaling full-resolution originals.
 
 ## CDN Image Transforms
 
@@ -35,17 +34,13 @@ Append `/thumbnail.png` or `/thumbnail.jpg` to any video URL:
 https://v.mscdn.ai/{orgId}/videos/{videoId}.mp4/thumbnail.png?ts=last&w=400
 ```
 
-The `ts` param selects the frame: a number (seconds) or `last`. Image CDN
-resize params also work on video thumbnails.
+The `ts` param selects the frame: a number (seconds) or `last`. Image CDN resize params also work on video thumbnails.
 
 ## Media Metadata
 
-Append `.json` to any CDN URL to get metadata (dimensions, duration, mime
-type, orientation, etc.).
+Append `.json` to any CDN URL to get metadata (dimensions, duration, mime type, orientation, etc.).
 
 ## General Rules
 
-- Always set explicit width/height or aspect-ratio on images to prevent
-  layout shift.
-- Use remote resources (Google Fonts via CDN). Never self-hosted font
-  packages.
+- Always set explicit width/height or aspect-ratio on images to prevent layout shift.
+- Use remote resources (Google Fonts via CDN). Never self-hosted font packages.

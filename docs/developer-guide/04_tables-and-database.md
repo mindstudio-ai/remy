@@ -2,8 +2,7 @@
 
 ## Defining a Table
 
-Tables are TypeScript files that define the data model. Each table is
-a `defineTable<T>()` call with a typed interface:
+Each table is a TypeScript file with a typed interface and a `defineTable<T>()` call:
 
 ```typescript
 import { db } from '@mindstudio-ai/agent';
@@ -19,8 +18,7 @@ interface Vendor {
 export const Vendors = db.defineTable<Vendor>('vendors');
 ```
 
-One file per table, one export per file. The export name is what you
-reference in `mindstudio.json` and import in methods.
+One file per table, one export per file. The export name is what you reference in `mindstudio.json` and import in methods.
 
 ### Column Types
 
@@ -34,8 +32,7 @@ reference in `mindstudio.json` and import in methods.
 
 ### System Columns
 
-Every table automatically has these columns. You don't define them —
-they're added by the platform and maintained by SQLite triggers:
+Every table gets these automatically. You don't define them — they're added by the platform and maintained by SQLite triggers:
 
 | Column | Type | Behavior |
 |--------|------|----------|
@@ -44,8 +41,7 @@ they're added by the platform and maintained by SQLite triggers:
 | `updated_at` | INTEGER (unix ms) | Updated on every write |
 | `last_updated_by` | TEXT | Set from the current user's auth context |
 
-System columns are automatically stripped from write inputs — you
-don't include them in `push()` or `update()` calls.
+System columns are automatically stripped from write inputs — you don't include them in `push()` or `update()` calls.
 
 ---
 
@@ -130,8 +126,7 @@ await Vendors.clear();
 
 ### Filter Predicates
 
-Predicates are JavaScript arrow functions that compile to SQL WHERE
-clauses:
+Predicates are arrow functions that compile to SQL WHERE clauses. They look like normal JavaScript but run as SQL:
 
 ```typescript
 // Comparisons
@@ -162,9 +157,7 @@ const minAmount = 10000;
 Vendors.filter(v => v.totalCents > minAmount)
 ```
 
-If a predicate can't be compiled to SQL (complex closures, function
-calls), the SDK falls back to fetching all rows and filtering in
-JavaScript. A warning is logged.
+If a predicate can't be compiled to SQL (complex closures, function calls), the SDK falls back to filtering in JavaScript. A warning is logged.
 
 ### Time Helpers
 
@@ -200,24 +193,23 @@ const [vendors, orders] = await db.batch(
 
 ### How Schema Changes Work
 
-Migrations are additive only:
-- **New tables** — `CREATE TABLE` DDL applied automatically
+No migration files. Migrations are automatic:
+- **New tables** — `CREATE TABLE` applied automatically
 - **New columns** — `ALTER TABLE ADD COLUMN` applied automatically
-- **No destructive changes** — column drops, type changes, and renames
-  are not supported in the automatic migration path
+- **Dropped columns** — `ALTER TABLE DROP COLUMN` applied automatically when a column is removed from the interface
+- **Dropped tables** — `DROP TABLE` applied automatically when a table file is removed from the manifest
+- **Type changes and renames** — not supported in the automatic migration path
 
 On `git push`, the platform:
 1. Parses your table definition files (TypeScript AST)
 2. Diffs against the current live database schema
-3. Generates DDL (CREATE TABLE, ALTER TABLE ADD COLUMN)
+3. Generates DDL (`CREATE TABLE`, `ALTER TABLE ADD COLUMN`, `ALTER TABLE DROP COLUMN`, `DROP TABLE`)
 4. Applies to a staging copy of the database
 5. Promotes the staging copy to live
 
 ### In Development
 
-The CLI syncs schema changes to the dev database via
-`POST /dev/manage/sync-schema`. Same additive constraints — new
-tables and new columns only.
+The CLI syncs schema changes to the dev database via `POST /dev/manage/sync-schema`. Same additive constraints — new tables and new columns only.
 
 ---
 
@@ -225,8 +217,7 @@ tables and new columns only.
 
 ### Reset from Live
 
-Overwrite the dev database with a fresh copy of production data.
-Preserves database and table IDs (no client reload needed):
+Overwrite the dev database with a fresh copy of production data. Preserves database and table IDs (no client reload needed):
 
 ```
 POST /_internal/v2/apps/{appId}/dev/manage/reset
@@ -234,22 +225,17 @@ POST /_internal/v2/apps/{appId}/dev/manage/reset
 
 ### Truncate
 
-Keep the schema, delete all row data. Used by scenarios for a clean
-canvas before seeding:
+Keep the schema, delete all row data. Used by scenarios for a clean canvas before seeding:
 
 ```
 POST /_internal/v2/apps/{appId}/dev/manage/reset
 Body: { "mode": "truncate" }
 ```
 
-Both operations preserve IDs — the frontend and SDK can continue
-using existing database references without reloading.
+Both operations preserve IDs — the frontend and SDK can continue using existing database references without reloading.
 
 ---
 
 ## User Type Handling
 
-Columns of type `User` (the branded type from the SDK) store values
-with a `@@user@@` prefix in SQLite. The SDK handles this transparently
-— your code always works with clean UUID strings. You never see the
-prefix.
+Columns of type `User` (the branded type from the SDK) store values with a `@@user@@` prefix in SQLite. The SDK handles this transparently — your code works with clean UUID strings. You never see the prefix.

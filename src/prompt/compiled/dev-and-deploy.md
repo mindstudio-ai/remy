@@ -46,10 +46,12 @@ Push to a non-default branch for a preview deployment — same build pipeline, b
 
 ### Database Migrations on Deploy
 
-Schema changes are additive only:
+Schema changes are automatic:
 - **New tables** — `CREATE TABLE` applied automatically
 - **New columns** — `ALTER TABLE ADD COLUMN` applied automatically
-- **No destructive changes** — column drops, type changes, and renames are not supported
+- **Dropped columns** — `ALTER TABLE DROP COLUMN` applied automatically when a column is removed from the interface
+- **Dropped tables** — `DROP TABLE` applied automatically when a table file is removed from the manifest
+- **Type changes and renames** — not supported in the automatic migration path
 
 Schema changes are always applied to a clone of the live database, never directly. If DDL fails, the live database is untouched and the release is marked `failed`.
 

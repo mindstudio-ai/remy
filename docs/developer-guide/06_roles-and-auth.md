@@ -1,14 +1,8 @@
 # Roles & Auth
 
-## Concept
+MindStudio apps use role-based access control. Roles are defined in the manifest, assigned to users in the editor, and enforced in methods.
 
-MindStudio apps use role-based access control. Roles are defined in
-the manifest, assigned to users in the editor, and enforced in methods
-and interfaces.
-
-The backend contract is the authority — methods enforce access control
-via `auth.requireRole()`. The frontend can read roles for conditional
-rendering, but enforcement always happens server-side.
+The backend is the authority — methods enforce access control via `auth.requireRole()`. The frontend can read roles for conditional rendering, but enforcement always happens server-side.
 
 ---
 
@@ -29,19 +23,15 @@ In `mindstudio.json`:
 
 - `id` — kebab-case, used in code (`auth.requireRole('admin')`)
 - `name` — display name shown in the editor
-- `description` — what this role can do (useful for the AI agent and
-  for users in the role assignment UI)
+- `description` — what this role can do (useful for the AI agent and for users in the role assignment UI)
 
-Roles are synced to the platform on deploy. Adding or removing roles
-in the manifest creates or deletes them on the next push.
+Roles are synced to the platform on deploy. Adding or removing roles in the manifest creates or deletes them on the next push.
 
 ---
 
 ## Role Assignments
 
-Users are assigned to roles in the MindStudio editor. One user can
-have multiple roles. Role assignments are managed via the platform
-API:
+Users are assigned to roles in the MindStudio editor. One user can have multiple roles. Role assignments are managed via the platform API:
 
 ```
 GET  /roles/list                        — list all roles
@@ -90,13 +80,11 @@ export async function getDashboard() {
 
 ### `auth.requireRole(...roles)`
 
-Throws a 403 error if the current user doesn't have **any** of the
-specified roles. Use this at the top of methods to gate access.
+Throws a 403 error if the current user doesn't have **any** of the specified roles. Use this at the top of methods to gate access.
 
 ### `auth.hasRole(...roles)`
 
-Returns `boolean`. Same logic as `requireRole` but doesn't throw.
-Use for conditional behavior within a method.
+Returns `boolean`. Same logic as `requireRole` but doesn't throw. Use for conditional behavior within a method.
 
 ### `auth.userId`
 
@@ -108,8 +96,7 @@ Array of role names assigned to the current user.
 
 ### `auth.getUsersByRole(role)`
 
-Returns an array of user IDs that have the specified role. Useful for
-things like "notify all admins."
+Returns an array of user IDs that have the specified role. Useful for things like "notify all admins."
 
 ---
 
@@ -125,9 +112,7 @@ auth.email;             // email address
 auth.profilePictureUrl; // URL or null
 ```
 
-The frontend SDK provides display-only auth context. Role checking
-for UI purposes (showing/hiding elements) is done by reading role
-data from the backend:
+The frontend SDK provides display-only auth context. Role checking for UI purposes (showing/hiding elements) is done by reading role data from the backend:
 
 ```typescript
 const api = createClient<AppMethods>();
@@ -139,28 +124,20 @@ const { isAdmin, pendingCount } = await api.getDashboard();
 {isAdmin && <AdminPanel />}
 ```
 
-**Why display-only on the frontend:** The frontend is untrusted.
-Anyone can modify JavaScript in the browser. Access control must be
-enforced server-side in methods. The frontend shows or hides UI
-elements based on role data from the backend — but the backend is
-the authority.
+The frontend is untrusted — anyone can modify JavaScript in the browser. The frontend shows or hides UI elements based on role data from the backend, but the backend is always the authority.
 
 ---
 
 ## Impersonation (Dev Mode)
 
-During development, you can impersonate any role to test role-based
-behavior:
+During development, impersonate any role to test role-based behavior:
 
 ```
 POST /dev/manage/impersonate
 Body: { "roles": ["ap"] }
 ```
 
-This sets a role override on the dev session. Subsequent method
-executions use the overridden roles instead of the user's actual
-assignments. The frontend reloads to show the app from the new
-perspective.
+This sets a role override on the dev session. Subsequent method executions use the overridden roles instead of the user's actual assignments. The frontend reloads to show the app from the new perspective.
 
 Clear impersonation:
 
@@ -169,9 +146,7 @@ POST /dev/manage/impersonate
 Body: { "roles": [] }
 ```
 
-Scenarios set impersonation automatically — each scenario declares
-which roles to impersonate after seeding. See
-[Scenarios](08_scenarios.md).
+Scenarios set impersonation automatically — each scenario declares which roles to impersonate after seeding. See [Scenarios](08_scenarios.md).
 
 ---
 

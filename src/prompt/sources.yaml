@@ -1,8 +1,0 @@
-sources:
-  - name: docs
-    files:
-      - /Users/sean/Dropbox/Projects/youai/youai-api/appsv2-playground/app-guide/*
-
-  - name: sdk
-    files:
-      - https://unpkg.com/@mindstudio-ai/agent/llms.txt

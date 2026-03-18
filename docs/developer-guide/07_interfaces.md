@@ -1,18 +1,12 @@
 # Interfaces
 
-Interfaces are projections of the backend contract into different
-modalities. The same methods power all of them. A web frontend can be
-as complex and polished as you want — rich interactions, animations,
-beautiful design — but it's always safe, because the backend contract
-is where anything real happens. The interface can't break business
-logic or corrupt data.
+Interfaces are how users interact with your app. The same methods power all of them — a web frontend, a Discord bot, and a cron job can all invoke the same backend logic. Interfaces can be as complex and polished as you want, but they're always safe — the backend is where anything real happens. They're projections of the backend contract into different modalities.
 
 ---
 
 ## Web Interface
 
-A full web application — typically Vite + React, but any framework
-that produces static output works.
+A full web application. The scaffold starts as Vite + React, but any framework with a build step works.
 
 ### Project Structure
 
@@ -66,20 +60,9 @@ auth.name;
 auth.email;
 ```
 
-### How It Works
-
-- In development: the tunnel proxy injects `window.__MINDSTUDIO__`
-  into HTML responses. The SDK reads this for API URL, session token,
-  and method mapping.
-- In production: the built SPA is hosted on a CDN subdomain
-  (`{releaseId}.static.mscdn.ai`). The same `__MINDSTUDIO__` object
-  is injected by the hosting layer.
-- Zero configuration in your code — just import and use.
-
 ### Deployment
 
-On `git push`, the platform runs `npm install && npm run build` in the
-web directory, archives the output, and hosts it on CDN.
+On `git push`, the platform runs `npm install && npm run build` in the web directory and hosts the output on CDN. Zero configuration in your code — the platform injects connection details automatically.
 
 ---
 
@@ -95,8 +78,7 @@ Auto-generated REST endpoints. Every method becomes an API endpoint.
 }
 ```
 
-Or expose all methods (omit the config / declare without a methods
-field).
+Omit the `methods` field (or the config entirely) to expose all methods.
 
 ### Usage
 
@@ -115,8 +97,7 @@ Auth via API key (`sk...`). Returns `{ output, $releaseId, $methodId }`.
 curl -X POST ... -d '{ "input": {...}, "stream": true }'
 ```
 
-Returns SSE: `data: { type: 'token', text }` chunks, then
-`data: { type: 'done', output }`.
+Returns SSE: `data: { type: 'token', text }` chunks, then `data: { type: 'done', output }`.
 
 ---
 
@@ -208,8 +189,7 @@ Scheduled method execution.
 }
 ```
 
-Standard cron expression format. Jobs are synced to the platform on
-deploy.
+Standard cron expression format. Jobs are synced to the platform on deploy.
 
 ---
 
@@ -231,8 +211,7 @@ Inbound HTTP endpoints that invoke methods.
 }
 ```
 
-The endpoint URL is:
-`https://api.mindstudio.ai/_internal/v2/webhook/{appId}/{secret}`
+Endpoint URL: `https://api.mindstudio.ai/_internal/v2/webhook/{appId}/{secret}`
 
 Accepts any HTTP method. The method receives `{ method, headers, query, body }` as input.
 
@@ -261,8 +240,7 @@ Creates `invoices@mindstudio-hooks.com`.
 }
 ```
 
-Inbound emails invoke the specified method with the email content
-as input.
+Inbound emails invoke the specified method with the email content as input.
 
 ---
 
@@ -278,9 +256,7 @@ Expose methods as AI tools.
 }
 ```
 
-Each listed method becomes an MCP tool that AI assistants can invoke.
-Method names and descriptions from the manifest are used as tool names
-and descriptions.
+Each listed method becomes an MCP tool. Method names and descriptions from the manifest are used as tool names and descriptions.
 
 ---
 
@@ -303,9 +279,6 @@ Each interface is declared in `mindstudio.json`:
 }
 ```
 
-Some interfaces (like `api`) work without a config file — just
-declaring the type is enough. Others need a config to specify which
-methods to expose, command mappings, schedules, etc.
+Some interfaces (like `api`) work without a config file — just declaring the type is enough. Others need a config to specify which methods to expose, command mappings, schedules, etc.
 
-Set `"enabled": false` to skip an interface during build without
-removing it from the manifest.
+Set `"enabled": false` to skip an interface during build without removing it from the manifest.

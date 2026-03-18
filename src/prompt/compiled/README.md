@@ -1,25 +1,16 @@
 # Compiled Prompt Fragments
 
 This directory contains distilled prompt fragments generated from the source
-docs in `../sources/`. These are loaded by `../index.ts` and injected into
-Remy's system prompt at runtime.
+docs in `docs/developer-guide/` (project root). These are loaded by `../index.ts` and injected
+into Remy's system prompt at runtime.
 
 ## How to compile
 
 The compilation is done manually in a session with an LLM (Claude Code or
-similar). Run the sync script first to get fresh sources, then work through
-the compilation thoughtfully.
+similar). Work through the source docs and compile them into prompt-ready
+fragments.
 
-### Step 1: Sync fetched sources
-
-```bash
-./src/prompt/sync-sources.sh
-```
-
-This pulls remote/external sources into `sources/fetched/`. Manual sources
-in `sources/manual/` are maintained by hand and don't need syncing.
-
-### Step 2: Compile with an LLM
+### Step 1: Compile with an LLM
 
 Open a session and ask it to work through the compilation. Give it these
 instructions:
@@ -42,8 +33,7 @@ fragment deserves careful attention — these are the instructions a coding agen
 will follow to build real products, and mistakes here propagate into every app
 it builds.
 
-Source files are in `src/prompt/sources/fetched/` (synced from external docs)
-and `src/prompt/sources/manual/` (hand-maintained).
+Source files are in `docs/developer-guide/` at the project root.
 
 ## How to think about compilation
 
@@ -82,13 +72,6 @@ the details right.
 - **Cross-references to other docs** ("see Section X for details"). The
   fragment should be self-contained.
 
-### How to handle manual sources
-
-Sources in `sources/manual/` (like frontend design notes, CDN reference)
-are already written in a prompt-ready style with the agent audience in mind.
-They may only need light editing or can be included nearly as-is. Don't
-over-distill them.
-
 ### Fragment format
 
 ```markdown
@@ -106,12 +89,12 @@ not see all fragments in every session.
 
 ---
 
-### Step 3: Review
+### Step 2: Review
 
 Read through the compiled fragments and verify code examples are accurate.
 The LLM may hallucinate API details — cross-check against the source docs.
 
-### Step 4: Commit
+### Step 3: Commit
 
 The compiled fragments are committed to git. They're the snapshot the agent
 uses at runtime.
