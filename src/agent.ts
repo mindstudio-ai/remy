@@ -455,13 +455,9 @@ export async function runTurn(params: {
       }),
     );
 
-    if (signal?.aborted) {
-      onEvent({ type: 'turn_cancelled' });
-      saveSession(state);
-      return;
-    }
-
-    // Append tool results as user messages (with toolCallId to link them)
+    // Append tool results as user messages (with toolCallId to link them).
+    // This must happen even on cancellation — the assistant message already
+    // has tool_use blocks, so the API requires matching tool_result messages.
     for (const r of results) {
       state.messages.push({
         role: 'user',
@@ -469,6 +465,12 @@ export async function runTurn(params: {
         toolCallId: r.id,
         isToolError: r.isError,
       });
+    }
+
+    if (signal?.aborted) {
+      onEvent({ type: 'turn_cancelled' });
+      saveSession(state);
+      return;
     }
 
     // Loop back — the next iteration sends conversation with tool
