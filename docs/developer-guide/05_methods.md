@@ -2,7 +2,7 @@
 
 ## What is a Method?
 
-A method is a named async function that runs on the platform. It's the universal unit of backend logic — every interface (web, API, Discord, cron, webhook) is just a different way to invoke a method.
+A method is a named async function that runs on the platform. It's the universal unit of backend logic. Every interface (web, API, Discord, cron, webhook) is just a different way to invoke a method.
 
 Methods run in isolated sandboxes. No servers to manage, no runtimes to configure. Write the function, declare it in the manifest, push to git.
 
@@ -48,9 +48,9 @@ export async function submitVendorRequest(input: {
 }
 ```
 
-- `id` — kebab-case identifier, used in API URLs and the frontend method map
-- `path` — relative to project root
-- `export` — the named export (must match the function name)
+- `id`: kebab-case identifier, used in API URLs and the frontend method map
+- `path`: relative to project root
+- `export`: the named export (must match the function name)
 
 ### Input and Output
 
@@ -126,7 +126,7 @@ See [Roles & Auth](06_roles-and-auth.md).
 
 ### Platform Capabilities
 
-The SDK provides access to 200+ AI models and 1,000+ actions — email, SMS, web scraping, file uploads, image/video generation, third-party integrations, and more. Create an instance and call actions directly. No constructor arguments needed — credentials come from the execution environment:
+The SDK provides access to 200+ AI models and 1,000+ actions (email, SMS, web scraping, file uploads, image/video generation, third-party integrations, and more). Create an instance and call actions directly. No constructor arguments needed; credentials come from the execution environment:
 
 ```typescript
 import { MindStudioAgent } from '@mindstudio-ai/agent';
@@ -167,13 +167,13 @@ const { displayName, email } = await agent.resolveUser({
 });
 ```
 
-No separate API keys needed — the platform routes to the correct provider (OpenAI, Anthropic, Google, etc.) automatically. See the [SDK reference](https://github.com/mindstudio-ai/mindstudio-agent) for the full list of available actions.
+No separate API keys needed. The platform routes to the correct provider (OpenAI, Anthropic, Google, etc.) automatically. See the [SDK reference](https://github.com/mindstudio-ai/mindstudio-agent) for the full list of available actions.
 
 ---
 
 ## Error Handling
 
-Throw errors with messages that make sense to end users — these may surface in the UI:
+Throw errors with messages that make sense to end users. These may surface in the UI:
 
 ```typescript
 export async function approveVendor(input: { vendorId: string }) {
@@ -217,7 +217,7 @@ export async function approveVendor(input: { vendorId: string }) {
 6. `db` and `auth` calls route to the platform via `CALLBACK_TOKEN`
 7. Result posted back, returned to the interface
 
-The key difference is *where* the code runs — sandbox container in production, local process in development. The database, auth, and SDK are the same.
+The key difference is *where* the code runs: sandbox container in production, local process in development. The database, auth, and SDK are the same.
 
 ---
 
@@ -299,7 +299,7 @@ export function getApprovalState(approvals: Approval[]) {
 }
 ```
 
-Helpers are not listed in the manifest — they're internal to the backend, imported by methods but not directly invocable.
+Helpers are not listed in the manifest. They're internal to the backend, imported by methods but not directly invocable.
 
 ---
 

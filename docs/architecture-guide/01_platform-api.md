@@ -2,7 +2,7 @@
 
 The central backend for MindStudio Apps. An Express HTTP server, WebSocket server, and SQS background worker running in Kubernetes.
 
-The API is the orchestrator — it decides policy (when to start/stop sandboxes, how to route method calls, what permissions to enforce) while delegating mechanism to other services. It never runs user code directly. In the three-layer hierarchy (spec → contract → interfaces), the API is what makes the transitions work: it compiles specs into releases (the contract), serves interfaces, manages databases, and orchestrates the development environment.
+The API is the orchestrator: it decides policy (when to start/stop sandboxes, how to route method calls, what permissions to enforce) while delegating mechanism to other services. It never runs user code directly. In the three-layer hierarchy (spec → contract → interfaces), the API is what makes the transitions work: it compiles specs into releases (the contract), serves interfaces, manages databases, and orchestrates the development environment.
 
 All v2 routes live under the `/_internal/v2/` prefix. The route files are organized by domain in `src/http/routes/V2Apps/`:
 
@@ -67,7 +67,7 @@ Per-execution tokens generated when a method is dispatched. Stored in Redis with
 
 The sandbox receives this token as `CALLBACK_TOKEN`. When the SDK makes a database query (`POST /_internal/v2/db/query`), it passes the token back. The platform validates it and uses `appVersionId` to route to the correct database version.
 
-**Why callback tokens encode execution context (not just auth):** The token is not just proof of identity — it's a complete routing key. Without it, every SDK call would need to specify which release, which database version, which user context to use. By encoding all of this in the token, the SDK stays thin (just "make this query") and the platform handles routing. This is also what makes dev mode work transparently — a dev callback token points at the dev release's database, so `db.push()` in dev mode writes to the dev snapshot automatically.
+**Why callback tokens encode execution context (not just auth):** The token is not just proof of identity; it's a complete routing key. Without it, every SDK call would need to specify which release, which database version, which user context to use. By encoding all of this in the token, the SDK stays thin (just "make this query") and the platform handles routing. This is also what makes dev mode work transparently: a dev callback token points at the dev release's database, so `db.push()` in dev mode writes to the dev snapshot automatically.
 
 ### Signed Access Tokens (`sk_...`, `Signed-...`, `headless_...`)
 
@@ -96,7 +96,7 @@ Auth: login + edit permission
 Returns: { releaseId, commitSha, status: 'building' }
 ```
 
-Triggers a build from the current HEAD of the default branch. The response returns immediately — compilation runs asynchronously (fire-and-forget).
+Triggers a build from the current HEAD of the default branch. The response returns immediately; compilation runs asynchronously (fire-and-forget).
 
 **Build pipeline:**
 
@@ -155,7 +155,7 @@ Full release with databases and signed diff URL. Used when drilling into a speci
 
 ## Method Execution
 
-The core of the runtime — how user code actually runs. The same endpoint serves all interfaces (web, API, webhook). The interface determines how the request arrives; the platform handles everything from there.
+The core of the runtime: how user code actually runs. The same endpoint serves all interfaces (web, API, webhook). The interface determines how the request arrives; the platform handles everything from there.
 
 ### Invoke
 
@@ -171,7 +171,7 @@ Two execution paths:
 **Live execution** (no dev session):
 1. Resolve the live release from Postgres
 2. Load compiled JS from S3 (Redis cached, 1hr TTL)
-3. Load execution context — role assignments + database metadata (Redis cached, 5min TTL)
+3. Load execution context: role assignments + database metadata (Redis cached, 5min TTL)
 4. Generate hook authorization token
 5. Dispatch to sandbox: `POST /execute-compiled-script` on the execution service
 6. Return result
@@ -185,7 +185,7 @@ Two execution paths:
 6. Log execution and record metrics (fire-and-forget)
 7. Return result
 
-**Why poll-based dev sessions:** The tunnel (running on the developer's machine or in the sandbox) polls the platform for method requests. This works through any NAT or firewall — no inbound connections needed. The platform queues requests in Redis, the tunnel claims them, executes locally, and posts results back. Simple, reliable, debuggable.
+**Why poll-based dev sessions:** The tunnel (running on the developer's machine or in the sandbox) polls the platform for method requests. This works through any NAT or firewall, with no inbound connections needed. The platform queues requests in Redis, the tunnel claims them, executes locally, and posts results back. Simple, reliable, debuggable.
 
 **Streaming support:** When `stream: true`, the response is SSE. A `streamId` is generated and passed to the executor. Token chunks are published via Redis pub/sub and forwarded to the client as they arrive. The final response is sent as a `{ type: 'done', ... }` event.
 
@@ -230,7 +230,7 @@ Returns: { sessionId, releaseId, branch, auth, databases, user, methods, webInte
 
 Creates or resumes a dev session:
 
-1. Check for existing dev release — resume if found
+1. Check for existing dev release; resume if found
 2. If no dev release:
  - Clone from live release (if exists): copy manifest, methods, interfaces, snapshot databases for dev isolation
    - Or create empty dev release (fresh app, no deploys yet)
@@ -241,7 +241,7 @@ Creates or resumes a dev session:
 7. Record initial heartbeat (so dashboard sees the session immediately)
 8. Return everything the CLI needs to start working
 
-**The `clientContext` object** is the exact shape of `window.__MINDSTUDIO__` — the CLI's proxy injects it into HTML responses so the frontend SDK works without configuration.
+**The `clientContext` object** is the exact shape of `window.__MINDSTUDIO__`. The CLI's proxy injects it into HTML responses so the frontend SDK works without configuration.
 
 ### Generate Callback Token
 
@@ -251,7 +251,7 @@ Auth: login + edit permission
 Returns: { authorizationToken }
 ```
 
-Returns a fresh hook authorization token scoped to the dev release. Used by the CLI for local executions outside the poll loop — specifically scenario seeds. The scenario transpiles and runs in a child process with `CALLBACK_TOKEN` set to this token, so SDK calls (`db.push()`, etc.) route to the correct dev database.
+Returns a fresh hook authorization token scoped to the dev release. Used by the CLI for local executions outside the poll loop, specifically scenario seeds. The scenario transpiles and runs in a child process with `CALLBACK_TOKEN` set to this token, so SDK calls (`db.push()`, etc.) route to the correct dev database.
 
 ### Poll for Requests
 
@@ -296,7 +296,7 @@ Returns: { databases }
 
 Two modes:
 
-- **Default:** Reset in place — overwrite the dev `.db` file from the live database. Preserves database and table IDs (no client reload needed). Schema is updated to match live.
+- **Default:** Reset in place. Overwrite the dev `.db` file from the live database. Preserves database and table IDs (no client reload needed). Schema is updated to match live.
 - **`mode=truncate`:** Keep schema, delete all row data. Used by scenarios for a clean canvas before seeding.
 
 **Why IDs are preserved:** The frontend and SDK may hold references to database IDs from a previous status/start response. If a reset changed the IDs, every client would need to reload to pick up the new ones. By resetting in place (overwriting the `.db` file at the same S3 key, keeping the same Postgres records), the existing IDs remain valid.
@@ -336,7 +336,7 @@ Marks the dev release as `superseded`. Called by the CLI on shutdown.
 
 ## Sandbox Editor Lifecycle
 
-The sandbox is the hosted development environment — a Vercel container running the C&C server (see [sandbox-server.md](03_sandbox-server.md)). The API manages the sandbox lifecycle; the browser connects directly to the C&C server's WebSocket for the actual editing experience.
+The sandbox is the hosted development environment, a Vercel container running the C&C server (see [sandbox-server.md](03_sandbox-server.md)). The API manages the sandbox lifecycle; the browser connects directly to the C&C server's WebSocket for the actual editing experience.
 
 ### State Machine
 
@@ -387,7 +387,7 @@ Auth: login + edit permission
 Returns: { session, devReleaseId, databases }
 ```
 
-Returns the active sandbox session (if any), the dev release ID (for database operations), and dev databases. Also verifies liveness — if the DB says `running` but the sandbox is dead, marks it stopped and returns `session: null`.
+Returns the active sandbox session (if any), the dev release ID (for database operations), and dev databases. Also verifies liveness: if the DB says `running` but the sandbox is dead, marks it stopped and returns `session: null`.
 
 ### Restart
 
@@ -422,26 +422,26 @@ Extends `date_should_cleanup` by 10 minutes. The frontend calls this on a regula
 ### Cleanup (Cron)
 
 The `cleanDanglingSessions()` method runs on the 5-minute cron. Finds sessions where:
-- `date_should_cleanup < NOW()` (idle — no keepalives)
+- `date_should_cleanup < NOW()` (idle, no keepalives)
 - `date_will_timeout < NOW()` (Vercel hard timeout reached)
 
 For each: calls `POST /sandbox/stop` on the execution service (which snapshots by default), saves the `snapshotId`, marks the session stopped.
 
-**Why snapshot by default on stop:** The sandbox contains the user's working environment — uncommitted changes, node_modules, agent chat history. Losing it means losing their work. By snapshotting before every stop (including idle cleanup), we protect user work even when they forget to save or their connection drops. The `skipSnapshot` option exists only for intentional resets.
+**Why snapshot by default on stop:** The sandbox contains the user's working environment: uncommitted changes, node_modules, agent chat history. Losing it means losing their work. By snapshotting before every stop (including idle cleanup), we protect user work even when they forget to save or their connection drops. The `skipSnapshot` option exists only for intentional resets.
 
-**Why the API manages lifecycle, not the execution service:** The execution service is deliberately stateless — it provides primitives (start, stop, verify). The API decides policy: when to snapshot, how long to keep a sandbox idle, whether to verify before returning stale state. This separation means we can change lifecycle policy without modifying the execution service.
+**Why the API manages lifecycle, not the execution service:** The execution service is deliberately stateless; it provides primitives (start, stop, verify). The API decides policy: when to snapshot, how long to keep a sandbox idle, whether to verify before returning stale state. This separation means we can change lifecycle policy without modifying the execution service.
 
 ---
 
 ## Database Management
 
-Apps use managed SQLite databases. Each database is a `.db` file stored on S3 with local caching on the API server. Databases are scoped to a release version — dev, staging, and live each get their own copy.
+Apps use managed SQLite databases. Each database is a `.db` file stored on S3 with local caching on the API server. Databases are scoped to a release version; dev, staging, and live each get their own copy.
 
 See [infrastructure.md](09_infrastructure.md) for the full storage map and S3 key schemes.
 
-**Why SQLite on S3:** SQLite gives each app a real relational database with zero configuration. S3 provides durability and cross-worker access. The tradeoff is that writes require a download-modify-upload cycle with a Redis lock for concurrency — but for the write patterns of typical MindStudio apps (moderate throughput, small databases), this works well and avoids the operational complexity of per-app Postgres databases.
+**Why SQLite on S3:** SQLite gives each app a real relational database with zero configuration. S3 provides durability and cross-worker access. The tradeoff is that writes require a download-modify-upload cycle with a Redis lock for concurrency, but for the write patterns of typical MindStudio apps (moderate throughput, small databases), this works well and avoids the operational complexity of per-app Postgres databases.
 
-**Why per-version databases:** Each release gets its own database copy (keyed by `appVersionId`). This provides complete isolation between dev, staging, and production. A dev session can freely mutate data without affecting live. Schema changes are applied to a staging copy and promoted atomically. Rollback is instant — the previous release's database is still there.
+**Why per-version databases:** Each release gets its own database copy (keyed by `appVersionId`). This provides complete isolation between dev, staging, and production. A dev session can freely mutate data without affecting live. Schema changes are applied to a staging copy and promoted atomically. Rollback is instant; the previous release's database is still there.
 
 ### Query Routing
 
@@ -453,7 +453,7 @@ The SDK calls `POST /_internal/v2/db/query` with the hook token. The platform:
 4. Executes queries (with local file caching)
 5. Returns results
 
-The `appVersionId` is the release ID. In dev mode, it's the dev release ID. In production, it's the live release ID. The SDK doesn't know or care — the token handles routing.
+The `appVersionId` is the release ID. In dev mode, it's the dev release ID. In production, it's the live release ID. The SDK doesn't know or care; the token handles routing.
 
 ### Reset and Truncate
 
@@ -477,7 +477,7 @@ Vendor-agnostic LLM proxy. The coding agent (remy) sends messages here. The plat
 
 The response is an SSE stream. The agent reads tool_use events, executes tools locally, and sends results back in the next request.
 
-**Why a platform endpoint instead of direct API calls:** The agent doesn't need provider SDKs, API keys, or billing logic. The platform handles all of that. This also means the agent works with any model the platform supports — switching models is a configuration change, not a code change.
+**Why a platform endpoint instead of direct API calls:** The agent doesn't need provider SDKs, API keys, or billing logic. The platform handles all of that. This also means the agent works with any model the platform supports. Switching models is a configuration change, not a code change.
 
 ---
 

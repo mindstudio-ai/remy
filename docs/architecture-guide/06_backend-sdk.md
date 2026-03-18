@@ -2,7 +2,7 @@
 
 TypeScript SDK for backend methods. Provides `db` (database operations) and `auth` (role-based access control) namespaces. Under the hood, a thin HTTP client that routes all operations through the platform API using a `CALLBACK_TOKEN` that encodes execution context.
 
-The SDK is intentionally thin — all business logic lives in the platform. The SDK is just a typed interface to platform capabilities. This means updates to database routing, caching, or auth logic happen on the platform side without SDK version bumps.
+The SDK is intentionally thin; all business logic lives in the platform. The SDK is just a typed interface to platform capabilities. This means updates to database routing, caching, or auth logic happen on the platform side without SDK version bumps.
 
 Source: `/Users/sean/Dropbox/Projects/youai/mindstudio-agent/src/`
 
@@ -35,15 +35,15 @@ The token is the routing key for everything:
 4. All `db` operations → `POST /_internal/v2/db/query` with the token
 5. Platform validates → extracts `appVersionId` → routes to the correct database version
 
-In dev mode, the tunnel sets `CALLBACK_TOKEN` in the child process environment. The token points at the dev release's database. The SDK doesn't know or care whether it's in dev or production — the token handles routing.
+In dev mode, the tunnel sets `CALLBACK_TOKEN` in the child process environment. The token points at the dev release's database. The SDK doesn't know or care whether it's in dev or production; the token handles routing.
 
-**Why CALLBACK_TOKEN instead of API key:** The API key identifies the organization. The callback token identifies the *execution context* — which release, which database version, which user. Without it, every SDK call would need to specify these explicitly. The token makes the SDK simple: just call `db.push()` and the platform figures out where the data goes.
+**Why CALLBACK_TOKEN instead of API key:** The API key identifies the organization. The callback token identifies the *execution context*: which release, which database version, which user. Without it, every SDK call would need to specify these explicitly. The token makes the SDK simple: just call `db.push()` and the platform figures out where the data goes.
 
 ### Context Hydration
 
 The SDK needs auth context (role assignments, databases) before it can execute queries. Two paths:
 
-- **Sandbox mode:** preloaded from `globalThis.ai` (set by the executor bootstrap script). Synchronous — no HTTP needed.
+- **Sandbox mode:** preloaded from `globalThis.ai` (set by the executor bootstrap script). Synchronous, no HTTP needed.
 - **External mode:** lazy-loaded via `GET /helpers/app-context` on first use. Cached for the instance lifetime.
 
 ---
@@ -64,11 +64,11 @@ interface Vendor {
 const Vendors = db.defineTable<Vendor>('vendors');
 ```
 
-`defineTable<T>(name, options?)` returns a `Table<T>` — a lazy handle. No HTTP until a query executes. Options: `{ database?: string }` for apps with multiple databases.
+`defineTable<T>(name, options?)` returns a `Table<T>`, a lazy handle. No HTTP until a query executes. Options: `{ database?: string }` for apps with multiple databases.
 
 ### System Columns
 
-Every table has these columns automatically. They're managed by SQLite triggers — application code never sets them:
+Every table has these columns automatically. They're managed by SQLite triggers; application code never sets them:
 
 | Column | Type | Behavior |
 |--------|------|----------|
@@ -106,7 +106,7 @@ Query methods: `.reverse()`, `.take(n)`, `.skip(n)`, `.first()`, `.last()`, `.co
 
 ### Writes
 
-All writes use `RETURNING *` — they return the full row after mutation:
+All writes use `RETURNING *` and return the full row after mutation:
 
 ```typescript
 const vendor = await Vendors.push({ name: 'Acme', status: 'pending' });
@@ -149,7 +149,7 @@ Vendors.filter(v => v.status === 'approved' && v.totalCents > 10000)
 - Nested JSON: `v.address.city` → `json_extract(address, '$.city')`
 - Closure variables: captured and resolved via Proxy
 
-**Fallback:** Any pattern that can't be compiled to SQL (complex closures, function calls, etc.) triggers a fallback — fetch all rows, filter in JavaScript. A warning is logged.
+**Fallback:** Any pattern that can't be compiled to SQL (complex closures, function calls, etc.) triggers a fallback: fetch all rows, filter in JavaScript. A warning is logged.
 
 ### Time Helpers
 
@@ -178,7 +178,7 @@ const [vendors, orders] = await db.batch(
 
 ### User Type Handling
 
-Columns of type `user` store values with a `@@user@@` prefix in SQLite (e.g., `@@user@@550e8400-...`). The SDK handles this transparently — application code always works with clean UUIDs.
+Columns of type `user` store values with a `@@user@@` prefix in SQLite (e.g., `@@user@@550e8400-...`). The SDK handles this transparently; application code always works with clean UUIDs.
 
 ---
 
@@ -221,7 +221,7 @@ Provides autocomplete and typo prevention. Future: generated from `mindstudio.js
 1. Method is invoked → platform loads role assignments for the app
 2. Assignments are passed into the sandbox execution context
 3. `globalThis.ai.auth` is populated with `{ userId, roleAssignments }`
-4. SDK reads synchronously — no HTTP needed for role checks
+4. SDK reads synchronously (no HTTP needed for role checks)
 5. In dev mode: `roleOverride` from impersonation is applied on top
 
 ---
@@ -263,7 +263,7 @@ The `@mindstudio-ai/agent` package also provides:
 - `mindstudio.listModels()` — discover available AI models
 - `mindstudio.listConnectors()` — browse OAuth connector registry
 
-These capabilities are what make the SDK more than just a database client — it's an interface to the entire MindStudio platform, including thousands of pre-built integrations and AI models.
+These capabilities are what make the SDK more than just a database client. It's an interface to the entire MindStudio platform, including thousands of pre-built integrations and AI models.
 
 ---
 
@@ -271,4 +271,4 @@ These capabilities are what make the SDK more than just a database client — it
 
 **Why a thin SDK:** All logic lives in the platform. The SDK is a typed HTTP client. This means database routing, caching, auth, rate limiting, and billing logic can all be updated server-side without requiring SDK version bumps. The SDK's job is to provide a clean API surface, not to contain business logic.
 
-**Why predicate compilation:** Developers write natural JavaScript (`v => v.status === 'approved'`), and the SDK compiles it to SQL for efficient server-side execution. The fallback (fetch all, filter in JS) ensures nothing breaks if a pattern can't be compiled — it just runs slower. This is the right tradeoff for developer experience: write natural code, get efficient queries.
+**Why predicate compilation:** Developers write natural JavaScript (`v => v.status === 'approved'`), and the SDK compiles it to SQL for efficient server-side execution. The fallback (fetch all, filter in JS) ensures nothing breaks if a pattern can't be compiled; it just runs slower. This is the right tradeoff for developer experience: write natural code, get efficient queries.

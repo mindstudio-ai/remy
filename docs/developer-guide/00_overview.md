@@ -1,16 +1,16 @@
-# MindStudio Apps — Developer Guide
+# MindStudio Apps: Developer Guide
 
 ## What is a MindStudio App?
 
-A MindStudio app is a code project with a clear structure. You define the logic — data models, business rules, user experiences — and the platform handles databases, auth, deployment, and every way users interact with your app.
+A MindStudio app is a code project with a clear structure. You define the logic (data models, business rules, user experiences) and the platform handles databases, auth, deployment, and every way users interact with your app.
 
 An app has three layers:
 
-**A spec** — a natural language document describing what the app does. Written in MSFM (MindStudio-Flavored Markdown), it captures the domain, the rules, the workflows. This is the source of truth. An AI agent reads the spec and generates the code — or you write the code directly. Either way, the spec is the application; the code is a derivation.
+**A spec.** A natural language document describing what the app does. Written in MSFM (MindStudio-Flavored Markdown), it captures the domain, the rules, the workflows. This is the source of truth. An AI agent reads the spec and generates the code, or you write the code directly. Either way, the spec is the application; the code is a derivation.
 
-**A backend contract** — methods, tables, and roles. Methods are TypeScript functions that implement the logic. Tables define the data model. Roles define who can do what. This lives in `dist/` — in the same way `.js` is a compiled derivation of `.ts`, the backend code is a compiled derivation of the spec.
+**A backend contract.** Methods, tables, and roles. Methods are TypeScript functions that implement the logic. Tables define the data model. Roles define who can do what. This lives in `dist/`. In the same way `.js` is a compiled derivation of `.ts`, the backend code is a compiled derivation of the spec.
 
-**Interfaces** — ways for users to interact with the contract. A web app, a REST API, a Discord bot, a Telegram bot, a cron job, a webhook, an email trigger, an MCP tool server. The same methods power all of them. Interfaces can be as complex and polished as you want — a full React app with rich interactions and beautiful design — but they're always safe, because the backend contract is where anything real happens. The interface can't break business logic or corrupt data.
+**Interfaces.** Ways for users to interact with the contract. A web app, a REST API, a Discord bot, a Telegram bot, a cron job, a webhook, an email trigger, an MCP tool server. The same methods power all of them. Interfaces can be as complex and polished as you want, but they're always safe, because the backend contract is where anything real happens. The interface can't break business logic or corrupt data.
 
 ```
 my-app/
@@ -42,7 +42,7 @@ SQLite with typed schemas defined as TypeScript interfaces. No connection string
 
 ### Built-in Auth
 
-Define roles in `mindstudio.json`. Assign users to roles in the editor. In your methods, call `auth.requireRole('admin')` — the platform handles sessions, tokens, and user resolution. In your frontend, conditionally render based on the user's roles.
+Define roles in `mindstudio.json`. Assign users to roles in the editor. In your methods, call `auth.requireRole('admin')` and the platform handles sessions, tokens, and user resolution. In your frontend, conditionally render based on the user's roles.
 
 ### Multiple Interfaces, One Codebase
 
@@ -126,7 +126,7 @@ The CLI connects to the platform, polls for method requests, and executes them l
 
 ### With the hosted editor
 
-Open the sandbox editor in your browser. File tree, Monaco editor, live preview, terminal, and an AI coding agent — all in one place. The sandbox is your persistent working environment, snapshotted automatically so you never lose work.
+Open the sandbox editor in your browser: file tree, Monaco editor, live preview, terminal, and an AI coding agent, all in one place. The sandbox is your persistent working environment, snapshotted automatically so you never lose work.
 
 ### Either way
 

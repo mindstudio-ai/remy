@@ -2,7 +2,7 @@
 
 MindStudio apps use role-based access control. Roles are defined in the manifest, assigned to users in the editor, and enforced in methods.
 
-The backend is the authority — methods enforce access control via `auth.requireRole()`. The frontend can read roles for conditional rendering, but enforcement always happens server-side.
+The backend is the authority. Methods enforce access control via `auth.requireRole()`. The frontend can read roles for conditional rendering, but enforcement always happens server-side.
 
 ---
 
@@ -21,9 +21,9 @@ In `mindstudio.json`:
 }
 ```
 
-- `id` — kebab-case, used in code (`auth.requireRole('admin')`)
-- `name` — display name shown in the editor
-- `description` — what this role can do (useful for the AI agent and for users in the role assignment UI)
+- `id`: kebab-case, used in code (`auth.requireRole('admin')`)
+- `name`: display name shown in the editor
+- `description`: what this role can do (useful for the AI agent and for users in the role assignment UI)
 
 Roles are synced to the platform on deploy. Adding or removing roles in the manifest creates or deletes them on the next push.
 
@@ -34,8 +34,8 @@ Roles are synced to the platform on deploy. Adding or removing roles in the mani
 Users are assigned to roles in the MindStudio editor. One user can have multiple roles. Role assignments are managed via the platform API:
 
 ```
-GET  /roles/list                        — list all roles
-GET  /roles/assignments                 — list all user-role mappings
+GET  /roles/list                        list all roles
+GET  /roles/assignments                 list all user-role mappings
 POST /roles/set-user-roles { userId, roleNames[] }
 POST /roles/get-users-by-role { roleName }
 ```
@@ -48,7 +48,7 @@ POST /roles/get-users-by-role { roleName }
 import { auth } from '@mindstudio-ai/agent';
 
 export async function approveVendor(input: { vendorId: string }) {
-  // Require the user to have the 'admin' role — throws 403 if not
+  // Require the user to have the 'admin' role (throws 403 if not)
   auth.requireRole('admin');
 
   // ...
@@ -124,7 +124,7 @@ const { isAdmin, pendingCount } = await api.getDashboard();
 {isAdmin && <AdminPanel />}
 ```
 
-The frontend is untrusted — anyone can modify JavaScript in the browser. The frontend shows or hides UI elements based on role data from the backend, but the backend is always the authority.
+The frontend is untrusted. Anyone can modify JavaScript in the browser. The frontend shows or hides UI elements based on role data from the backend, but the backend is always the authority.
 
 ---
 
@@ -146,7 +146,7 @@ POST /dev/manage/impersonate
 Body: { "roles": [] }
 ```
 
-Scenarios set impersonation automatically — each scenario declares which roles to impersonate after seeding. See [Scenarios](08_scenarios.md).
+Scenarios set impersonation automatically. Each scenario declares which roles to impersonate after seeding. See [Scenarios](08_scenarios.md).
 
 ---
 

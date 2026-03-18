@@ -2,7 +2,7 @@
 
 Stateless provisioner that wraps the Vercel Sandbox SDK. Two responsibilities: manage sandbox containers for the hosted editor, and execute user functions in isolated containers.
 
-Deliberately stateless — Vercel is the source of truth for sandbox state. The execution service is a thin translation layer between the platform API's lifecycle decisions and Vercel's container primitives. The API decides policy (when to start, when to stop, when to snapshot); this service provides mechanism.
+Deliberately stateless. Vercel is the source of truth for sandbox state. The execution service is a thin translation layer between the platform API's lifecycle decisions and Vercel's container primitives. The API decides policy (when to start, when to stop, when to snapshot); this service provides mechanism.
 
 ---
 
@@ -61,13 +61,13 @@ Body: { sandboxId, skipSnapshot?: boolean }
 Returns: { snapshotId? }
 ```
 
-By default, snapshots the sandbox before stopping. The Vercel snapshot operation suspends the container — after a snapshot, the sandbox is no longer running. This is the intended behavior: snapshot = save + suspend.
+By default, snapshots the sandbox before stopping. The Vercel snapshot operation suspends the container; after a snapshot, the sandbox is no longer running. This is the intended behavior: snapshot = save + suspend.
 
 With `skipSnapshot: true`, calls `sandbox.stop()` directly (kills without preserving state). Used by the API's reset operation.
 
 Silently handles already-stopped sandboxes (the container may have expired or been stopped by Vercel's timeout).
 
-**Why a single stop endpoint with snapshot-by-default:** Protects user work as the default behavior. The API never needs to remember to snapshot before stopping — it just calls stop and gets a snapshot back. The `skipSnapshot` option exists only for intentional discards (reset). This eliminates an entire class of bugs where a code path forgets to snapshot.
+**Why a single stop endpoint with snapshot-by-default:** Protects user work as the default behavior. The API never needs to remember to snapshot before stopping; it just calls stop and gets a snapshot back. The `skipSnapshot` option exists only for intentional discards (reset). This eliminates an entire class of bugs where a code path forgets to snapshot.
 
 ### Verify
 
@@ -86,7 +86,7 @@ Quick health probe to check if a sandbox is actually alive. Hits the C&C server'
 | `error` | false | C&C responded but reported a failure |
 | `unreachable` | false | No response after 3 attempts (~3s) |
 
-Always returns 200 — the `alive` field indicates sandbox state, not an error in the execution service.
+Always returns 200. The `alive` field indicates sandbox state, not an error in the execution service.
 
 Used by the API to detect stale sessions: if the DB says "running" but verify returns `alive: false`, the API marks the session stopped and starts a new one.
 
@@ -109,7 +109,7 @@ Builds the pre-baked base image that all new sandboxes start from. Called once (
 
 With a base snapshot, `POST /sandbox/start` skips all of this and goes straight to starting the C&C server process (~5s vs ~90s).
 
-**Why base snapshots:** Cold-starting a sandbox from git requires cloning, installing system packages, npm install, and TypeScript compilation. This takes 60-90 seconds. Pre-baking all of this into a snapshot reduces sandbox creation to just starting the C&C server process. The tradeoff is managing a snapshot artifact — but it only needs to be rebuilt when the C&C server code changes.
+**Why base snapshots:** Cold-starting a sandbox from git requires cloning, installing system packages, npm install, and TypeScript compilation. This takes 60-90 seconds. Pre-baking all of this into a snapshot reduces sandbox creation to just starting the C&C server process. The tradeoff is managing a snapshot artifact, but it only needs to be rebuilt when the C&C server code changes.
 
 ---
 
@@ -145,7 +145,7 @@ Pre-creates sandbox containers from a snapshot with common packages (including `
 - Single-use: each execution gets a fresh sandbox from the pool
 - Background replenishment: pool refills automatically when drained
 
-**Why a warm pool:** Cold-starting a sandbox for every method invocation adds 5-15 seconds of latency. The warm pool eliminates this for the common case. The tradeoff is cost (idle sandboxes consume resources) — but the pool is small and auto-drains stale entries.
+**Why a warm pool:** Cold-starting a sandbox for every method invocation adds 5-15 seconds of latency. The warm pool eliminates this for the common case. The tradeoff is cost (idle sandboxes consume resources), but the pool is small and auto-drains stale entries.
 
 ### JS/TS Sandbox Executor
 
@@ -159,9 +159,9 @@ Runs Python code in a Python 3.13 sandbox. Similar flow to JS but with pip for p
 
 ## Design Rationale
 
-**Why stateless:** The execution service has no database, no Redis, no internal state tracking. Vercel is the source of truth for sandbox state. If the execution service restarts, nothing is lost — the API still knows which sandboxes exist (from its own DB) and can verify them. This makes the execution service trivially scalable and eliminates state synchronization bugs.
+**Why stateless:** The execution service has no database, no Redis, no internal state tracking. Vercel is the source of truth for sandbox state. If the execution service restarts, nothing is lost. The API still knows which sandboxes exist (from its own DB) and can verify them. This makes the execution service trivially scalable and eliminates state synchronization bugs.
 
-**Why Vercel:** Managed containers with a clean SDK, built-in snapshot API, per-port domain routing, no infrastructure to maintain. The alternative — running our own container orchestration — would require significant operational investment for the same capabilities.
+**Why Vercel:** Managed containers with a clean SDK, built-in snapshot API, per-port domain routing, no infrastructure to maintain. The alternative (running our own container orchestration) would require significant operational investment for the same capabilities.
 
 ---
 

@@ -50,7 +50,7 @@ Push to a non-default branch:
 git push origin feat/approvals
 ```
 
-Same build pipeline, but the release is marked `preview` instead of `live`. Accessible via a branch-specific URL. Each branch gets its own preview release — pushing again to the same branch supersedes the previous preview.
+Same build pipeline, but the release is marked `preview` instead of `live`. Accessible via a branch-specific URL. Each branch gets its own preview release. Pushing again to the same branch supersedes the previous preview.
 
 Preview deployments don't affect the live app. Useful for testing changes before merging.
 
@@ -81,7 +81,7 @@ Databases are keyed by release ID. Each release gets its own database copy:
 - The live release has the production database
 - A new release clones from live, applies DDL, then becomes the new live database on promotion
 - Dev sessions get their own copy (snapshotted from live on session start)
-- Rollback is safe — the previous release's database still exists
+- Rollback is safe because the previous release's database still exists
 
 ---
 

@@ -2,7 +2,7 @@
 
 AI coding assistant powered by Claude. Runs a tool-use loop: receives a message, calls the LLM with tools, executes tool calls locally, sends results back, repeats until done.
 
-In the three-layer hierarchy, the agent is the compiler — it reads the spec (`src/`) and produces the contract (`dist/`). This is the core of the "spec is the application" thesis. The agent's awareness of `mindstudio.json` and MSFM is what makes the hierarchy work in practice.
+In the three-layer hierarchy, the agent is the compiler: it reads the spec (`src/`) and produces the contract (`dist/`). This is the core of the "spec is the application" thesis. The agent's awareness of `mindstudio.json` and MSFM is what makes the hierarchy work in practice.
 
 Works as a standalone CLI (interactive terminal UI) or in headless mode (JSON protocol over stdin/stdout, driven by the C&C server).
 
@@ -26,7 +26,7 @@ The core algorithm (`runTurn`):
 6. If `stopReason === 'end_turn'`:
    - Save session, emit `turn_done`, return
 
-The full conversation history is sent to the LLM on every turn. Context accumulates across the session — the agent remembers what it's seen and done.
+The full conversation history is sent to the LLM on every turn. Context accumulates across the session; the agent remembers what it's seen and done.
 
 **Cancellation:** An AbortController is threaded through the stream and tool execution. On cancel, in-flight tool calls are abandoned and a `(cancelled)` marker is added to the conversation so the agent knows the turn was interrupted.
 
@@ -52,7 +52,7 @@ The full conversation history is sent to the LLM on every turn. Context accumula
 
 LSP tools are only available when `--lsp-url` is configured (always the case in the sandbox, where the C&C server runs the sidecar on port 4388).
 
-**Why the same tools as Claude Code:** Familiar patterns, proven tool design, low learning curve for the model. The tools are simple (read, write, edit, search, run) — the intelligence is in how the LLM composes them.
+**Why the same tools as Claude Code:** Familiar patterns, proven tool design, low learning curve for the model. The tools are simple (read, write, edit, search, run); the intelligence is in how the LLM composes them.
 
 ---
 
@@ -77,7 +77,7 @@ Interactive terminal UI (React Ink). The developer types messages, the agent res
 remy --headless --api-key sk... --base-url https://... --lsp-url http://localhost:4388
 ```
 
-No TUI — stdout is reserved for JSON events, all logging goes to stderr. The C&C server spawns remy in this mode and communicates via stdin/stdout.
+No TUI. Stdout is reserved for JSON events; all logging goes to stderr. The C&C server spawns remy in this mode and communicates via stdin/stdout.
 
 ### Stdin Protocol (C&C → Agent)
 
@@ -118,7 +118,7 @@ Dynamically assembled from multiple sources:
 4. **`mindstudio.json`** — full manifest JSON, giving the agent awareness of methods, tables, roles, interfaces, scenarios
 5. **Project file listing** — top-level files and directories
 
-The manifest inclusion is key — it means the agent knows the app's structure before it reads a single file. It can reason about which methods exist, what the data model looks like, and which interfaces are configured.
+The manifest inclusion is key: it means the agent knows the app's structure before it reads a single file. It can reason about which methods exist, what the data model looks like, and which interfaces are configured.
 
 ---
 
@@ -128,7 +128,7 @@ The agent's awareness of MSFM specs and the `mindstudio.json` manifest enables a
 
 1. A human (or the agent itself) writes or modifies a spec in `src/`
 2. The agent reads the spec, understands the domain and requirements
-3. The agent generates or updates the contract in `dist/` — methods, tables, interfaces — to match the spec
+3. The agent generates or updates the contract in `dist/` (methods, tables, interfaces) to match the spec
 4. Changes are tested via the live preview and scenarios
 5. The spec can be updated to reflect code changes, maintaining bidirectional consistency
 
@@ -140,7 +140,7 @@ This is the "spec is the application" thesis in action. The agent is the bridge 
 
 Conversation history is saved to `.remy-session.json` in the working directory after every turn. On startup, the session is restored if the file exists.
 
-In the sandbox, this file survives snapshots (it's part of the workspace filesystem). When a sandbox resumes, the agent has its full conversation history — it remembers what it was working on.
+In the sandbox, this file survives snapshots (it's part of the workspace filesystem). When a sandbox resumes, the agent has its full conversation history and remembers what it was working on.
 
 ---
 
@@ -154,7 +154,7 @@ All LLM calls go through `POST /_internal/v2/agent/chat` on the platform API. Th
 
 ### LSP Access
 
-In the sandbox, the C&C server runs a TypeScript language server and exposes it via an HTTP sidecar on port 4388. The agent uses this for type-aware operations — checking diagnostics before and after edits, finding definitions, navigating references.
+In the sandbox, the C&C server runs a TypeScript language server and exposes it via an HTTP sidecar on port 4388. The agent uses this for type-aware operations: checking diagnostics before and after edits, finding definitions, navigating references.
 
 **Why LSP multiplexing matters for the agent:** The same language server instance serves both Monaco (the editor) and remy. This means diagnostics computed for one are immediately available to the other. When the agent makes an edit, Monaco sees the diagnostics update instantly. When the human types, the agent can check the latest diagnostics.
 
@@ -162,6 +162,6 @@ In the sandbox, the C&C server runs a TypeScript language server and exposes it 
 
 ## Design Rationale
 
-**Why a separate process:** Crash isolation — if the agent crashes, the editor keeps working. Independent updates — remy can be upgraded without rebuilding the C&C server. Standalone value — the same binary works as a CLI tool outside the sandbox.
+**Why a separate process:** Crash isolation: if the agent crashes, the editor keeps working. Independent updates: remy can be upgraded without rebuilding the C&C server. Standalone value: the same binary works as a CLI tool outside the sandbox.
 
-**Why spec-driven:** MSFM gives the agent business context that code alone doesn't capture. Code shows *what* the app does; the spec captures *why* — the domain rules, the user workflows, the edge cases. An agent that understands the spec can make changes that are semantically correct, not just syntactically valid.
+**Why spec-driven:** MSFM gives the agent business context that code alone doesn't capture. Code shows *what* the app does; the spec captures *why*: the domain rules, the user workflows, the edge cases. An agent that understands the spec can make changes that are semantically correct, not just syntactically valid.

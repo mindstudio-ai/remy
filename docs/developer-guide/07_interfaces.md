@@ -1,6 +1,6 @@
 # Interfaces
 
-Interfaces are how users interact with your app. The same methods power all of them — a web frontend, a Discord bot, and a cron job can all invoke the same backend logic. Interfaces can be as complex and polished as you want, but they're always safe — the backend is where anything real happens. They're projections of the backend contract into different modalities.
+Interfaces are how users interact with your app. The same methods power all of them. A web frontend, a Discord bot, and a cron job can all invoke the same backend logic. Interfaces can be as complex and polished as you want, but they're always safe, because the backend is where anything real happens. They're projections of the backend contract into different modalities.
 
 ---
 
@@ -62,7 +62,7 @@ auth.email;
 
 ### Deployment
 
-On `git push`, the platform runs `npm install && npm run build` in the web directory and hosts the output on CDN. Zero configuration in your code — the platform injects connection details automatically.
+On `git push`, the platform runs `npm install && npm run build` in the web directory and hosts the output on CDN. Zero configuration in your code. The platform injects connection details automatically.
 
 ---
 
@@ -279,6 +279,6 @@ Each interface is declared in `mindstudio.json`:
 }
 ```
 
-Some interfaces (like `api`) work without a config file — just declaring the type is enough. Others need a config to specify which methods to expose, command mappings, schedules, etc.
+Some interfaces (like `api`) work without a config file; just declaring the type is enough. Others need a config to specify which methods to expose, command mappings, schedules, etc.
 
 Set `"enabled": false` to skip an interface during build without removing it from the manifest.

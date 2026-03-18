@@ -2,7 +2,7 @@
 
 CLI tool that bridges a local development environment to the platform. Polls for method execution requests, transpiles TypeScript, executes methods in isolated child processes, and reports results back. Also runs a proxy server that injects `window.__MINDSTUDIO__` into HTML responses so the frontend SDK works without configuration.
 
-Designed to be useful standalone — a developer can use it for local development without the sandbox editor. The sandbox uses it in headless mode (same binary, `--headless` flag) to execute methods inside the container.
+Designed to be useful standalone: a developer can use it for local development without the sandbox editor. The sandbox uses it in headless mode (same binary, `--headless` flag) to execute methods inside the container.
 
 This is where the zero-divergence principle lives: the same tunnel binary, the same execution pipeline, the same database routing runs in both local dev and the hosted sandbox. Code that works locally works in the sandbox works in production.
 
@@ -88,7 +88,7 @@ For each incoming request:
 
 **Why esbuild:** Fast enough for per-request transpilation (no watch mode needed). Handles TypeScript + ESM. Bundling resolves all imports so the child process has a single entry point.
 
-**Why external SDK:** The `@mindstudio-ai/agent` package reads env vars (`CALLBACK_TOKEN`) and `globalThis.ai` at runtime. Bundling it would break this — the bundled copy wouldn't see the runtime context. Marking it external means it resolves from the project's installed version.
+**Why external SDK:** The `@mindstudio-ai/agent` package reads env vars (`CALLBACK_TOKEN`) and `globalThis.ai` at runtime. Bundling it would break this; the bundled copy wouldn't see the runtime context. Marking it external means it resolves from the project's installed version.
 
 ---
 
@@ -127,7 +127,7 @@ This is the exact same object that's injected in production (by the static hosti
 mindstudio-local --headless --port 5173 --bind 0.0.0.0
 ```
 
-No TUI — JSON events on stdout, all logging to stderr. Used by the C&C server inside the sandbox.
+No TUI. JSON events on stdout, all logging to stderr. Used by the C&C server inside the sandbox.
 
 ### Stdout Events
 
@@ -151,7 +151,7 @@ No TUI — JSON events on stdout, all logging to stderr. Used by the C&C server 
 { "action": "listRoles" }
 ```
 
-The C&C server bridges these to WebSocket actions — the browser can trigger scenarios, sync schema, and switch roles through the editor UI, which routes through the C&C server to the tunnel.
+The C&C server bridges these to WebSocket actions, so the browser can trigger scenarios, sync schema, and switch roles through the editor UI, which routes through the C&C server to the tunnel.
 
 **Why headless mode:** The same binary, the same execution pipeline, just a different interface. In the sandbox, the C&C server needs to drive the tunnel programmatically. Rather than building a separate library, headless mode wraps the existing functionality in a JSON protocol. This also means any improvements to the tunnel automatically work in both standalone and sandbox modes.
 
@@ -166,7 +166,7 @@ The CLI detects table definition changes and syncs them to the platform:
 3. Platform parses the TypeScript, diffs against current dev database, applies DDL (CREATE TABLE, ALTER TABLE ADD COLUMN)
 4. Returns created/altered tables and updated database state
 
-Additive only — new tables and new columns. No destructive changes in development (column drops, type changes happen via migrations on deploy).
+Additive only: new tables and new columns. No destructive changes in development (column drops, type changes happen via migrations on deploy).
 
 ---
 
@@ -181,7 +181,7 @@ The tunnel emits events via a singleton `DevEventEmitter`:
 - `dev:impersonate` — role override changed
 - `dev:scenario-start` / `dev:scenario-complete` — scenario execution
 
-The TUI and headless mode subscribe independently — the event emitter decouples execution from presentation.
+The TUI and headless mode subscribe independently; the event emitter decouples execution from presentation.
 
 ---
 
@@ -208,6 +208,6 @@ The C&C server writes this file during bootstrap (step 6) so the tunnel inside t
 
 ## Design Rationale
 
-**Why standalone:** The tunnel is valuable without the sandbox — it's the primary development tool for local-first developers. Making it a standalone CLI (not a library embedded in the C&C server) means it can be installed, updated, and used independently.
+**Why standalone:** The tunnel is valuable without the sandbox; it's the primary development tool for local-first developers. Making it a standalone CLI (not a library embedded in the C&C server) means it can be installed, updated, and used independently.
 
-**Why poll-based:** Works through any NAT or firewall. No inbound connections needed. The developer's machine polls the platform — no WebSocket keep-alive, no port forwarding, no tunneling service. Simple to implement, simple to debug, and reliable across network configurations.
+**Why poll-based:** Works through any NAT or firewall. No inbound connections needed. The developer's machine polls the platform. No WebSocket keep-alive, no port forwarding, no tunneling service. Simple to implement, simple to debug, and reliable across network configurations.

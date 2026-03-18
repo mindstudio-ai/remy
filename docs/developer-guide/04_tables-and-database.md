@@ -32,7 +32,7 @@ One file per table, one export per file. The export name is what you reference i
 
 ### System Columns
 
-Every table gets these automatically. You don't define them — they're added by the platform and maintained by SQLite triggers:
+Every table gets these automatically. You don't define them; they're added by the platform and maintained by SQLite triggers:
 
 | Column | Type | Behavior |
 |--------|------|----------|
@@ -41,7 +41,7 @@ Every table gets these automatically. You don't define them — they're added by
 | `updated_at` | INTEGER (unix ms) | Updated on every write |
 | `last_updated_by` | TEXT | Set from the current user's auth context |
 
-System columns are automatically stripped from write inputs — you don't include them in `push()` or `update()` calls.
+System columns are automatically stripped from write inputs. You don't include them in `push()` or `update()` calls.
 
 ---
 
@@ -209,7 +209,7 @@ On `git push`, the platform:
 
 ### In Development
 
-The CLI syncs schema changes to the dev database via `POST /dev/manage/sync-schema`. Same additive constraints — new tables and new columns only.
+The CLI syncs schema changes to the dev database via `POST /dev/manage/sync-schema`. Same constraints as production.
 
 ---
 
@@ -232,10 +232,10 @@ POST /_internal/v2/apps/{appId}/dev/manage/reset
 Body: { "mode": "truncate" }
 ```
 
-Both operations preserve IDs — the frontend and SDK can continue using existing database references without reloading.
+Both operations preserve IDs, so the frontend and SDK can continue using existing database references without reloading.
 
 ---
 
 ## User Type Handling
 
-Columns of type `User` (the branded type from the SDK) store values with a `@@user@@` prefix in SQLite. The SDK handles this transparently — your code works with clean UUID strings. You never see the prefix.
+Columns of type `User` (the branded type from the SDK) store values with a `@@user@@` prefix in SQLite. The SDK handles this transparently. Your code works with clean UUID strings. You never see the prefix.

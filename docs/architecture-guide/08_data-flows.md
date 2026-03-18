@@ -87,7 +87,7 @@ User clicks button in web interface
 
 ---
 
-## Method Execution (Dev — Local CLI)
+## Method Execution (Dev: Local CLI)
 
 ```
 User clicks button in web interface (served via tunnel proxy)

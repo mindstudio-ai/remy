@@ -2,7 +2,7 @@
 
 Runs inside each sandbox container on a single port (4387). Orchestrates the entire hosted editor experience: file system access, process management, WebSocket protocol for the browser editor, reverse proxy for live preview, AI agent integration, TypeScript language server, and state persistence across hibernation.
 
-The browser connects directly to the C&C server's WebSocket — the platform API is not in the editor's data path. This gives the editor the same responsiveness as a local development environment.
+The browser connects directly to the C&C server's WebSocket; the platform API is not in the editor's data path. This gives the editor the same responsiveness as a local development environment.
 
 Source: `/Users/sean/Dropbox/Projects/youai/mindstudio-sandbox/src/`
 
@@ -18,7 +18,7 @@ Sequential, instrumented with progress broadcasts to connected clients. Each ste
 4. **Install tunnel & agent** — clone and build `mindstudio-local` and `remy` from GitHub, npm link globally
 5. **Install LSP** — `npm install -g typescript-language-server typescript`
 6. **Write tunnel config** — `~/.mindstudio-local-tunnel/config.json` with API key, user ID, environment
-7. **Clone app repo** — `git clone --depth 1` into workspace dir (skips if `mindstudio.json` already exists — i.e., resuming from snapshot)
+7. **Clone app repo** — `git clone --depth 1` into workspace dir (skips if `mindstudio.json` already exists, i.e., resuming from snapshot)
 8. **Read app config** — parse `mindstudio.json`, extract methods, tables, interfaces
 9. **Read web config** — find web interface, extract `devPort` (default 5173) and `devCommand` (default `npm run dev`)
 10. **Install dependencies** — `npm install` in `dist/methods/` and `dist/interfaces/web/` if `package.json` exists
@@ -30,7 +30,7 @@ Sequential, instrumented with progress broadcasts to connected clients. Each ste
     - LSP server + HTTP sidecar
 12. **Mark ready** — set status to `ready`, broadcast progress
 
-If any step fails, status is set to `error` (does not exit — clients can retry or inspect the error).
+If any step fails, status is set to `error` (does not exit; clients can retry or inspect the error).
 
 ---
 
@@ -46,7 +46,7 @@ Everything goes through port 4387. The server routes by URL path:
 | `/*` | HTTP | Reverse proxy → tunnel proxy → dev server |
 | `/*` | WebSocket | Reverse proxy → tunnel proxy (HMR) |
 
-**Why single port:** No CORS issues, no multi-port Vercel config, simpler networking. The reverse proxy handles routing transparently — the browser doesn't know (or care) that preview traffic goes through a proxy chain.
+**Why single port:** No CORS issues, no multi-port Vercel config, simpler networking. The reverse proxy handles routing transparently; the browser doesn't know (or care) that preview traffic goes through a proxy chain.
 
 **Proxy target discovery:** The tunnel emits a `session-started` JSON event on stdout with a `proxyPort` field. The C&C server reads this and creates the reverse proxy (`http-proxy`) targeting `http://127.0.0.1:{proxyPort}`. Until the tunnel is ready, non-C&C HTTP requests return 503 "Preview starting...".
 
@@ -173,13 +173,13 @@ Remy runs as a separate process with JSON-over-stdin/stdout:
 
 Events are mapped to WebSocket broadcasts so the browser sees agent activity in real-time.
 
-**Why a separate process (not a library):** Crash isolation — if the agent crashes, the editor keeps working. Independent upgrades — update remy without rebuilding the C&C server. And remy works standalone too, so keeping it as a process maintains that independence.
+**Why a separate process (not a library):** Crash isolation: if the agent crashes, the editor keeps working. Independent upgrades: update remy without rebuilding the C&C server. And remy works standalone too, so keeping it as a process maintains that independence.
 
 ### Tunnel Integration
 
 The tunnel runs in headless mode and communicates via stdin/stdout JSON. The C&C server sends control messages (run scenario, sync schema, impersonate) and receives status events (session started, method execution, errors).
 
-The key event is `session-started` with `proxyPort` — this is how the C&C server discovers where to point the reverse proxy.
+The key event is `session-started` with `proxyPort`. This is how the C&C server discovers where to point the reverse proxy.
 
 ---
 

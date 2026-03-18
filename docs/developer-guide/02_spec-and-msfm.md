@@ -2,25 +2,25 @@
 
 ## The Spec is the Application
 
-The spec is the most important file in your project. It's the natural language document that describes what the app does — the data model, the business rules, the workflows, the edge cases. It lives in `src/app.md`.
+The spec is the most important file in your project. It's the natural language document that describes what the app does: the data model, the business rules, the workflows, the edge cases. It lives in `src/app.md`.
 
 The AI agent reads the spec and generates the backend code in `dist/`. A spec with good annotations compiles the same way every time. When you want to change the app's behavior, update the spec and the agent regenerates the code.
 
-You can also write code directly in `dist/` without a spec — that works too. But the spec is what makes the project maintainable over time. Code shows *what* the app does; the spec captures *why*.
+You can also write code directly in `dist/` without a spec. That works too. But the spec is what makes the project maintainable over time. Code shows *what* the app does; the spec captures *why*.
 
 ---
 
-## MSFM — MindStudio-Flavored Markdown
+## MSFM (MindStudio-Flavored Markdown)
 
 Specs are written in MSFM, which extends standard Markdown with two primitives: **block annotations** and **inline annotations**. These let you attach precision to prose so the AI compiler produces consistent results.
 
-MSFM is a strict superset of Markdown. It works in any Markdown viewer — annotations render as code blocks and bracketed text. Nothing breaks.
+MSFM is a strict superset of Markdown. It works in any Markdown viewer; annotations render as code blocks and bracketed text. Nothing breaks.
 
 ### Design Principles
 
 1. **One file.** A spec is a single `.md` file. No sidecars, no imports. Email it, paste it, diff it in git.
 2. **Readable raw.** Useful in any text editor or LLM chat.
-3. **Annotations are just more context.** Not typed or structured — they can be a word, a paragraph, or a code snippet.
+3. **Annotations are just more context.** Not typed or structured. They can be a word, a paragraph, or a code snippet.
 4. **Additive precision.** A bare spec with no annotations is valid. Each annotation makes compilation more deterministic.
 
 ---
@@ -36,7 +36,7 @@ governance, legal, and accounting, with approvals flowing in that order.
 ~~~
 The spec says "three areas" but lists four names. From the process flowchart, it is three sequential stages:
 
-  1. Governance, Risk & Compliance (GRC) — one combined stage
+  1. Governance, Risk & Compliance (GRC), one combined stage
   2. Legal
   3. Accounts Payable (AP)
 
@@ -44,13 +44,13 @@ These are sequential. Each stage must complete before the next is notified. If a
 ~~~
 ```
 
-The annotation clarifies an ambiguity in the prose — "three areas" names four things. Without the annotation, the agent might generate four separate stages. With it, the agent knows it's three.
+The annotation clarifies an ambiguity in the prose. "Three areas" names four things. Without the annotation, the agent might generate four separate stages. With it, the agent knows it's three.
 
 **Rules:**
 - Starts and ends with `~~~` on its own line
 - Attaches to the nearest preceding block element (paragraph, heading, table, list)
 - Multiple annotations can follow the same element (read in order)
-- Can contain any Markdown content (use backtick code fences inside — they coexist with tilde fences)
+- Can contain any Markdown content (use backtick code fences inside; they coexist with tilde fences)
 
 ---
 
@@ -65,7 +65,7 @@ a vendor's AP. Only users with the "ap" or "admin" role can process
 invoices.} team for processing against the PO.
 ```
 
-The `[text]` is the visible, highlighted span. The `{content}` is the annotation — hidden by default in a rich editor, visible as literal text in plain Markdown.
+The `[text]` is the visible, highlighted span. The `{content}` is the annotation, hidden by default in a rich editor and visible as literal text in plain Markdown.
 
 Good for definitions, units, and clarifications:
 
@@ -97,7 +97,7 @@ Default behavior when no terms are specified: due on receipt.
 ~~~
 ```
 
-The `{#payment-terms}` inline reference points to the `~~~#payment-terms` block. Keep the block co-located — right after the paragraph containing the pointer.
+The `{#payment-terms}` inline reference points to the `~~~#payment-terms` block. Keep the block co-located, right after the paragraph containing the pointer.
 
 A single block annotation can be referenced by multiple pointers. Useful for concepts like "amounts are in USD cents" that apply in several places.
 
@@ -107,7 +107,7 @@ A single block annotation can be referenced by multiple pointers. Useful for con
 
 ### Annotate ambiguity, not the obvious
 
-If a statement has only one reasonable interpretation, leave it alone. Annotations resolve genuine ambiguity — places where two engineers might implement different things.
+If a statement has only one reasonable interpretation, leave it alone. Annotations resolve genuine ambiguity, places where two engineers might implement different things.
 
 ### Pin down edge cases
 
@@ -139,7 +139,7 @@ version: 1
 ---
 ```
 
-The body is freeform Markdown — headings, prose, tables, lists, whatever makes sense for the domain. There's no required structure or mandated heading hierarchy.
+The body is freeform Markdown: headings, prose, tables, lists, whatever makes sense for the domain. There's no required structure or mandated heading hierarchy.
 
 A typical pattern:
 
@@ -176,10 +176,10 @@ version: 1
 
 When the agent reads a spec:
 
-1. **Understands the domain.** The prose gives it the big picture — what the app does, who uses it, how it works.
+1. **Understands the domain.** The prose gives it the big picture: what the app does, who uses it, how it works.
 2. **Reads annotations for precision.** Annotations resolve the ambiguities that would otherwise produce inconsistent code.
 3. **Generates the contract.** Methods, tables, and roles in `dist/` that implement the spec.
-4. **Maintains consistency.** When modifying code, the agent checks against the spec to ensure changes are semantically correct — not just syntactically valid.
+4. **Maintains consistency.** When modifying code, the agent checks against the spec to ensure changes are semantically correct, not just syntactically valid.
 
 The spec is also what makes the project onboardable. A new developer (or a different AI agent) can read `src/app.md` and understand the entire application without reading any code.
 

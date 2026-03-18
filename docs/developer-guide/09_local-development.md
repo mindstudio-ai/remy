@@ -114,7 +114,7 @@ The tunnel's proxy sits in front of your dev server and injects the connection d
 
 1. Edit method code in `dist/methods/src/`
 2. Save
-3. The next method invocation (from the web preview or API) uses the updated code — esbuild transpiles per-request, no restart needed
+3. The next method invocation (from the web preview or API) uses the updated code (esbuild transpiles per-request, no restart needed)
 4. See results immediately in the browser
 
 For frontend changes with a web interface:
@@ -137,13 +137,13 @@ Open this in a browser to see your web interface with live data. Method invocati
 
 ## Schema Sync
 
-When you add or modify table definitions, the CLI syncs the changes to the dev database automatically. The platform parses the TypeScript, diffs against the current schema, and applies DDL — same migration rules as production (see [Tables & Database](04_tables-and-database.md)).
+When you add or modify table definitions, the CLI syncs the changes to the dev database automatically. The platform parses the TypeScript, diffs against the current schema, and applies DDL, same migration rules as production (see [Tables & Database](04_tables-and-database.md)).
 
 ---
 
 ## Database in Dev
 
-The dev session gets its own database — a snapshot of the live database at session start. Your dev code writes to this snapshot, not to production.
+The dev session gets its own database, a snapshot of the live database at session start. Your dev code writes to this snapshot, not to production.
 
 ### Reset to Live Data
 
@@ -209,7 +209,7 @@ GET /apps/{appId}/metrics/summary
 GET /apps/{appId}/metrics/methods/{methodId}
 ```
 
-Aggregated execution metrics — call count, error rate, duration percentiles.
+Aggregated execution metrics: call count, error rate, duration percentiles.
 
 ---
 
@@ -225,4 +225,4 @@ The hosted sandbox editor provides the same development experience in the browse
 
 Same execution pipeline, same database, same SDK. Code that works in the sandbox works locally and in production.
 
-The sandbox is automatically snapshotted when idle, so you never lose work. Resume where you left off — it restores from the latest snapshot.
+The sandbox is automatically snapshotted when idle, so you never lose work. Resume where you left off. It restores from the latest snapshot.

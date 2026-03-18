@@ -2,7 +2,7 @@
 
 TypeScript SDK for web interfaces. Provides typed RPC to backend methods, file operations, and read-only auth context. Reads configuration from `window.__MINDSTUDIO__`, a global injected by the platform (in production) or the tunnel proxy (in development).
 
-The SDK is deliberately minimal — it provides the connection between the frontend and the backend contract (methods), and nothing more. The frontend is an interface (a projection of the contract into a modality), and the SDK is what makes that projection work.
+The SDK is deliberately minimal; it provides the connection between the frontend and the backend contract (methods), and nothing more. The frontend is an interface (a projection of the contract into a modality), and the SDK is what makes that projection work.
 
 Source: `/Users/sean/Dropbox/Projects/youai/mindstudio-interface/src/`
 
@@ -30,7 +30,7 @@ interface MindStudioConfig {
 }
 ```
 
-The `methods` map is embedded at page load from the release manifest. This is how the SDK maps `api.submitVendor(...)` to `POST /methods/{methodId}/invoke` — the method ID is resolved at build time, not at call time.
+The `methods` map is embedded at page load from the release manifest. This is how the SDK maps `api.submitVendor(...)` to `POST /methods/{methodId}/invoke`. The method ID is resolved at build time, not at call time.
 
 **Why a global instead of a constructor:** Zero configuration for the developer. The frontend code just imports the SDK and calls methods. The platform handles injection in both dev and production. The same code works everywhere without environment-specific setup.
 
@@ -117,7 +117,7 @@ import { platform } from '@mindstudio-ai/interface';
 const { url } = await platform.requestFile({ type: 'image' });
 ```
 
-Uses a postMessage callback pattern — the SDK posts a request to the parent frame, the parent opens a modal, the user picks a file, and the result comes back via postMessage.
+Uses a postMessage callback pattern: the SDK posts a request to the parent frame, the parent opens a modal, the user picks a file, and the result comes back via postMessage.
 
 Options: `{ type?: 'image' | 'video' | 'audio' | 'document' }`
 
@@ -148,16 +148,16 @@ auth.email;             // email address
 auth.profilePictureUrl; // URL or null
 ```
 
-All properties are synchronous — read from `window.__MINDSTUDIO__.user` via a lazy Proxy.
+All properties are synchronous, read from `window.__MINDSTUDIO__.user` via a lazy Proxy.
 
-**Display only.** Role checking is a backend concern — the frontend can read roles for UI purposes (showing/hiding elements), but enforcement happens in methods via `auth.requireRole()`. This is intentional: the frontend is untrusted, so access control must be enforced server-side.
+**Display only.** Role checking is a backend concern. The frontend can read roles for UI purposes (showing/hiding elements), but enforcement happens in methods via `auth.requireRole()`. This is intentional: the frontend is untrusted, so access control must be enforced server-side.
 
 ---
 
 ## Design Rationale
 
-**Why typed RPC over REST:** `api.submitVendor(input)` gives type safety end-to-end. The developer writes a method with typed input/output in the backend, and the frontend gets matching types via the generic parameter. The platform handles routing, auth, and billing. The alternative — hand-rolled fetch calls with manual URL construction and type casting — is error-prone and tedious.
+**Why typed RPC over REST:** `api.submitVendor(input)` gives type safety end-to-end. The developer writes a method with typed input/output in the backend, and the frontend gets matching types via the generic parameter. The platform handles routing, auth, and billing. The alternative (hand-rolled fetch calls with manual URL construction and type casting) is error-prone and tedious.
 
-**Why display-only auth on the frontend:** The frontend is an interface — a projection of the contract. It shows things based on who the user is (conditional rendering by role), but it doesn't enforce access control. That's the backend's job. Keeping auth display-only on the frontend eliminates a category of security bugs where frontend-only checks are the sole barrier.
+**Why display-only auth on the frontend:** The frontend is an interface, a projection of the contract. It shows things based on who the user is (conditional rendering by role), but it doesn't enforce access control. That's the backend's job. Keeping auth display-only on the frontend eliminates a category of security bugs where frontend-only checks are the sole barrier.
 
 **Why `onToken` receives accumulated text:** Different from most SSE patterns where you get individual chunks. The accumulated approach means the consumer can just `setText(token)` without managing a buffer. Simpler for the common case (showing a preview of AI-generated content).
