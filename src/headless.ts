@@ -131,6 +131,7 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
   const rl = createInterface({ input: process.stdin });
 
   rl.on('line', async (line: string) => {
+    console.warn(`[headless] stdin: ${line.slice(0, 120)}`);
     let parsed: {
       action?: string;
       text?: string;
@@ -163,6 +164,9 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     // --- tool_result: external tool response from sandbox ---
     if (parsed.action === 'tool_result' && parsed.id) {
       const pending = pendingToolResults.get(parsed.id);
+      console.warn(
+        `[headless] tool_result id=${parsed.id} pending=${!!pending}`,
+      );
       if (pending) {
         pendingToolResults.delete(parsed.id);
         pending.resolve(parsed.result ?? '');
