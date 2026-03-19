@@ -68,13 +68,11 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
   let currentAbort: AbortController | null = null;
 
   // External tool results — keyed by tool call id.
-  // The promise is created when tool_start fires (during stream processing)
-  // so it's ready before the sandbox can respond. The agent's
-  // resolveExternalTool just returns the pre-created promise.
-  const externalToolPromises = new Map<
-    string,
-    { promise: Promise<string>; resolve: (result: string) => void }
-  >();
+  // resolveExternalTool creates a promise; tool_result resolves it.
+  // If tool_result arrives first (fast sandbox response), it's buffered
+  // in earlyResults and resolved immediately when the promise is created.
+  const pendingTools = new Map<string, { resolve: (result: string) => void }>();
+  const earlyResults = new Map<string, string>();
 
   function onEvent(e: AgentEvent): void {
     switch (e.type) {
@@ -87,26 +85,14 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       case 'tool_input_delta':
         emit('tool_input_delta', { id: e.id, name: e.name, result: e.result });
         break;
-      case 'tool_start': {
+      case 'tool_start':
         emit('tool_start', {
           id: e.id,
           name: e.name,
           input: e.input,
           ...(e.partial && { partial: true }),
         });
-        // Pre-register a promise for this tool call so it's ready
-        // before the sandbox can respond. Only for non-partial starts
-        // (partial tool_start events are progressive updates, not
-        // actionable tool calls yet).
-        if (!e.partial && !externalToolPromises.has(e.id)) {
-          let resolve: (result: string) => void;
-          const promise = new Promise<string>((r) => {
-            resolve = r;
-          });
-          externalToolPromises.set(e.id, { promise, resolve: resolve! });
-        }
         break;
-      }
       case 'tool_done':
         emit('tool_done', {
           id: e.id,
@@ -135,18 +121,16 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     _name: string,
     _input: Record<string, any>,
   ): Promise<string> {
-    const entry = externalToolPromises.get(id);
-    if (entry) {
-      externalToolPromises.delete(id);
-      return entry.promise;
+    // If the result arrived before we got here, return it immediately.
+    const early = earlyResults.get(id);
+    if (early !== undefined) {
+      earlyResults.delete(id);
+      return Promise.resolve(early);
     }
-    // Fallback: promise wasn't pre-registered (shouldn't happen)
-    let resolve: (result: string) => void;
-    const promise = new Promise<string>((r) => {
-      resolve = r;
+    // Otherwise, create a promise that tool_result will resolve later.
+    return new Promise<string>((resolve) => {
+      pendingTools.set(id, { resolve });
     });
-    externalToolPromises.set(id, { promise, resolve: resolve! });
-    return promise;
   }
 
   const rl = createInterface({ input: process.stdin });
@@ -183,12 +167,14 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
 
     // --- tool_result: external tool response from sandbox ---
     if (parsed.action === 'tool_result' && parsed.id) {
-      const entry = externalToolPromises.get(parsed.id);
-      console.warn(
-        `[headless] tool_result id=${parsed.id} hasPromise=${!!entry}`,
-      );
-      if (entry) {
-        entry.resolve(parsed.result ?? '');
+      const pending = pendingTools.get(parsed.id);
+      if (pending) {
+        // Normal case: resolveExternalTool was called first, resolve the promise.
+        pendingTools.delete(parsed.id);
+        pending.resolve(parsed.result ?? '');
+      } else {
+        // Early case: result arrived before resolveExternalTool was called.
+        earlyResults.set(parsed.id, parsed.result ?? '');
       }
       return;
     }
@@ -211,9 +197,9 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
         currentAbort.abort();
       }
       // Also resolve any pending external tools so the agent doesn't hang
-      for (const [id, entry] of externalToolPromises) {
-        entry.resolve('Error: cancelled');
-        externalToolPromises.delete(id);
+      for (const [id, pending] of pendingTools) {
+        pending.resolve('Error: cancelled');
+        pendingTools.delete(id);
       }
       return;
     }
