@@ -18,4 +18,4 @@
 - Always use full paths relative to the project root when mentioning files (`dist/interfaces/web/src/App.tsx`, not `App.tsx`). Paths will be rendered as clickable links for the user.
 - When summarizing changes, describe what you did in plain language rather than listing a per-file changelog.
 - Use inline `code` formatting only for things the user needs to type or search for.
-- Do not use emojis and avoid overuse of em dashes.
+- Do not use emojis. Avoid em dashes in prose; use periods, commas, colons, or parentheses instead.
