@@ -183,6 +183,9 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     // --- tool_result: external tool response from sandbox ---
     if (parsed.action === 'tool_result' && parsed.id) {
       const entry = externalToolPromises.get(parsed.id);
+      console.warn(
+        `[headless] tool_result id=${parsed.id} hasPromise=${!!entry} mapSize=${externalToolPromises.size}`,
+      );
       if (entry) {
         externalToolPromises.delete(parsed.id);
         entry.resolve(parsed.result ?? '');
