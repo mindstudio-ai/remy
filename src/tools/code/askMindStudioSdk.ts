@@ -13,7 +13,7 @@ export const askMindStudioSdkTool: Tool = {
   definition: {
     name: 'askMindStudioSdk',
     description:
-      'Look up MindStudio SDK actions, AI models, connectors, and integrations. Returns code examples with correct method signatures, model IDs, and config options. Use this instead of guessing SDK usage from memory. This runs its own LLM call so it has a few seconds of latency; batch your SDK questions into a single query when possible. Examples: "generate image with FLUX", "what video models support image-to-video?", "how do I send a Slack message?", "what connectors are configured?"',
+      'Ask the MindStudio SDK assistant about actions, AI models, connectors, and integrations. Returns code examples with correct method signatures, model IDs, and config options. Use this instead of guessing SDK usage from memory. Describe what you need, not what API methods you need; the assistant will figure out the right approach. This runs its own LLM call so it has a few seconds of latency; batch related questions into a single query.',
     inputSchema: {
       type: 'object',
       properties: {
