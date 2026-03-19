@@ -44,7 +44,7 @@ export const promptUserTool: Tool = {
                 type: 'string',
                 enum: ['select', 'text', 'file', 'color'],
                 description:
-                  'select: pick from options. text: free-form input. file: file/image upload, returns CDN URL(s) that can be referenced directly or curled onto disk. color: color picker (returns hex).',
+                  'select: pick from options (or options + free-form "other"). text: free-form input. file: file/image upload, returns CDN URL(s) that can be referenced directly or curled onto disk. color: color picker (returns hex).',
               },
               helpText: {
                 type: 'string',
