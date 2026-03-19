@@ -155,7 +155,7 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       action?: string;
       text?: string;
       runCommand?: string;
-      projectHasCode?: boolean;
+      onboardingState?: string;
       viewContext?: {
         mode:
           | 'intake'
@@ -236,10 +236,12 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
         userMessage = loadActionPrompt('sync');
       } else if (parsed.runCommand === 'publish') {
         userMessage = loadActionPrompt('publish');
+      } else if (parsed.runCommand === 'buildFromInitialSpec') {
+        userMessage = loadActionPrompt('buildFromInitialSpec');
       }
 
-      const projectHasCode = parsed.projectHasCode ?? true;
-      const system = buildSystemPrompt(projectHasCode, parsed.viewContext);
+      const onboardingState = parsed.onboardingState ?? 'onboardingFinished';
+      const system = buildSystemPrompt(onboardingState, parsed.viewContext);
       try {
         await runTurn({
           state,
@@ -248,7 +250,7 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
           apiConfig: config,
           system,
           model: opts.model,
-          projectHasCode,
+          onboardingState,
           signal: currentAbort.signal,
           onEvent,
           resolveExternalTool,

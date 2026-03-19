@@ -8,7 +8,7 @@
 - The spec is the source of truth. When in doubt, consult the spec before making code changes. When behavior changes, update the spec first.
 - Change only what the task requires. Match existing code style. Keep solutions simple.
 - Read files before editing them. Understand the context before making changes.
-- When the user asks you to make a change, execute it fully — all steps, no pausing for confirmation. Use `promptUser` to gate before major transitions (e.g., building code from a spec). For large changes that touch many files or involve significant design decisions, use `presentPlan` to get user approval first — but only when the scope genuinely warrants it or the user asks to see a plan. Most work should be done autonomously.
+- When the user asks you to make a change, execute it fully — all steps, no pausing for confirmation. Use `confirmDestructiveAction` to gate before destructive or irreversible actions (e.g., deleting data, resetting the database). For large changes that touch many files or involve significant design decisions, use `presentPlan` to get user approval first — but only when the scope genuinely warrants it or the user asks to see a plan. Most work should be done autonomously.
 - After two failed attempts at the same approach, tell the user what's going wrong.
 - Pushing to main branch will trigger a deploy. Use git via bash when the user wants to deploy.
 

@@ -42,9 +42,9 @@ export const promptUserTool: Tool = {
               },
               type: {
                 type: 'string',
-                enum: ['select', 'text', 'confirm', 'file', 'color'],
+                enum: ['select', 'text', 'file', 'color'],
                 description:
-                  'select: pick from options. text: free-form input. confirm: yes/no. file: file/image upload — returns CDN URL(s) that can be referenced directly or curled onto disk. color: color picker (returns hex).',
+                  'select: pick from options. text: free-form input. file: file/image upload, returns CDN URL(s) that can be referenced directly or curled onto disk. color: color picker (returns hex).',
               },
               helpText: {
                 type: 'string',
@@ -166,8 +166,6 @@ export const promptUserTool: Tool = {
         line += q.multiple
           ? ` (pick one or more: ${opts.join(' / ')})`
           : ` (${opts.join(' / ')})`;
-      } else if (q.type === 'confirm') {
-        line += ' (yes / no)';
       } else if (q.type === 'file') {
         line += ' (upload file)';
       } else if (q.type === 'color') {

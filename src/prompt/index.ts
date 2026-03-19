@@ -54,7 +54,7 @@ export interface ViewContext {
 }
 
 export function buildSystemPrompt(
-  projectHasCode?: boolean,
+  onboardingState?: string,
   viewContext?: ViewContext,
 ): string {
   const projectContext = [
@@ -126,11 +126,11 @@ The current date is ${now}.
   {{compiled/msfm.md}}
 </mindstudio_flavored_markdown_spec_docs>
 
+${isLspConfigured() ? `<typescript_lsp>\n{{static/lsp.md}}\n</typescript_lsp>` : ''}
+
 <project_context>
 ${projectContext}
 </project_context>
-
-${isLspConfigured() ? `<lsp>\n{{static/lsp.md}}\n</lsp>` : ''}
 
 {{static/intake.md}}
 
@@ -138,9 +138,18 @@ ${isLspConfigured() ? `<lsp>\n{{static/lsp.md}}\n</lsp>` : ''}
 
 {{static/instructions.md}}
 
-<current_authoring_mode>
-${projectHasCode ? 'Project has code - keep code and spec in sync.' : 'Project does not have code yet - focus on writing the spec.'}
-</current_authoring_mode>
+<project_onboarding>
+New projects progress through four onboarding states. The user might skip this entirely and jump straight into working on the existing scaffold (which defaults to onboardingFinished), but ideally new projects move through each phase:
+
+- **intake**: Gathering requirements. The project has scaffold code (a "hello world" starter) but it's not the user's app yet. Focus on understanding what they want to build, not on the existing code.
+- **initialSpecAuthoring**: Writing and refining the first spec. The user can see it in the editor as it streams in and can give feedback to iterate on it. This phase covers both the initial draft and any back-and-forth refinement before code generation.
+- **initialCodegen**: First code generation from the spec. The agent is generating methods, tables, interfaces, manifest updates, and scenarios. This can take a while and involves heavy tool use. The user sees a full-screen build progress view.
+- **onboardingFinished**: The project is built and ready. Full development mode with all tools available. From here on, keep spec and code in sync as changes are made.
+
+  <current_project_onboarding_state>
+  ${onboardingState ?? 'onboardingFinished'}
+  </current_project_onboarding_state>
+</project_onboarding>
 
 <view_context>
 The user is currently in ${viewContext?.mode ?? 'code'} mode.

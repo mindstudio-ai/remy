@@ -4,10 +4,9 @@
  * Each tool exports a `definition` (JSON Schema sent to the LLM) and
  * an `execute` function (runs locally when the LLM calls the tool).
  *
- * Tool availability is determined by whether the project has generated
- * code in dist/:
- *   - No code yet:  spec tools only (authoring)
- *   - Has code:     spec tools + code tools (iterating)
+ * Tool availability is determined by the project's onboarding state:
+ *   - intake / initialSpecAuthoring:  spec tools only (authoring)
+ *   - initialCodegen / onboardingFinished:  spec tools + code tools
  */
 
 export interface ToolDefinition {
@@ -47,12 +46,13 @@ import { readSpecTool } from './spec/readSpec.js';
 import { writeSpecTool } from './spec/writeSpec.js';
 import { editSpecTool } from './spec/editSpec.js';
 import { listSpecFilesTool } from './spec/listSpecFiles.js';
-import { setViewModeTool } from './spec/setViewMode.js';
+import { setProjectOnboardingStateTool } from './spec/setProjectOnboardingState.js';
 import { promptUserTool } from './spec/promptUser.js';
 import { clearSyncStatusTool } from './spec/clearSyncStatus.js';
 import { presentSyncPlanTool } from './spec/presentSyncPlan.js';
 import { presentPublishPlanTool } from './spec/presentPublishPlan.js';
 import { presentPlanTool } from './spec/presentPlan.js';
+import { confirmDestructiveActionTool } from './spec/confirmDestructiveAction.js';
 
 // Code tools
 import { readFileTool } from './code/readFile.js';
@@ -90,49 +90,58 @@ function getCodeTools(): Tool[] {
   return tools;
 }
 
-/**
- * Get the tool set based on project state.
- *
- * - projectHasCode = false: spec tools (authoring)
- * - projectHasCode = true:  spec tools + code tools (iterating)
- */
-export function getTools(projectHasCode: boolean): Tool[] {
-  if (projectHasCode) {
-    return [
-      setViewModeTool,
-      promptUserTool,
-      clearSyncStatusTool,
-      presentSyncPlanTool,
-      presentPublishPlanTool,
-      presentPlanTool,
-      ...getSpecTools(),
-      ...getCodeTools(),
-    ];
-  }
+/** Always-available tools (all onboarding states). */
+function getCommonTools(): Tool[] {
   return [
-    setViewModeTool,
+    setProjectOnboardingStateTool,
     promptUserTool,
-    clearSyncStatusTool,
-    presentSyncPlanTool,
-    presentPublishPlanTool,
-    ...getSpecTools(),
+    confirmDestructiveActionTool,
   ];
 }
 
+/** Tools only available after onboarding is complete (onboardingFinished). */
+function getPostOnboardingTools(): Tool[] {
+  return [
+    clearSyncStatusTool,
+    presentSyncPlanTool,
+    presentPublishPlanTool,
+    presentPlanTool,
+  ];
+}
+
+/**
+ * Get the tool set based on onboarding state.
+ *
+ * - intake / initialSpecAuthoring: spec tools + common tools (authoring)
+ * - initialCodegen: spec tools + code tools + common tools (building)
+ * - onboardingFinished: everything (full development)
+ */
+export function getTools(onboardingState: string): Tool[] {
+  switch (onboardingState) {
+    case 'onboardingFinished':
+      return [
+        ...getCommonTools(),
+        ...getPostOnboardingTools(),
+        ...getSpecTools(),
+        ...getCodeTools(),
+      ];
+    case 'initialCodegen':
+      return [...getCommonTools(), ...getSpecTools(), ...getCodeTools()];
+    default: // intake, initialSpecAuthoring
+      return [...getCommonTools(), ...getSpecTools()];
+  }
+}
+
 /** Tool definitions array — sent to the LLM in each request. */
-export function getToolDefinitions(projectHasCode: boolean): ToolDefinition[] {
-  return getTools(projectHasCode).map((t) => t.definition);
+export function getToolDefinitions(onboardingState: string): ToolDefinition[] {
+  return getTools(onboardingState).map((t) => t.definition);
 }
 
 /** Look up a tool by name from ALL known tools. */
 export function getToolByName(name: string): Tool | undefined {
   const allTools = [
-    setViewModeTool,
-    promptUserTool,
-    clearSyncStatusTool,
-    presentSyncPlanTool,
-    presentPublishPlanTool,
-    presentPlanTool,
+    ...getCommonTools(),
+    ...getPostOnboardingTools(),
     ...getSpecTools(),
     ...getCodeTools(),
   ];
@@ -142,7 +151,7 @@ export function getToolByName(name: string): Tool | undefined {
 /**
  * Execute a tool by name. Returns the tool's string output.
  *
- * Looks up from ALL known tools — the projectHasCode flag only gates
+ * Looks up from ALL known tools — the onboarding state only gates
  * what the LLM sees, not what can execute.
  */
 export function executeTool(

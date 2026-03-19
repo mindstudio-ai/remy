@@ -97,7 +97,7 @@ export function App({ apiConfig, model }: Props) {
           apiConfig,
           system,
           model,
-          projectHasCode: true,
+          onboardingState: 'onboardingFinished',
           signal: abort.signal,
           onEvent: (event: AgentEvent) => {
             switch (event.type) {

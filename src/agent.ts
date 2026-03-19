@@ -36,11 +36,12 @@ import { parsePartialJson } from './parsePartialJson.js';
 // Tools where the result comes from outside (sandbox/user), not local execution.
 const EXTERNAL_TOOLS = new Set([
   'promptUser',
-  'setViewMode',
+  'setProjectOnboardingState',
   'clearSyncStatus',
   'presentSyncPlan',
   'presentPublishPlan',
   'presentPlan',
+  'confirmDestructiveAction',
 ]);
 
 // Events emitted to the UI layer
@@ -101,7 +102,7 @@ export async function runTurn(params: {
   apiConfig: { baseUrl: string; apiKey: string };
   system: string;
   model?: string;
-  projectHasCode: boolean;
+  onboardingState: string;
   signal?: AbortSignal;
   onEvent: (event: AgentEvent) => void;
   resolveExternalTool?: ExternalToolResolver;
@@ -114,13 +115,13 @@ export async function runTurn(params: {
     apiConfig,
     system,
     model,
-    projectHasCode,
+    onboardingState,
     signal,
     onEvent,
     resolveExternalTool,
     hidden,
   } = params;
-  const tools = getToolDefinitions(projectHasCode);
+  const tools = getToolDefinitions(onboardingState);
 
   log.info('Turn started', {
     messageLength: userMessage.length,
