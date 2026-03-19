@@ -184,9 +184,10 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     // --- tool_result: external tool response from sandbox ---
     if (parsed.action === 'tool_result' && parsed.id) {
       const entry = externalToolPromises.get(parsed.id);
+      console.warn(
+        `[headless] tool_result id=${parsed.id} hasPromise=${!!entry}`,
+      );
       if (entry) {
-        // Resolve but don't delete — resolveExternalTool may not have
-        // been called yet and needs to find the resolved promise.
         entry.resolve(parsed.result ?? '');
       }
       return;
