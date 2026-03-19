@@ -66,6 +66,7 @@ import { editsFinishedTool } from './code/editsFinished.js';
 import { isLspConfigured } from './_helpers/lsp.js';
 import { lspDiagnosticsTool } from './code/lspDiagnostics.js';
 import { restartProcessTool } from './code/restartProcess.js';
+import { askMindStudioSdkTool } from './code/askMindStudioSdk.js';
 
 function getSpecTools(): Tool[] {
   return [readSpecTool, writeSpecTool, editSpecTool, listSpecFilesTool];
@@ -81,6 +82,7 @@ function getCodeTools(): Tool[] {
     globTool,
     listDirTool,
     editsFinishedTool,
+    askMindStudioSdkTool,
   ];
 
   if (isLspConfigured()) {

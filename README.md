@@ -43,19 +43,19 @@ Remy saves conversation history to `.remy-session.json` in the working directory
 
 ## Tools
 
-Remy's tool set depends on the project state. The sandbox tells remy whether the project has generated code in `dist/` via the `projectHasCode` field on messages.
+Tool availability depends on the project's onboarding state, sent by the sandbox on each message.
 
 ### Always Available
 
 | Tool | Description |
 |------|-------------|
-| `setViewMode` | Switch the IDE view (intake, preview, spec, code, databases, scenarios, logs) |
+| `setProjectOnboardingState` | Advance the onboarding flow (intake → initialSpecAuthoring → initialCodegen → onboardingFinished) |
 | `promptUser` | Ask the user structured questions (form or inline display) |
-| `clearSyncStatus` | Clear sync flags after syncing spec and code |
+| `confirmDestructiveAction` | Confirm a destructive or irreversible action with the user |
 
 ### Spec Tools
 
-Available in all sessions. Used for authoring and editing MSFM specs in `src/`.
+Available in all onboarding states. Used for authoring and editing MSFM specs in `src/`.
 
 | Tool | Description |
 |------|-------------|
@@ -66,7 +66,7 @@ Available in all sessions. Used for authoring and editing MSFM specs in `src/`.
 
 ### Code Tools
 
-Available when the project has generated code (`projectHasCode: true`).
+Available from `initialCodegen` onward.
 
 | Tool | Description |
 |------|-------------|
@@ -78,6 +78,7 @@ Available when the project has generated code (`projectHasCode: true`).
 | `glob` | Find files by pattern |
 | `listDir` | List directory contents |
 | `editsFinished` | Signal that file edits are complete for live preview |
+| `askMindStudioSdk` | Ask the MindStudio SDK assistant about actions, models, connectors, and integrations |
 
 ### LSP Tools (sandbox only)
 
@@ -88,19 +89,22 @@ Available when `--lsp-url` is passed.
 | `lspDiagnostics` | Type errors and warnings for a file, with suggested quick fixes |
 | `restartProcess` | Restart a managed sandbox process (e.g., dev server after npm install) |
 
-### Sync Tools (sync turns only)
+### Post-Onboarding Tools
 
-Available when the sandbox sends a `runCommand: "sync"` message.
+Available only when `onboardingState` is `onboardingFinished`.
 
 | Tool | Description |
 |------|-------------|
+| `clearSyncStatus` | Clear sync flags after syncing spec and code |
 | `presentSyncPlan` | Present a markdown sync plan to the user for approval (streams content) |
+| `presentPublishPlan` | Present a publish changelog for user approval (streams content) |
+| `presentPlan` | Present an implementation plan for user approval (streams content) |
 
 ### Tool Streaming
 
 Tools can opt into streaming via a `streaming` config on the tool definition:
 
-- **Content streaming** (writeSpec, writeFile, presentSyncPlan): Streams `tool_input_delta` events with progressive content as the LLM generates tool arguments. Tools can provide a `transform` function to customize the streamed output (e.g., writeSpec/writeFile compute a progressive diff).
+- **Content streaming** (writeSpec, writeFile, presentSyncPlan, presentPublishPlan, presentPlan): Streams `tool_input_delta` events with progressive content as the LLM generates tool arguments. Tools can provide a `transform` function to customize the streamed output (e.g., writeSpec/writeFile compute a progressive diff).
 - **Input streaming** (promptUser): Streams progressive `tool_start` events with `partial: true` as structured input (like a questions array) builds up.
 - **No streaming** (all other tools): `tool_start` fires once when the complete tool arguments are available.
 
@@ -114,7 +118,7 @@ User input
     → POST /_internal/v2/agent/chat (SSE stream)
       ← text, thinking, tool_input_delta, tool_input_args, tool_use events
     → Execute tools locally in parallel
-      → External tools (promptUser, setViewMode, etc.) wait for sandbox response
+      → External tools wait for sandbox response
     → Send tool results back
     → Loop until done
     → Save session to .remy-session.json
@@ -136,9 +140,11 @@ src/
   headless.ts            stdin/stdout JSON protocol for sandbox
 
   prompt/
-    index.ts             System prompt builder (mode-aware)
+    index.ts             System prompt builder (onboarding-state-aware)
     actions/             Built-in prompts for runCommand actions
       sync.md
+      publish.md
+      buildFromInitialSpec.md
     static/              Behavioral instruction fragments
       identity.md
       intake.md
@@ -147,7 +153,7 @@ src/
       lsp.md
       projectContext.ts  Reads manifest, spec metadata, file listing at runtime
     compiled/            Platform docs distilled for agent consumption
-    sources/             Raw source docs (fetched + manual)
+    sources/             Prompt source material (hand-maintained)
 
   tools/
     index.ts             Tool registry with streaming config interface
@@ -159,10 +165,13 @@ src/
       writeSpec.ts
       editSpec.ts
       listSpecFiles.ts
-      setViewMode.ts
+      setProjectOnboardingState.ts
       promptUser.ts
+      confirmDestructiveAction.ts
       clearSyncStatus.ts
       presentSyncPlan.ts
+      presentPublishPlan.ts
+      presentPlan.ts
       _helpers.ts        Heading resolution, path validation
     code/                Code tools (file editing, shell, search)
       readFile.ts
@@ -175,6 +184,7 @@ src/
       glob.ts
       listDir.ts
       editsFinished.ts
+      askMindStudioSdk.ts
       lspDiagnostics.ts
       restartProcess.ts
 
@@ -188,12 +198,15 @@ src/
 
 ### External Tools
 
-Some tools are resolved by the sandbox rather than executed locally. Remy emits `tool_start`, then waits for the sandbox to send back a `tool_result` via stdin. This is used for tools that require sandbox/user interaction:
+Some tools are resolved by the sandbox rather than executed locally. Remy emits `tool_start`, then waits for the sandbox to send back a `tool_result` via stdin:
 
 - `promptUser` — renders a form or inline prompt, blocks until user responds
-- `setViewMode` — switches the IDE view mode
+- `setProjectOnboardingState` — advances the onboarding flow
+- `confirmDestructiveAction` — renders a confirmation dialog
 - `clearSyncStatus` — clears sync dirty flags and updates git sync ref
 - `presentSyncPlan` — renders a full-screen markdown plan for user approval
+- `presentPublishPlan` — renders a full-screen changelog for user approval
+- `presentPlan` — renders a full-screen implementation plan for user approval
 
 ### Project Instructions
 
@@ -214,15 +227,15 @@ Send JSON commands, one per line.
 Send a user message to the agent.
 
 ```json
-{"action": "message", "text": "fix the bug in auth.ts", "projectHasCode": true}
+{"action": "message", "text": "fix the bug in auth.ts", "onboardingState": "onboardingFinished"}
 ```
 
 Fields:
 - `text` — the user message (required unless `runCommand` is set)
-- `projectHasCode` — controls tool availability (default: `true`)
+- `onboardingState` — controls tool availability and prompt context. One of: `intake`, `initialSpecAuthoring`, `initialCodegen`, `onboardingFinished` (default: `onboardingFinished`)
 - `viewContext` — `{ mode, openFiles?, activeFile? }` for prompt context
 - `attachments` — array of `{ url, extractedTextUrl? }` for file attachments
-- `runCommand` — triggers a built-in action prompt (e.g., `"sync"`)
+- `runCommand` — triggers a built-in action prompt (`"sync"`, `"publish"`, `"buildFromInitialSpec"`)
 
 When `runCommand` is set, the message text is replaced with a built-in prompt and the user message is marked as `hidden` in conversation history (sent to the LLM but not shown in the UI).
 

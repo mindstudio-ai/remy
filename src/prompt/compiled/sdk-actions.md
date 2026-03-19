@@ -1,8 +1,8 @@
 # MindStudio Agent SDK
 
-`@mindstudio-ai/agent` provides access to 200+ AI models and 1,000+ actions through a single API key. No separate provider keys needed — MindStudio routes to the correct provider (OpenAI, Anthropic, Google, etc.) server-side.
+`@mindstudio-ai/agent` provides access to 200+ AI models and 1,000+ actions through a single API key. No separate provider keys needed. MindStudio routes to the correct provider (OpenAI, Anthropic, Google, etc.) server-side.
 
-**Full reference:** For complete method signatures, parameters, and output types, read `dist/methods/node_modules/@mindstudio-ai/agent/llms.txt`. This file ships with the package and contains the full API reference for all 170+ actions.
+There is a huge amount of capability here: hundreds of text generation models (OpenAI, Anthropic, Google, Meta, Mistral, and more), dozens of image generation models (FLUX, DALL-E, Stable Diffusion, Ideogram, and more), video generation, text-to-speech, music generation, vision analysis, web scraping, 850+ OAuth connectors, and much more. The tables below are a summary. **Always use the `askMindStudioSdk` tool to look up exact method signatures, model IDs, and config options before writing code that uses the SDK.** The SDK assistant knows every action, every model, every connector, and the user's configured OAuth connections. Don't guess at parameters or model IDs from memory.
 
 ## Usage in Methods
 
@@ -120,7 +120,7 @@ const result = await agent.runFromConnectorRegistry({
 
 ### Model Selection
 
-Override the default model for any AI action:
+Override the default model for any AI action. Each model has its own config options (dimensions, seed, inference steps, etc.) so always use `askMindStudioSdk` to look up the correct config before specifying a model override:
 
 ```typescript
 const { content } = await agent.generateText({
@@ -131,12 +131,6 @@ const { content } = await agent.generateText({
     maxResponseTokens: 1024,
   },
 });
-```
-
-Browse available models:
-
-```typescript
-const { models } = await agent.listModelsSummaryByType('llm_chat');
 ```
 
 ### Batch Execution
