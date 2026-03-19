@@ -115,7 +115,7 @@ Streaming is driven by `tool_input_delta` (Anthropic) or `tool_input_args` (Gemi
 ```
 User input
   → Agent loop (src/agent.ts)
-    → POST /_internal/v2/agent/chat (SSE stream)
+    → POST /_internal/v2/agent/remy/chat (SSE stream)
       ← text, thinking, tool_input_delta, tool_input_args, tool_use events
     → Execute tools locally in parallel
       → External tools wait for sandbox response

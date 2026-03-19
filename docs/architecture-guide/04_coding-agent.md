@@ -15,7 +15,7 @@ Source: `/Users/sean/Dropbox/Projects/youai/remy/src/`
 The core algorithm (`runTurn`):
 
 1. Add user message to conversation history
-2. Stream LLM response via `POST /_internal/v2/agent/chat` (SSE)
+2. Stream LLM response via `POST /_internal/v2/agent/remy/chat` (SSE)
 3. Collect: assistant text, tool calls, stop reason
 4. Emit events: `text`, `thinking`, `tool_start`
 5. If `stopReason === 'tool_use'`:
@@ -148,7 +148,7 @@ In the sandbox, this file survives snapshots (it's part of the workspace filesys
 
 ### LLM Access
 
-All LLM calls go through `POST /_internal/v2/agent/chat` on the platform API. The agent authenticates with the org's API key. The platform handles model routing (org default or explicit model ID), billing, and provider translation.
+All LLM calls go through `POST /_internal/v2/agent/remy/chat` on the platform API. The agent authenticates with the org's API key. The platform handles model routing (org default or explicit model ID), billing, and provider translation.
 
 **Why a platform endpoint instead of direct API calls:** The agent doesn't need provider SDKs, API keys, or billing logic. Switching models is a configuration change. The platform can also enforce rate limits, track usage per organization, and route to different providers without the agent knowing.
 

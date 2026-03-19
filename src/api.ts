@@ -1,7 +1,7 @@
 /**
  * SSE client for the agent chat endpoint.
  *
- * Makes POST requests to /_internal/v2/agent/chat and parses the
+ * Makes POST requests to /_internal/v2/agent/remy/chat and parses the
  * Server-Sent Events response stream into typed events. Returns an
  * async generator so the caller can process events as they arrive.
  *
@@ -84,7 +84,7 @@ export async function* streamChat(params: {
   signal?: AbortSignal;
 }): AsyncGenerator<StreamEvent> {
   const { baseUrl, apiKey, signal, ...body } = params;
-  const url = `${baseUrl}/_internal/v2/agent/chat`;
+  const url = `${baseUrl}/_internal/v2/agent/remy/chat`;
   const startTime = Date.now();
 
   const messagesWithAttachments = body.messages.filter(

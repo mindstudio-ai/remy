@@ -467,7 +467,7 @@ Two operations for development, both preserve database/table IDs:
 ## Agent Chat
 
 ```
-POST /_internal/v2/agent/chat
+POST /_internal/v2/agent/remy/chat
 Auth: API key (sk...) or hook token
 Body: { system, messages, tools?, maxTokens?, temperature?, model?, config? }
 Returns: SSE stream (text, thinking, tool_use, done, error events)
