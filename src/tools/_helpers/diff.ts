@@ -12,8 +12,8 @@ export function unifiedDiff(
   oldText: string,
   newText: string,
 ): string {
-  const oldLines = oldText.split('\n');
-  const newLines = newText.split('\n');
+  const oldLines = oldText ? oldText.split('\n') : [];
+  const newLines = newText ? newText.split('\n') : [];
 
   // Find the first and last differing lines
   let firstDiff = 0;

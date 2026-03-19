@@ -94,6 +94,10 @@ or streams in makes an interface feel broken.
   before the image loads.
 - Loading-to-loaded transitions should swap content in-place without
   changing container size.
+- Buttons must not change size during loading states. Use a fixed width or
+  `min-width`, and swap the label for a spinner or short text that fits the
+  same space. "Submit" becoming "Submitting..." should not make the button
+  wider and push adjacent elements around.
 - Conditional UI should use opacity/overlay transitions, not insertion into
   flow that displaces existing content.
 
