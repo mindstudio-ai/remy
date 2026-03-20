@@ -143,7 +143,9 @@ const minAmount = 10000;
 Vendors.filter(v => v.totalCents > minAmount)                         // captured variables
 ```
 
-If a predicate can't be compiled to SQL (complex closures, function calls), the SDK falls back to fetching all rows and filtering in JavaScript. A warning is logged.
+**What compiles to SQL** (efficient): equality, comparisons, `&&`/`||`, `.includes()` for arrays and strings, null checks, boolean negation, captured variables.
+
+**What falls back to JS** (fetches all rows, filters in memory): `.startsWith()`, regex, computed expressions like `o.a + o.b > 100`, complex closures. A warning is logged when this happens. Avoid these patterns on large tables.
 
 ### Time Helpers
 
@@ -160,16 +162,33 @@ db.ago(db.days(7) + db.hours(12)) // composable — 7.5 days ago
 Invoices.filter(i => i.dueDate < db.ago(db.days(30)))
 ```
 
-### Batch Queries
+### Batching
 
-Execute multiple queries in a single round-trip:
+`db.batch()` combines multiple operations into a single HTTP round-trip. Every `await` on a table operation is a network call, so batching is critical for performance. Use it whenever you have multiple reads, writes, or a mix of both:
 
 ```typescript
-const [vendors, orders] = await db.batch(
+// Reads: fetch related data in one call instead of sequential awaits
+const [vendors, orders, invoiceCount] = await db.batch(
   Vendors.filter(v => v.status === 'approved'),
   PurchaseOrders.filter(po => po.vendorId === vendorId),
+  Invoices.count(i => i.status === 'pending'),
+);
+
+// Writes: batch multiple updates instead of awaiting each one in a loop
+const mutations = items.map(item =>
+  Orders.update(item.id, { status: 'approved' })
+);
+await db.batch(...mutations);
+
+// Mixed: writes execute in order, reads observe prior writes
+const [_, newOrder, pending] = await db.batch(
+  Orders.update(id, { status: 'approved' }),
+  Orders.push({ item: 'Laptop', amount: 999, status: 'pending', requestedBy: userId }),
+  Orders.filter(o => o.status === 'pending').take(10),
 );
 ```
+
+**Always batch instead of sequential awaits.** A loop with `await Table.update()` inside makes N separate HTTP calls. Mapping to mutations and passing them to `db.batch()` makes one.
 
 ## Migrations
 
