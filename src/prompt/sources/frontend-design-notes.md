@@ -8,6 +8,53 @@ Every interface must feel like a polished, shipping product — not a prototype,
 
 MindStudio apps are end-user products. The interface is the product. Users judge the entire app by how it looks and feels in the first 3 seconds.
 
+## Design System from the Spec
+
+The spec file `src/interfaces/@brand/visual.md` may contain `typography` and `colors` YAML blocks that define the app's fonts and color palette. When these are present, always use them. Load fonts from the URLs in the `fonts` section. Set up a lightweight theme layer early (CSS variables or a small tokens file) so colors and type styles are defined once and referenced everywhere. This makes the design easy to update later without hunting through components. Keep it simple: a handful of CSS variables for colors and a few reusable text style classes or utilities for typography.
+
+**When these blocks are present, always use the defined fonts and colors in generated code.** Do not pick your own fonts or colors when the spec defines them. Reference colors semantically (as CSS variables or named constants) rather than scattering raw hex values through the codebase.
+
+### Colors block format
+
+A `` ```colors `` fenced block declares named colors with hex values and descriptions. Each color has a capitalized name, a `value`, and a `description`:
+
+```
+Background:
+  value: "#0A0A0A"
+  description: Page background
+Primary:
+  value: "#3B82F6"
+  description: Buttons, links, active states
+Text:
+  value: "#F5F5F7"
+  description: Primary text
+```
+
+### Typography block format
+
+A `` ```typography `` fenced block declares fonts (with source URLs) and named type styles:
+
+```
+fonts:
+  Cabinet Grotesk:
+    src: https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;600;700
+
+styles:
+  Heading:
+    font: Cabinet Grotesk
+    size: 28px
+    weight: 600
+    letterSpacing: -0.02em
+    lineHeight: 1.2
+    description: Section headings, page titles
+  Body:
+    font: Cabinet Grotesk
+    size: 16px
+    weight: 400
+    lineHeight: 1.5
+    description: Default paragraph text
+```
+
 ## Be Distinctive
 
 AI-generated interfaces tend to converge on the same generic look: safe fonts, timid colors, predictable layouts. Fight this actively. Every interface should have character and intentionality — it should look like a designer made deliberate choices, not like it was generated from a template.
@@ -50,6 +97,7 @@ Layout shift is never acceptable. Elements jumping around as content loads or st
 - Reserve space for content that hasn't arrived yet. Use fixed/min-height containers, skeletons, or aspect-ratio boxes.
 - Images must always have explicit dimensions so the browser reserves space before the image loads.
 - Loading-to-loaded transitions should swap content in-place without changing container size.
+- Buttons must not change size during loading states. Use a fixed width or `min-width`, and swap the label for a spinner or short text that fits the same space. "Submit" becoming "Submitting..." should not make the button wider and push adjacent elements around.
 - Conditional UI should use opacity/overlay transitions, not insertion into flow that displaces existing content.
 
 ## Responsive Design
@@ -70,6 +118,15 @@ Forms should feel like interactions, not paperwork.
 - Loading states after submission. Always indicate that something is happening.
 - Disabled states should be visually distinct but not jarring.
 - Even data entry can be beautiful. Pay attention to alignment, padding, and spacing. Consistency is key.
+
+## Data Fetching and Updates
+
+The UI should feel instant. Never make the user wait for a server round-trip to see the result of their own action.
+
+- **Optimistic updates.** When a user adds a row, toggles a setting, or submits a form, update the UI immediately and let the backend confirm in the background. If the backend fails, revert and show an error.
+- **Use SWR for data fetching** (`useSWR` from the `swr` package). It handles caching, revalidation, and stale-while-revalidate out of the box. Prefer SWR over manual `useEffect` + `useState` fetch patterns.
+- **Mutate after actions.** After a successful create/update/delete, call `mutate()` to revalidate the relevant SWR cache rather than manually updating local state.
+- **Skeleton loading.** Show skeletons that mirror the layout on initial load. Never show a blank page or centered spinner while data is loading.
 
 ## What Good Looks Like
 
@@ -94,17 +151,3 @@ These are the hallmarks of generic AI-generated interfaces. Every one of them ma
 - **Cramped layouts.** Text pressed against edges, no room to breathe. Instead: generous padding, comfortable margins, let the content float.
 - **Loading states that are just a centered spinner on a blank page.** Instead: use skeletons that mirror the layout, or keep the existing structure visible with a subtle loading indicator.
 - **Any interface where the first reaction is "this looks like a demo" or "this looks like it was made with a website builder."**
-
-## Design System Blocks in Spec Files
-
-Spec files (particularly `src/interfaces/@brand/visual.md`) may contain structured YAML blocks that define the app's typography and color palette. These are fenced code blocks with `typography` or `colors` as the language tag.
-
-**When these blocks are present, always use the defined fonts and colors in generated code.** Do not pick your own fonts or colors when the spec defines them. Load fonts from the URLs specified in the `fonts` section of the typography block. Reference colors semantically (as CSS variables or named constants) rather than scattering raw hex values through the codebase.
-
-### Typography block format
-
-A `typography` block declares available fonts (with source URLs for loading) and named type styles. Each style has a font, size, weight, and optional letter-spacing, line-height, and description of where it's used. The number of styles is flexible.
-
-### Colors block format
-
-A `colors` block declares named colors with hex values and descriptions of their purpose. Names should be semantic (what the color is for, not what it looks like). The number of colors is flexible.
