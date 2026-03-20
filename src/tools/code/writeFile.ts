@@ -26,15 +26,29 @@ export const writeFileTool: Tool = {
     },
   },
 
-  streaming: {
-    transform: async (partial) => {
-      const oldContent = await fs
-        .readFile(partial.path, 'utf-8')
-        .catch(() => '');
-      const lineCount = partial.content.split('\n').length;
-      return `Writing ${partial.path} (${lineCount} lines)\n${unifiedDiff(partial.path, oldContent, partial.content)}`;
-    },
-  },
+  streaming: (() => {
+    let lastLineCount = 0;
+    let lastPath = '';
+    return {
+      transform: async (
+        partial: Record<string, any>,
+      ): Promise<string | null> => {
+        if (partial.path !== lastPath) {
+          lastLineCount = 0;
+          lastPath = partial.path;
+        }
+        const lines = partial.content.split('\n');
+        if (lines.length <= lastLineCount) {
+          return null;
+        }
+        lastLineCount = lines.length;
+        const oldContent = await fs
+          .readFile(partial.path, 'utf-8')
+          .catch(() => '');
+        return `Writing ${partial.path} (${lines.length} lines)\n${unifiedDiff(partial.path, oldContent, partial.content)}`;
+      },
+    };
+  })(),
 
   async execute(input) {
     try {

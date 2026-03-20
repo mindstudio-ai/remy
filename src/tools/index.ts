@@ -15,9 +15,21 @@ export interface ToolDefinition {
   inputSchema: Record<string, any>;
 }
 
+export interface ToolExecutionContext {
+  apiConfig: { baseUrl: string; apiKey: string };
+  model?: string;
+  signal?: AbortSignal;
+  onEvent: (event: import('../agent.js').AgentEvent) => void;
+  resolveExternalTool?: import('../agent.js').ExternalToolResolver;
+  toolCallId: string;
+}
+
 export interface Tool {
   definition: ToolDefinition;
-  execute: (input: Record<string, any>) => Promise<string>;
+  execute: (
+    input: Record<string, any>,
+    context?: ToolExecutionContext,
+  ) => Promise<string>;
 
   /** Streaming configuration. Omit for tools that don't stream. */
   streaming?: {
@@ -26,8 +38,11 @@ export interface Tool {
     /**
      * Transform partial input into the streaming result string.
      * If omitted, raw content from contentField is emitted as-is.
+     * Return null to skip this delta (e.g., waiting for a complete line).
      */
-    transform?: (partial: Record<string, any>) => Promise<string> | string;
+    transform?: (
+      partial: Record<string, any>,
+    ) => Promise<string | null> | string | null;
     /**
      * For tools that emit progressive tool_start events (like promptUser).
      * Return the input to emit, or null to skip this delta.
@@ -67,6 +82,10 @@ import { isLspConfigured } from './_helpers/lsp.js';
 import { lspDiagnosticsTool } from './code/lspDiagnostics.js';
 import { restartProcessTool } from './code/restartProcess.js';
 import { askMindStudioSdkTool } from './code/askMindStudioSdk.js';
+import { runScenarioTool } from './code/runScenario.js';
+import { runMethodTool } from './code/runMethod.js';
+import { screenshotTool } from './code/screenshot.js';
+import { browserAutomationTool } from '../subagents/browserAutomation/index.js';
 
 function getSpecTools(): Tool[] {
   return [readSpecTool, writeSpecTool, editSpecTool, listSpecFilesTool];
@@ -83,6 +102,10 @@ function getCodeTools(): Tool[] {
     listDirTool,
     editsFinishedTool,
     askMindStudioSdkTool,
+    runScenarioTool,
+    runMethodTool,
+    screenshotTool,
+    browserAutomationTool,
   ];
 
   if (isLspConfigured()) {
@@ -159,10 +182,11 @@ export function getToolByName(name: string): Tool | undefined {
 export function executeTool(
   name: string,
   input: Record<string, any>,
+  context?: ToolExecutionContext,
 ): Promise<string> {
   const tool = getToolByName(name);
   if (!tool) {
     return Promise.resolve(`Error: Unknown tool "${name}"`);
   }
-  return tool.execute(input);
+  return tool.execute(input, context);
 }

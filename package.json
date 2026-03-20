@@ -19,7 +19,7 @@
     "remy": "./dist/index.js"
   },
   "scripts": {
-    "build": "tsup && cp -r src/prompt/static src/prompt/compiled src/prompt/actions dist/",
+    "build": "tsup && cp -r src/prompt/static src/prompt/compiled src/prompt/actions dist/ && cd src/subagents && find . -name '*.md' -exec sh -c 'mkdir -p ../../dist/subagents/$(dirname {}) && cp {} ../../dist/subagents/{}' \\;",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "lint:fix": "prettier --write ./src",
