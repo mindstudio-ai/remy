@@ -242,6 +242,9 @@ export async function runTurn(params: {
 
       if (transform) {
         const result = await transform(partial);
+        if (result === null) {
+          return;
+        }
         log.debug('Streaming content tool: emitting tool_input_delta', {
           id,
           name,

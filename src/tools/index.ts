@@ -26,8 +26,11 @@ export interface Tool {
     /**
      * Transform partial input into the streaming result string.
      * If omitted, raw content from contentField is emitted as-is.
+     * Return null to skip this delta (e.g., waiting for a complete line).
      */
-    transform?: (partial: Record<string, any>) => Promise<string> | string;
+    transform?: (
+      partial: Record<string, any>,
+    ) => Promise<string | null> | string | null;
     /**
      * For tools that emit progressive tool_start events (like promptUser).
      * Return the input to emit, or null to skip this delta.
