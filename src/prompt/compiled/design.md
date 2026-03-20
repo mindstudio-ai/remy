@@ -23,6 +23,55 @@ everywhere. This makes the design easy to update later without hunting
 through components. Keep it simple: a handful of CSS variables for colors
 and a few reusable text style classes or utilities for typography.
 
+**When these blocks are present, always use the defined fonts and colors in
+generated code.** Do not pick your own fonts or colors when the spec defines
+them. Reference colors semantically (as CSS variables or named constants)
+rather than scattering raw hex values through the codebase.
+
+### Colors block format
+
+A `` ```colors `` fenced block declares named colors with hex values and
+descriptions. Each color has a capitalized name, a `value`, and a
+`description`:
+
+```
+Background:
+  value: "#0A0A0A"
+  description: Page background
+Primary:
+  value: "#3B82F6"
+  description: Buttons, links, active states
+Text:
+  value: "#F5F5F7"
+  description: Primary text
+```
+
+### Typography block format
+
+A `` ```typography `` fenced block declares fonts (with source URLs) and
+named type styles:
+
+```
+fonts:
+  Cabinet Grotesk:
+    src: https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;600;700
+
+styles:
+  Heading:
+    font: Cabinet Grotesk
+    size: 28px
+    weight: 600
+    letterSpacing: -0.02em
+    lineHeight: 1.2
+    description: Section headings, page titles
+  Body:
+    font: Cabinet Grotesk
+    size: 16px
+    weight: 400
+    lineHeight: 1.5
+    description: Default paragraph text
+```
+
 ## Be Distinctive
 
 AI-generated interfaces tend to converge on the same generic look: safe
