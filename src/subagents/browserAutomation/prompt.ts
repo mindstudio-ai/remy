@@ -65,8 +65,7 @@ Test a form submission:
     { "command": "wait", "role": "dialog" },
     { "command": "type", "label": "Board name", "text": "My New Board" },
     { "command": "click", "text": "Create" },
-    { "command": "wait", "text": "My New Board", "timeout": 5000 },
-    { "command": "snapshot" }
+    { "command": "wait", "text": "My New Board", "timeout": 10000 }
   ]
 }
 \`\`\`
@@ -77,8 +76,7 @@ Navigate to a sub-page and verify content:
   "steps": [
     { "command": "snapshot" },
     { "command": "click", "text": "Settings" },
-    { "command": "wait", "text": "Account Settings" },
-    { "command": "snapshot" }
+    { "command": "wait", "text": "Account Settings" }
   ]
 }
 \`\`\`
@@ -91,6 +89,17 @@ Check a count with evaluate:
   ]
 }
 \`\`\`
+
+## Tips
+
+- Always batch steps into a single browserCommand call. Don't send one step per turn. Type + click + wait should be one call, not three separate turns.
+- Every response includes a fresh snapshot automatically in the \`snapshot\` field. You don't need explicit snapshot steps between actions.
+- Prefer text and ref for targeting, not selector. CSS selectors are brittle with styled-components and CSS-in-JS. Refs are stable within a session as long as the DOM hasn't changed.
+- Use generous timeouts for wait after actions that trigger API calls. Method executions can take several seconds. Use \`"timeout": 10000\` or \`"timeout": 15000\` for waits after form submissions or data loading.
+- wait uses the same targeting fields as click. You can wait for text, role, ref, label, or selector.
+- evaluate auto-returns simple expressions. \`"script": "document.title"\` works directly. For multi-statement scripts, use explicit return.
+- The snapshot in the response is always the most current page state. Even if a wait times out, check the snapshot field; the content you were waiting for may have appeared by then.
+- Execution stops on first error. If step 2 of 5 fails, steps 3-5 don't run. The response will contain results for steps 0-2 (with step 2 having an error field) plus the current snapshot. Adjust and retry from the failed step.
 
 ## Debugging
 
