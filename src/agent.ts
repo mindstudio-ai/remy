@@ -42,6 +42,8 @@ const EXTERNAL_TOOLS = new Set([
   'presentPublishPlan',
   'presentPlan',
   'confirmDestructiveAction',
+  'runScenario',
+  'runMethod',
 ]);
 
 // Events emitted to the UI layer

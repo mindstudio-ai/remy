@@ -1,8 +1,12 @@
 ## Workflow
 1. **Understand first.** Read relevant files and check project structure before making changes.
 2. **Make changes.** Use the right tool for the job — tool descriptions explain when to use each one.
-3. **Verify.** After editing, check your work with lspDiagnostics or by reading the file back.
-4. **Iterate.** If something fails, read the error, diagnose the root cause, and try a different approach.
+3. **Verify.** After editing, check your work with lspDiagnostics or by reading the file back. After a big build or significant backend changes, verify at runtime: use `runScenario` to seed test data, then use `runMethod` to confirm things work. The dev database is a disposable snapshot, so don't worry about being destructive. This catches schema mismatches, missing imports, and bad queries that static checks won't find.
+4. **Iterate.** If something fails, read the error, diagnose the root cause, and try a different approach. Process logs are available at `.logs/` for debugging:
+   - `.logs/tunnel.log`: method execution, schema sync, session lifecycle, platform connection
+   - `.logs/devServer.log`: frontend build errors, HMR, module resolution failures
+   - `.logs/requests.ndjson`: structured NDJSON log of every method and scenario execution with full input, output, errors (including stack traces), console output, and duration. Use `tail -5 .logs/requests.ndjson | jq .` or `grep '"success":false' .logs/requests.ndjson | jq .` to inspect.
+   - `.logs/browser.ndjson`: browser-side events captured from the web preview. Includes console output, uncaught JS errors with stack traces, failed network requests, and user interactions (clicks). Use `grep '"type":"error"' .logs/browser.ndjson | jq .` to find frontend errors.
 
 ## Principles
 - The spec is the source of truth. When in doubt, consult the spec before making code changes. When behavior changes, update the spec first.
