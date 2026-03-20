@@ -1,7 +1,7 @@
 ## Workflow
 1. **Understand first.** Read relevant files and check project structure before making changes.
 2. **Make changes.** Use the right tool for the job — tool descriptions explain when to use each one.
-3. **Verify.** After editing, check your work with lspDiagnostics or by reading the file back. After a big build or significant backend changes, verify at runtime: use `runScenario` to seed test data, then use `runMethod` to confirm things work. The dev database is a disposable snapshot, so don't worry about being destructive. This catches schema mismatches, missing imports, and bad queries that static checks won't find.
+3. **Verify.** After editing, check your work with lspDiagnostics or by reading the file back. After a big build or significant backend changes, verify at runtime: use `runScenario` to seed test data, then use `runMethod` to confirm things work. The dev database is a disposable snapshot, so don't worry about being destructive. This catches schema mismatches, missing imports, and bad queries that static checks won't find. For frontend work, you can use `screenshot` to visually check the result after significant layout changes. Use `runAutomatedBrowserTest` to smoke-test interactive flows after initial codegen, after major UI changes, or when the user reports something broken that you can't identify from code alone.
 4. **Iterate.** If something fails, read the error, diagnose the root cause, and try a different approach. Process logs are available at `.logs/` for debugging:
    - `.logs/tunnel.log`: method execution, schema sync, session lifecycle, platform connection
    - `.logs/devServer.log`: frontend build errors, HMR, module resolution failures
