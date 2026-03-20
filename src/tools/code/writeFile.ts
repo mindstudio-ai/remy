@@ -27,25 +27,31 @@ export const writeFileTool: Tool = {
   },
 
   streaming: (() => {
-    let lastLineCount = 0;
+    let lastNewlineCount = 0;
     let lastPath = '';
     return {
       transform: async (
         partial: Record<string, any>,
       ): Promise<string | null> => {
-        if (partial.path !== lastPath) {
-          lastLineCount = 0;
+        // Reset state for a new tool call (different path, or same path
+        // but content is shorter — content grows monotonically within a call)
+        const newlineCount = partial.content.split('\n').length - 1;
+        if (partial.path !== lastPath || newlineCount < lastNewlineCount) {
+          lastNewlineCount = 0;
           lastPath = partial.path;
         }
-        const lines = partial.content.split('\n');
-        if (lines.length <= lastLineCount) {
+        // Only emit when we have new complete lines (terminated by \n)
+        if (newlineCount <= lastNewlineCount) {
           return null;
         }
-        lastLineCount = lines.length;
+        lastNewlineCount = newlineCount;
+        // Diff only the complete lines — trim the trailing incomplete fragment
+        const lastNewline = partial.content.lastIndexOf('\n');
+        const completeContent = partial.content.substring(0, lastNewline + 1);
         const oldContent = await fs
           .readFile(partial.path, 'utf-8')
           .catch(() => '');
-        return `Writing ${partial.path} (${lines.length} lines)\n${unifiedDiff(partial.path, oldContent, partial.content)}`;
+        return `Writing ${partial.path} (${newlineCount} lines)\n${unifiedDiff(partial.path, oldContent, completeContent)}`;
       },
     };
   })(),
