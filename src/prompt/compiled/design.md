@@ -17,8 +17,11 @@ judge the entire app by how it looks and feels in the first 3 seconds.
 The spec file `src/interfaces/@brand/visual.md` may contain `typography` and
 `colors` YAML blocks that define the app's fonts and color palette. When
 these are present, always use them. Load fonts from the URLs in the `fonts`
-section. Reference colors as CSS variables or named constants, not raw hex
-values scattered through the code.
+section. Set up a lightweight theme layer early (CSS variables or a small
+tokens file) so colors and type styles are defined once and referenced
+everywhere. This makes the design easy to update later without hunting
+through components. Keep it simple: a handful of CSS variables for colors
+and a few reusable text style classes or utilities for typography.
 
 ## Be Distinctive
 
