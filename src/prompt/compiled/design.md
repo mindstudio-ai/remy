@@ -125,6 +125,23 @@ Forms should feel like interactions, not paperwork.
 - Even data entry can be beautiful. Pay attention to alignment, padding,
   and spacing. Consistency is key.
 
+## Data Fetching and Updates
+
+The UI should feel instant. Never make the user wait for a server round-trip
+to see the result of their own action.
+
+- **Optimistic updates.** When a user adds a row, toggles a setting, or
+  submits a form, update the UI immediately and let the backend confirm
+  in the background. If the backend fails, revert and show an error.
+- **Use SWR for data fetching** (`useSWR` from the `swr` package). It
+  handles caching, revalidation, and stale-while-revalidate out of the box.
+  Prefer SWR over manual `useEffect` + `useState` fetch patterns.
+- **Mutate after actions.** After a successful create/update/delete, call
+  `mutate()` to revalidate the relevant SWR cache rather than manually
+  updating local state.
+- **Skeleton loading.** Show skeletons that mirror the layout on initial
+  load. Never show a blank page or centered spinner while data is loading.
+
 ## What Good Looks Like
 
 - A dashboard that feels like Linear — clean data, clear hierarchy, every
