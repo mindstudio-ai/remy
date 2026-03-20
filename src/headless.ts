@@ -77,13 +77,24 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
   function onEvent(e: AgentEvent): void {
     switch (e.type) {
       case 'text':
-        emit('text', { text: e.text });
+        emit('text', {
+          text: e.text,
+          ...(e.parentToolId && { parentToolId: e.parentToolId }),
+        });
         break;
       case 'thinking':
-        emit('thinking', { text: e.text });
+        emit('thinking', {
+          text: e.text,
+          ...(e.parentToolId && { parentToolId: e.parentToolId }),
+        });
         break;
       case 'tool_input_delta':
-        emit('tool_input_delta', { id: e.id, name: e.name, result: e.result });
+        emit('tool_input_delta', {
+          id: e.id,
+          name: e.name,
+          result: e.result,
+          ...(e.parentToolId && { parentToolId: e.parentToolId }),
+        });
         break;
       case 'tool_start':
         emit('tool_start', {
@@ -91,6 +102,7 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
           name: e.name,
           input: e.input,
           ...(e.partial && { partial: true }),
+          ...(e.parentToolId && { parentToolId: e.parentToolId }),
         });
         break;
       case 'tool_done':
@@ -99,6 +111,7 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
           name: e.name,
           result: e.result,
           isError: e.isError,
+          ...(e.parentToolId && { parentToolId: e.parentToolId }),
         });
         break;
       case 'turn_started':

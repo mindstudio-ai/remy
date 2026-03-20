@@ -44,19 +44,27 @@ const EXTERNAL_TOOLS = new Set([
   'confirmDestructiveAction',
   'runScenario',
   'runMethod',
+  'browserCommand',
 ]);
 
 // Events emitted to the UI layer
 export type AgentEvent =
-  | { type: 'text'; text: string }
-  | { type: 'thinking'; text: string }
-  | { type: 'tool_input_delta'; id: string; name: string; result: string }
+  | { type: 'text'; text: string; parentToolId?: string }
+  | { type: 'thinking'; text: string; parentToolId?: string }
+  | {
+      type: 'tool_input_delta';
+      id: string;
+      name: string;
+      result: string;
+      parentToolId?: string;
+    }
   | {
       type: 'tool_start';
       id: string;
       name: string;
       input: Record<string, any>;
       partial?: boolean;
+      parentToolId?: string;
     }
   | {
       type: 'tool_done';
@@ -64,6 +72,7 @@ export type AgentEvent =
       name: string;
       result: string;
       isError: boolean;
+      parentToolId?: string;
     }
   | { type: 'turn_started' }
   | { type: 'turn_done' }
@@ -420,7 +429,14 @@ export async function runTurn(params: {
             result = await resolveExternalTool(tc.id, tc.name, tc.input);
           } else {
             // Local tool — execute directly
-            result = await executeTool(tc.name, tc.input);
+            result = await executeTool(tc.name, tc.input, {
+              apiConfig,
+              model,
+              signal,
+              onEvent,
+              resolveExternalTool,
+              toolCallId: tc.id,
+            });
           }
 
           const isError = result.startsWith('Error');

@@ -15,9 +15,21 @@ export interface ToolDefinition {
   inputSchema: Record<string, any>;
 }
 
+export interface ToolExecutionContext {
+  apiConfig: { baseUrl: string; apiKey: string };
+  model?: string;
+  signal?: AbortSignal;
+  onEvent: (event: import('../agent.js').AgentEvent) => void;
+  resolveExternalTool?: import('../agent.js').ExternalToolResolver;
+  toolCallId: string;
+}
+
 export interface Tool {
   definition: ToolDefinition;
-  execute: (input: Record<string, any>) => Promise<string>;
+  execute: (
+    input: Record<string, any>,
+    context?: ToolExecutionContext,
+  ) => Promise<string>;
 
   /** Streaming configuration. Omit for tools that don't stream. */
   streaming?: {
@@ -72,6 +84,7 @@ import { restartProcessTool } from './code/restartProcess.js';
 import { askMindStudioSdkTool } from './code/askMindStudioSdk.js';
 import { runScenarioTool } from './code/runScenario.js';
 import { runMethodTool } from './code/runMethod.js';
+import { browserAutomationTool } from '../subagents/browserAutomation/index.js';
 
 function getSpecTools(): Tool[] {
   return [readSpecTool, writeSpecTool, editSpecTool, listSpecFilesTool];
@@ -90,6 +103,7 @@ function getCodeTools(): Tool[] {
     askMindStudioSdkTool,
     runScenarioTool,
     runMethodTool,
+    browserAutomationTool,
   ];
 
   if (isLspConfigured()) {
@@ -166,10 +180,11 @@ export function getToolByName(name: string): Tool | undefined {
 export function executeTool(
   name: string,
   input: Record<string, any>,
+  context?: ToolExecutionContext,
 ): Promise<string> {
   const tool = getToolByName(name);
   if (!tool) {
     return Promise.resolve(`Error: Unknown tool "${name}"`);
   }
-  return tool.execute(input);
+  return tool.execute(input, context);
 }
