@@ -68,6 +68,15 @@ export const BROWSER_TOOLS: ToolDefinition[] = [
       required: ['steps'],
     },
   },
+  {
+    name: 'screenshot',
+    description:
+      'Capture a screenshot of the current page. Returns a CDN URL with dimensions.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
 ];
 
-export const BROWSER_EXTERNAL_TOOLS = new Set(['browserCommand']);
+export const BROWSER_EXTERNAL_TOOLS = new Set(['browserCommand', 'screenshot']);

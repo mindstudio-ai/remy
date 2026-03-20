@@ -13,7 +13,7 @@ The scaffold starts with four spec files that cover the full picture of the app:
 
 - **`src/app.md`** — the core application: what it does, how data flows, who's involved, the rules
 - **`src/interfaces/web.md`** — the web interface: layout, screens, interactions, user experience
-- **`src/interfaces/@brand/visual.md`** — visual identity: color palette, typography, spacing, surfaces, interactions
+- **`src/interfaces/@brand/visual.md`** — visual identity, including `typography` and `colors` YAML blocks that define the app's fonts and color palette. Use these blocks to capture the design choices from intake.
 - **`src/interfaces/@brand/voice.md`** — voice and terminology: tone, error messages, word choices
 
 Start from these four and extend as needed. Add interface specs for other interface types (`api.md`, `cron.md`, etc.) if the app uses them. Split `app.md` into multiple files if the domain is complex. The agent uses the entire `src/` folder as compilation context, so organize however serves clarity.

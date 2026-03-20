@@ -94,3 +94,17 @@ These are the hallmarks of generic AI-generated interfaces. Every one of them ma
 - **Cramped layouts.** Text pressed against edges, no room to breathe. Instead: generous padding, comfortable margins, let the content float.
 - **Loading states that are just a centered spinner on a blank page.** Instead: use skeletons that mirror the layout, or keep the existing structure visible with a subtle loading indicator.
 - **Any interface where the first reaction is "this looks like a demo" or "this looks like it was made with a website builder."**
+
+## Design System Blocks in Spec Files
+
+Spec files (particularly `src/interfaces/@brand/visual.md`) may contain structured YAML blocks that define the app's typography and color palette. These are fenced code blocks with `typography` or `colors` as the language tag.
+
+**When these blocks are present, always use the defined fonts and colors in generated code.** Do not pick your own fonts or colors when the spec defines them. Load fonts from the URLs specified in the `fonts` section of the typography block. Reference colors semantically (as CSS variables or named constants) rather than scattering raw hex values through the codebase.
+
+### Typography block format
+
+A `typography` block declares available fonts (with source URLs for loading) and named type styles. Each style has a font, size, weight, and optional letter-spacing, line-height, and description of where it's used. The number of styles is flexible.
+
+### Colors block format
+
+A `colors` block declares named colors with hex values and descriptions of their purpose. Names should be semantic (what the color is for, not what it looks like). The number of colors is flexible.

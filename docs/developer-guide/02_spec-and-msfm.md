@@ -196,3 +196,15 @@ The spec is also what makes the project onboardable. A new developer (or a diffe
 | Everything else | Standard Markdown |
 
 Specs are fully readable in GitHub, VS Code, or any Markdown previewer.
+
+---
+
+## Structured Blocks
+
+Spec files can also contain fenced code blocks with special language tags that define structured data. These are standard markdown code fences, not MSFM-specific syntax. The MindStudio editor renders them as rich interactive UI; in a plain markdown viewer they appear as readable YAML.
+
+**Typography** (`` ```typography ``): Declares fonts with source URLs and named type styles (size, weight, letter-spacing, line-height, description).
+
+**Colors** (`` ```colors ``): Declares named colors with hex values and descriptions of their purpose.
+
+These typically live in `src/interfaces/@brand/visual.md` and define the app's design system. The agent uses them when generating frontend code; the user edits them through the editor's visual UI.

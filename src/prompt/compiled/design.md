@@ -12,6 +12,14 @@ good on Dribbble, Behance, or Mobbin, it's not done.
 MindStudio apps are end-user products. The interface is the product. Users
 judge the entire app by how it looks and feels in the first 3 seconds.
 
+## Design System from the Spec
+
+The spec file `src/interfaces/@brand/visual.md` may contain `typography` and
+`colors` YAML blocks that define the app's fonts and color palette. When
+these are present, always use them. Load fonts from the URLs in the `fonts`
+section. Reference colors as CSS variables or named constants, not raw hex
+values scattered through the code.
+
 ## Be Distinctive
 
 AI-generated interfaces tend to converge on the same generic look: safe

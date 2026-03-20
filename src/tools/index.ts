@@ -84,6 +84,7 @@ import { restartProcessTool } from './code/restartProcess.js';
 import { askMindStudioSdkTool } from './code/askMindStudioSdk.js';
 import { runScenarioTool } from './code/runScenario.js';
 import { runMethodTool } from './code/runMethod.js';
+import { screenshotTool } from './code/screenshot.js';
 import { browserAutomationTool } from '../subagents/browserAutomation/index.js';
 
 function getSpecTools(): Tool[] {
@@ -103,6 +104,7 @@ function getCodeTools(): Tool[] {
     askMindStudioSdkTool,
     runScenarioTool,
     runMethodTool,
+    screenshotTool,
     browserAutomationTool,
   ];
 

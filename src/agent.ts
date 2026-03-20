@@ -45,6 +45,7 @@ const EXTERNAL_TOOLS = new Set([
   'runScenario',
   'runMethod',
   'browserCommand',
+  'screenshot',
 ]);
 
 // Events emitted to the UI layer
