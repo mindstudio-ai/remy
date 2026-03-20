@@ -42,9 +42,9 @@ export const promptUserTool: Tool = {
               },
               type: {
                 type: 'string',
-                enum: ['select', 'text', 'file', 'color'],
+                enum: ['select', 'checklist', 'text', 'file', 'color'],
                 description:
-                  'select: pick from options (or options + free-form "other"). text: free-form input. file: file/image upload, returns CDN URL(s) that can be referenced directly or curled onto disk. color: color picker (returns hex).',
+                  'select: pick one from a list. checklist: pick one or more from a list. text: free-form input. file: file/image upload, returns CDN URL(s) that can be referenced directly or curled onto disk. color: color picker (returns hex).',
               },
               helpText: {
                 type: 'string',
@@ -78,17 +78,17 @@ export const promptUserTool: Tool = {
                   ],
                 },
                 description:
-                  'Options for select type. Each can be a string or { label, description }.',
+                  'Options for select and checklist types. Each can be a string or { label, description }.',
               },
               multiple: {
                 type: 'boolean',
                 description:
-                  'For select: allow picking multiple options (returns array). For file: allow multiple uploads (returns array of URLs). Defaults to false.',
+                  'For file type: allow multiple uploads (returns array of URLs). Defaults to false.',
               },
               allowOther: {
                 type: 'boolean',
                 description:
-                  'For select type: adds an "Other" option with a free-form text input. Defaults to false.',
+                  'For select and checklist types: adds an "Other" option that lets the user type a custom answer. Use this instead of adding a separate follow-up text field for custom input. Defaults to false.',
               },
               format: {
                 type: 'string',
@@ -159,13 +159,14 @@ export const promptUserTool: Tool = {
 
     const lines = questions.map((q) => {
       let line = `- ${q.question}`;
-      if (q.type === 'select') {
+      if (q.type === 'select' || q.type === 'checklist') {
         const opts = (q.options || []).map((o) =>
           typeof o === 'string' ? o : o.label,
         );
-        line += q.multiple
-          ? ` (pick one or more: ${opts.join(' / ')})`
-          : ` (${opts.join(' / ')})`;
+        line +=
+          q.type === 'checklist'
+            ? ` (pick one or more: ${opts.join(' / ')})`
+            : ` (${opts.join(' / ')})`;
       } else if (q.type === 'file') {
         line += ' (upload file)';
       } else if (q.type === 'color') {

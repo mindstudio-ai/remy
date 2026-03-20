@@ -323,7 +323,7 @@ export async function runTurn(params: {
             const tool = getToolByName(event.name);
             const wasStreamed = acc?.started ?? false;
             const isInputStreaming = !!tool?.streaming?.partialInput;
-            log.debug('Received tool_use', {
+            log.info('Tool call received', {
               id: event.id,
               name: event.name,
               wasStreamed,
@@ -408,7 +408,7 @@ export async function runTurn(params: {
           if (EXTERNAL_TOOLS.has(tc.name) && resolveExternalTool) {
             // External tool — save before blocking on user/sandbox response
             saveSession(state);
-            log.debug('Waiting for external tool result', {
+            log.info('Waiting for external tool result', {
               name: tc.name,
               id: tc.id,
             });
@@ -419,7 +419,7 @@ export async function runTurn(params: {
           }
 
           const isError = result.startsWith('Error');
-          log.debug('Tool completed', {
+          log.info('Tool completed', {
             name: tc.name,
             elapsed: `${Date.now() - toolStart}ms`,
             isError,
