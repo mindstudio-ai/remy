@@ -113,9 +113,9 @@ function sample<T>(arr: T[], n: number): T[] {
  * Call per invocation, not once at init.
  */
 export function getDesignResearchPrompt(): string {
-  const fonts = sample(fontData.fonts, 15);
-  const pairings = sample(fontData.pairings, 5);
-  const images = sample(inspirationImages, 5);
+  const fonts = sample(fontData.fonts, 40);
+  const pairings = sample(fontData.pairings, 20);
+  const images = sample(inspirationImages, 20);
 
   const fontList = fonts
     .map((f) => {
