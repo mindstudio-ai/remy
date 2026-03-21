@@ -32,10 +32,11 @@ export function startStatusWatcher(config: StatusWatcherConfig): StatusWatcher {
 
   let lastLabel = '';
   let inflight = false;
+  let stopped = false;
   const url = `${apiConfig.baseUrl}/_internal/v2/agent/remy/generate-status`;
 
   async function tick(): Promise<void> {
-    if (signal?.aborted || inflight) {
+    if (stopped || signal?.aborted || inflight) {
       return;
     }
     inflight = true;
@@ -90,6 +91,9 @@ export function startStatusWatcher(config: StatusWatcherConfig): StatusWatcher {
       }
       lastLabel = data.label;
 
+      if (stopped) {
+        return;
+      }
       log.debug('Status watcher: emitting', { label: data.label });
       onStatus(data.label);
     } catch (err: any) {
@@ -108,6 +112,7 @@ export function startStatusWatcher(config: StatusWatcherConfig): StatusWatcher {
 
   return {
     stop() {
+      stopped = true;
       clearInterval(timer);
       log.debug('Status watcher stopped');
     },
