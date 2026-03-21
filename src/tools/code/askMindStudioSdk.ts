@@ -13,7 +13,7 @@ export const askMindStudioSdkTool: Tool = {
   definition: {
     name: 'askMindStudioSdk',
     description:
-      'Ask the MindStudio SDK assistant about actions, AI models, connectors, and integrations. Returns code examples with correct method signatures, model IDs, and config options. Use this instead of guessing SDK usage from memory. Describe what you need, not what API methods you need; the assistant will figure out the right approach. This runs its own LLM call so it has a few seconds of latency; batch related questions into a single query.',
+      'Ask the MindStudio SDK assistant about available actions, AI models, connectors, and integrations using natural language. Returns code examples with correct method signatures, model IDs, and config options. Always use this to verify correct SDK usage, especially model IDs and configuration options. Describe what you need, not what API methods you need; the assistant will figure out the right approach. This runs its own LLM call so it has a few seconds of latency; batch multiple questions into a single query.',
     inputSchema: {
       type: 'object',
       properties: {
