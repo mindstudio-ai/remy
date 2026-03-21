@@ -30,9 +30,9 @@ Include context about the app — what it does, who uses it, what mood or feelin
 Concrete resources: hex values, font names with CSS URLs, image URLs, layout descriptions. Use the results directly in brand spec files or as guidance when building the interface.
 `.trim();
 
-export const designResearchTool: Tool = {
+export const designExpertTool: Tool = {
   definition: {
-    name: 'designResearch',
+    name: 'designExpert',
     description: DESCRIPTION,
     inputSchema: {
       type: 'object',

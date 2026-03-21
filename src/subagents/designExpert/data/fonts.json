@@ -1779,7 +1779,8 @@
         "japanese",
         "clean"
       ],
-      "cssUrl": "https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@100;200;300;400;500;600;700;800;900&display=swap"
+      "cssUrl": "https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@100;200;300;400;500;600;700;800;900&display=swap",
+      "variable": true
     },
     {
       "name": "Archivo",
@@ -1803,7 +1804,8 @@
         "grotesque",
         "versatile"
       ],
-      "cssUrl": "https://fonts.googleapis.com/css2?family=Archivo:wght@100;200;300;400;500;600;700;800;900&display=swap"
+      "cssUrl": "https://fonts.googleapis.com/css2?family=Archivo:wght@100;200;300;400;500;600;700;800;900&display=swap",
+      "variable": true
     },
     {
       "name": "Aileron",
@@ -1825,7 +1827,8 @@
       "tags": [
         "neo-grotesque",
         "helvetica-like"
-      ]
+      ],
+      "variable": false
     },
     {
       "name": "Bluu Next",
@@ -1839,7 +1842,8 @@
       "tags": [
         "editorial",
         "bold"
-      ]
+      ],
+      "variable": false
     },
     {
       "name": "Work Sans",
@@ -1863,7 +1867,8 @@
         "geometric",
         "clean"
       ],
-      "cssUrl": "https://fonts.googleapis.com/css2?family=Work+Sans:wght@100;200;300;400;500;600;700;800;900&display=swap"
+      "cssUrl": "https://fonts.googleapis.com/css2?family=Work+Sans:wght@100;200;300;400;500;600;700;800;900&display=swap",
+      "variable": true
     },
     {
       "name": "Tex Gyre Heros",
@@ -1878,7 +1883,8 @@
       "tags": [
         "neo-grotesque",
         "helvetica-like"
-      ]
+      ],
+      "variable": false
     },
     {
       "name": "Terminal Grotesque",
@@ -1892,7 +1898,8 @@
       "tags": [
         "experimental",
         "display"
-      ]
+      ],
+      "variable": false
     },
     {
       "name": "Roboto",
@@ -1913,7 +1920,8 @@
         "neo-grotesque",
         "neutral"
       ],
-      "cssUrl": "https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500;700;900&display=swap"
+      "cssUrl": "https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500;700;900&display=swap",
+      "variable": true
     },
     {
       "name": "Reglo",
@@ -1928,7 +1936,8 @@
       "tags": [
         "geometric",
         "bold"
-      ]
+      ],
+      "variable": false
     },
     {
       "name": "Poppins",
@@ -1952,7 +1961,8 @@
         "geometric",
         "friendly"
       ],
-      "cssUrl": "https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap"
+      "cssUrl": "https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap",
+      "variable": true
     },
     {
       "name": "Oswald",
@@ -1973,7 +1983,8 @@
         "condensed",
         "gothic"
       ],
-      "cssUrl": "https://fonts.googleapis.com/css2?family=Oswald:wght@200;300;400;500;600;700&display=swap"
+      "cssUrl": "https://fonts.googleapis.com/css2?family=Oswald:wght@200;300;400;500;600;700&display=swap",
+      "variable": true
     },
     {
       "name": "Ostrich Sans",
@@ -1990,7 +2001,8 @@
       "tags": [
         "inline",
         "tall"
-      ]
+      ],
+      "variable": false
     },
     {
       "name": "Young Serif",
@@ -2006,7 +2018,8 @@
         "old-style",
         "warm"
       ],
-      "cssUrl": "https://fonts.googleapis.com/css2?family=Young+Serif:wght@400&display=swap"
+      "cssUrl": "https://fonts.googleapis.com/css2?family=Young+Serif:wght@400&display=swap",
+      "variable": true
     },
     {
       "name": "Office Code Pro",
@@ -2024,7 +2037,8 @@
       "tags": [
         "monospace",
         "coding"
-      ]
+      ],
+      "variable": false
     },
     {
       "name": "Nimbus Sans L",
@@ -2039,7 +2053,8 @@
       "tags": [
         "neo-grotesque",
         "helvetica-like"
-      ]
+      ],
+      "variable": false
     },
     {
       "name": "Libre Baskerville",
@@ -2056,7 +2071,8 @@
         "classical",
         "readable"
       ],
-      "cssUrl": "https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap"
+      "cssUrl": "https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap",
+      "variable": true
     },
     {
       "name": "Liberation Sans",
@@ -2071,7 +2087,8 @@
       "tags": [
         "neo-grotesque",
         "arial-like"
-      ]
+      ],
+      "variable": false
     },
     {
       "name": "League Gothic",
@@ -2087,7 +2104,8 @@
         "condensed",
         "headline"
       ],
-      "cssUrl": "https://fonts.googleapis.com/css2?family=League+Gothic:wght@400&display=swap"
+      "cssUrl": "https://fonts.googleapis.com/css2?family=League+Gothic:wght@400&display=swap",
+      "variable": true
     },
     {
       "name": "Junicode",
@@ -2102,7 +2120,8 @@
       "tags": [
         "medieval",
         "scholarly"
-      ]
+      ],
+      "variable": false
     },
     {
       "name": "Inter",
@@ -2126,7 +2145,8 @@
         "humanist",
         "ui"
       ],
-      "cssUrl": "https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap"
+      "cssUrl": "https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap",
+      "variable": true
     },
     {
       "name": "Gap Sans",
@@ -2141,7 +2161,8 @@
       "tags": [
         "geometric",
         "minimal"
-      ]
+      ],
+      "variable": false
     },
     {
       "name": "EB Garamond",
@@ -2161,7 +2182,8 @@
         "classical",
         "humanist"
       ],
-      "cssUrl": "https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600;700;800&display=swap"
+      "cssUrl": "https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600;700;800&display=swap",
+      "variable": true
     },
     {
       "name": "Cotham Sans",
@@ -2175,7 +2197,8 @@
       "tags": [
         "quirky",
         "display"
-      ]
+      ],
+      "variable": false
     },
     {
       "name": "Cooper Hewitt",
@@ -2196,7 +2219,8 @@
       "tags": [
         "humanist",
         "museum"
-      ]
+      ],
+      "variable": false
     },
     {
       "name": "Bagnard",
@@ -2210,7 +2234,8 @@
       "tags": [
         "didone",
         "elegant"
-      ]
+      ],
+      "variable": false
     }
   ],
   "pairings": [

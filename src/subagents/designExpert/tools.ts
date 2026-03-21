@@ -13,7 +13,7 @@ const DESIGN_REFERENCE_PROMPT = `Analyze this website/app screenshot as a design
 2) Color palette with approximate hex values and palette strategy
 3) Typography style
 4) Layout composition (symmetric/asymmetric, grid structure, whitespace usage, content density)
-5) What makes it distinctive and interestingvs generic AI-generated interfaces
+5) What makes it distinctive and interesting vs generic AI-generated interfaces
 Be specific and concise.`;
 
 export const DESIGN_RESEARCH_TOOLS: ToolDefinition[] = [

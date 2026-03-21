@@ -91,7 +91,7 @@ import { runScenarioTool } from './code/runScenario.js';
 import { runMethodTool } from './code/runMethod.js';
 import { screenshotTool } from './code/screenshot.js';
 import { browserAutomationTool } from '../subagents/browserAutomation/index.js';
-import { designResearchTool } from '../subagents/designResearch/index.js';
+import { designExpertTool } from '../subagents/designExpert/index.js';
 
 function getSpecTools(): Tool[] {
   return [readSpecTool, writeSpecTool, editSpecTool, listSpecFilesTool];
@@ -130,7 +130,7 @@ function getCommonTools(): Tool[] {
     fetchUrlTool,
     searchGoogleTool,
     setProjectNameTool,
-    designResearchTool,
+    designExpertTool,
   ];
 }
 

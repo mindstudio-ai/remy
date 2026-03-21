@@ -31,7 +31,7 @@ function resolvePath(filename: string): string {
   const local = path.join(base, filename);
   return fs.existsSync(local)
     ? local
-    : path.join(base, 'subagents', 'designResearch', filename);
+    : path.join(base, 'subagents', 'designExpert', filename);
 }
 
 function readFile(filename: string): string {
