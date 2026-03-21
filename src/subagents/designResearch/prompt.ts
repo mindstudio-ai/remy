@@ -70,7 +70,10 @@ interface Font {
   name: string;
   slug: string;
   category: string;
-  variable: boolean;
+  source: 'fontshare' | 'google-fonts' | 'open-foundry';
+  googleFontsFamily?: string;
+  cssUrl?: string;
+  variable?: boolean;
   weights: number[];
   italics: boolean;
   tags: string[];
@@ -129,7 +132,15 @@ export function getDesignResearchPrompt(): string {
   const fontList = fonts
     .map((f) => {
       const tags = f.tags.length ? ` (${f.tags.join(', ')})` : '';
-      return `- **${f.name}** (${f.slug}) — ${f.category}${tags}. Weights: ${f.weights.join(', ')}.${f.variable ? ' Variable.' : ''}${f.italics ? ' Has italics.' : ''}`;
+      let cssInfo = '';
+      if (f.source === 'fontshare') {
+        cssInfo = ` CSS: ${fontData.cssUrlPattern.replace('{slug}', f.slug).replace('{weights}', f.weights.join(','))}`;
+      } else if (f.cssUrl) {
+        cssInfo = ` CSS: ${f.cssUrl}`;
+      } else if (f.source === 'open-foundry') {
+        cssInfo = ' (self-host required)';
+      }
+      return `- **${f.name}** — ${f.category}${tags}. Weights: ${f.weights.join(', ')}.${f.variable ? ' Variable.' : ''}${f.italics ? ' Has italics.' : ''}${cssInfo}`;
     })
     .join('\n');
 
@@ -144,7 +155,7 @@ export function getDesignResearchPrompt(): string {
     ? `<fonts_to_consider>
 ## Fonts to consider
 
-A random sample from the Fontshare catalog. Use these as starting points for font selection.
+A random sample from Fontshare, Open Foundry, and Google Fonts. Use these as starting points for font selection.
 CSS URL pattern: ${fontData.cssUrlPattern}
 
 ${fontList}

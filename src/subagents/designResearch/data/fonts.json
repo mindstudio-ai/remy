@@ -2,22 +2,6 @@
   "cssUrlPattern": "https://api.fontshare.com/v2/css?f[]={slug}@{weights}&display=swap",
   "fonts": [
     {
-      "name": "Kihim",
-      "slug": "kihim",
-      "category": "Display",
-      "variable": false,
-      "weights": [
-        400
-      ],
-      "italics": false,
-      "tags": [
-        "Posters",
-        "Magazines",
-        "Experimental",
-        "Banners"
-      ]
-    },
-    {
       "name": "Gambetta",
       "slug": "gambetta",
       "category": "Serif",
@@ -35,7 +19,8 @@
         "Text",
         "Books",
         "Magazines"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Synonym",
@@ -57,7 +42,8 @@
         "Books",
         "Branding",
         "Magazines"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "General Sans",
@@ -78,7 +64,8 @@
         "Logos",
         "Poster",
         "Websites"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Gambarino",
@@ -94,7 +81,8 @@
         "Posters",
         "Books",
         "Editorial"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Rowan",
@@ -114,46 +102,8 @@
         "Text",
         "Reading",
         "Editorial"
-      ]
-    },
-    {
-      "name": "Comico",
-      "slug": "comico",
-      "category": "Handwritten",
-      "variable": false,
-      "weights": [
-        400
       ],
-      "italics": false,
-      "tags": [
-        "Handwriting",
-        "Comic",
-        "Editorial",
-        "Funny",
-        "Books"
-      ]
-    },
-    {
-      "name": "Technor",
-      "slug": "technor",
-      "category": "Sans",
-      "variable": true,
-      "weights": [
-        200,
-        300,
-        400,
-        500,
-        600,
-        700,
-        900
-      ],
-      "italics": false,
-      "tags": [
-        "Books",
-        "Poster",
-        "Magazines",
-        "Logos"
-      ]
+      "source": "fontshare"
     },
     {
       "name": "Sentient",
@@ -173,7 +123,8 @@
         "Newspapers",
         "Books",
         "Magazines"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Boska",
@@ -196,7 +147,8 @@
         "Books",
         "Logo",
         "Screen"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Switzer",
@@ -222,7 +174,8 @@
         "Magazines",
         "Poster",
         "Screen"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Tabular",
@@ -242,7 +195,8 @@
         "Websites",
         "Posters",
         "Magazines"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Tanker",
@@ -259,7 +213,8 @@
         "Editorial",
         "Logos",
         "Poster"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Expose",
@@ -279,39 +234,8 @@
         "Banners",
         "Apps",
         "Websites"
-      ]
-    },
-    {
-      "name": "Boxing",
-      "slug": "boxing",
-      "category": "Display",
-      "variable": false,
-      "weights": [
-        400
       ],
-      "italics": false,
-      "tags": [
-        "Editorial",
-        "Poster",
-        "Books"
-      ]
-    },
-    {
-      "name": "Striper",
-      "slug": "striper",
-      "category": "Display",
-      "variable": false,
-      "weights": [
-        400
-      ],
-      "italics": false,
-      "tags": [
-        "Poster",
-        "Fun",
-        "Branding",
-        "Experimental",
-        "Logos"
-      ]
+      "source": "fontshare"
     },
     {
       "name": "Pilcrow Rounded",
@@ -331,7 +255,8 @@
         "Magazines",
         "Branding",
         "Books"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Melodrama",
@@ -352,7 +277,8 @@
         "Branding",
         "Banners",
         "Posters"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Kohinoor Zerone",
@@ -370,7 +296,8 @@
         "Posters",
         "Lettering",
         "Cosmetic"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "New Title",
@@ -392,22 +319,8 @@
         "Films",
         "Credits",
         "Logos"
-      ]
-    },
-    {
-      "name": "Aktura",
-      "slug": "aktura",
-      "category": "Serif,  Blackletter, Display",
-      "variable": false,
-      "weights": [
-        400
       ],
-      "italics": false,
-      "tags": [
-        "Websites",
-        "Poster",
-        "Magazines"
-      ]
+      "source": "fontshare"
     },
     {
       "name": "Alpino",
@@ -428,7 +341,8 @@
         "Posters",
         "Branding",
         "Books"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Amulya",
@@ -447,28 +361,8 @@
         "Logos",
         "Posters",
         "Magazines"
-      ]
-    },
-    {
-      "name": "Array",
-      "slug": "array",
-      "category": "Display",
-      "variable": false,
-      "weights": [
-        400,
-        401,
-        600,
-        601,
-        700,
-        701
       ],
-      "italics": false,
-      "tags": [
-        "Branding",
-        "Magazines",
-        "Signage",
-        "Posters"
-      ]
+      "source": "fontshare"
     },
     {
       "name": "Author",
@@ -489,7 +383,8 @@
         "Books",
         "Logos",
         "Magazines"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Bespoke Sans",
@@ -509,7 +404,8 @@
         "Websites",
         "Logos",
         "Magazines"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Bespoke Serif",
@@ -530,47 +426,8 @@
         "Books",
         "Branding",
         "Editorial"
-      ]
-    },
-    {
-      "name": "Bespoke Slab",
-      "slug": "bespoke-slab",
-      "category": "Slab",
-      "variable": true,
-      "weights": [
-        300,
-        400,
-        500,
-        700,
-        800
       ],
-      "italics": true,
-      "tags": [
-        "Poster",
-        "Magazines",
-        "Websites",
-        "Logos"
-      ]
-    },
-    {
-      "name": "Bespoke Stencil",
-      "slug": "bespoke-stencil",
-      "category": "Sans",
-      "variable": true,
-      "weights": [
-        300,
-        400,
-        500,
-        700,
-        800
-      ],
-      "italics": true,
-      "tags": [
-        "Magazines",
-        "Poster",
-        "Logos",
-        "Websites"
-      ]
+      "source": "fontshare"
     },
     {
       "name": "Clash Grotesk",
@@ -591,7 +448,8 @@
         "Editorial",
         "Magazines",
         "Reading"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Clash Display",
@@ -611,7 +469,8 @@
         "Banners",
         "Editorial",
         "Magazines"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Chubbo",
@@ -632,7 +491,8 @@
         "Poster",
         "Banners",
         "Books"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Chillax",
@@ -654,7 +514,8 @@
         "Books",
         "Banners",
         "Poster"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Cabinet Grotesk",
@@ -677,7 +538,8 @@
         "Magazines",
         "Editorial",
         "Posters"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Britney",
@@ -701,7 +563,8 @@
         "Headlines",
         "Logo",
         "Magazines"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Bonny",
@@ -722,7 +585,8 @@
         "Logos",
         "Magazines",
         "Poster"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Bevellier",
@@ -745,7 +609,8 @@
         "Poster",
         "Magazines",
         "Websites"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Archivo",
@@ -770,7 +635,8 @@
         "Clean",
         "Websites",
         "Screen"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Dancing Script",
@@ -788,7 +654,8 @@
         "luxury",
         "Posters",
         "Beauty"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Bebas Neue",
@@ -804,7 +671,8 @@
         "Websites",
         "Packaging",
         "Menus"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Anton",
@@ -821,7 +689,8 @@
         "Books",
         "Apps",
         "Tight"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Poppins",
@@ -846,7 +715,8 @@
         "Poppins",
         "Broadcast",
         "Banners"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Be Vietnam Pro",
@@ -870,7 +740,8 @@
         "Apps",
         "Banners",
         "Legible"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Outfit",
@@ -895,7 +766,8 @@
         "Magazines",
         "Websites",
         "Packaging"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Lora",
@@ -914,7 +786,8 @@
         "Legible",
         "Websites",
         "Clean"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Plus Jakarta Sans",
@@ -936,7 +809,8 @@
         "Banners",
         "Apps",
         "General"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Nunito",
@@ -959,7 +833,8 @@
         "Films",
         "friendly",
         "Headline"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Manrope",
@@ -981,7 +856,8 @@
         "Websites",
         "Banners",
         "Apps"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Work Sans",
@@ -1005,7 +881,8 @@
         "Headline",
         "workhorse",
         "Corporate"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Crimson Pro",
@@ -1027,7 +904,8 @@
         "Magazines",
         "Publishing",
         "Editorial"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Oswald",
@@ -1048,7 +926,8 @@
         "Magazines",
         "Posters",
         "Headlines"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Fira Sans",
@@ -1072,7 +951,8 @@
         "Magazines",
         "Screen",
         "Branding"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Asap",
@@ -1091,7 +971,8 @@
         "Packaging",
         "Soft",
         "Posters"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Montserrat",
@@ -1116,7 +997,8 @@
         "General",
         "Posters",
         "Websites"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Azeret Mono",
@@ -1139,7 +1021,8 @@
         "Programming",
         "coding",
         "Apps"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Spline Sans",
@@ -1158,7 +1041,8 @@
         "Apps",
         "workhorse",
         "Headlines"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Epilogue",
@@ -1183,7 +1067,8 @@
         "Logo",
         "Websites",
         "Products"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Public Sans",
@@ -1207,7 +1092,8 @@
         "Reading",
         "Clean",
         "Logos"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "JetBrains Mono",
@@ -1230,7 +1116,8 @@
         "Display",
         "Code",
         "Programming"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Familjen Grotesk",
@@ -1250,22 +1137,8 @@
         "Packaging",
         "General",
         "Banners"
-      ]
-    },
-    {
-      "name": "Kola",
-      "slug": "kola",
-      "category": "Display",
-      "variable": false,
-      "weights": [
-        400
       ],
-      "italics": false,
-      "tags": [
-        "Editorial",
-        "Poster",
-        "Books"
-      ]
+      "source": "fontshare"
     },
     {
       "name": "Pally",
@@ -1286,7 +1159,8 @@
         "Informal",
         "Kids",
         "Poster"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Hind",
@@ -1307,7 +1181,8 @@
         "Banners",
         "Beauty",
         "Branding"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Kalam",
@@ -1324,29 +1199,8 @@
         "handwritten",
         "Comic",
         "Children"
-      ]
-    },
-    {
-      "name": "Hoover",
-      "slug": "hoover",
-      "category": "Slab",
-      "variable": true,
-      "weights": [
-        100,
-        300,
-        400,
-        500,
-        700
       ],
-      "italics": false,
-      "tags": [
-        "Logo",
-        "Magazines",
-        "Poster",
-        "Banners",
-        "Editorial",
-        "Logotype"
-      ]
+      "source": "fontshare"
     },
     {
       "name": "Erode",
@@ -1366,7 +1220,8 @@
         "Posters",
         "Books",
         "Branding"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Roundo",
@@ -1387,29 +1242,8 @@
         "Websites",
         "Headline",
         "Editorial"
-      ]
-    },
-    {
-      "name": "Nippo",
-      "slug": "nippo",
-      "category": "Display",
-      "variable": true,
-      "weights": [
-        200,
-        300,
-        400,
-        500,
-        700
       ],
-      "italics": false,
-      "tags": [
-        "Jerseys",
-        "Magazines",
-        "Sports",
-        "Posters",
-        "Websites",
-        "Banners"
-      ]
+      "source": "fontshare"
     },
     {
       "name": "Neco",
@@ -1428,47 +1262,8 @@
         "Menus",
         "Magazines",
         "Books"
-      ]
-    },
-    {
-      "name": "Panchang",
-      "slug": "panchang",
-      "category": "Sans",
-      "variable": true,
-      "weights": [
-        200,
-        300,
-        400,
-        500,
-        600,
-        700,
-        800
       ],
-      "italics": false,
-      "tags": [
-        "Editorial",
-        "Magazines",
-        "Posters",
-        "Books"
-      ]
-    },
-    {
-      "name": "Pencerio",
-      "slug": "pencerio",
-      "category": "Script",
-      "variable": false,
-      "weights": [
-        50
-      ],
-      "italics": false,
-      "tags": [
-        "Wedding",
-        "Titles",
-        "Signboards",
-        "Packaging",
-        "Fashion",
-        "Calligraphy"
-      ]
+      "source": "fontshare"
     },
     {
       "name": "Excon",
@@ -1488,7 +1283,8 @@
         "Books",
         "Editorial",
         "Logos"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Space Grotesk",
@@ -1508,24 +1304,8 @@
         "Corporate",
         "Banners",
         "Apps"
-      ]
-    },
-    {
-      "name": "Zina",
-      "slug": "zina",
-      "category": "Display",
-      "variable": false,
-      "weights": [
-        400
       ],
-      "italics": false,
-      "tags": [
-        "Bold",
-        "Readable",
-        "Display",
-        "Grunge",
-        "Posters"
-      ]
+      "source": "fontshare"
     },
     {
       "name": "Pramukh Rounded",
@@ -1549,7 +1329,8 @@
         "Editorial",
         "Text",
         "Posters"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Plein",
@@ -1569,7 +1350,8 @@
         "Books",
         "Magazines",
         "Newspapers"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Rajdhani",
@@ -1590,7 +1372,8 @@
         "Websites",
         "Branding",
         "Broadcast"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Recia",
@@ -1610,21 +1393,8 @@
         "Posters",
         "Websites",
         "Magazines"
-      ]
-    },
-    {
-      "name": "Rosaline",
-      "slug": "rosaline",
-      "category": "Script",
-      "variable": false,
-      "weights": [
-        400
       ],
-      "italics": false,
-      "tags": [
-        "Fashion",
-        "Editorial"
-      ]
+      "source": "fontshare"
     },
     {
       "name": "Khand",
@@ -1644,7 +1414,8 @@
         "Broadcast",
         "Display",
         "Logotype"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Sharpie",
@@ -1665,7 +1436,8 @@
         "Lettering",
         "Calligraphy",
         "Pen"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Supreme",
@@ -1689,7 +1461,8 @@
         "Logo",
         "Websites",
         "Screen"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Quilon",
@@ -1708,7 +1481,8 @@
         "Banners",
         "Magazines",
         "Posters"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Ranade",
@@ -1728,23 +1502,8 @@
         "Books",
         "Editorial",
         "Posters"
-      ]
-    },
-    {
-      "name": "RX100",
-      "slug": "rx-100",
-      "category": "Sans",
-      "variable": false,
-      "weights": [
-        400
       ],
-      "italics": false,
-      "tags": [
-        "Signage",
-        "Monospaced",
-        "Editorial",
-        "Programming"
-      ]
+      "source": "fontshare"
     },
     {
       "name": "Stardom",
@@ -1761,67 +1520,8 @@
         "Poster",
         "Experimental",
         "Logos"
-      ]
-    },
-    {
-      "name": "Trench Slab",
-      "slug": "trench-slab",
-      "category": "Slab",
-      "variable": true,
-      "weights": [
-        300,
-        400,
-        500,
-        600,
-        700
       ],
-      "italics": false,
-      "tags": [
-        "Magazines",
-        "Logos",
-        "Headlines",
-        "Publishing",
-        "Books",
-        "Posters"
-      ]
-    },
-    {
-      "name": "Segment",
-      "slug": "segment",
-      "category": "Display",
-      "variable": false,
-      "weights": [
-        400
-      ],
-      "italics": false,
-      "tags": [
-        "Posters",
-        "Magazines",
-        "Branding",
-        "Packaging"
-      ]
-    },
-    {
-      "name": "Styro",
-      "slug": "styro",
-      "category": "Display",
-      "variable": true,
-      "weights": [
-        200,
-        300,
-        400,
-        500,
-        600,
-        700,
-        800,
-        900
-      ],
-      "italics": false,
-      "tags": [
-        "Posters",
-        "Headlines",
-        "Logos"
-      ]
+      "source": "fontshare"
     },
     {
       "name": "Paquito",
@@ -1841,7 +1541,8 @@
         "Informal",
         "Kids",
         "Poster"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Telma",
@@ -1861,7 +1562,8 @@
         "Logos",
         "Poster",
         "Banners"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Satoshi",
@@ -1880,7 +1582,8 @@
         "Logos",
         "Magazines",
         "Branding"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Zodiak",
@@ -1900,7 +1603,8 @@
         "Editorial",
         "Magazines",
         "Books"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Red Hat Display",
@@ -1922,7 +1626,8 @@
         "Banners",
         "Corporate",
         "Websites"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Sora",
@@ -1945,7 +1650,8 @@
         "Logotype",
         "Websites",
         "Products"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Literata",
@@ -1967,7 +1673,8 @@
         "Legible",
         "Clean",
         "Books"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Merriweather Sans",
@@ -1987,7 +1694,8 @@
         "Branding",
         "Legible",
         "Readable"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Quicksand",
@@ -2007,7 +1715,8 @@
         "Branding",
         "Fashion",
         "Poster"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Teko",
@@ -2026,7 +1735,8 @@
         "Banners",
         "Headlines",
         "Credits"
-      ]
+      ],
+      "source": "fontshare"
     },
     {
       "name": "Karma",
@@ -2044,46 +1754,466 @@
       "tags": [
         "Banners",
         "Editorial"
+      ],
+      "source": "fontshare"
+    },
+    {
+      "name": "M PLUS 1",
+      "slug": "m-plus-1",
+      "category": "Sans",
+      "source": "google-fonts",
+      "googleFontsFamily": "M+PLUS+1",
+      "weights": [
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900
+      ],
+      "italics": false,
+      "tags": [
+        "japanese",
+        "clean"
+      ],
+      "cssUrl": "https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@100;200;300;400;500;600;700;800;900&display=swap"
+    },
+    {
+      "name": "Archivo",
+      "slug": "archivo",
+      "category": "Sans",
+      "source": "google-fonts",
+      "googleFontsFamily": "Archivo",
+      "weights": [
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900
+      ],
+      "italics": true,
+      "tags": [
+        "grotesque",
+        "versatile"
+      ],
+      "cssUrl": "https://fonts.googleapis.com/css2?family=Archivo:wght@100;200;300;400;500;600;700;800;900&display=swap"
+    },
+    {
+      "name": "Aileron",
+      "slug": "aileron",
+      "category": "Sans",
+      "source": "open-foundry",
+      "weights": [
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900
+      ],
+      "italics": true,
+      "tags": [
+        "neo-grotesque",
+        "helvetica-like"
+      ]
+    },
+    {
+      "name": "Bluu Next",
+      "slug": "bluu-next",
+      "category": "Serif",
+      "source": "open-foundry",
+      "weights": [
+        700
+      ],
+      "italics": true,
+      "tags": [
+        "editorial",
+        "bold"
+      ]
+    },
+    {
+      "name": "Work Sans",
+      "slug": "work-sans",
+      "category": "Sans",
+      "source": "google-fonts",
+      "googleFontsFamily": "Work+Sans",
+      "weights": [
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900
+      ],
+      "italics": true,
+      "tags": [
+        "geometric",
+        "clean"
+      ],
+      "cssUrl": "https://fonts.googleapis.com/css2?family=Work+Sans:wght@100;200;300;400;500;600;700;800;900&display=swap"
+    },
+    {
+      "name": "Tex Gyre Heros",
+      "slug": "tex-gyre-heros",
+      "category": "Sans",
+      "source": "open-foundry",
+      "weights": [
+        400,
+        700
+      ],
+      "italics": true,
+      "tags": [
+        "neo-grotesque",
+        "helvetica-like"
+      ]
+    },
+    {
+      "name": "Terminal Grotesque",
+      "slug": "terminal-grotesque",
+      "category": "Display",
+      "source": "open-foundry",
+      "weights": [
+        400
+      ],
+      "italics": false,
+      "tags": [
+        "experimental",
+        "display"
+      ]
+    },
+    {
+      "name": "Roboto",
+      "slug": "roboto",
+      "category": "Sans",
+      "source": "google-fonts",
+      "googleFontsFamily": "Roboto",
+      "weights": [
+        100,
+        300,
+        400,
+        500,
+        700,
+        900
+      ],
+      "italics": true,
+      "tags": [
+        "neo-grotesque",
+        "neutral"
+      ],
+      "cssUrl": "https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500;700;900&display=swap"
+    },
+    {
+      "name": "Reglo",
+      "slug": "reglo",
+      "category": "Sans",
+      "source": "open-foundry",
+      "weights": [
+        400,
+        700
+      ],
+      "italics": false,
+      "tags": [
+        "geometric",
+        "bold"
+      ]
+    },
+    {
+      "name": "Poppins",
+      "slug": "poppins",
+      "category": "Sans",
+      "source": "google-fonts",
+      "googleFontsFamily": "Poppins",
+      "weights": [
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900
+      ],
+      "italics": true,
+      "tags": [
+        "geometric",
+        "friendly"
+      ],
+      "cssUrl": "https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap"
+    },
+    {
+      "name": "Oswald",
+      "slug": "oswald",
+      "category": "Sans",
+      "source": "google-fonts",
+      "googleFontsFamily": "Oswald",
+      "weights": [
+        200,
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": false,
+      "tags": [
+        "condensed",
+        "gothic"
+      ],
+      "cssUrl": "https://fonts.googleapis.com/css2?family=Oswald:wght@200;300;400;500;600;700&display=swap"
+    },
+    {
+      "name": "Ostrich Sans",
+      "slug": "ostrich-sans",
+      "category": "Display",
+      "source": "open-foundry",
+      "weights": [
+        300,
+        400,
+        700,
+        900
+      ],
+      "italics": false,
+      "tags": [
+        "inline",
+        "tall"
+      ]
+    },
+    {
+      "name": "Young Serif",
+      "slug": "young-serif",
+      "category": "Serif",
+      "source": "google-fonts",
+      "googleFontsFamily": "Young+Serif",
+      "weights": [
+        400
+      ],
+      "italics": false,
+      "tags": [
+        "old-style",
+        "warm"
+      ],
+      "cssUrl": "https://fonts.googleapis.com/css2?family=Young+Serif:wght@400&display=swap"
+    },
+    {
+      "name": "Office Code Pro",
+      "slug": "office-code-pro",
+      "category": "Mono",
+      "source": "open-foundry",
+      "weights": [
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": true,
+      "tags": [
+        "monospace",
+        "coding"
+      ]
+    },
+    {
+      "name": "Nimbus Sans L",
+      "slug": "nimbus-sans-l",
+      "category": "Sans",
+      "source": "open-foundry",
+      "weights": [
+        400,
+        700
+      ],
+      "italics": true,
+      "tags": [
+        "neo-grotesque",
+        "helvetica-like"
+      ]
+    },
+    {
+      "name": "Libre Baskerville",
+      "slug": "libre-baskerville",
+      "category": "Serif",
+      "source": "google-fonts",
+      "googleFontsFamily": "Libre+Baskerville",
+      "weights": [
+        400,
+        700
+      ],
+      "italics": true,
+      "tags": [
+        "classical",
+        "readable"
+      ],
+      "cssUrl": "https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap"
+    },
+    {
+      "name": "Liberation Sans",
+      "slug": "liberation-sans",
+      "category": "Sans",
+      "source": "open-foundry",
+      "weights": [
+        400,
+        700
+      ],
+      "italics": true,
+      "tags": [
+        "neo-grotesque",
+        "arial-like"
+      ]
+    },
+    {
+      "name": "League Gothic",
+      "slug": "league-gothic",
+      "category": "Display",
+      "source": "google-fonts",
+      "googleFontsFamily": "League+Gothic",
+      "weights": [
+        400
+      ],
+      "italics": false,
+      "tags": [
+        "condensed",
+        "headline"
+      ],
+      "cssUrl": "https://fonts.googleapis.com/css2?family=League+Gothic:wght@400&display=swap"
+    },
+    {
+      "name": "Junicode",
+      "slug": "junicode",
+      "category": "Serif",
+      "source": "open-foundry",
+      "weights": [
+        400,
+        700
+      ],
+      "italics": true,
+      "tags": [
+        "medieval",
+        "scholarly"
+      ]
+    },
+    {
+      "name": "Inter",
+      "slug": "inter",
+      "category": "Sans",
+      "source": "google-fonts",
+      "googleFontsFamily": "Inter",
+      "weights": [
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900
+      ],
+      "italics": true,
+      "tags": [
+        "humanist",
+        "ui"
+      ],
+      "cssUrl": "https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap"
+    },
+    {
+      "name": "Gap Sans",
+      "slug": "gap-sans",
+      "category": "Sans",
+      "source": "open-foundry",
+      "weights": [
+        400,
+        700
+      ],
+      "italics": false,
+      "tags": [
+        "geometric",
+        "minimal"
+      ]
+    },
+    {
+      "name": "EB Garamond",
+      "slug": "eb-garamond",
+      "category": "Serif",
+      "source": "google-fonts",
+      "googleFontsFamily": "EB+Garamond",
+      "weights": [
+        400,
+        500,
+        600,
+        700,
+        800
+      ],
+      "italics": true,
+      "tags": [
+        "classical",
+        "humanist"
+      ],
+      "cssUrl": "https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600;700;800&display=swap"
+    },
+    {
+      "name": "Cotham Sans",
+      "slug": "cotham-sans",
+      "category": "Sans",
+      "source": "open-foundry",
+      "weights": [
+        400
+      ],
+      "italics": false,
+      "tags": [
+        "quirky",
+        "display"
+      ]
+    },
+    {
+      "name": "Cooper Hewitt",
+      "slug": "cooper-hewitt",
+      "category": "Sans",
+      "source": "open-foundry",
+      "weights": [
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800
+      ],
+      "italics": true,
+      "tags": [
+        "humanist",
+        "museum"
+      ]
+    },
+    {
+      "name": "Bagnard",
+      "slug": "bagnard",
+      "category": "Serif",
+      "source": "open-foundry",
+      "weights": [
+        400
+      ],
+      "italics": false,
+      "tags": [
+        "didone",
+        "elegant"
       ]
     }
   ],
   "pairings": [
-    {
-      "heading": {
-        "font": "Trench Slab",
-        "slug": "trench-slab",
-        "weight": 500
-      },
-      "body": {
-        "font": "General Sans",
-        "slug": "general-sans",
-        "weight": 400
-      }
-    },
-    {
-      "heading": {
-        "font": "Zina",
-        "slug": "zina",
-        "weight": 400
-      },
-      "body": {
-        "font": "Recia",
-        "slug": "recia",
-        "weight": 400
-      }
-    },
-    {
-      "heading": {
-        "font": "Technor",
-        "slug": "technor",
-        "weight": 600
-      },
-      "body": {
-        "font": "Supreme",
-        "slug": "supreme",
-        "weight": 400
-      }
-    },
     {
       "heading": {
         "font": "Quilon",
@@ -2158,18 +2288,6 @@
     },
     {
       "heading": {
-        "font": "Poppins",
-        "slug": "poppins",
-        "weight": 600
-      },
-      "body": {
-        "font": "Bespoke Slab",
-        "slug": "bespoke-slab",
-        "weight": 400
-      }
-    },
-    {
-      "heading": {
         "font": "Chubbo",
         "slug": "chubbo",
         "weight": 700
@@ -2201,18 +2319,6 @@
       "body": {
         "font": "Nunito",
         "slug": "nunito",
-        "weight": 400
-      }
-    },
-    {
-      "heading": {
-        "font": "Bespoke Stencil",
-        "slug": "bespoke-stencil",
-        "weight": 700
-      },
-      "body": {
-        "font": "Supreme",
-        "slug": "supreme",
         "weight": 400
       }
     },
@@ -2278,18 +2384,6 @@
     },
     {
       "heading": {
-        "font": "Array",
-        "slug": "array",
-        "weight": 400
-      },
-      "body": {
-        "font": "Khand",
-        "slug": "khand",
-        "weight": 400
-      }
-    },
-    {
-      "heading": {
         "font": "Pilcrow Rounded",
         "slug": "pilcrow-rounded",
         "weight": 600
@@ -2321,18 +2415,6 @@
       "body": {
         "font": "Hind",
         "slug": "hind",
-        "weight": 400
-      }
-    },
-    {
-      "heading": {
-        "font": "Rosaline",
-        "slug": "rosaline",
-        "weight": 400
-      },
-      "body": {
-        "font": "Satoshi",
-        "slug": "satoshi",
         "weight": 400
       }
     },
@@ -2406,18 +2488,6 @@
         "font": "Quicksand",
         "slug": "quicksand",
         "weight": 500
-      }
-    },
-    {
-      "heading": {
-        "font": "Comico",
-        "slug": "comico",
-        "weight": 400
-      },
-      "body": {
-        "font": "Zodiak",
-        "slug": "zodiak",
-        "weight": 400
       }
     },
     {
