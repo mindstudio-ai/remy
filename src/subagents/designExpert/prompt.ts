@@ -154,15 +154,13 @@ ${pairingList}
 </fonts_to_consider>`
     : '';
 
-  const imageList = images
-    .map((img) => `- **${img.url}**\n  ${img.analysis}`)
-    .join('\n\n');
+  const imageList = images.map((img) => `- ${img.analysis}`).join('\n\n');
 
   const inspirationSection = images.length
     ? `<inspiration_images>
 ## Design inspiration
 
-A random sample of curated design references with pre-analyzed descriptions. Use these to inform your recommendations. You can also use \`analyzeDesignReference\` on any URL for a deeper look.
+A random sample of pre-analyzed design references. Use these observations to inform your recommendations.
 
 ${imageList}
 </inspiration_images>`
