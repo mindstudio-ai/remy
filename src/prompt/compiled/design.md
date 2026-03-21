@@ -47,21 +47,21 @@ A `` ```typography `` fenced block in a `type: design/typography` spec file decl
 
 ```typography
 fonts:
-  DM Sans:
-    src: https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700
-  DM Mono:
-    src: https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500
+  Satoshi:
+    src: https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&display=swap
+  Clash Grotesk:
+    src: https://api.fontshare.com/v2/css?f[]=clash-grotesk@400,500,600&display=swap
 
 styles:
   Display:
-    font: DM Sans
+    font: Satoshi
     size: 40px
     weight: 600
     letterSpacing: -0.03em
     lineHeight: 1.1
     description: Page titles and hero text
   Body:
-    font: DM Sans
+    font: Satoshi
     size: 16px
     weight: 400
     lineHeight: 1.5
