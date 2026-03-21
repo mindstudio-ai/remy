@@ -61,13 +61,18 @@ import { readSpecTool } from './spec/readSpec.js';
 import { writeSpecTool } from './spec/writeSpec.js';
 import { editSpecTool } from './spec/editSpec.js';
 import { listSpecFilesTool } from './spec/listSpecFiles.js';
-import { setProjectOnboardingStateTool } from './spec/setProjectOnboardingState.js';
-import { promptUserTool } from './spec/promptUser.js';
 import { clearSyncStatusTool } from './spec/clearSyncStatus.js';
 import { presentSyncPlanTool } from './spec/presentSyncPlan.js';
 import { presentPublishPlanTool } from './spec/presentPublishPlan.js';
 import { presentPlanTool } from './spec/presentPlan.js';
-import { confirmDestructiveActionTool } from './spec/confirmDestructiveAction.js';
+
+// General tools
+import { setProjectOnboardingStateTool } from './common/setProjectOnboardingState.js';
+import { promptUserTool } from './common/promptUser.js';
+import { confirmDestructiveActionTool } from './common/confirmDestructiveAction.js';
+import { askMindStudioSdkTool } from './common/askMindStudioSdk.js';
+import { fetchUrlTool } from './common/fetchUrl.js';
+import { searchGoogleTool } from './common/searchGoogle.js';
 
 // Code tools
 import { readFileTool } from './code/readFile.js';
@@ -81,7 +86,6 @@ import { editsFinishedTool } from './code/editsFinished.js';
 import { isLspConfigured } from './_helpers/lsp.js';
 import { lspDiagnosticsTool } from './code/lspDiagnostics.js';
 import { restartProcessTool } from './code/restartProcess.js';
-import { askMindStudioSdkTool } from './code/askMindStudioSdk.js';
 import { runScenarioTool } from './code/runScenario.js';
 import { runMethodTool } from './code/runMethod.js';
 import { screenshotTool } from './code/screenshot.js';
@@ -101,7 +105,6 @@ function getCodeTools(): Tool[] {
     globTool,
     listDirTool,
     editsFinishedTool,
-    askMindStudioSdkTool,
     runScenarioTool,
     runMethodTool,
     screenshotTool,
@@ -121,6 +124,9 @@ function getCommonTools(): Tool[] {
     setProjectOnboardingStateTool,
     promptUserTool,
     confirmDestructiveActionTool,
+    askMindStudioSdkTool,
+    fetchUrlTool,
+    searchGoogleTool,
   ];
 }
 

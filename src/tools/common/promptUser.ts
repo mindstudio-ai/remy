@@ -44,7 +44,7 @@ export const promptUserTool: Tool = {
                 type: 'string',
                 enum: ['select', 'checklist', 'text', 'file', 'color'],
                 description:
-                  'select: pick one from a list. checklist: pick one or more from a list. text: free-form input. file: file/image upload, returns CDN URL(s) that can be referenced directly or curled onto disk. color: color picker (returns hex).',
+                  'select: pick one from a list. checklist: pick one or more from a list. The user can always provide a custom "Other" answer for select and checklist questions, so there is no need to include an "Other" option. text: free-form input. file: file/image upload, returns CDN URL(s) that can be referenced directly or curled onto disk. color: color picker (returns hex).',
               },
               helpText: {
                 type: 'string',
@@ -84,11 +84,6 @@ export const promptUserTool: Tool = {
                 type: 'boolean',
                 description:
                   'For file type: allow multiple uploads (returns array of URLs). Defaults to false.',
-              },
-              allowOther: {
-                type: 'boolean',
-                description:
-                  'For select and checklist types: adds an "Other" option that lets the user type a custom answer. Use this instead of adding a separate follow-up text field for custom input. Defaults to false.',
               },
               format: {
                 type: 'string',
