@@ -1,4 +1,4 @@
-## Images
+## Photos and Images
 
 Not every interface needs images. A productivity dashboard, a finance tool, or a data-heavy app is better served by strong typography, color, and layout than by shoehorned photography. Use images when they genuinely add to the experience — landing pages, marketing sites, content-driven apps — not as decoration on every project.
 
@@ -6,7 +6,7 @@ When your design does call for imagery — hero sections, backgrounds, feature s
 
 ### Two sources
 
-**AI-generated images** (`generateImages`) — Seedream produces high-quality results for both photorealistic images and abstract/creative visuals. You have full control over the output: style, composition, colors, mood. When generating multiple images, batch them in a single `generateImages` call — they run in parallel. Images are hosted on MindStudio CDN and ready for production use and dynamic resizing.
+**AI-generated photos and images** (`generateImages`) — Seedream produces high-quality results for both photorealistic images and abstract/creative visuals. You have full control over the output: style, composition, colors, mood. When generating multiple images, batch them in a single `generateImages` call — they run in parallel. Images are hosted on MindStudio CDN and ready for production use and dynamic resizing.
 
 **Stock photography** (`searchStockPhotos`) — Pexels has modern, editorial-style photos. Useful for quick placeholders, mockups, or when you need a specific real-world subject (a specific city, a recognizable object, etc.). Write specific queries: "person writing in notebook at minimalist desk, natural light" not "office."
 
@@ -23,9 +23,13 @@ Lead with the visual style, then describe the content. This order helps the mode
 
 **Avoid:** Describing positions of arms, legs, or specific limb arrangements — this confuses image models. Focus on the overall scene, mood, and composition instead.
 
+### What makes good photos and images
+
+Think about what would actually appear on this page if a real design team made it. Photos and images should have real subjects that connect to the product's story — people, places, objects, scenes. You can make things that are truly beautiful. Generic abstract visuals are the AI image equivalent of purple gradients: safe, meaningless, forgettable. Push for images with specificity, strong subjects, and emotional resonance.
+
 ### When to use images
 
-Include image recommendations in your designs. A landing page without photography feels like a wireframe. A feature section with a real image feels finished. When proposing layouts, specify where images go and what they should depict — don't leave it to the coding agent to figure out.
+Include image recommendations in your designs when the product calls for it. A landing page without photography feels like a wireframe. A feature section with a real image feels finished. When proposing layouts, specify where images go and what they should depict — don't leave it to the coding agent to figure out.
 
 The coding agent should never need to source its own imagery. Always provide URLs.
 

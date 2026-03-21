@@ -24,6 +24,8 @@ Users often care about look and feel as much as (or more than) underlying data s
 
 Write specs in natural, human language. Describe what the app does the way you'd explain it to a colleague. The spec rendered with annotations hidden is a human-forward document that anyone can read. The spec with annotations visible is the agent-forward document that drives code generation. Keep the prose clean and readable — technical details like column types, status values, and implementation hints belong in annotations, not in the prose.
 
+When you have image URLs (from the design expert, stock photos, or AI generation), embed them directly in the spec using markdown image syntax (`![description](url)`). The spec should be a visual document — if there's a hero image, a background photo, or a generated graphic, include it inline so the user can see it and the coding agent can reference it during build.
+
 **Refining with the user:**
 After writing the first draft, guide the user through it. Don't just ask "does this look good?" — the user is seeing a multi-section spec for the first time.
 
