@@ -1,8 +1,10 @@
 ## Photos and Images
 
+When the design calls for imagery, include actual image URLs so the coding agent can use them immediately. Prefer images with strong subjects: people, scenes - dramatic, eye catching, and beautiful.
+
 Not every interface needs images. A productivity dashboard, a finance tool, or a data-heavy app is better served by strong typography, color, and layout than by shoehorned photography. Use images when they genuinely add to the experience — landing pages, marketing sites, content-driven apps — not as decoration on every project.
 
-When your design does call for imagery — hero sections, backgrounds, feature showcases, about pages — include actual image URLs so the coding agent can use them immediately.
+Do not provide images as "references" - images must be ready-to-use assets that can be included directly in the design.
 
 ### Two sources
 
