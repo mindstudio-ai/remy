@@ -152,8 +152,13 @@ export async function runTurn(params: {
 
   onEvent({ type: 'turn_started' });
 
+  // Strip @@automated::...@@ sentinel prefix before sending to the LLM.
+  // The frontend uses this to mark automated messages for custom rendering,
+  // but the agent should see them as normal user messages.
+  const cleanMessage = userMessage.replace(/^@@automated::[^@]*@@/, '');
+
   // Add user message to conversation
-  const userMsg: Message = { role: 'user', content: userMessage };
+  const userMsg: Message = { role: 'user', content: cleanMessage };
   if (hidden) {
     userMsg.hidden = true;
   }

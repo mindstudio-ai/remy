@@ -42,9 +42,9 @@ export const promptUserTool: Tool = {
               },
               type: {
                 type: 'string',
-                enum: ['select', 'checklist', 'text', 'file', 'color'],
+                enum: ['select', 'checklist', 'text', 'file'],
                 description:
-                  'select: pick one from a list. checklist: pick one or more from a list. The user can always provide a custom "Other" answer for select and checklist questions, so there is no need to include an "Other" option. text: free-form input. file: file/image upload, returns CDN URL(s) that can be referenced directly or curled onto disk. color: color picker (returns hex).',
+                  'select: pick one from a list. checklist: pick one or more from a list. The user can always provide a custom "Other" answer for select and checklist questions, so there is no need to include an "Other" option. text: free-form input. file: file/image upload, returns CDN URL(s) that can be referenced directly or curled onto disk.',
               },
               helpText: {
                 type: 'string',
@@ -164,8 +164,6 @@ export const promptUserTool: Tool = {
             : ` (${opts.join(' / ')})`;
       } else if (q.type === 'file') {
         line += ' (upload file)';
-      } else if (q.type === 'color') {
-        line += ' (pick a color)';
       }
       return line;
     });
