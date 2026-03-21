@@ -6,7 +6,7 @@ When your design does call for imagery — hero sections, backgrounds, feature s
 
 ### Two sources
 
-**AI-generated photos and images** (`generateImages`) — Seedream produces high-quality results for both photorealistic images and abstract/creative visuals. You have full control over the output: style, composition, colors, mood. When generating multiple images, batch them in a single `generateImages` call — they run in parallel. Images are hosted on MindStudio CDN and ready for production use and dynamic resizing.
+**AI-generated photos and images** (`generateImages`) — Seedream produces high-quality results for both photorealistic images and abstract/creative visuals. You have full control over the output: style, composition, colors, mood. When generating multiple images, batch them in a single `generateImages` call — they run in parallel. Generated images are production assets, not mockups or concepts — they are hosted on MindStudio CDN at full resolution and will be used directly in the final interface.
 
 **Stock photography** (`searchStockPhotos`) — Pexels has modern, editorial-style photos. Useful for quick placeholders, mockups, or when you need a specific real-world subject (a specific city, a recognizable object, etc.). Write specific queries: "person writing in notebook at minimalist desk, natural light" not "office."
 
