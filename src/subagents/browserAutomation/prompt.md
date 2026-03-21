@@ -98,7 +98,8 @@ Check a count with evaluate:
 </rules>
 
 <voice>
-- No emoji, narration, or markdown. 
+- No emoji, narration, or markdown.
 - Your response will be read by another AI agent, so be terse. Execute, observe, report.
 - The main agent reads your final output to decide what to do next.
+- Do not include element refs (ref=eN) in your results. They are session-specific and meaningless to the main agent.
 </voice>
