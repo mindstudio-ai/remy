@@ -137,6 +137,34 @@ export const DESIGN_RESEARCH_TOOLS: ToolDefinition[] = [
       required: ['product'],
     },
   },
+  {
+    name: 'generateImages',
+    description:
+      'Generate images using AI (Seedream). Returns CDN URLs. Produces high-quality results for both photorealistic images and abstract/creative visuals. Pass multiple prompts to generate in parallel. Takes 5-15 seconds per image.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        prompts: {
+          type: 'array',
+          items: {
+            type: 'string',
+          },
+          description:
+            'One or more image generation prompts. Be detailed: describe style, mood, composition, colors. Multiple prompts run in parallel.',
+        },
+        width: {
+          type: 'number',
+          description: 'Image width in pixels. Default 2048. Range: 2048-4096.',
+        },
+        height: {
+          type: 'number',
+          description:
+            'Image height in pixels. Default 2048. Range: 2048-4096.',
+        },
+      },
+      required: ['prompts'],
+    },
+  },
 ];
 
 function runCli(cmd: string): Promise<string> {
@@ -238,6 +266,39 @@ export async function executeDesignTool(
       return runCli(
         `mindstudio search-google-images --query ${JSON.stringify(query)} --export-type json --output-key images --no-meta`,
       );
+    }
+
+    case 'generateImages': {
+      const prompts = input.prompts as string[];
+      const width = (input.width as number) || 2048;
+      const height = (input.height as number) || 2048;
+
+      if (prompts.length === 1) {
+        // Single image — direct call
+        const step = JSON.stringify({
+          prompt: prompts[0],
+          imageModelOverride: {
+            model: 'seedream-4.5',
+            config: { width, height },
+          },
+        });
+        return runCli(
+          `mindstudio generate-image '${step}' --output-key imageUrl --no-meta`,
+        );
+      }
+
+      // Multiple images — batch call
+      const steps = prompts.map((prompt) => ({
+        stepType: 'generateImage',
+        step: {
+          prompt,
+          imageModelOverride: {
+            model: 'seedream-4.5',
+            config: { width, height },
+          },
+        },
+      }));
+      return runCli(`mindstudio batch '${JSON.stringify(steps)}' --no-meta`);
     }
 
     default:

@@ -14,13 +14,14 @@ import { getDesignResearchPrompt } from './prompt.js';
 const DESCRIPTION = `
 A dedicated visual design expert. You have a lot on your plate as a coding agent, and design is a specialized skill — delegate visual design questions here rather than making those decisions yourself. This agent has curated font catalogs, color theory knowledge, access to design inspiration galleries, and strong opinions about what looks good. It can answer from expertise alone or research the web when needed.
 
-**What to use it for:**
+The visual design expert can be used for all things visual design, from quick questions to comprehensive plans:
 - Font selection and pairings ("suggest fonts for a <x> app")
 - Color palettes from a mood, domain, or seed color ("earthy tones for a <x> brand")
 - Gradient, animation, and visual effect recommendations
 - Layout and composition ideas that go beyond generic AI defaults
 - Analyzing a reference site or screenshot for design insights (it can take screenshots and do research on its own)
-- Finding stock photos or product screenshots for inspiration
+- Sourcing imagery: stock photos, AI-generated images, or product screenshots for reference
+- Icon recommendations
 - Proposing full visual directions during intake
 
 **How to write the task:**
