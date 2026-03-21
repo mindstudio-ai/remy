@@ -115,7 +115,7 @@ function sample<T>(arr: T[], n: number): T[] {
 export function getDesignResearchPrompt(): string {
   const fonts = sample(fontData.fonts, 30);
   const pairings = sample(fontData.pairings, 20);
-  const images = sample(inspirationImages, 40);
+  const images = sample(inspirationImages, 15);
 
   const fontList = fonts
     .map((f) => {
@@ -160,7 +160,7 @@ ${pairingList}
     ? `<inspiration_images>
 ## Design inspiration
 
-A random sample of pre-analyzed design references. Use these observations to inform your recommendations.
+A random sample of pre-analyzed design references. Use these observations to inform your recommendations and build something creative, unique, and compelling.
 
 ${imageList}
 </inspiration_images>`

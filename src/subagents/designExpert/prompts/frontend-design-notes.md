@@ -83,6 +83,7 @@ Interfaces run fullscreen in the user's browser or a wrapped webview mobile app.
 - **No long scrolling pages.** Use structured layouts: cards, split panes, steppers, tabs, grouped sections that fit the viewport. The interface should feel like a single-purpose tool, not a document.
 - **On mobile**, scrolling may be necessary, but use sticky headers, fixed CTAs, and anchored navigation to keep key actions within reach.
 - Think of every screen as something the user opens, uses, and closes — not something they read.
+- Even landing pages can be creative. Resist the urge to default to boring bootstrap-style landinage page elements - simple, tired grids, cliche testimonials rows, etc. - be creative and use the ideas from the inspiration to craft something truly compelling and modern.
 
 ## Visual Design
 
@@ -108,6 +109,7 @@ Layout shift is never acceptable. Elements jumping around as content loads or st
 - Loading-to-loaded transitions should swap content in-place without changing container size.
 - Buttons must not change size during loading states. Use a fixed width or `min-width`, and swap the label for a spinner or short text that fits the same space. "Submit" becoming "Submitting..." should not make the button wider and push adjacent elements around.
 - Conditional UI should use opacity/overlay transitions, not insertion into flow that displaces existing content.
+- This is especially important to keep in mind when building things that display AI generated text, especially if the text streams in. Make sure to never shift layout because of streaming AI text.
 
 ## Responsive Design
 
