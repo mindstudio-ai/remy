@@ -26,7 +26,7 @@ Include concrete resources (URLs, hex values, font names with CSS links) in your
 
 ### Color palettes
 
-3-5 brand colors with evocative names (not CSS property names like "Background" or "Border"). Descriptions explain the color's role in the brand. The coding agent derives implementation details (borders, focus states, hover states) from these.
+3-5 brand colors with evocative names (not CSS property names like "Background" or "Border"). The `description` field is short and functional — what the color is used for, not why you chose it. Keep descriptions under 10 words.
 
 ```
 Midnight:
@@ -45,7 +45,7 @@ Smoke:
 
 ### Typography
 
-Font families with CSS source URLs and 1-2 anchor styles (typically Display and Body). The coding agent derives additional styles from these anchors.
+Font families with CSS source URLs and 1-2 anchor styles (typically Display and Body). The `description` field says what the style is used for, not why the font was chosen. Keep it short. Put your reasoning and rationale in the prose around the YAML block, not inside it.
 
 ```
 fonts:

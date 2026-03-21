@@ -45,8 +45,14 @@ export function startStatusWatcher(config: StatusWatcherConfig): StatusWatcher {
 
       // Skip if there's no context to work with
       if (!ctx.assistantText && !ctx.lastToolName) {
+        log.debug('Status watcher: no context, skipping');
         return;
       }
+
+      log.debug('Status watcher: requesting label', {
+        textLength: ctx.assistantText.length,
+        lastToolName: ctx.lastToolName,
+      });
 
       const res = await fetch(url, {
         method: 'POST',
@@ -63,23 +69,31 @@ export function startStatusWatcher(config: StatusWatcherConfig): StatusWatcher {
       });
 
       if (!res.ok) {
+        log.debug('Status watcher: endpoint returned non-ok', {
+          status: res.status,
+        });
         return;
       }
 
       const data = (await res.json()) as { label?: string };
       if (!data.label) {
+        log.debug('Status watcher: no label in response');
         return;
       }
 
       // Deduplicate
       if (data.label === lastLabel) {
+        log.debug('Status watcher: duplicate label, skipping', {
+          label: data.label,
+        });
         return;
       }
       lastLabel = data.label;
 
+      log.debug('Status watcher: emitting', { label: data.label });
       onStatus(data.label);
-    } catch {
-      // Best-effort — never block the agent
+    } catch (err: any) {
+      log.debug('Status watcher: error', { error: err?.message ?? 'unknown' });
     } finally {
       inflight = false;
     }
