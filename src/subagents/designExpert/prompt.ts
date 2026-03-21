@@ -15,19 +15,7 @@ import path from 'node:path';
 const base =
   import.meta.dirname ?? path.dirname(new URL(import.meta.url).pathname);
 
-// Resolve paths relative to this directory, with fallback for bundled layout.
-// Paths starting with @src/ resolve relative to the src/ root (for sharing
-// files with the main prompt system).
 function resolvePath(filename: string): string {
-  if (filename.startsWith('@src/')) {
-    const srcRelative = filename.slice(5);
-    const srcLocal = path.join(base, '..', '..', srcRelative);
-    if (fs.existsSync(srcLocal)) {
-      return srcLocal;
-    }
-    // Bundled: base is dist/
-    return path.join(base, srcRelative);
-  }
   const local = path.join(base, filename);
   return fs.existsSync(local)
     ? local

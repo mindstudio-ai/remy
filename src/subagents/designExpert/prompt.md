@@ -5,7 +5,7 @@
 {{inspiration_images}}
 
 <frontend_design_standards>
-{{@src/prompt/sources/frontend-design-notes.md}}
+{{prompts/frontend-design-notes.md}}
 </frontend_design_standards>
 
 <design_guidelines>
