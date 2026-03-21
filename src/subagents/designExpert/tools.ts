@@ -140,7 +140,7 @@ export const DESIGN_RESEARCH_TOOLS: ToolDefinition[] = [
   {
     name: 'generateImages',
     description:
-      'Generate images using AI (Seedream). Returns CDN URLs. Produces high-quality results for both photorealistic images and abstract/creative visuals. Pass multiple prompts to generate in parallel. Takes 5-15 seconds per image.',
+      'Generate images using AI (Seedream). Returns CDN URLs. Produces high-quality results for both photorealistic images and abstract/creative visuals. Pass multiple prompts to generate in parallel.',
     inputSchema: {
       type: 'object',
       properties: {

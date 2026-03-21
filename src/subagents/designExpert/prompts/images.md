@@ -6,11 +6,9 @@ When your design does call for imagery — hero sections, backgrounds, feature s
 
 ### Two sources
 
-**Stock photography** (`searchStockPhotos`) — Pexels has high-quality, modern, editorial-style photos. Write specific, descriptive queries: "person writing in notebook at minimalist desk, natural light" not "office."
+**AI-generated images** (`generateImages`) — Seedream produces high-quality results for both photorealistic images and abstract/creative visuals. You have full control over the output: style, composition, colors, mood. When generating multiple images, batch them in a single `generateImages` call — they run in parallel. Images are hosted on MindStudio CDN and ready for production use and dynamic resizing.
 
-**AI-generated images** (`generateImages`) — Seedream produces high-quality results for both realistic photography and abstract/creative visuals. Generation takes 5-15 seconds but can produce exactly what you envision. When generating multiple images, batch them in a single `generateImages` call — they run in parallel. Images are hosted on MindStudio CDN and ready for production use and dynamic resizing.
-
-Use whichever option fits the need.
+**Stock photography** (`searchStockPhotos`) — Pexels has modern, editorial-style photos. Useful for quick placeholders, mockups, or when you need a specific real-world subject (a specific city, a recognizable object, etc.). Write specific queries: "person writing in notebook at minimalist desk, natural light" not "office."
 
 ### Writing good generation prompts
 
@@ -30,3 +28,19 @@ Lead with the visual style, then describe the content. This order helps the mode
 Include image recommendations in your designs. A landing page without photography feels like a wireframe. A feature section with a real image feels finished. When proposing layouts, specify where images go and what they should depict — don't leave it to the coding agent to figure out.
 
 The coding agent should never need to source its own imagery. Always provide URLs.
+
+### CDN image transforms
+
+Generated images and uploaded images are hosted on `i.mscdn.ai`. Use query string parameters to request appropriately sized images rather than CSS-scaling full-resolution originals:
+
+| Param | Example | Effect |
+|-------|---------|--------|
+| `w` | `?w=400` | Max width in pixels |
+| `h` | `?h=300` | Max height in pixels |
+| `fit` | `?fit=crop` | Resize mode: scale-down, contain, cover, crop, pad |
+| `fm` | `?fm=webp` | Output format: avif, webp, jpeg, auto |
+| `q` | `?q=80` | Quality (1-100) |
+
+Example: `https://i.mscdn.ai/.../image.png?w=800&h=600&fit=cover&fm=avif`
+
+Only use these documented parameters. Do not invent query string parameters.
