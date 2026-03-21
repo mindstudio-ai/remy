@@ -126,15 +126,22 @@ The current date is ${now}.
   {{compiled/msfm.md}}
 </mindstudio_flavored_markdown_spec_docs>
 
-${isLspConfigured() ? `<typescript_lsp>\n{{static/lsp.md}}\n</typescript_lsp>` : ''}
-
 <project_context>
 ${projectContext}
 </project_context>
 
+<intake_mode_instructions>
 {{static/intake.md}}
+</intake_mode_instructions>
 
+<spec_authoring_instructions>
 {{static/authoring.md}}
+</spec_authoring_instructions>
+
+<code_authoring_instructions>
+{{static/coding.md}}
+${isLspConfigured() ? `<typescript_lsp>\n{{static/lsp.md}}\n</typescript_lsp>` : ''}
+</code_authoring_instructions>
 
 {{static/instructions.md}}
 
