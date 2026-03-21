@@ -12,7 +12,7 @@ import { DESIGN_RESEARCH_TOOLS, executeDesignTool } from './tools.js';
 import { getDesignResearchPrompt } from './prompt.js';
 
 const DESCRIPTION = `
-A dedicated design expert. You have a lot on your plate as a coding agent, and design is a specialized skill — delegate visual design questions here rather than making those decisions yourself. This agent has curated font catalogs, color theory knowledge, access to design inspiration galleries, and strong opinions about what looks good. It can answer from expertise alone or research the web when needed.
+A dedicated visual design expert. You have a lot on your plate as a coding agent, and design is a specialized skill — delegate visual design questions here rather than making those decisions yourself. This agent has curated font catalogs, color theory knowledge, access to design inspiration galleries, and strong opinions about what looks good. It can answer from expertise alone or research the web when needed.
 
 **What to use it for:**
 - Font selection and pairings ("suggest fonts for a <x> app")
@@ -32,7 +32,7 @@ Concrete resources: hex values, font names with CSS URLs, image URLs, layout des
 
 export const designExpertTool: Tool = {
   definition: {
-    name: 'designExpert',
+    name: 'visualDesignExpert',
     description: DESCRIPTION,
     inputSchema: {
       type: 'object',
