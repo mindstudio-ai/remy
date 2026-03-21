@@ -9,7 +9,11 @@
  * own LLM loop with specialized tools.
  */
 
-import { streamChat, type Message, type ToolDefinition } from '../api.js';
+import {
+  streamChatWithRetry,
+  type Message,
+  type ToolDefinition,
+} from '../api.js';
 import { log } from '../logger.js';
 import type { AgentEvent, ExternalToolResolver } from '../agent.js';
 
@@ -63,7 +67,7 @@ export async function runSubAgent(config: SubAgentConfig): Promise<string> {
     let stopReason = 'end_turn';
 
     try {
-      for await (const event of streamChat({
+      for await (const event of streamChatWithRetry({
         ...apiConfig,
         model,
         system,
