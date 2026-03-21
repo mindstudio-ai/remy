@@ -71,7 +71,14 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
   // resolveExternalTool creates a promise; tool_result resolves it.
   // If tool_result arrives first (fast sandbox response), it's buffered
   // in earlyResults and resolved immediately when the promise is created.
-  const pendingTools = new Map<string, { resolve: (result: string) => void }>();
+  const EXTERNAL_TOOL_TIMEOUT_MS = 300_000; // 5 minutes
+  const pendingTools = new Map<
+    string,
+    {
+      resolve: (result: string) => void;
+      timeout: ReturnType<typeof setTimeout>;
+    }
+  >();
   const earlyResults = new Map<string, string>();
 
   function onEvent(e: AgentEvent): void {
@@ -126,6 +133,9 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       case 'error':
         emit('error', { error: e.error });
         break;
+      case 'status':
+        emit('status', { message: e.message });
+        break;
     }
   }
 
@@ -142,7 +152,20 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     }
     // Otherwise, create a promise that tool_result will resolve later.
     return new Promise<string>((resolve) => {
-      pendingTools.set(id, { resolve });
+      const timeout = setTimeout(() => {
+        pendingTools.delete(id);
+        resolve(
+          'Error: Tool timed out — no response from the app environment after 5 minutes.',
+        );
+      }, EXTERNAL_TOOL_TIMEOUT_MS);
+
+      pendingTools.set(id, {
+        resolve: (result: string) => {
+          clearTimeout(timeout);
+          resolve(result);
+        },
+        timeout,
+      });
     });
   }
 
@@ -211,6 +234,7 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       }
       // Also resolve any pending external tools so the agent doesn't hang
       for (const [id, pending] of pendingTools) {
+        clearTimeout(pending.timeout);
         pending.resolve('Error: cancelled');
         pendingTools.delete(id);
       }

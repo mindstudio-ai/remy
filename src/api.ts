@@ -145,12 +145,37 @@ export async function* streamChat(params: {
   }
 
   // Parse SSE: each line is "data: {json}\n"
+  const STALL_TIMEOUT_MS = 300_000; // 5 minutes
   const reader = res.body!.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
 
   while (true) {
-    const { done, value } = await reader.read();
+    let stallTimer: ReturnType<typeof setTimeout>;
+    let readResult: ReadableStreamReadResult<Uint8Array>;
+    try {
+      readResult = await Promise.race([
+        reader.read(),
+        new Promise<never>((_, reject) => {
+          stallTimer = setTimeout(
+            () => reject(new Error('stream_stall')),
+            STALL_TIMEOUT_MS,
+          );
+        }),
+      ]);
+      clearTimeout(stallTimer!);
+    } catch {
+      clearTimeout(stallTimer!);
+      await reader.cancel();
+      log.error('Stream stalled', { elapsed: `${Date.now() - startTime}ms` });
+      yield {
+        type: 'error' as const,
+        error: 'Stream stalled — no data received for 5 minutes',
+      };
+      return;
+    }
+
+    const { done, value } = readResult;
     if (done) {
       break;
     }
@@ -186,5 +211,78 @@ export async function* streamChat(params: {
     try {
       yield JSON.parse(buffer.slice(6)) as StreamEvent;
     } catch {}
+  }
+}
+
+// --- Retry wrapper ---
+
+const MAX_RETRIES = 3;
+const INITIAL_BACKOFF_MS = 1000;
+
+function isRetryableError(error: string): boolean {
+  return (
+    /Network error/i.test(error) ||
+    /HTTP 5\d\d/i.test(error) ||
+    /Stream stalled/i.test(error)
+  );
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Wrapper around streamChat that retries on transient failures.
+ *
+ * Buffers events per attempt. On success, yields all buffered events.
+ * On retryable failure, discards the buffer and retries with exponential
+ * backoff. This prevents the agent loop from accumulating partial text
+ * from a failed attempt.
+ */
+export async function* streamChatWithRetry(
+  params: Parameters<typeof streamChat>[0],
+  options?: {
+    onRetry?: (attempt: number, error: string) => void;
+  },
+): AsyncGenerator<StreamEvent> {
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    const buffer: StreamEvent[] = [];
+    let retryableFailure = false;
+
+    for await (const event of streamChat(params)) {
+      if (event.type === 'error') {
+        if (isRetryableError(event.error) && attempt < MAX_RETRIES - 1) {
+          log.warn('Retryable error, will retry', {
+            attempt: attempt + 1,
+            maxRetries: MAX_RETRIES,
+            error: event.error,
+          });
+          options?.onRetry?.(attempt, event.error);
+          retryableFailure = true;
+          break;
+        }
+        // Non-retryable or final attempt — yield the error
+        yield event;
+        return;
+      }
+      buffer.push(event);
+    }
+
+    if (retryableFailure) {
+      // Check abort before retrying
+      if (params.signal?.aborted) {
+        return;
+      }
+      const backoff = INITIAL_BACKOFF_MS * 2 ** attempt;
+      log.info('Retrying after backoff', { backoffMs: backoff });
+      await sleep(backoff);
+      continue;
+    }
+
+    // Success — flush buffer
+    for (const event of buffer) {
+      yield event;
+    }
+    return;
   }
 }

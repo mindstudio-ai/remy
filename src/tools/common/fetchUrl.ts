@@ -10,9 +10,9 @@ import type { Tool } from '../index.js';
 
 export const fetchUrlTool: Tool = {
   definition: {
-    name: 'fetchUrl',
+    name: 'scapeWebUrl',
     description:
-      'Fetch the content of a web page. Returns the page as markdown text. Optionally capture a screenshot if you need see the visual design.',
+      'Scrape the content of a web page. Returns the HTML of the page as markdown text. Optionally capture a screenshot if you need see the visual design. Use this when you need to fetch or analyze content from a website',
     inputSchema: {
       type: 'object',
       properties: {

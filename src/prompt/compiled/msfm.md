@@ -107,12 +107,17 @@ Each invoice has a [status]{One of: `pending_review`, `approved`, `rejected`, `p
 
 ## Spec Structure
 
-A spec starts with YAML frontmatter (`name`, `description`, `version`) followed by freeform Markdown. There's no mandated structure — use headings, prose, tables, lists, whatever makes sense for the domain.
+A spec starts with YAML frontmatter followed by freeform Markdown. There's no mandated structure — use headings, prose, tables, lists, whatever makes sense for the domain.
+
+**Frontmatter fields:**
+- `name` (required) — display name for the spec file
+- `description` (optional) — short summary of what this file covers
+- `type` (optional) — defaults to `spec`. Other values: `design/color` (color palette definition), `design/typography` (font and type style definition). The frontend renders these types with specialized editors.
 
 ```markdown
 ---
 name: Expense Tracker
-version: 1
+description: Core application spec
 ---
 
 # Expense Tracker
@@ -130,4 +135,55 @@ version: 1
 ~~~
 [Edge cases, data representations, business rules]
 ~~~
+```
+
+Color design spec example (3-5 brand colors with evocative names):
+
+```markdown
+---
+name: Colors
+type: design/color
+---
+
+```colors
+Midnight:
+  value: "#000000"
+  description: Primary background and dark surfaces
+Snow:
+  value: "#F5F5F7"
+  description: Primary text and foreground elements
+Smoke:
+  value: "#86868B"
+  description: Secondary text and supporting content
+```
+```
+
+Typography design spec example (fonts with source URLs, 1-2 anchor styles):
+
+```markdown
+---
+name: Typography
+type: design/typography
+---
+
+```typography
+fonts:
+  DM Sans:
+    src: https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700
+
+styles:
+  Display:
+    font: DM Sans
+    size: 40px
+    weight: 600
+    letterSpacing: -0.03em
+    lineHeight: 1.1
+    description: Page titles and hero text
+  Body:
+    font: DM Sans
+    size: 16px
+    weight: 400
+    lineHeight: 1.5
+    description: Default reading text
+```
 ```

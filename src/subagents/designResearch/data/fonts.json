@@ -1,0 +1,2760 @@
+{
+  "cssUrlPattern": "https://api.fontshare.com/v2/css?f[]={slug}@{weights}&display=swap",
+  "fonts": [
+    {
+      "name": "Kihim",
+      "slug": "kihim",
+      "category": "Display",
+      "variable": false,
+      "weights": [
+        400
+      ],
+      "italics": false,
+      "tags": [
+        "Posters",
+        "Magazines",
+        "Experimental",
+        "Banners"
+      ]
+    },
+    {
+      "name": "Gambetta",
+      "slug": "gambetta",
+      "category": "Serif",
+      "variable": true,
+      "weights": [
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": true,
+      "tags": [
+        "Newspapers",
+        "Text",
+        "Books",
+        "Magazines"
+      ]
+    },
+    {
+      "name": "Synonym",
+      "slug": "synonym",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        200,
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": false,
+      "tags": [
+        "Posters",
+        "Editorial",
+        "Books",
+        "Branding",
+        "Magazines"
+      ]
+    },
+    {
+      "name": "General Sans",
+      "slug": "general-sans",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        200,
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": true,
+      "tags": [
+        "Branding",
+        "Logos",
+        "Poster",
+        "Websites"
+      ]
+    },
+    {
+      "name": "Gambarino",
+      "slug": "gambarino",
+      "category": "Serif",
+      "variable": false,
+      "weights": [
+        400
+      ],
+      "italics": false,
+      "tags": [
+        "Magazines",
+        "Posters",
+        "Books",
+        "Editorial"
+      ]
+    },
+    {
+      "name": "Rowan",
+      "slug": "rowan",
+      "category": "Serif",
+      "variable": true,
+      "weights": [
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": true,
+      "tags": [
+        "Books",
+        "Text",
+        "Reading",
+        "Editorial"
+      ]
+    },
+    {
+      "name": "Comico",
+      "slug": "comico",
+      "category": "Handwritten",
+      "variable": false,
+      "weights": [
+        400
+      ],
+      "italics": false,
+      "tags": [
+        "Handwriting",
+        "Comic",
+        "Editorial",
+        "Funny",
+        "Books"
+      ]
+    },
+    {
+      "name": "Technor",
+      "slug": "technor",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        900
+      ],
+      "italics": false,
+      "tags": [
+        "Books",
+        "Poster",
+        "Magazines",
+        "Logos"
+      ]
+    },
+    {
+      "name": "Sentient",
+      "slug": "sentient",
+      "category": "Serif",
+      "variable": true,
+      "weights": [
+        200,
+        300,
+        400,
+        500,
+        700
+      ],
+      "italics": true,
+      "tags": [
+        "Poster",
+        "Newspapers",
+        "Books",
+        "Magazines"
+      ]
+    },
+    {
+      "name": "Boska",
+      "slug": "boska",
+      "category": "Serif, Display",
+      "variable": true,
+      "weights": [
+        200,
+        300,
+        400,
+        500,
+        700,
+        900
+      ],
+      "italics": true,
+      "tags": [
+        "Magazines",
+        "Poster",
+        "Websites",
+        "Books",
+        "Logo",
+        "Screen"
+      ]
+    },
+    {
+      "name": "Switzer",
+      "slug": "switzer",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900
+      ],
+      "italics": true,
+      "tags": [
+        "Websites",
+        "Books",
+        "Logo",
+        "Magazines",
+        "Poster",
+        "Screen"
+      ]
+    },
+    {
+      "name": "Tabular",
+      "slug": "tabular",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": true,
+      "tags": [
+        "Code",
+        "Websites",
+        "Posters",
+        "Magazines"
+      ]
+    },
+    {
+      "name": "Tanker",
+      "slug": "tanker",
+      "category": "Sans",
+      "variable": false,
+      "weights": [
+        400
+      ],
+      "italics": false,
+      "tags": [
+        "Books",
+        "Banners",
+        "Editorial",
+        "Logos",
+        "Poster"
+      ]
+    },
+    {
+      "name": "Expose",
+      "slug": "expose",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        400,
+        500,
+        700,
+        900
+      ],
+      "italics": false,
+      "tags": [
+        "Magazines",
+        "Branding",
+        "Banners",
+        "Apps",
+        "Websites"
+      ]
+    },
+    {
+      "name": "Boxing",
+      "slug": "boxing",
+      "category": "Display",
+      "variable": false,
+      "weights": [
+        400
+      ],
+      "italics": false,
+      "tags": [
+        "Editorial",
+        "Poster",
+        "Books"
+      ]
+    },
+    {
+      "name": "Striper",
+      "slug": "striper",
+      "category": "Display",
+      "variable": false,
+      "weights": [
+        400
+      ],
+      "italics": false,
+      "tags": [
+        "Poster",
+        "Fun",
+        "Branding",
+        "Experimental",
+        "Logos"
+      ]
+    },
+    {
+      "name": "Pilcrow Rounded",
+      "slug": "pilcrow-rounded",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        400,
+        500,
+        600,
+        700,
+        900
+      ],
+      "italics": false,
+      "tags": [
+        "Logos",
+        "Magazines",
+        "Branding",
+        "Books"
+      ]
+    },
+    {
+      "name": "Melodrama",
+      "slug": "melodrama",
+      "category": "Sans, Display",
+      "variable": true,
+      "weights": [
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": false,
+      "tags": [
+        "Websites",
+        "Magazines",
+        "Branding",
+        "Banners",
+        "Posters"
+      ]
+    },
+    {
+      "name": "Kohinoor Zerone",
+      "slug": "kohinoor-zerone",
+      "category": "Display",
+      "variable": false,
+      "weights": [
+        100,
+        200
+      ],
+      "italics": false,
+      "tags": [
+        "Beauty",
+        "Headlines",
+        "Posters",
+        "Lettering",
+        "Cosmetic"
+      ]
+    },
+    {
+      "name": "New Title",
+      "slug": "new-title",
+      "category": "Sans, Display",
+      "variable": true,
+      "weights": [
+        200,
+        300,
+        400,
+        500,
+        700
+      ],
+      "italics": false,
+      "tags": [
+        "Magazines",
+        "Branding",
+        "Titles",
+        "Films",
+        "Credits",
+        "Logos"
+      ]
+    },
+    {
+      "name": "Aktura",
+      "slug": "aktura",
+      "category": "Serif,  Blackletter, Display",
+      "variable": false,
+      "weights": [
+        400
+      ],
+      "italics": false,
+      "tags": [
+        "Websites",
+        "Poster",
+        "Magazines"
+      ]
+    },
+    {
+      "name": "Alpino",
+      "slug": "alpino",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        100,
+        300,
+        400,
+        500,
+        700,
+        900
+      ],
+      "italics": false,
+      "tags": [
+        "Magazines",
+        "Posters",
+        "Branding",
+        "Books"
+      ]
+    },
+    {
+      "name": "Amulya",
+      "slug": "amulya",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        300,
+        400,
+        500,
+        700
+      ],
+      "italics": true,
+      "tags": [
+        "Books",
+        "Logos",
+        "Posters",
+        "Magazines"
+      ]
+    },
+    {
+      "name": "Array",
+      "slug": "array",
+      "category": "Display",
+      "variable": false,
+      "weights": [
+        400,
+        401,
+        600,
+        601,
+        700,
+        701
+      ],
+      "italics": false,
+      "tags": [
+        "Branding",
+        "Magazines",
+        "Signage",
+        "Posters"
+      ]
+    },
+    {
+      "name": "Author",
+      "slug": "author",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        200,
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": true,
+      "tags": [
+        "Branding",
+        "Books",
+        "Logos",
+        "Magazines"
+      ]
+    },
+    {
+      "name": "Bespoke Sans",
+      "slug": "bespoke-sans",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        300,
+        400,
+        500,
+        700,
+        800
+      ],
+      "italics": true,
+      "tags": [
+        "Poster",
+        "Websites",
+        "Logos",
+        "Magazines"
+      ]
+    },
+    {
+      "name": "Bespoke Serif",
+      "slug": "bespoke-serif",
+      "category": "Serif",
+      "variable": true,
+      "weights": [
+        300,
+        400,
+        500,
+        700,
+        800
+      ],
+      "italics": true,
+      "tags": [
+        "Magazines",
+        "Posters",
+        "Books",
+        "Branding",
+        "Editorial"
+      ]
+    },
+    {
+      "name": "Bespoke Slab",
+      "slug": "bespoke-slab",
+      "category": "Slab",
+      "variable": true,
+      "weights": [
+        300,
+        400,
+        500,
+        700,
+        800
+      ],
+      "italics": true,
+      "tags": [
+        "Poster",
+        "Magazines",
+        "Websites",
+        "Logos"
+      ]
+    },
+    {
+      "name": "Bespoke Stencil",
+      "slug": "bespoke-stencil",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        300,
+        400,
+        500,
+        700,
+        800
+      ],
+      "italics": true,
+      "tags": [
+        "Magazines",
+        "Poster",
+        "Logos",
+        "Websites"
+      ]
+    },
+    {
+      "name": "Clash Grotesk",
+      "slug": "clash-grotesk",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        200,
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": false,
+      "tags": [
+        "Text",
+        "Editorial",
+        "Magazines",
+        "Reading"
+      ]
+    },
+    {
+      "name": "Clash Display",
+      "slug": "clash-display",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        200,
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": false,
+      "tags": [
+        "Banners",
+        "Editorial",
+        "Magazines"
+      ]
+    },
+    {
+      "name": "Chubbo",
+      "slug": "chubbo",
+      "category": "Display",
+      "variable": true,
+      "weights": [
+        200,
+        300,
+        400,
+        500,
+        700
+      ],
+      "italics": true,
+      "tags": [
+        "Logos",
+        "Magazines",
+        "Poster",
+        "Banners",
+        "Books"
+      ]
+    },
+    {
+      "name": "Chillax",
+      "slug": "chillax",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        200,
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": false,
+      "tags": [
+        "Magazines",
+        "Logos",
+        "Books",
+        "Banners",
+        "Poster"
+      ]
+    },
+    {
+      "name": "Cabinet Grotesk",
+      "slug": "cabinet-grotesk",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        100,
+        200,
+        300,
+        400,
+        500,
+        700,
+        800,
+        900
+      ],
+      "italics": false,
+      "tags": [
+        "Books",
+        "Magazines",
+        "Editorial",
+        "Posters"
+      ]
+    },
+    {
+      "name": "Britney",
+      "slug": "britney",
+      "category": "Script",
+      "variable": true,
+      "weights": [
+        300,
+        400,
+        700,
+        1000
+      ],
+      "italics": false,
+      "tags": [
+        "Packaging",
+        "Poster",
+        "Screen",
+        "Websites",
+        "Album Covers",
+        "Books",
+        "Headlines",
+        "Logo",
+        "Magazines"
+      ]
+    },
+    {
+      "name": "Bonny",
+      "slug": "bonny",
+      "category": "Serif",
+      "variable": true,
+      "weights": [
+        100,
+        300,
+        400,
+        500,
+        700
+      ],
+      "italics": false,
+      "tags": [
+        "Banners",
+        "Books",
+        "Logos",
+        "Magazines",
+        "Poster"
+      ]
+    },
+    {
+      "name": "Bevellier",
+      "slug": "bevellier",
+      "category": "Display",
+      "variable": true,
+      "weights": [
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        900
+      ],
+      "italics": true,
+      "tags": [
+        "Logos",
+        "Poster",
+        "Magazines",
+        "Websites"
+      ]
+    },
+    {
+      "name": "Archivo",
+      "slug": "archivo",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900
+      ],
+      "italics": true,
+      "tags": [
+        "Legible",
+        "Banners",
+        "Clean",
+        "Websites",
+        "Screen"
+      ]
+    },
+    {
+      "name": "Dancing Script",
+      "slug": "dancing-script",
+      "category": "Script",
+      "variable": true,
+      "weights": [
+        400,
+        700
+      ],
+      "italics": false,
+      "tags": [
+        "Packaging",
+        "Banners",
+        "luxury",
+        "Posters",
+        "Beauty"
+      ]
+    },
+    {
+      "name": "Bebas Neue",
+      "slug": "bebas-neue",
+      "category": "Sans",
+      "variable": false,
+      "weights": [
+        400
+      ],
+      "italics": false,
+      "tags": [
+        "Credits",
+        "Websites",
+        "Packaging",
+        "Menus"
+      ]
+    },
+    {
+      "name": "Anton",
+      "slug": "anton",
+      "category": "Sans, Display",
+      "variable": false,
+      "weights": [
+        400
+      ],
+      "italics": false,
+      "tags": [
+        "Headlines",
+        "Banners",
+        "Books",
+        "Apps",
+        "Tight"
+      ]
+    },
+    {
+      "name": "Poppins",
+      "slug": "poppins",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900
+      ],
+      "italics": true,
+      "tags": [
+        "Apps",
+        "Corporate",
+        "Poppins",
+        "Broadcast",
+        "Banners"
+      ]
+    },
+    {
+      "name": "Be Vietnam Pro",
+      "slug": "beVietnam-pro",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900
+      ],
+      "italics": true,
+      "tags": [
+        "Websites",
+        "Apps",
+        "Banners",
+        "Legible"
+      ]
+    },
+    {
+      "name": "Outfit",
+      "slug": "outfit",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900
+      ],
+      "italics": false,
+      "tags": [
+        "Screen",
+        "Headline",
+        "Magazines",
+        "Websites",
+        "Packaging"
+      ]
+    },
+    {
+      "name": "Lora",
+      "slug": "lora",
+      "category": "Serif",
+      "variable": true,
+      "weights": [
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": true,
+      "tags": [
+        "Publishing",
+        "Legible",
+        "Websites",
+        "Clean"
+      ]
+    },
+    {
+      "name": "Plus Jakarta Sans",
+      "slug": "plus-jakarta-sans",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800
+      ],
+      "italics": true,
+      "tags": [
+        "Screen",
+        "Banners",
+        "Apps",
+        "General"
+      ]
+    },
+    {
+      "name": "Nunito",
+      "slug": "nunito",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900
+      ],
+      "italics": true,
+      "tags": [
+        "Invitation",
+        "Films",
+        "friendly",
+        "Headline"
+      ]
+    },
+    {
+      "name": "Manrope",
+      "slug": "manrope",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800
+      ],
+      "italics": false,
+      "tags": [
+        "Logos",
+        "Websites",
+        "Banners",
+        "Apps"
+      ]
+    },
+    {
+      "name": "Work Sans",
+      "slug": "work-sans",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900
+      ],
+      "italics": true,
+      "tags": [
+        "News",
+        "Headline",
+        "workhorse",
+        "Corporate"
+      ]
+    },
+    {
+      "name": "Crimson Pro",
+      "slug": "crimson-pro",
+      "category": "Serif",
+      "variable": true,
+      "weights": [
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900
+      ],
+      "italics": true,
+      "tags": [
+        "Magazines",
+        "Publishing",
+        "Editorial"
+      ]
+    },
+    {
+      "name": "Oswald",
+      "slug": "oswald",
+      "category": "Sans, Display",
+      "variable": true,
+      "weights": [
+        200,
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": false,
+      "tags": [
+        "Compact",
+        "Magazines",
+        "Posters",
+        "Headlines"
+      ]
+    },
+    {
+      "name": "Fira Sans",
+      "slug": "fira-sans",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900
+      ],
+      "italics": true,
+      "tags": [
+        "Apps",
+        "Magazines",
+        "Screen",
+        "Branding"
+      ]
+    },
+    {
+      "name": "Asap",
+      "slug": "asap",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": true,
+      "tags": [
+        "friendly",
+        "Packaging",
+        "Soft",
+        "Posters"
+      ]
+    },
+    {
+      "name": "Montserrat",
+      "slug": "montserrat",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900
+      ],
+      "italics": true,
+      "tags": [
+        "Banners",
+        "Packaging",
+        "General",
+        "Posters",
+        "Websites"
+      ]
+    },
+    {
+      "name": "Azeret Mono",
+      "slug": "azeret-mono",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900
+      ],
+      "italics": true,
+      "tags": [
+        "Programming",
+        "coding",
+        "Apps"
+      ]
+    },
+    {
+      "name": "Spline Sans",
+      "slug": "spline-sans",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": false,
+      "tags": [
+        "Apps",
+        "workhorse",
+        "Headlines"
+      ]
+    },
+    {
+      "name": "Epilogue",
+      "slug": "epilogue",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900
+      ],
+      "italics": true,
+      "tags": [
+        "Headline",
+        "Banners",
+        "Logo",
+        "Websites",
+        "Products"
+      ]
+    },
+    {
+      "name": "Public Sans",
+      "slug": "public-sans",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900
+      ],
+      "italics": true,
+      "tags": [
+        "Headlines",
+        "Reading",
+        "Clean",
+        "Logos"
+      ]
+    },
+    {
+      "name": "JetBrains Mono",
+      "slug": "jet-brains-mono",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800
+      ],
+      "italics": true,
+      "tags": [
+        "Monospaced",
+        "Display",
+        "Code",
+        "Programming"
+      ]
+    },
+    {
+      "name": "Familjen Grotesk",
+      "slug": "familjen-grotesk",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": true,
+      "tags": [
+        "Headline",
+        "Websites",
+        "Packaging",
+        "General",
+        "Banners"
+      ]
+    },
+    {
+      "name": "Kola",
+      "slug": "kola",
+      "category": "Display",
+      "variable": false,
+      "weights": [
+        400
+      ],
+      "italics": false,
+      "tags": [
+        "Editorial",
+        "Poster",
+        "Books"
+      ]
+    },
+    {
+      "name": "Pally",
+      "slug": "pally",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        400,
+        500,
+        700
+      ],
+      "italics": false,
+      "tags": [
+        "Books",
+        "Comics",
+        "Editorial",
+        "Funny",
+        "Informal",
+        "Kids",
+        "Poster"
+      ]
+    },
+    {
+      "name": "Hind",
+      "slug": "hind",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": false,
+      "tags": [
+        "Broadcast",
+        "Books",
+        "Banners",
+        "Beauty",
+        "Branding"
+      ]
+    },
+    {
+      "name": "Kalam",
+      "slug": "kalam",
+      "category": "Handwritten",
+      "variable": true,
+      "weights": [
+        300,
+        400,
+        700
+      ],
+      "italics": false,
+      "tags": [
+        "handwritten",
+        "Comic",
+        "Children"
+      ]
+    },
+    {
+      "name": "Hoover",
+      "slug": "hoover",
+      "category": "Slab",
+      "variable": true,
+      "weights": [
+        100,
+        300,
+        400,
+        500,
+        700
+      ],
+      "italics": false,
+      "tags": [
+        "Logo",
+        "Magazines",
+        "Poster",
+        "Banners",
+        "Editorial",
+        "Logotype"
+      ]
+    },
+    {
+      "name": "Erode",
+      "slug": "erode",
+      "category": "Serif",
+      "variable": true,
+      "weights": [
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": true,
+      "tags": [
+        "Magazines",
+        "Posters",
+        "Books",
+        "Branding"
+      ]
+    },
+    {
+      "name": "Roundo",
+      "slug": "roundo",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        200,
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": false,
+      "tags": [
+        "App",
+        "Websites",
+        "Headline",
+        "Editorial"
+      ]
+    },
+    {
+      "name": "Nippo",
+      "slug": "nippo",
+      "category": "Display",
+      "variable": true,
+      "weights": [
+        200,
+        300,
+        400,
+        500,
+        700
+      ],
+      "italics": false,
+      "tags": [
+        "Jerseys",
+        "Magazines",
+        "Sports",
+        "Posters",
+        "Websites",
+        "Banners"
+      ]
+    },
+    {
+      "name": "Neco",
+      "slug": "neco",
+      "category": "Serif",
+      "variable": true,
+      "weights": [
+        400,
+        500,
+        700,
+        900
+      ],
+      "italics": true,
+      "tags": [
+        "Reading",
+        "Menus",
+        "Magazines",
+        "Books"
+      ]
+    },
+    {
+      "name": "Panchang",
+      "slug": "panchang",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800
+      ],
+      "italics": false,
+      "tags": [
+        "Editorial",
+        "Magazines",
+        "Posters",
+        "Books"
+      ]
+    },
+    {
+      "name": "Pencerio",
+      "slug": "pencerio",
+      "category": "Script",
+      "variable": false,
+      "weights": [
+        50
+      ],
+      "italics": false,
+      "tags": [
+        "Wedding",
+        "Titles",
+        "Signboards",
+        "Packaging",
+        "Fashion",
+        "Calligraphy"
+      ]
+    },
+    {
+      "name": "Excon",
+      "slug": "excon",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        100,
+        300,
+        400,
+        500,
+        700,
+        900
+      ],
+      "italics": false,
+      "tags": [
+        "Books",
+        "Editorial",
+        "Logos"
+      ]
+    },
+    {
+      "name": "Space Grotesk",
+      "slug": "space-grotesk",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": false,
+      "tags": [
+        "Modern",
+        "Corporate",
+        "Banners",
+        "Apps"
+      ]
+    },
+    {
+      "name": "Zina",
+      "slug": "zina",
+      "category": "Display",
+      "variable": false,
+      "weights": [
+        400
+      ],
+      "italics": false,
+      "tags": [
+        "Bold",
+        "Readable",
+        "Display",
+        "Grunge",
+        "Posters"
+      ]
+    },
+    {
+      "name": "Pramukh Rounded",
+      "slug": "pramukh-rounded",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        200,
+        300,
+        350,
+        400,
+        600,
+        700,
+        800,
+        900
+      ],
+      "italics": true,
+      "tags": [
+        "Headlines",
+        "Books",
+        "Editorial",
+        "Text",
+        "Posters"
+      ]
+    },
+    {
+      "name": "Plein",
+      "slug": "plein",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        300,
+        400,
+        500,
+        700,
+        900
+      ],
+      "italics": true,
+      "tags": [
+        "Poster",
+        "Books",
+        "Magazines",
+        "Newspapers"
+      ]
+    },
+    {
+      "name": "Rajdhani",
+      "slug": "rajdhani",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": false,
+      "tags": [
+        "Headlines",
+        "Tech",
+        "Websites",
+        "Branding",
+        "Broadcast"
+      ]
+    },
+    {
+      "name": "Recia",
+      "slug": "recia",
+      "category": "Serif",
+      "variable": true,
+      "weights": [
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": true,
+      "tags": [
+        "Code",
+        "Posters",
+        "Websites",
+        "Magazines"
+      ]
+    },
+    {
+      "name": "Rosaline",
+      "slug": "rosaline",
+      "category": "Script",
+      "variable": false,
+      "weights": [
+        400
+      ],
+      "italics": false,
+      "tags": [
+        "Fashion",
+        "Editorial"
+      ]
+    },
+    {
+      "name": "Khand",
+      "slug": "khand",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": false,
+      "tags": [
+        "Banners",
+        "Broadcast",
+        "Display",
+        "Logotype"
+      ]
+    },
+    {
+      "name": "Sharpie",
+      "slug": "sharpie",
+      "category": "Display",
+      "variable": true,
+      "weights": [
+        300,
+        400,
+        700,
+        800,
+        900
+      ],
+      "italics": false,
+      "tags": [
+        "Posters",
+        "Magazines",
+        "Lettering",
+        "Calligraphy",
+        "Pen"
+      ]
+    },
+    {
+      "name": "Supreme",
+      "slug": "supreme",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        100,
+        200,
+        300,
+        400,
+        500,
+        700,
+        800
+      ],
+      "italics": true,
+      "tags": [
+        "Poster",
+        "Magazines",
+        "Books",
+        "Logo",
+        "Websites",
+        "Screen"
+      ]
+    },
+    {
+      "name": "Quilon",
+      "slug": "quilon",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": false,
+      "tags": [
+        "Websites",
+        "Banners",
+        "Magazines",
+        "Posters"
+      ]
+    },
+    {
+      "name": "Ranade",
+      "slug": "ranade",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        100,
+        300,
+        400,
+        500,
+        700
+      ],
+      "italics": true,
+      "tags": [
+        "Magazines",
+        "Books",
+        "Editorial",
+        "Posters"
+      ]
+    },
+    {
+      "name": "RX100",
+      "slug": "rx-100",
+      "category": "Sans",
+      "variable": false,
+      "weights": [
+        400
+      ],
+      "italics": false,
+      "tags": [
+        "Signage",
+        "Monospaced",
+        "Editorial",
+        "Programming"
+      ]
+    },
+    {
+      "name": "Stardom",
+      "slug": "stardom",
+      "category": "Display",
+      "variable": false,
+      "weights": [
+        400
+      ],
+      "italics": false,
+      "tags": [
+        "Branding",
+        "Fun",
+        "Poster",
+        "Experimental",
+        "Logos"
+      ]
+    },
+    {
+      "name": "Trench Slab",
+      "slug": "trench-slab",
+      "category": "Slab",
+      "variable": true,
+      "weights": [
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": false,
+      "tags": [
+        "Magazines",
+        "Logos",
+        "Headlines",
+        "Publishing",
+        "Books",
+        "Posters"
+      ]
+    },
+    {
+      "name": "Segment",
+      "slug": "segment",
+      "category": "Display",
+      "variable": false,
+      "weights": [
+        400
+      ],
+      "italics": false,
+      "tags": [
+        "Posters",
+        "Magazines",
+        "Branding",
+        "Packaging"
+      ]
+    },
+    {
+      "name": "Styro",
+      "slug": "styro",
+      "category": "Display",
+      "variable": true,
+      "weights": [
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900
+      ],
+      "italics": false,
+      "tags": [
+        "Posters",
+        "Headlines",
+        "Logos"
+      ]
+    },
+    {
+      "name": "Paquito",
+      "slug": "paquito",
+      "category": "Serif, Slab",
+      "variable": true,
+      "weights": [
+        400,
+        500,
+        700
+      ],
+      "italics": false,
+      "tags": [
+        "Funny",
+        "Books",
+        "Comics",
+        "Informal",
+        "Kids",
+        "Poster"
+      ]
+    },
+    {
+      "name": "Telma",
+      "slug": "telma",
+      "category": "Script",
+      "variable": true,
+      "weights": [
+        300,
+        400,
+        500,
+        700,
+        900
+      ],
+      "italics": false,
+      "tags": [
+        "Invitation",
+        "Logos",
+        "Poster",
+        "Banners"
+      ]
+    },
+    {
+      "name": "Satoshi",
+      "slug": "satoshi",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        300,
+        400,
+        500,
+        700,
+        900
+      ],
+      "italics": true,
+      "tags": [
+        "Logos",
+        "Magazines",
+        "Branding"
+      ]
+    },
+    {
+      "name": "Zodiak",
+      "slug": "zodiak",
+      "category": "Serif",
+      "variable": true,
+      "weights": [
+        100,
+        300,
+        400,
+        700,
+        800,
+        900
+      ],
+      "italics": true,
+      "tags": [
+        "Editorial",
+        "Magazines",
+        "Books"
+      ]
+    },
+    {
+      "name": "Red Hat Display",
+      "slug": "red-hat-display",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900
+      ],
+      "italics": true,
+      "tags": [
+        "Magazines",
+        "Banners",
+        "Corporate",
+        "Websites"
+      ]
+    },
+    {
+      "name": "Sora",
+      "slug": "sora",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800
+      ],
+      "italics": true,
+      "tags": [
+        "Legible",
+        "Logotype",
+        "Websites",
+        "Products"
+      ]
+    },
+    {
+      "name": "Literata",
+      "slug": "literata",
+      "category": "Serif",
+      "variable": true,
+      "weights": [
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900
+      ],
+      "italics": true,
+      "tags": [
+        "Legible",
+        "Clean",
+        "Books"
+      ]
+    },
+    {
+      "name": "Merriweather Sans",
+      "slug": "merriweather-sans",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        300,
+        400,
+        500,
+        600,
+        700,
+        800
+      ],
+      "italics": true,
+      "tags": [
+        "Branding",
+        "Legible",
+        "Readable"
+      ]
+    },
+    {
+      "name": "Quicksand",
+      "slug": "quicksand",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": false,
+      "tags": [
+        "Headlines",
+        "Branding",
+        "Fashion",
+        "Poster"
+      ]
+    },
+    {
+      "name": "Teko",
+      "slug": "teko",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": false,
+      "tags": [
+        "Banners",
+        "Headlines",
+        "Credits"
+      ]
+    },
+    {
+      "name": "Karma",
+      "slug": "karma",
+      "category": "Serif",
+      "variable": true,
+      "weights": [
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": false,
+      "tags": [
+        "Banners",
+        "Editorial"
+      ]
+    }
+  ],
+  "pairings": [
+    {
+      "heading": {
+        "font": "Trench Slab",
+        "slug": "trench-slab",
+        "weight": 500
+      },
+      "body": {
+        "font": "General Sans",
+        "slug": "general-sans",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Zina",
+        "slug": "zina",
+        "weight": 400
+      },
+      "body": {
+        "font": "Recia",
+        "slug": "recia",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Technor",
+        "slug": "technor",
+        "weight": 600
+      },
+      "body": {
+        "font": "Supreme",
+        "slug": "supreme",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Quilon",
+        "slug": "quilon",
+        "weight": 500
+      },
+      "body": {
+        "font": "Rowan",
+        "slug": "rowan",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Oswald",
+        "slug": "oswald",
+        "weight": 700
+      },
+      "body": {
+        "font": "Sentient",
+        "slug": "sentient",
+        "weight": 300
+      }
+    },
+    {
+      "heading": {
+        "font": "Quicksand",
+        "slug": "quicksand",
+        "weight": 600
+      },
+      "body": {
+        "font": "Spline Sans",
+        "slug": "spline-sans",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "General Sans",
+        "slug": "general-sans",
+        "weight": 500
+      },
+      "body": {
+        "font": "Recia",
+        "slug": "recia",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Recia",
+        "slug": "recia",
+        "weight": 500
+      },
+      "body": {
+        "font": "Supreme",
+        "slug": "supreme",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Satoshi",
+        "slug": "satoshi",
+        "weight": 700
+      },
+      "body": {
+        "font": "Erode",
+        "slug": "erode",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Poppins",
+        "slug": "poppins",
+        "weight": 600
+      },
+      "body": {
+        "font": "Bespoke Slab",
+        "slug": "bespoke-slab",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Chubbo",
+        "slug": "chubbo",
+        "weight": 700
+      },
+      "body": {
+        "font": "Supreme",
+        "slug": "supreme",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Hind",
+        "slug": "hind",
+        "weight": 700
+      },
+      "body": {
+        "font": "Amulya",
+        "slug": "amulya",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Melodrama",
+        "slug": "melodrama",
+        "weight": 500
+      },
+      "body": {
+        "font": "Nunito",
+        "slug": "nunito",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Bespoke Stencil",
+        "slug": "bespoke-stencil",
+        "weight": 700
+      },
+      "body": {
+        "font": "Supreme",
+        "slug": "supreme",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Tanker",
+        "slug": "tanker",
+        "weight": 400
+      },
+      "body": {
+        "font": "Bespoke Serif",
+        "slug": "bespoke-serif",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Excon",
+        "slug": "excon",
+        "weight": 500
+      },
+      "body": {
+        "font": "Ranade",
+        "slug": "ranade",
+        "weight": 300
+      }
+    },
+    {
+      "heading": {
+        "font": "Amulya",
+        "slug": "amulya",
+        "weight": 700
+      },
+      "body": {
+        "font": "Synonym",
+        "slug": "synonym",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Bebas Neue",
+        "slug": "bebas-neue",
+        "weight": 400
+      },
+      "body": {
+        "font": "Nunito",
+        "slug": "nunito",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "General Sans",
+        "slug": "general-sans",
+        "weight": 600
+      },
+      "body": {
+        "font": "Gambetta",
+        "slug": "gambetta",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Array",
+        "slug": "array",
+        "weight": 400
+      },
+      "body": {
+        "font": "Khand",
+        "slug": "khand",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Pilcrow Rounded",
+        "slug": "pilcrow-rounded",
+        "weight": 600
+      },
+      "body": {
+        "font": "Hind",
+        "slug": "hind",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Khand",
+        "slug": "khand",
+        "weight": 700
+      },
+      "body": {
+        "font": "Switzer",
+        "slug": "switzer",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Khand",
+        "slug": "khand",
+        "weight": 700
+      },
+      "body": {
+        "font": "Hind",
+        "slug": "hind",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Rosaline",
+        "slug": "rosaline",
+        "weight": 400
+      },
+      "body": {
+        "font": "Satoshi",
+        "slug": "satoshi",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "General Sans",
+        "slug": "general-sans",
+        "weight": 600
+      },
+      "body": {
+        "font": "General Sans",
+        "slug": "general-sans",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Erode",
+        "slug": "erode",
+        "weight": 600
+      },
+      "body": {
+        "font": "Recia",
+        "slug": "recia",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Teko",
+        "slug": "teko",
+        "weight": 600
+      },
+      "body": {
+        "font": "Hind",
+        "slug": "hind",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Plein",
+        "slug": "plein",
+        "weight": 700
+      },
+      "body": {
+        "font": "Switzer",
+        "slug": "switzer",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Zodiak",
+        "slug": "zodiak",
+        "weight": 700
+      },
+      "body": {
+        "font": "Plus Jakarta Sans",
+        "slug": "plus-jakarta-sans",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Britney",
+        "slug": "britney",
+        "weight": 400
+      },
+      "body": {
+        "font": "Quicksand",
+        "slug": "quicksand",
+        "weight": 500
+      }
+    },
+    {
+      "heading": {
+        "font": "Comico",
+        "slug": "comico",
+        "weight": 400
+      },
+      "body": {
+        "font": "Zodiak",
+        "slug": "zodiak",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Tanker",
+        "slug": "tanker",
+        "weight": 400
+      },
+      "body": {
+        "font": "Erode",
+        "slug": "erode",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Pramukh Rounded",
+        "slug": "pramukh-rounded",
+        "weight": 700
+      },
+      "body": {
+        "font": "Poppins",
+        "slug": "poppins",
+        "weight": 300
+      }
+    },
+    {
+      "heading": {
+        "font": "Boska",
+        "slug": "boska",
+        "weight": 300
+      },
+      "body": {
+        "font": "General Sans",
+        "slug": "general-sans",
+        "weight": 300
+      }
+    },
+    {
+      "heading": {
+        "font": "Sharpie",
+        "slug": "sharpie",
+        "weight": 800
+      },
+      "body": {
+        "font": "Ranade",
+        "slug": "ranade",
+        "weight": 300
+      }
+    },
+    {
+      "heading": {
+        "font": "Bebas Neue",
+        "slug": "bebas-neue",
+        "weight": 400
+      },
+      "body": {
+        "font": "Zodiak",
+        "slug": "zodiak",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Pally",
+        "slug": "pally",
+        "weight": 500
+      },
+      "body": {
+        "font": "Neco",
+        "slug": "neco",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Chillax",
+        "slug": "chillax",
+        "weight": 600
+      },
+      "body": {
+        "font": "Synonym",
+        "slug": "synonym",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Clash Display",
+        "slug": "clash-display",
+        "weight": 600
+      },
+      "body": {
+        "font": "Archivo",
+        "slug": "archivo",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Switzer",
+        "slug": "switzer",
+        "weight": 700
+      },
+      "body": {
+        "font": "Switzer",
+        "slug": "switzer",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Pilcrow Rounded",
+        "slug": "pilcrow-rounded",
+        "weight": 900
+      },
+      "body": {
+        "font": "Archivo",
+        "slug": "archivo",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Khand",
+        "slug": "khand",
+        "weight": 600
+      },
+      "body": {
+        "font": "General Sans",
+        "slug": "general-sans",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Rajdhani",
+        "slug": "rajdhani",
+        "weight": 700
+      },
+      "body": {
+        "font": "Sentient",
+        "slug": "sentient",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Outfit",
+        "slug": "outfit",
+        "weight": 600
+      },
+      "body": {
+        "font": "Switzer",
+        "slug": "switzer",
+        "weight": 300
+      }
+    },
+    {
+      "heading": {
+        "font": "Expose",
+        "slug": "expose",
+        "weight": 700
+      },
+      "body": {
+        "font": "Bespoke Sans",
+        "slug": "bespoke-sans",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "General Sans",
+        "slug": "general-sans",
+        "weight": 500
+      },
+      "body": {
+        "font": "Quicksand",
+        "slug": "quicksand",
+        "weight": 500
+      }
+    },
+    {
+      "heading": {
+        "font": "Bonny",
+        "slug": "bonny",
+        "weight": 500
+      },
+      "body": {
+        "font": "Pilcrow Rounded",
+        "slug": "pilcrow-rounded",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Poppins",
+        "slug": "poppins",
+        "weight": 600
+      },
+      "body": {
+        "font": "Hind",
+        "slug": "hind",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Nunito",
+        "slug": "nunito",
+        "weight": 800
+      },
+      "body": {
+        "font": "Supreme",
+        "slug": "supreme",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Cabinet Grotesk",
+        "slug": "cabinet-grotesk",
+        "weight": 800
+      },
+      "body": {
+        "font": "Satoshi",
+        "slug": "satoshi",
+        "weight": 500
+      }
+    },
+    {
+      "heading": {
+        "font": "Gambarino",
+        "slug": "gambarino",
+        "weight": 400
+      },
+      "body": {
+        "font": "Switzer",
+        "slug": "switzer",
+        "weight": 300
+      }
+    },
+    {
+      "heading": {
+        "font": "Supreme",
+        "slug": "supreme",
+        "weight": 500
+      },
+      "body": {
+        "font": "Poppins",
+        "slug": "poppins",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Khand",
+        "slug": "khand",
+        "weight": 600
+      },
+      "body": {
+        "font": "Supreme",
+        "slug": "supreme",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "New Title",
+        "slug": "new-title",
+        "weight": 500
+      },
+      "body": {
+        "font": "Amulya",
+        "slug": "amulya",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Roundo",
+        "slug": "roundo",
+        "weight": 500
+      },
+      "body": {
+        "font": "Pilcrow Rounded",
+        "slug": "pilcrow-rounded",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Archivo",
+        "slug": "archivo",
+        "weight": 600
+      },
+      "body": {
+        "font": "Ranade",
+        "slug": "ranade",
+        "weight": 300
+      }
+    },
+    {
+      "heading": {
+        "font": "Pilcrow Rounded",
+        "slug": "pilcrow-rounded",
+        "weight": 700
+      },
+      "body": {
+        "font": "Sentient",
+        "slug": "sentient",
+        "weight": 300
+      }
+    },
+    {
+      "heading": {
+        "font": "Boska",
+        "slug": "boska",
+        "weight": 500
+      },
+      "body": {
+        "font": "Switzer",
+        "slug": "switzer",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Bevellier",
+        "slug": "bevellier",
+        "weight": 500
+      },
+      "body": {
+        "font": "Satoshi",
+        "slug": "satoshi",
+        "weight": 400
+      }
+    }
+  ]
+}

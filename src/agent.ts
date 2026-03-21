@@ -19,7 +19,7 @@
  */
 
 import {
-  streamChat,
+  streamChatWithRetry,
   type Message,
   type Attachment,
   type StreamEvent,
@@ -32,6 +32,8 @@ import {
 import { saveSession } from './session.js';
 import { log } from './logger.js';
 import { parsePartialJson } from './parsePartialJson.js';
+import { startStatusWatcher } from './statusWatcher.js';
+import { friendlyError } from './errors.js';
 
 // Tools where the result comes from outside (sandbox/user), not local execution.
 const EXTERNAL_TOOLS = new Set([
@@ -46,6 +48,7 @@ const EXTERNAL_TOOLS = new Set([
   'runMethod',
   'browserCommand',
   'screenshot',
+  'setProjectName',
 ]);
 
 // Events emitted to the UI layer
@@ -78,6 +81,7 @@ export type AgentEvent =
   | { type: 'turn_started' }
   | { type: 'turn_done' }
   | { type: 'turn_cancelled' }
+  | { type: 'status'; message: string }
   | { type: 'error'; error: string };
 
 // Conversation state persisted across turns
@@ -272,15 +276,35 @@ export async function runTurn(params: {
     }
 
     // Stream one LLM turn
+    const statusWatcher = startStatusWatcher({
+      apiConfig,
+      getContext: () => ({
+        assistantText: assistantText.slice(-500),
+        lastToolName: toolCalls.at(-1)?.name,
+      }),
+      onStatus: (label) => onEvent({ type: 'status', message: label }),
+      signal,
+    });
+
     try {
-      for await (const event of streamChat({
-        ...apiConfig,
-        model,
-        system,
-        messages: state.messages,
-        tools,
-        signal,
-      })) {
+      for await (const event of streamChatWithRetry(
+        {
+          ...apiConfig,
+          model,
+          system,
+          messages: state.messages,
+          tools,
+          signal,
+        },
+        {
+          onRetry: (attempt) => {
+            onEvent({
+              type: 'status',
+              message: `Lost connection, retrying (attempt ${attempt + 2} of 3)...`,
+            });
+          },
+        },
+      )) {
         if (signal?.aborted) {
           break;
         }
@@ -362,7 +386,7 @@ export async function runTurn(params: {
             break;
 
           case 'error':
-            onEvent({ type: 'error', error: event.error });
+            onEvent({ type: 'error', error: friendlyError(event.error) });
             return;
         }
       }
@@ -372,6 +396,8 @@ export async function runTurn(params: {
       } else {
         throw err;
       }
+    } finally {
+      statusWatcher.stop();
     }
 
     if (signal?.aborted) {
@@ -406,6 +432,15 @@ export async function runTurn(params: {
     log.info('Executing tools', {
       count: toolCalls.length,
       tools: toolCalls.map((tc) => tc.name),
+    });
+    const toolStatusWatcher = startStatusWatcher({
+      apiConfig,
+      getContext: () => ({
+        assistantText: assistantText.slice(-500),
+        lastToolName: toolCalls.map((tc) => tc.name).join(', '),
+      }),
+      onStatus: (label) => onEvent({ type: 'status', message: label }),
+      signal,
     });
     const results = await Promise.all(
       toolCalls.map(async (tc) => {
@@ -468,6 +503,8 @@ export async function runTurn(params: {
         }
       }),
     );
+
+    toolStatusWatcher.stop();
 
     // Append tool results as user messages (with toolCallId to link them).
     // This must happen even on cancellation — the assistant message already

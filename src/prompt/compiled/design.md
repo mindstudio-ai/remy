@@ -14,62 +14,58 @@ judge the entire app by how it looks and feels in the first 3 seconds.
 
 ## Design System from the Spec
 
-The spec file `src/interfaces/@brand/visual.md` may contain `typography` and
-`colors` YAML blocks that define the app's fonts and color palette. When
-these are present, always use them. Load fonts from the URLs in the `fonts`
-section. Set up a lightweight theme layer early (CSS variables or a small
-tokens file) so colors and type styles are defined once and referenced
-everywhere. This makes the design easy to update later without hunting
-through components. Keep it simple: a handful of CSS variables for colors
-and a few reusable text style classes or utilities for typography.
+The brand spec files in `src/interfaces/@brand/` define the app's visual identity at the brand level: a small palette of named colors and font choices with one or two anchor styles. These are brand decisions, not implementation details. Derive the full design system (CSS variables, component styles, spacing, borders, etc.) from these foundations.
 
-**When these blocks are present, always use the defined fonts and colors in
-generated code.** Do not pick your own fonts or colors when the spec defines
-them. Reference colors semantically (as CSS variables or named constants)
-rather than scattering raw hex values through the codebase.
+Set up a lightweight theme layer early (CSS variables or a small tokens file) so brand colors and type styles are defined once and referenced everywhere. Map brand colors to semantic roles (background, text, accent, surface, border) and derive any additional shades you need. Keep it simple: a handful of CSS variables for colors and a few reusable text style classes or utilities for typography.
+
+**When brand spec files are present, always use the defined fonts and colors in generated code.** Do not pick your own fonts or colors when the spec defines them. Reference colors semantically (as CSS variables or named constants) rather than scattering raw hex values through the codebase.
 
 ### Colors block format
 
-A `` ```colors `` fenced block declares named colors with hex values and
-descriptions. Each color has a capitalized name, a `value`, and a
-`description`:
+A `` ```colors `` fenced block in a `type: design/color` spec file declares 3-5 brand colors with evocative names, hex values, and descriptions. The names are brand identity names (not CSS property names), and the descriptions explain the color's role in the brand:
 
-```
-Background:
-  value: "#0A0A0A"
-  description: Page background
-Primary:
-  value: "#3B82F6"
-  description: Buttons, links, active states
-Text:
+```colors
+Midnight:
+  value: "#000000"
+  description: Primary background and dark surfaces
+Charcoal:
+  value: "#1C1C1E"
+  description: Elevated surfaces and containers
+Snow:
   value: "#F5F5F7"
-  description: Primary text
+  description: Primary text and foreground elements
+Smoke:
+  value: "#86868B"
+  description: Secondary text and supporting content
 ```
+
+Derive additional implementation colors (borders, focus states, hover states, disabled states) from the brand palette rather than expecting them to be specified.
 
 ### Typography block format
 
-A `` ```typography `` fenced block declares fonts (with source URLs) and
-named type styles:
+A `` ```typography `` fenced block in a `type: design/typography` spec file declares fonts (with source URLs) and one or two anchor styles (typically Display and Body). Derive additional styles (labels, buttons, captions, overlines) from these anchors:
 
-```
+```typography
 fonts:
-  Cabinet Grotesk:
-    src: https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;600;700
+  DM Sans:
+    src: https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700
+  DM Mono:
+    src: https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500
 
 styles:
-  Heading:
-    font: Cabinet Grotesk
-    size: 28px
+  Display:
+    font: DM Sans
+    size: 40px
     weight: 600
-    letterSpacing: -0.02em
-    lineHeight: 1.2
-    description: Section headings, page titles
+    letterSpacing: -0.03em
+    lineHeight: 1.1
+    description: Page titles and hero text
   Body:
-    font: Cabinet Grotesk
+    font: DM Sans
     size: 16px
     weight: 400
     lineHeight: 1.5
-    description: Default paragraph text
+    description: Default reading text
 ```
 
 ## Be Distinctive
