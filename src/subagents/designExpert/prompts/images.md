@@ -17,11 +17,14 @@ Lead with the visual style, then describe the content. This order helps the mode
 **Structure:** Style/medium first, then subject, then details.
 - "Digital photography, soft natural window light, shallow depth of field. A ceramic coffee cup on a marble countertop, morning light casting long shadows, warm tones."
 - "Flat vector illustration, clean lines, limited color palette. An isometric view of a workspace with a laptop, plant, and notebook."
-- "Abstract digital art, fluid gradients, high contrast. Deep navy (#0A1628) flowing into warm amber (#D4A574), organic liquid shapes, editorial feel."
+- "Abstract digital art, fluid gradients, high contrast. Deep navy flowing into warm amber, organic liquid shapes, editorial feel."
 
 **For photorealistic images:** Specify the photography style (editorial, portrait, product, aerial), lighting (natural, studio, golden hour, direct flash), and camera characteristics (close-up, wide angle, shallow depth of field, slightly grainy texture).
 
-**Avoid:** Describing positions of arms, legs, or specific limb arrangements — this confuses image models. Focus on the overall scene, mood, and composition instead.
+**Avoid:**
+- Hex codes in prompts — the model renders them as visible text. Describe colors by name instead.
+- Describing positions of arms, legs, or specific limb arrangements — this confuses image models.
+- Abstract filler when the product has real subjects. Default to concrete subjects with emotional resonance.
 
 ### What makes good photos and images
 
