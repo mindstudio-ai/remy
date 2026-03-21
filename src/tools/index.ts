@@ -73,6 +73,7 @@ import { confirmDestructiveActionTool } from './common/confirmDestructiveAction.
 import { askMindStudioSdkTool } from './common/askMindStudioSdk.js';
 import { fetchUrlTool } from './common/fetchUrl.js';
 import { searchGoogleTool } from './common/searchGoogle.js';
+import { setProjectNameTool } from './common/setProjectName.js';
 
 // Code tools
 import { readFileTool } from './code/readFile.js';
@@ -90,6 +91,7 @@ import { runScenarioTool } from './code/runScenario.js';
 import { runMethodTool } from './code/runMethod.js';
 import { screenshotTool } from './code/screenshot.js';
 import { browserAutomationTool } from '../subagents/browserAutomation/index.js';
+import { designExpertTool } from '../subagents/designExpert/index.js';
 
 function getSpecTools(): Tool[] {
   return [readSpecTool, writeSpecTool, editSpecTool, listSpecFilesTool];
@@ -127,6 +129,8 @@ function getCommonTools(): Tool[] {
     askMindStudioSdkTool,
     fetchUrlTool,
     searchGoogleTool,
+    setProjectNameTool,
+    designExpertTool,
   ];
 }
 

@@ -15,8 +15,10 @@ my-app/
     references/                        supporting material (PDFs, notes, diagrams)
     interfaces/
       @brand/                          shared brand identity
+        visual.md                        aesthetic direction, surfaces, spacing
+        colors.md                        brand color palette (type: design/color)
+        typography.md                    fonts and type styles (type: design/typography)
         voice.md                         tone, terminology, error messages
-        visual.md                        colors, typography, components
         assets/                          logos, icons
       web.md                           web UI spec
       api.md                           API conventions
@@ -57,7 +59,7 @@ my-app/
 | Web interface | `dist/interfaces/web/` | Full Vite + React project directory |
 | Interface configs | `dist/interfaces/*/interface.json` | One per non-web interface type |
 | Specs | `src/*.md` | Natural language, MSFM format |
-| Brand identity | `src/interfaces/@brand/` | voice.md (tone, terminology), visual.md (colors, typography), assets/ |
+| Brand identity | `src/interfaces/@brand/` | visual.md (aesthetic), colors.md (palette), typography.md (fonts), voice.md (tone), assets/ |
 | Reference material | `src/references/` | Context for the agent, not consumed by platform |
 
 ## The Two SDKs

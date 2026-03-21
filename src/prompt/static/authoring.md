@@ -9,11 +9,13 @@ After intake, write the spec and get it on screen. The first draft should cover 
 - Flag assumptions you made during intake so the user can confirm or correct them.
 - Use annotations to pin down technical details, data representations, and edge cases. The prose should read like a clear explanation of what the app does. The annotations carry the precision.
 
-The scaffold starts with four spec files that cover the full picture of the app:
+The scaffold starts with these spec files that cover the full picture of the app:
 
 - **`src/app.md`** — the core application: what it does, how data flows, who's involved, the rules
 - **`src/interfaces/web.md`** — the web interface: layout, screens, interactions, user experience
-- **`src/interfaces/@brand/visual.md`** — visual identity, including `typography` and `colors` YAML blocks that define the app's fonts and color palette. Use these blocks to capture the design choices from intake.
+- **`src/interfaces/@brand/visual.md`** — aesthetic direction: the overall look, surfaces, spacing, interaction feel
+- **`src/interfaces/@brand/colors.md`** (`type: design/color`) — brand color palette: 3-5 named colors with evocative names and brand-level descriptions. The design system is derived from these.
+- **`src/interfaces/@brand/typography.md`** (`type: design/typography`) — font choices with source URLs and 1-2 anchor styles (Display, Body). Additional styles are derived from these anchors.
 - **`src/interfaces/@brand/voice.md`** — voice and terminology: tone, error messages, word choices
 
 Start from these four and extend as needed. Add interface specs for other interface types (`api.md`, `cron.md`, etc.) if the app uses them. Split `app.md` into multiple files if the domain is complex. The agent uses the entire `src/` folder as compilation context, so organize however serves clarity.
@@ -21,6 +23,8 @@ Start from these four and extend as needed. Add interface specs for other interf
 Users often care about look and feel as much as (or more than) underlying data structures. Don't treat the brand and interface specs as an afterthought — for many users, the visual identity and voice are the first things they want to get right.
 
 Write specs in natural, human language. Describe what the app does the way you'd explain it to a colleague. The spec rendered with annotations hidden is a human-forward document that anyone can read. The spec with annotations visible is the agent-forward document that drives code generation. Keep the prose clean and readable — technical details like column types, status values, and implementation hints belong in annotations, not in the prose.
+
+When you have image URLs (from the design expert, stock photos, or AI generation), embed them directly in the spec using markdown image syntax (`![description](url)`). The spec should be a visual document — if there's a hero image, a background photo, or a generated graphic, include it inline so the user can see it and the coding agent can reference it during build.
 
 **Refining with the user:**
 After writing the first draft, guide the user through it. Don't just ask "does this look good?" — the user is seeing a multi-section spec for the first time.

@@ -72,10 +72,13 @@ export function loadSpecFileMetadata(): string {
 
     const entries: string[] = [];
     for (const filePath of files) {
-      const { name, description } = parseFrontmatter(filePath);
+      const { name, description, type } = parseFrontmatter(filePath);
       let line = `- ${filePath}`;
       if (name) {
         line += ` — "${name}"`;
+      }
+      if (type) {
+        line += ` (${type})`;
       }
       if (description) {
         line += ` — ${description}`;
@@ -110,20 +113,22 @@ function walkMdFiles(dir: string): string[] {
 function parseFrontmatter(filePath: string): {
   name: string;
   description: string;
+  type: string;
 } {
   try {
     const content = fs.readFileSync(filePath, 'utf-8');
     const match = content.match(/^---\n([\s\S]*?)\n---/);
     if (!match) {
-      return { name: '', description: '' };
+      return { name: '', description: '', type: '' };
     }
 
     const fm = match[1];
     const name = fm.match(/^name:\s*(.+)$/m)?.[1]?.trim() ?? '';
     const description = fm.match(/^description:\s*(.+)$/m)?.[1]?.trim() ?? '';
-    return { name, description };
+    const type = fm.match(/^type:\s*(.+)$/m)?.[1]?.trim() ?? '';
+    return { name, description, type };
   } catch {
-    return { name: '', description: '' };
+    return { name: '', description: '', type: '' };
   }
 }
 

@@ -43,4 +43,4 @@ Append `.json` to any CDN URL to get metadata (dimensions, duration, mime type, 
 ## General Rules
 
 - Always set explicit width/height or aspect-ratio on images to prevent layout shift.
-- Use remote resources (Google Fonts via CDN). Never self-hosted font packages.
+- Always load fonts directly from CDNs, never self-host font packages in the application.
