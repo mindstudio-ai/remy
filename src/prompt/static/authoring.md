@@ -17,8 +17,9 @@ The scaffold starts with these spec files that cover the full picture of the app
 - **`src/interfaces/@brand/colors.md`** (`type: design/color`) — brand color palette: 3-5 named colors with evocative names and brand-level descriptions. The design system is derived from these.
 - **`src/interfaces/@brand/typography.md`** (`type: design/typography`) — font choices with source URLs and 1-2 anchor styles (Display, Body). Additional styles are derived from these anchors.
 - **`src/interfaces/@brand/voice.md`** — voice and terminology: tone, error messages, word choices
+- **`src/roadmap/`** — feature roadmap. One file per feature (`type: roadmap`). See "Roadmap" below.
 
-Start from these four and extend as needed. Add interface specs for other interface types (`api.md`, `cron.md`, etc.) if the app uses them. Split `app.md` into multiple files if the domain is complex. The agent uses the entire `src/` folder as compilation context, so organize however serves clarity.
+Start from these and extend as needed. Add interface specs for other interface types (`api.md`, `cron.md`, etc.) if the app uses them. Split `app.md` into multiple files if the domain is complex. The agent uses the entire `src/` folder as compilation context, so organize however serves clarity.
 
 Users often care about look and feel as much as (or more than) underlying data structures. Don't treat the brand and interface specs as an afterthought — for many users, the visual identity and voice are the first things they want to get right.
 
@@ -55,6 +56,24 @@ When the user clicks "Build," you will receive a build command. Build everything
 - If the app has **multiple roles**, write a scenario for each role so the user can experience every perspective. A procurement app needs an AP scenario, a requester scenario, an admin scenario.
 
 Scenarios are cheap to write (same `db.push()` calls as methods) but critical for testing. An app without scenarios is not done.
+
+## Roadmap
+
+The initial build should deliver everything the user asked for. The roadmap is not a place to defer work the user requested. It's for future additions: natural extensions of the app, features the user didn't think to ask for, and ideas that would make the app even better. Think of it as "here's what you have, and here's where you could take it next."
+
+Roadmap items live in `src/roadmap/`, one MSFM file per feature with structured frontmatter:
+
+- `name` — the feature name
+- `type: roadmap`
+- `status` — `done`, `in-progress`, or `not-started`
+- `description` — short summary (used for index rendering)
+- `requires` — array of slugs for prerequisite items. Empty array means available now.
+
+The body is freeform MSFM: prose describing the feature for the user, annotations with technical approach and architecture notes for the agent. Append a History section as items are built.
+
+The MVP itself gets a roadmap file (`src/roadmap/mvp.md`) with `status: done` that documents what the initial build covers. Other items start as `not-started`. Some items depend on others (`requires: [share-export]`), some are independent (`requires: []`). The user picks what to build next.
+
+Always create a roadmap during initial spec authoring. Even simple apps benefit from a "what could come next" view — it shows the user you're thinking ahead and gives them exciting directions to explore. The roadmap gives the user a structured path to grow the app and gives the agent pre-thought implementation notes to work from in future sessions.
 
 ## Spec + Code Sync
 

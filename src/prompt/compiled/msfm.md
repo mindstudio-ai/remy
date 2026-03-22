@@ -112,7 +112,9 @@ A spec starts with YAML frontmatter followed by freeform Markdown. There's no ma
 **Frontmatter fields:**
 - `name` (required) — display name for the spec file
 - `description` (optional) — short summary of what this file covers
-- `type` (optional) — defaults to `spec`. Other values: `design/color` (color palette definition), `design/typography` (font and type style definition). The frontend renders these types with specialized editors.
+- `type` (optional) — defaults to `spec`. Other values: `design/color` (color palette definition), `design/typography` (font and type style definition), `roadmap` (feature roadmap item). The frontend renders these types with specialized editors.
+- `status` (roadmap only) — `done`, `in-progress`, or `not-started`
+- `requires` (roadmap only) — array of slugs for prerequisite roadmap items. Empty array means available now.
 
 ```markdown
 ---
@@ -186,4 +188,32 @@ styles:
     lineHeight: 1.5
     description: Default reading text
 ```
+```
+
+Roadmap item example (one file per feature in `src/roadmap/`):
+
+```markdown
+---
+name: Share & Export
+type: roadmap
+status: not-started
+description: Share haikus as image cards to social media or download as prints.
+requires: []
+---
+
+Share haikus as styled image cards on social media or download as prints.
+The card system generates images using the brand's typography and color
+palette, creating shareable assets that feel native to the app's identity.
+
+~~~
+Use generateImage with Seedream to create styled cards. Card template
+applies brand typography and colors from the spec. Export as PNG via
+CDN transform at 2x resolution. Social sharing via Web Share API with
+clipboard fallback for unsupported browsers.
+~~~
+
+## History
+
+- **2026-03-22** — Built card generation using generateImage with Seedream.
+  Added share button to haiku detail view.
 ```

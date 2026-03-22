@@ -23,6 +23,7 @@ my-app/
       web.md                           web UI spec
       api.md                           API conventions
       cron.md                          scheduled job descriptions
+    roadmap/                           feature roadmap (one file per item, type: roadmap)
 
   dist/                              ← compiled output (code + config)
     methods/                           backend contract
@@ -60,6 +61,7 @@ my-app/
 | Interface configs | `dist/interfaces/*/interface.json` | One per non-web interface type |
 | Specs | `src/*.md` | Natural language, MSFM format |
 | Brand identity | `src/interfaces/@brand/` | visual.md (aesthetic), colors.md (palette), typography.md (fonts), voice.md (tone), assets/ |
+| Roadmap | `src/roadmap/*.md` | Feature roadmap items (type: roadmap). One file per feature with status, dependencies, and history. |
 | Reference material | `src/references/` | Context for the agent, not consumed by platform |
 
 ## The Two SDKs
