@@ -16,37 +16,20 @@ Do not provide images as "references" - images must be ready-to-use assets that 
 
 ### Writing good generation prompts
 
-Write prompts as natural sentences describing a scene, not as comma-separated keyword lists. Describe what a camera would see, not art direction instructions.
+Lead with the visual style, then describe the content. This order helps the model establish the look before filling in details.
 
-**Structure:** Subject and action first, then setting, then style and technical details. Include the intended use when relevant.
+**Structure:** Style/medium first, then subject, then details.
+- "Digital photography, soft natural window light, shallow depth of field. A ceramic coffee cup on a marble countertop, morning light casting long shadows, warm tones."
+- "Flat vector illustration, clean lines, limited color palette. An isometric view of a workspace with a laptop, plant, and notebook."
+- "Abstract digital art, fluid gradients, high contrast. Deep navy flowing into warm amber, organic liquid shapes, editorial feel."
 
-- "A woman laughing while reading on a sun-drenched balcony overlooking a Mediterranean harbor. Editorial photography, shot on Kodak Portra 400, 85mm lens at f/2, soft golden hour light, shallow depth of field. For a lifestyle app hero section."
-- "An overhead view of a cluttered designer's desk with fabric swatches, sketches, and a coffee cup. Natural window light from the left, slightly desaturated tones, Canon 5D with 35mm lens. For an about page."
-- "Smooth organic shapes in deep navy and warm amber, flowing liquid forms with subtle grain texture. Abstract digital art, high contrast, editorial feel."
-
-**Photography vocabulary produces the best results.** The model responds strongly to specific references:
-- Film stocks: Kodak Portra, Fuji Superia, Cinestill 800T, expired film
-- Lenses: 85mm f/1.4, 35mm wide angle, 50mm Summilux, macro
-- Lighting: golden hour, chiaroscuro, tungsten warmth, soft diffused studio light, direct flash
-- Shot types: close-up, overhead flat lay, low angle, eye-level candid, aerial
-- Techniques: shallow depth of field, halation around highlights, film grain, motion blur
-
-**Declare the medium early.** Saying "editorial photograph" vs "watercolor painting" vs "3D render" doesn't just change style — it changes the model's entire approach to composition, color, and detail. Set this expectation in the first sentence.
-
-**For text in images**, wrap the exact text in double quotes and specify the style: `A neon sign reading "OPEN" in cursive pink lettering against a dark brick wall.`
-
-**Compose for the layout.** If you know the image will have text overlaid, request space for it: "negative space in the upper left for headline text" or "clean sky area above the subject." If it's a background, consider "centered subject with clean margins." The first few words of the prompt carry the most weight — lead with the medium and subject.
+**For photorealistic images:** Specify the photography style (editorial, portrait, product, aerial), lighting (natural, studio, golden hour, direct flash), and camera characteristics (close-up, wide angle, shallow depth of field, slightly grainy texture).
 
 **Avoid:**
 - Hex codes in prompts — the model renders them as visible text. Describe colors by name instead.
-- Keyword lists separated by commas — write sentences.
 - Describing positions of arms, legs, or specific limb arrangements.
 - Conflicting style instructions ("photorealistic cartoon").
 - Describing what you don't want — say "empty street" not "street with no cars."
-- Mentioning "text" or "text placement" in prompts — the model will try to render text. Request the composition you want ("negative space in the left third") without saying why.
-- Brand names (camera brands, font names, company names) can get rendered as visible text. Use technical specs ("medium format, 120mm lens") instead of brand names ("Hasselblad") when possible.
-- UI component language — "glass morphism effect", "card design", "button with hover state". Write prompts as if briefing a photographer or artist, not describing CSS.
-- Generating text that should be HTML. Headlines, body copy, CTAs, and any text the user needs to read or interact with belongs in the markup, not baked into an image. Text *within a scene* is fine — a neon sign, a logo on a t-shirt, text on a billboard in a cityscape, an app screen in a device mockup. That's part of the visual content.
 
 ### How generated images work in the UI
 

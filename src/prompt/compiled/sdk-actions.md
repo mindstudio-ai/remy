@@ -2,7 +2,9 @@
 
 `@mindstudio-ai/agent` provides access to 200+ AI models and 1,000+ actions through a single API key. No separate provider keys needed. MindStudio routes to the correct provider (OpenAI, Anthropic, Google, etc.) server-side.
 
-There is a huge amount of capability here: hundreds of text generation models (OpenAI, Anthropic, Google, Meta, Mistral, and more), dozens of image generation models (FLUX, DALL-E, Stable Diffusion, Ideogram, and more), video generation, text-to-speech, music generation, vision analysis, web scraping, 850+ OAuth connectors, and much more. The tables below are a summary. **Always use the `askMindStudioSdk` tool to look up exact method signatures, model IDs, and config options before writing code that uses the SDK.** The SDK assistant knows every action, every model, every connector, and the user's configured OAuth connections. Don't guess at parameters or model IDs from memory.
+There is a huge amount of capability here: hundreds of text generation models (OpenAI, Anthropic, Google, Meta, Mistral, and more), dozens of image generation models (FLUX, DALL-E, Stable Diffusion, Ideogram, and more), video generation, text-to-speech, music generation, vision analysis, web scraping, 850+ OAuth connectors, and much more. The tables below are a summary.
+
+**Always use `askMindStudioSdk` before writing code that uses the SDK.** Treat it as an expert consultant, not a docs search. Describe what you're trying to build at the method level — the full workflow, not just "how do I call generateText." The assistant knows every action, model, connector, configuration option, and the user's configured OAuth connections. It can advise on AI orchestration patterns (structured output, chaining calls, batch processing), help you avoid common mistakes (like manually parsing JSON when the SDK has structured output options), and provide complete working code for your use case.
 
 ## Usage in Methods
 

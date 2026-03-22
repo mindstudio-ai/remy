@@ -12,14 +12,21 @@ import type { Tool } from '../index.js';
 export const askMindStudioSdkTool: Tool = {
   definition: {
     name: 'askMindStudioSdk',
-    description:
-      'Ask the MindStudio SDK assistant about available actions, AI models, connectors, and integrations using natural language. Returns code examples with correct method signatures, model IDs, and config options. Always use this to verify correct SDK usage, especially model IDs and configuration options. Describe what you need, not what API methods you need; the assistant will figure out the right approach. This runs its own LLM call so it has a few seconds of latency; batch multiple questions into a single query.',
+    description: `An expert consultant on building with the MindStudio SDK. Knows every action, model, connector, and configuration option. Use this as an architect, not just a docs lookup:
+
+- Describe what you're trying to build at the method level ("I need a method that takes user text, generates a summary with GPT, extracts entities, and returns structured JSON") and get back architectural guidance + working code.
+- Ask about AI orchestration patterns: structured output, chaining model calls, batch processing, streaming, error handling.
+- Ask about connectors and integrations: what's available, whether the user has configured it, how to use it.
+- Always use this before writing SDK code. Model IDs, config options, and action signatures change frequently. Don't guess.
+
+Batch related questions into a single query. This runs its own LLM call so it has a few seconds of latency.`,
     inputSchema: {
       type: 'object',
       properties: {
         query: {
           type: 'string',
-          description: 'Natural language question about the SDK.',
+          description:
+            'Describe what you want to build or what you need to know. Be specific about the goal, not just the API method.',
         },
       },
       required: ['query'],
