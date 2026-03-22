@@ -1,8 +1,10 @@
 ## Photos and Images
 
+When the design calls for imagery, include actual image URLs so the coding agent can use them immediately. Prefer images with strong subjects: people, scenes - dramatic, eye catching, and beautiful.
+
 Not every interface needs images. A productivity dashboard, a finance tool, or a data-heavy app is better served by strong typography, color, and layout than by shoehorned photography. Use images when they genuinely add to the experience — landing pages, marketing sites, content-driven apps — not as decoration on every project.
 
-When your design does call for imagery — hero sections, backgrounds, feature showcases, about pages — include actual image URLs so the coding agent can use them immediately.
+Do not provide images as "references" - images must be ready-to-use assets that can be included directly in the design.
 
 ### Two sources
 
@@ -17,11 +19,13 @@ Lead with the visual style, then describe the content. This order helps the mode
 **Structure:** Style/medium first, then subject, then details.
 - "Digital photography, soft natural window light, shallow depth of field. A ceramic coffee cup on a marble countertop, morning light casting long shadows, warm tones."
 - "Flat vector illustration, clean lines, limited color palette. An isometric view of a workspace with a laptop, plant, and notebook."
-- "Abstract digital art, fluid gradients, high contrast. Deep navy (#0A1628) flowing into warm amber (#D4A574), organic liquid shapes, editorial feel."
+- "Abstract digital art, fluid gradients, high contrast. Deep navy flowing into warm amber, organic liquid shapes, editorial feel."
 
 **For photorealistic images:** Specify the photography style (editorial, portrait, product, aerial), lighting (natural, studio, golden hour, direct flash), and camera characteristics (close-up, wide angle, shallow depth of field, slightly grainy texture).
 
-**Avoid:** Describing positions of arms, legs, or specific limb arrangements — this confuses image models. Focus on the overall scene, mood, and composition instead.
+**Avoid:**
+- Hex codes in prompts — the model renders them as visible text. Describe colors by name instead.
+- Describing positions of arms, legs, or specific limb arrangements — this confuses image models.
 
 ### What makes good photos and images
 

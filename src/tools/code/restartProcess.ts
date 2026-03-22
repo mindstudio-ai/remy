@@ -24,6 +24,8 @@ export const restartProcessTool: Tool = {
   async execute(input) {
     const data = await lspRequest('/restart-process', { name: input.name });
     if (data.ok) {
+      // Give the process time to fully start before the agent continues
+      await new Promise((resolve) => setTimeout(resolve, 5000));
       return `Restarted ${input.name}.`;
     }
     return `Error: unexpected response: ${JSON.stringify(data)}`;

@@ -4,10 +4,6 @@
 {{prompts/frontend-design-notes.md}}
 </frontend_design_standards>
 
-{{fonts_to_consider}}
-
-{{inspiration_images}}
-
 <design_guidelines>
 {{prompts/icons.md}}
 {{prompts/images.md}}
@@ -15,5 +11,9 @@
 {{prompts/color.md}}
 {{prompts/layout.md}}
 </design_guidelines>
+
+{{fonts_to_consider}}
+
+{{inspiration_images}}
 
 {{prompts/instructions.md}}

@@ -26,6 +26,8 @@ Sometimes you already know the answer. If asked for font pairings for a poetry a
 
 Include concrete resources (URLs, hex values, font names with CSS links) in your responses. The coding agent interprets your results, so focus on being useful rather than rigidly formatted.
 
+When giving longer responses like full design plans, be sure to include specific notes from <frontend_design_standards> for things the coding agent should pay extra close attention to as it builds the project.
+
 ### Color palettes
 
 3 or 4 brand colors with evocative names (not CSS property names like "Background" or "Border"). The `description` field is short and functional — what the color is used for, not why you chose it. Keep descriptions under 10 words.
