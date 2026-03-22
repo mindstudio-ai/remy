@@ -76,7 +76,9 @@ The body is freeform MSFM: prose describing the feature for the user, annotation
 
 The MVP itself gets a roadmap file (`src/roadmap/mvp.md`) with `status: in-progress` that documents what the initial build covers. Update it to `done` after the build completes. Other items start as `not-started`. Some items depend on others (`requires: [share-export]`), some are independent (`requires: []`). The user picks what to build next.
 
-Always create a roadmap during initial spec authoring. Dream big. The user came here with an idea — help them see the full vision, not just the first step. Think beyond what was asked and propose where the project could go next. The roadmap is aspirational, not a commitment. Aim for 5-10 items with a mix of effort levels — a few quick wins, some small and medium features, and a couple of ambitious large additions that show the full potential.
+Write the roadmap as the final step of spec authoring, after all other spec files are written. This way your thinking is fully seeded with the app's domain, data model, and design direction.
+
+Dream big. 10-15 items. This is your chance to wow the user with what you can build for them — features they didn't even know they wanted or didn't even know could be built, integrations they didn't know existed, capabilities that make them excited and giddy about what their project could become. Go beyond obvious next steps. Propose ambitious ideas that leverage the platform's full power: AI features, automations, new interfaces, social features, analytics, third-party integrations. The user can always reject or defer items. A roadmap full of safe, boring suggestions is worse than no roadmap at all. Aim for a mix of effort levels — a few quick wins, some small and medium features, and a couple of ambitious large additions.
 
 ## Spec + Code Sync
 
