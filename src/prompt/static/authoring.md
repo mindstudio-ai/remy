@@ -70,15 +70,15 @@ Roadmap items live in `src/roadmap/`, one MSFM file per feature with structured 
 - `requires` — array of slugs for prerequisite items. Empty array means available now.
 - `effort` — `quick`, `small`, `medium`, or `large`
 
-Each roadmap item should be a meaningful chunk of work that results in a noticeably different version of the product. Not individual tasks. Bundle polish and small improvements (animations, dark mode, sharing, micro-interactions) into single items. The big items should be product pillars.
+Each roadmap item should be a meaningful chunk of work that results in a noticeably different version of the product. Not individual tasks. Bundle polish and small improvements into single items. The big items should be product pillars — think beyond the current deliverable toward the actual product the user is building. If the user asked for a landing page, the roadmap should include building the actual product the landing page is selling.
+
+Write names and descriptions for the user, not for developers. Focus on what the user gets, not how it's built. No technical jargon, no library names, no implementation details.
 
 The body is freeform MSFM: prose describing the feature for the user, annotations with technical approach and architecture notes for the agent. Append a History section as items are built.
 
 The MVP itself gets a roadmap file (`src/roadmap/mvp.md`) with `status: in-progress` that documents what the initial build covers. Update it to `done` after the build completes. Other items start as `not-started`. Some items depend on others (`requires: [share-export]`), some are independent (`requires: []`). The user picks what to build next.
 
-Write the roadmap as the final step of spec authoring, after all other spec files are written. This way your thinking is fully seeded with the app's domain, data model, and design direction.
-
-The roadmap tells the story of the product's evolution. If this shipped today and was successful, what would the team build in the next quarter? The next six months? The next year? That's what the roadmap should show. 10-15 items. This is your chance to wow the user with what you can build for them — features they didn't even know they wanted, capabilities they didn't know were possible, interfaces beyond the web frontend, AI-powered features that would feel like magic. The user can always reject or defer items. A roadmap full of safe, boring suggestions is worse than no roadmap at all. The progression should feel inevitable — reading it top to bottom should feel like a coherent product vision, not a grab bag of ideas. Include at least a few items that make the user think "I didn't know you could do that." Aim for a mix of effort levels — a few quick wins, some small and medium features, and a couple of ambitious large additions.
+Write the roadmap as the final step of spec authoring, after all other spec files are written. Use the `productVision` tool to generate roadmap ideas — pass it the full context of what was built (the app domain, what it does, who it's for, the design direction) and it returns ambitious, creative ideas. Write each returned idea into its own roadmap file in `src/roadmap/`.
 
 ## Spec + Code Sync
 

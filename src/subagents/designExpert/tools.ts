@@ -107,21 +107,6 @@ export const DESIGN_RESEARCH_TOOLS: ToolDefinition[] = [
     },
   },
   {
-    name: 'searchStockPhotos',
-    description:
-      'Search Pexels for stock photos. Returns image URLs with descriptions. Use concrete, descriptive queries ("person working at laptop in modern office" not "business").',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        query: {
-          type: 'string',
-          description: 'What kind of photo to search for.',
-        },
-      },
-      required: ['query'],
-    },
-  },
-  {
     name: 'searchProductScreenshots',
     description:
       'Search for screenshots of real products and apps. Use to find what existing products look like ("stripe dashboard", "linear app", "notion workspace"). Returns image results of actual product UI. Use this for layout and design research on real products, NOT for abstract design inspiration.',
@@ -163,36 +148,6 @@ export const DESIGN_RESEARCH_TOOLS: ToolDefinition[] = [
         },
       },
       required: ['prompts'],
-    },
-  },
-  {
-    name: 'editImage',
-    description:
-      'Edit an existing image using a text instruction. Takes a source image URL and a prompt describing the edits (color grading, style transfer, modifications, adding/removing elements). Returns a new CDN URL.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        imageUrl: {
-          type: 'string',
-          description: 'URL of the source image to edit.',
-        },
-        prompt: {
-          type: 'string',
-          description:
-            'What to change. Describe the edit as an instruction: "apply warm golden hour color grading", "make the background darker", "add a subtle film grain texture".',
-        },
-        width: {
-          type: 'number',
-          description:
-            'Output width in pixels. Default 2048. Range: 2048-4096.',
-        },
-        height: {
-          type: 'number',
-          description:
-            'Output height in pixels. Default 2048. Range: 2048-4096.',
-        },
-      },
-      required: ['imageUrl', 'prompt'],
     },
   },
 ];
@@ -265,13 +220,6 @@ export async function executeDesignTool(
       return `Screenshot: ${ssUrl}\n\n${analysis}`;
     }
 
-    case 'searchStockPhotos': {
-      const encodedQuery = encodeURIComponent(input.query);
-      return runCli(
-        `mindstudio scrape-url --url "https://www.pexels.com/search/${encodedQuery}/" --page-options '{"onlyMainContent": true}' --no-meta`,
-      );
-    }
-
     case 'searchProductScreenshots': {
       const query = `${input.product} product screenshot UI 2026`;
       return runCli(
@@ -310,25 +258,6 @@ export async function executeDesignTool(
         },
       }));
       return runCli(`mindstudio batch '${JSON.stringify(steps)}' --no-meta`);
-    }
-
-    case 'editImage': {
-      const width = (input.width as number) || 2048;
-      const height = (input.height as number) || 2048;
-      const step = JSON.stringify({
-        prompt: input.prompt,
-        imageModelOverride: {
-          model: 'seedream-4.5',
-          config: {
-            images: [input.imageUrl],
-            width,
-            height,
-          },
-        },
-      });
-      return runCli(
-        `mindstudio generate-image '${step}' --output-key imageUrl --no-meta`,
-      );
     }
 
     default:

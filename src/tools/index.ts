@@ -92,6 +92,7 @@ import { runMethodTool } from './code/runMethod.js';
 import { screenshotTool } from './code/screenshot.js';
 import { browserAutomationTool } from '../subagents/browserAutomation/index.js';
 import { designExpertTool } from '../subagents/designExpert/index.js';
+import { productVisionTool } from '../subagents/productVision/index.js';
 
 function getSpecTools(): Tool[] {
   return [readSpecTool, writeSpecTool, editSpecTool, listSpecFilesTool];
@@ -131,6 +132,7 @@ function getCommonTools(): Tool[] {
     searchGoogleTool,
     setProjectNameTool,
     designExpertTool,
+    productVisionTool,
   ];
 }
 

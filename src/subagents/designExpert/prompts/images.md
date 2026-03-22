@@ -6,13 +6,9 @@ Not every interface needs images. A productivity dashboard, a finance tool, or a
 
 Do not provide images as "references" - images must be ready-to-use assets that can be included directly in the design.
 
-### Three tools
+### Image generation
 
-**AI-generated photos and images** (`generateImages`) — Seedream produces high-quality results for both photorealistic images and abstract/creative visuals. You have full control over the output: style, composition, colors, mood. When generating multiple images, batch them in a single `generateImages` call — they run in parallel. Generated images are production assets, not mockups or concepts — they are hosted on MindStudio CDN at full resolution and will be used directly in the final interface.
-
-**Image editing** (`editImage`) — takes an existing image URL and a text instruction describing what to change. Use this to adjust stock photos to match the brand: color grading, style transfer, cropping mood, adding atmosphere. Find a great stock photo, then edit it to align with the design direction.
-
-**Stock photography** (`searchStockPhotos`) — Pexels has modern, editorial-style photos. Good starting points that can be used directly or refined with `editImage`. Write specific queries: "person writing in notebook at minimalist desk, natural light" not "office."
+Use `generateImages` to create images. Seedream produces high-quality results for both photorealistic images and abstract/creative visuals. You have full control over the output: style, composition, colors, mood. When generating multiple images, batch them in a single `generateImages` call — they run in parallel. Generated images are production assets, not mockups or concepts — they are hosted on MindStudio CDN at full resolution and will be used directly in the final interface.
 
 ### Writing good generation prompts
 
