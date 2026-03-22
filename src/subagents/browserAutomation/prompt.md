@@ -95,6 +95,7 @@ Check a count with evaluate:
   - evaluate auto-returns simple expressions. `"script": "document.title"` works directly. For multi-statement scripts, use explicit return.
   - The snapshot in the response is always the most current page state. Even if a wait times out, check the snapshot field; the content you were waiting for may have appeared by then.
   - Execution stops on first error. If step 2 of 5 fails, steps 3-5 don't run. The response will contain results for steps 0-2 (with step 2 having an error field) plus the current snapshot. Adjust and retry from the failed step.
+  - Always call `resetBrowser` as your final action after all tests are complete. This restores the preview to a clean state for the user.
 </rules>
 
 <voice>

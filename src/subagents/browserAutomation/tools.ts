@@ -77,6 +77,15 @@ export const BROWSER_TOOLS: ToolDefinition[] = [
       properties: {},
     },
   },
+  {
+    name: 'resetBrowser',
+    description:
+      'Reset the browser to a clean state. Call this once after all tests are complete to restore the preview for the user. Fire and forget — does not wait for the reload to finish.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
 ];
 
 export const BROWSER_EXTERNAL_TOOLS = new Set(['browserCommand', 'screenshot']);

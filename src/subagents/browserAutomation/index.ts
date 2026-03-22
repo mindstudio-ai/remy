@@ -54,7 +54,17 @@ export const browserAutomationTool: Tool = {
       task: input.task,
       tools: BROWSER_TOOLS,
       externalTools: BROWSER_EXTERNAL_TOOLS,
-      executeTool: async () => 'Error: no local tools in browser automation',
+      executeTool: async (name) => {
+        if (name === 'resetBrowser') {
+          try {
+            await sidecarRequest('/reset-browser', {}, { timeout: 5000 });
+            return 'Browser reset triggered.';
+          } catch {
+            return 'Error: could not reset browser.';
+          }
+        }
+        return `Error: unknown local tool "${name}"`;
+      },
       apiConfig: context.apiConfig,
       model: context.model,
       signal: context.signal,
