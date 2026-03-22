@@ -10,6 +10,7 @@ import type { Tool, ToolExecutionContext } from '../../tools/index.js';
 import { runSubAgent } from '../runner.js';
 import { BROWSER_TOOLS, BROWSER_EXTERNAL_TOOLS } from './tools.js';
 import { BROWSER_AUTOMATION_PROMPT } from './prompt.js';
+import { sidecarRequest } from '../../tools/_helpers/sidecar.js';
 
 export const browserAutomationTool: Tool = {
   definition: {
@@ -32,6 +33,20 @@ export const browserAutomationTool: Tool = {
   async execute(input, context?: ToolExecutionContext) {
     if (!context) {
       return 'Error: browser automation requires execution context (only available in headless mode)';
+    }
+
+    // Check if the browser preview is connected before spinning up the sub-agent
+    try {
+      const status = await sidecarRequest(
+        '/browser-status',
+        {},
+        { timeout: 5000 },
+      );
+      if (!status.connected) {
+        return 'Error: the browser preview is not connected. The user needs to open the preview before browser tests can run.';
+      }
+    } catch {
+      return 'Error: could not check browser status. The dev environment may not be running.';
     }
 
     return runSubAgent({
