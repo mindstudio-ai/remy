@@ -115,6 +115,7 @@ A spec starts with YAML frontmatter followed by freeform Markdown. There's no ma
 - `type` (optional) — defaults to `spec`. Other values: `design/color` (color palette definition), `design/typography` (font and type style definition), `roadmap` (feature roadmap item). The frontend renders these types with specialized editors.
 - `status` (roadmap only) — `done`, `in-progress`, or `not-started`
 - `requires` (roadmap only) — array of slugs for prerequisite roadmap items. Empty array means available now.
+- `effort` (roadmap only) — `quick`, `small`, `medium`, or `large`
 
 ```markdown
 ---
@@ -199,6 +200,7 @@ type: roadmap
 status: not-started
 description: Share haikus as image cards to social media or download as prints.
 requires: []
+effort: medium
 ---
 
 Share haikus as styled image cards on social media or download as prints.

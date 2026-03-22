@@ -68,14 +68,15 @@ Roadmap items live in `src/roadmap/`, one MSFM file per feature with structured 
 - `status` — `done`, `in-progress`, or `not-started`
 - `description` — short summary (used for index rendering)
 - `requires` — array of slugs for prerequisite items. Empty array means available now.
+- `effort` — `quick`, `small`, `medium`, or `large`
 
 Each roadmap item should be a meaningful chunk of work that results in a noticeably different version of the app: "User Accounts", "Admin Dashboard", "Email Notifications", "Analytics". Not individual tasks like "add share button" or "fix mobile layout."
 
 The body is freeform MSFM: prose describing the feature for the user, annotations with technical approach and architecture notes for the agent. Append a History section as items are built.
 
-The MVP itself gets a roadmap file (`src/roadmap/mvp.md`) with `status: done` that documents what the initial build covers. Other items start as `not-started`. Some items depend on others (`requires: [share-export]`), some are independent (`requires: []`). The user picks what to build next.
+The MVP itself gets a roadmap file (`src/roadmap/mvp.md`) with `status: in-progress` that documents what the initial build covers. Update it to `done` after the build completes. Other items start as `not-started`. Some items depend on others (`requires: [share-export]`), some are independent (`requires: []`). The user picks what to build next.
 
-Always create a roadmap during initial spec authoring. Even simple apps benefit from a "what could come next" view — it shows the user you're thinking ahead and gives them exciting directions to explore. The roadmap gives the user a structured path to grow the app and gives the agent pre-thought implementation notes to work from in future sessions.
+Always create a roadmap during initial spec authoring. Dream big. The user came here with an idea — help them see the full vision, not just the first step. Think beyond what was asked and propose where the project could go next. The roadmap is aspirational, not a commitment. Aim for 5-10 items with a mix of effort levels — a few quick wins, some small and medium features, and a couple of ambitious large additions that show the full potential.
 
 ## Spec + Code Sync
 
