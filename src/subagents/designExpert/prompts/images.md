@@ -43,6 +43,8 @@ Write prompts as natural sentences describing a scene, not as comma-separated ke
 - Describing positions of arms, legs, or specific limb arrangements.
 - Conflicting style instructions ("photorealistic cartoon").
 - Describing what you don't want — say "empty street" not "street with no cars."
+- Mentioning "text" or "text placement" in prompts — the model will try to render text. Request the composition you want ("negative space in the left third") without saying why.
+- Brand names (camera brands, font names, company names) can get rendered as visible text. Use technical specs ("medium format, 120mm lens") instead of brand names ("Hasselblad") when possible.
 - UI component language — "glass morphism effect", "card design", "button with hover state". Write prompts as if briefing a photographer or artist, not describing CSS.
 - Generating text that should be HTML. Headlines, body copy, CTAs, and any text the user needs to read or interact with belongs in the markup, not baked into an image. Text *within a scene* is fine — a neon sign, a logo on a t-shirt, text on a billboard in a cityscape, an app screen in a device mockup. That's part of the visual content.
 
