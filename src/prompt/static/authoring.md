@@ -69,6 +69,8 @@ Roadmap items live in `src/roadmap/`, one MSFM file per feature with structured 
 - `description` — short summary (used for index rendering)
 - `requires` — array of slugs for prerequisite items. Empty array means available now.
 
+Each roadmap item should be a meaningful chunk of work that results in a noticeably different version of the app: "User Accounts", "Admin Dashboard", "Email Notifications", "Analytics". Not individual tasks like "add share button" or "fix mobile layout."
+
 The body is freeform MSFM: prose describing the feature for the user, annotations with technical approach and architecture notes for the agent. Append a History section as items are built.
 
 The MVP itself gets a roadmap file (`src/roadmap/mvp.md`) with `status: done` that documents what the initial build covers. Other items start as `not-started`. Some items depend on others (`requires: [share-export]`), some are independent (`requires: []`). The user picks what to build next.
