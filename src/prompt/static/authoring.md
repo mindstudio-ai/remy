@@ -70,7 +70,7 @@ Roadmap items live in `src/roadmap/`, one MSFM file per feature with structured 
 - `requires` — array of slugs for prerequisite items. Empty array means available now.
 - `effort` — `quick`, `small`, `medium`, or `large`
 
-Each roadmap item should be a meaningful chunk of work that results in a noticeably different version of the app: "User Accounts", "Admin Dashboard", "Email Notifications", "Analytics". Not individual tasks like "add share button" or "fix mobile layout."
+Each roadmap item should be a meaningful chunk of work that results in a noticeably different version of the product. Not individual tasks. Bundle polish and small improvements (animations, dark mode, sharing, micro-interactions) into single items. The big items should be product pillars.
 
 The body is freeform MSFM: prose describing the feature for the user, annotations with technical approach and architecture notes for the agent. Append a History section as items are built.
 
@@ -78,7 +78,7 @@ The MVP itself gets a roadmap file (`src/roadmap/mvp.md`) with `status: in-progr
 
 Write the roadmap as the final step of spec authoring, after all other spec files are written. This way your thinking is fully seeded with the app's domain, data model, and design direction.
 
-Dream big. 10-15 items. This is your chance to wow the user with what you can build for them — features they didn't even know they wanted or didn't even know could be built, integrations they didn't know existed, capabilities that make them excited and giddy about what their project could become. Go beyond obvious next steps. Propose ambitious ideas that leverage the platform's full power: AI features, automations, new interfaces, social features, analytics, third-party integrations. The user can always reject or defer items. A roadmap full of safe, boring suggestions is worse than no roadmap at all. Aim for a mix of effort levels — a few quick wins, some small and medium features, and a couple of ambitious large additions.
+The roadmap tells the story of the product's evolution. If this shipped today and was successful, what would the team build in the next quarter? The next six months? The next year? That's what the roadmap should show. 10-15 items. This is your chance to wow the user with what you can build for them — features they didn't even know they wanted, capabilities they didn't know were possible, interfaces beyond the web frontend, AI-powered features that would feel like magic. The user can always reject or defer items. A roadmap full of safe, boring suggestions is worse than no roadmap at all. The progression should feel inevitable — reading it top to bottom should feel like a coherent product vision, not a grab bag of ideas. Include at least a few items that make the user think "I didn't know you could do that." Aim for a mix of effort levels — a few quick wins, some small and medium features, and a couple of ambitious large additions.
 
 ## Spec + Code Sync
 
