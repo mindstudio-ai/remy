@@ -26,7 +26,6 @@ Lead with the visual style, then describe the content. This order helps the mode
 **Avoid:**
 - Hex codes in prompts — the model renders them as visible text. Describe colors by name instead.
 - Describing positions of arms, legs, or specific limb arrangements — this confuses image models.
-- Abstract filler when the product has real subjects. Default to concrete subjects with emotional resonance.
 
 ### What makes good photos and images
 
