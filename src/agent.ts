@@ -172,6 +172,10 @@ export async function runTurn(params: {
   state.messages.push(userMsg);
 
   // Tool-call loop: keep going until the model stops requesting tools
+  // Track last tool context across loop iterations so the status watcher
+  // has something to report while waiting for the model's first token.
+  let lastCompletedTools = '';
+
   while (true) {
     if (signal?.aborted) {
       onEvent({ type: 'turn_cancelled' });
@@ -285,7 +289,7 @@ export async function runTurn(params: {
       apiConfig,
       getContext: () => ({
         assistantText: assistantText.slice(-500),
-        lastToolName: toolCalls.at(-1)?.name,
+        lastToolName: toolCalls.at(-1)?.name || lastCompletedTools || undefined,
       }),
       onStatus: (label) => onEvent({ type: 'status', message: label }),
       signal,
@@ -438,15 +442,6 @@ export async function runTurn(params: {
       count: toolCalls.length,
       tools: toolCalls.map((tc) => tc.name),
     });
-    const toolStatusWatcher = startStatusWatcher({
-      apiConfig,
-      getContext: () => ({
-        assistantText: assistantText.slice(-500),
-        lastToolName: toolCalls.map((tc) => tc.name).join(', '),
-      }),
-      onStatus: (label) => onEvent({ type: 'status', message: label }),
-      signal,
-    });
     const results = await Promise.all(
       toolCalls.map(async (tc) => {
         if (signal?.aborted) {
@@ -509,7 +504,9 @@ export async function runTurn(params: {
       }),
     );
 
-    toolStatusWatcher.stop();
+    // Remember what tools just ran so the streaming watcher has context
+    // while waiting for the model's first token in the next iteration.
+    lastCompletedTools = toolCalls.map((tc) => tc.name).join(', ');
 
     // Append tool results as user messages (with toolCallId to link them).
     // This must happen even on cancellation — the assistant message already

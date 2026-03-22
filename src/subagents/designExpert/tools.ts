@@ -165,6 +165,36 @@ export const DESIGN_RESEARCH_TOOLS: ToolDefinition[] = [
       required: ['prompts'],
     },
   },
+  {
+    name: 'editImage',
+    description:
+      'Edit an existing image using a text instruction. Takes a source image URL and a prompt describing the edits (color grading, style transfer, modifications, adding/removing elements). Returns a new CDN URL.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        imageUrl: {
+          type: 'string',
+          description: 'URL of the source image to edit.',
+        },
+        prompt: {
+          type: 'string',
+          description:
+            'What to change. Describe the edit as an instruction: "apply warm golden hour color grading", "make the background darker", "add a subtle film grain texture".',
+        },
+        width: {
+          type: 'number',
+          description:
+            'Output width in pixels. Default 2048. Range: 2048-4096.',
+        },
+        height: {
+          type: 'number',
+          description:
+            'Output height in pixels. Default 2048. Range: 2048-4096.',
+        },
+      },
+      required: ['imageUrl', 'prompt'],
+    },
+  },
 ];
 
 function runCli(cmd: string): Promise<string> {
@@ -218,40 +248,21 @@ export async function executeDesignTool(
       );
 
     case 'screenshotAndAnalyze': {
-      // Step 1: fetch with screenshot
-      const screenshotResult = await runCli(
-        `mindstudio scrape-url --url ${JSON.stringify(input.url)} --page-options ${JSON.stringify(JSON.stringify({ onlyMainContent: true, screenshot: true }))} --no-meta`,
+      // Step 1: take screenshot
+      const ssUrl = await runCli(
+        `mindstudio screenshot-url --url ${JSON.stringify(input.url)} --mode viewport --width 1440 --delay 2000 --output-key screenshotUrl --no-meta`,
       );
 
-      // Extract screenshot URL from the result
-      const screenshotMatch = screenshotResult.match(
-        /https:\/\/[^\s"']+(?:\.png|\.jpg|\.jpeg|\.webp|screenshot[^\s"']*)/i,
-      );
-      if (!screenshotMatch) {
-        // Try parsing as JSON to find screenshotUrl field
-        try {
-          const parsed = JSON.parse(screenshotResult);
-          const ssUrl =
-            parsed.screenshot ||
-            parsed.screenshotUrl ||
-            parsed.content?.screenshotUrl;
-          if (ssUrl) {
-            const analysisPrompt = input.prompt || DESIGN_REFERENCE_PROMPT;
-            const analysis = await runCli(
-              `mindstudio analyze-image --prompt ${JSON.stringify(analysisPrompt)} --image-url ${JSON.stringify(ssUrl)} --no-meta`,
-            );
-            return `Screenshot: ${ssUrl}\n\n${analysis}`;
-          }
-        } catch {}
-        return `Fetched ${input.url} but could not extract screenshot URL.\n\nPage content:\n${screenshotResult}`;
+      if (ssUrl.startsWith('Error')) {
+        return `Could not screenshot ${input.url}: ${ssUrl}`;
       }
 
-      // Step 2: analyze the screenshot
+      // Step 2: analyze
       const analysisPrompt = input.prompt || DESIGN_REFERENCE_PROMPT;
       const analysis = await runCli(
-        `mindstudio analyze-image --prompt ${JSON.stringify(analysisPrompt)} --image-url ${JSON.stringify(screenshotMatch[0])} --no-meta`,
+        `mindstudio analyze-image --prompt ${JSON.stringify(analysisPrompt)} --image-url ${JSON.stringify(ssUrl)} --no-meta`,
       );
-      return `Screenshot: ${screenshotMatch[0]}\n\n${analysis}`;
+      return `Screenshot: ${ssUrl}\n\n${analysis}`;
     }
 
     case 'searchStockPhotos': {
@@ -299,6 +310,25 @@ export async function executeDesignTool(
         },
       }));
       return runCli(`mindstudio batch '${JSON.stringify(steps)}' --no-meta`);
+    }
+
+    case 'editImage': {
+      const width = (input.width as number) || 2048;
+      const height = (input.height as number) || 2048;
+      const step = JSON.stringify({
+        prompt: input.prompt,
+        imageModelOverride: {
+          model: 'seedream-4.5',
+          config: {
+            images: [input.imageUrl],
+            width,
+            height,
+          },
+        },
+      });
+      return runCli(
+        `mindstudio generate-image '${step}' --output-key imageUrl --no-meta`,
+      );
     }
 
     default:

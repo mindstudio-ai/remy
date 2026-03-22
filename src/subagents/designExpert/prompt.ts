@@ -160,7 +160,7 @@ ${pairingList}
     ? `<inspiration_images>
 ## Design inspiration
 
-A random sample of pre-analyzed design references. Use these observations to inform your recommendations and build something creative, unique, and compelling.
+This is what the bar looks like. These are real sites that made it onto curated design galleries because they did something bold, intentional, and memorable. Study the moves they make — the confident color choices, the unexpected layouts, the typography that carries the whole page. Your recommendations should feel like they belong in this company.
 
 ${imageList}
 </inspiration_images>`

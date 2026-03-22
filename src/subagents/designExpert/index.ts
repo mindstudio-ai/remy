@@ -21,8 +21,8 @@ The visual design expert can be used for all things visual design, from quick qu
 - Layout and composition ideas that go beyond generic AI defaults
 - Analyzing a reference site or screenshot for design insights (it can take screenshots and do research on its own)
 - Beautiful layout images or photos
-- Icon recommendations
-- Proposing full visual directions during intake
+- Icon recommendations or AI image editing
+- Proposing full visual design and layout directions during intake
 
 **How to write the task:**
 Include context about the app — what it does, who uses it, what mood or feeling the interface should convey. If the user has any specific requirements, be sure to include them. The agent can not see your conversation with the user, so you need to include all details. More context produces better results. For quick questions ("three font pairings for a <x> app"), brief is fine. You can ask for multiple topics, multiple options, etc.
