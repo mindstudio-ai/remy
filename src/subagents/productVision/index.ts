@@ -1,8 +1,8 @@
 /**
  * Product vision sub-agent.
  *
- * Reads the completed spec context and generates ambitious, creative
- * roadmap ideas. Writes them directly to src/roadmap/ as MSFM files.
+ * Reads the completed spec files from disk and generates ambitious,
+ * creative roadmap ideas. Writes them directly to src/roadmap/ as MSFM files.
  */
 
 import fs from 'node:fs';
@@ -19,7 +19,57 @@ const PROMPT_PATH = fs.existsSync(local)
   ? local
   : path.join(base, 'subagents', 'productVision', 'prompt.md');
 
-const PRODUCT_VISION_PROMPT = fs.readFileSync(PROMPT_PATH, 'utf-8').trim();
+const BASE_PROMPT = fs.readFileSync(PROMPT_PATH, 'utf-8').trim();
+
+// ---------------------------------------------------------------------------
+// Read all spec files from src/ and concatenate into context
+// ---------------------------------------------------------------------------
+
+function loadSpecContext(): string {
+  const specDir = 'src';
+  const files: string[] = [];
+
+  function walk(dir: string): void {
+    try {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          // Skip roadmap dir — we're generating those
+          if (entry.name !== 'roadmap') {
+            walk(full);
+          }
+        } else if (entry.name.endsWith('.md')) {
+          files.push(full);
+        }
+      }
+    } catch {
+      // Directory may not exist
+    }
+  }
+
+  walk(specDir);
+
+  if (files.length === 0) {
+    return '';
+  }
+
+  const sections = files
+    .map((f) => {
+      try {
+        const content = fs.readFileSync(f, 'utf-8').trim();
+        return `<file path="${f}">\n${content}\n</file>`;
+      } catch {
+        return '';
+      }
+    })
+    .filter(Boolean);
+
+  return `<spec_files>\n${sections.join('\n\n')}\n</spec_files>`;
+}
+
+// ---------------------------------------------------------------------------
+// Tool: writeRoadmapItem
+// ---------------------------------------------------------------------------
 
 const VISION_TOOLS: ToolDefinition[] = [
   {
@@ -102,17 +152,21 @@ ${body}
   }
 }
 
+// ---------------------------------------------------------------------------
+// Tool definition for Remy
+// ---------------------------------------------------------------------------
+
 export const productVisionTool: Tool = {
   definition: {
     name: 'productVision',
-    description: `A product visionary that imagines where the project could go next. Pass it the full context of what was built and it generates 10-15 ambitious, creative roadmap ideas and writes them directly to src/roadmap/. Use this at the end of spec authoring to populate the roadmap.`,
+    description: `A product visionary that imagines where the project could go next. It automatically reads all spec files from src/ for context. Pass a brief description of the app and who it's for. It generates 10-15 ambitious, creative roadmap ideas and writes them directly to src/roadmap/. Use this at the end of spec authoring to populate the roadmap.`,
     inputSchema: {
       type: 'object',
       properties: {
         task: {
           type: 'string',
           description:
-            "Full context: what the app does, who it's for, what was built, the domain, the design direction. The more context, the better the ideas.",
+            "Brief description of the app and who it's for. The tool reads the full spec files automatically — no need to repeat their contents.",
         },
       },
       required: ['task'],
@@ -124,8 +178,14 @@ export const productVisionTool: Tool = {
       return 'Error: product vision requires execution context';
     }
 
+    // Build system prompt with spec context injected
+    const specContext = loadSpecContext();
+    const system = specContext
+      ? `${BASE_PROMPT}\n\n${specContext}`
+      : BASE_PROMPT;
+
     return runSubAgent({
-      system: PRODUCT_VISION_PROMPT,
+      system,
       task: input.task,
       tools: VISION_TOOLS,
       externalTools: new Set<string>(),
