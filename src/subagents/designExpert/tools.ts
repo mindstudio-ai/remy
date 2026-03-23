@@ -98,7 +98,7 @@ export const DESIGN_EXPERT_TOOLS: ToolDefinition[] = [
   {
     name: 'generateImages',
     description:
-      'Generate images using AI (Seedream). Returns CDN URLs. Produces high-quality results for both photorealistic images and abstract/creative visuals. Pass multiple prompts to generate in parallel.',
+      'Generate images using AI (Seedream). Returns CDN URLs with a quality analysis for each image. Produces high-quality results for both photorealistic images and abstract/creative visuals. Pass multiple prompts to generate in parallel. No need to analyze images separately after generating — the analysis is included.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -182,8 +182,12 @@ export async function executeDesignExpertTool(
       const width = (input.width as number) || 2048;
       const height = (input.height as number) || 2048;
 
+      const ANALYZE_PROMPT =
+        'You are reviewing this image for a visual designer sourcing assets for a project. Describe: what the image depicts, the mood and color palette, how the lighting and composition work, whether there are any issues (unwanted text, artifacts, distortions), and how it could be used in a layout (hero background, feature section, card texture, etc). Be concise and practical.';
+
+      // Generate all images
+      let imageUrls: string[];
       if (prompts.length === 1) {
-        // Single image — direct call
         const step = JSON.stringify({
           prompt: prompts[0],
           imageModelOverride: {
@@ -191,23 +195,48 @@ export async function executeDesignExpertTool(
             config: { width, height },
           },
         });
-        return runCli(
+        const url = await runCli(
           `mindstudio generate-image '${step}' --output-key imageUrl --no-meta`,
         );
+        imageUrls = [url];
+      } else {
+        const steps = prompts.map((prompt) => ({
+          stepType: 'generateImage',
+          step: {
+            prompt,
+            imageModelOverride: {
+              model: 'seedream-4.5',
+              config: { width, height },
+            },
+          },
+        }));
+        const batchResult = await runCli(
+          `mindstudio batch '${JSON.stringify(steps)}' --no-meta`,
+        );
+        try {
+          const parsed = JSON.parse(batchResult);
+          imageUrls = parsed.results.map(
+            (r: any) => r.output?.imageUrl ?? `Error: ${r.error}`,
+          );
+        } catch {
+          return batchResult;
+        }
       }
 
-      // Multiple images — batch call
-      const steps = prompts.map((prompt) => ({
-        stepType: 'generateImage',
-        step: {
-          prompt,
-          imageModelOverride: {
-            model: 'seedream-4.5',
-            config: { width, height },
-          },
-        },
-      }));
-      return runCli(`mindstudio batch '${JSON.stringify(steps)}' --no-meta`);
+      // Analyze each image in parallel
+      const analyses = await Promise.all(
+        imageUrls.map(async (url, i) => {
+          if (url.startsWith('Error')) {
+            return `Image ${i + 1}: ${url}`;
+          }
+          const analysis = await runCli(
+            `mindstudio analyze-image --prompt ${JSON.stringify(ANALYZE_PROMPT)} --image-url ${JSON.stringify(url)} --output-key analysis --no-meta`,
+          );
+          return `**Image ${i + 1}:** ${url}\nPrompt: ${prompts[i]}\nAnalysis: ${analysis}`;
+        }),
+      );
+
+      return analyses.join('\n\n');
     }
 
     default:

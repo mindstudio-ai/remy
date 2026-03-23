@@ -26,6 +26,7 @@ Lead with the visual style, then describe the content. This order helps the mode
 - Describing positions of arms, legs, or specific limb arrangements.
 - Conflicting style instructions ("photorealistic cartoon").
 - Describing what you don't want — say "empty street" not "street with no cars."
+- Words like "editorial", "magazine", "Vogue", "cover" — the model interprets these literally and renders magazine masthead text over the image. Describe the lighting, composition, and mood you want instead of referencing publications.
 
 ### How generated images work in the UI
 
