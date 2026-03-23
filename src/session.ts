@@ -7,7 +7,7 @@
  */
 
 import fs from 'node:fs';
-import type { Message } from './api.js';
+import type { Message, ContentBlock } from './api.js';
 import type { AgentState } from './agent.js';
 
 const SESSION_FILE = '.remy-session.json';
@@ -29,10 +29,10 @@ export function loadSession(state: AgentState): boolean {
 /**
  * Ensure every tool_use has a matching tool_result.
  *
- * If an assistant message has toolCalls but the following messages
- * don't include matching tool_result entries (e.g., due to a crash
- * or cancellation bug), inject synthetic error results so the API
- * doesn't reject the conversation.
+ * If an assistant message has tool blocks in its content but the
+ * following messages don't include matching tool_result entries
+ * (e.g., due to a crash or cancellation bug), inject synthetic
+ * error results so the API doesn't reject the conversation.
  */
 function sanitizeMessages(messages: Message[]): Message[] {
   const result: Message[] = [];
@@ -41,7 +41,15 @@ function sanitizeMessages(messages: Message[]): Message[] {
     result.push(messages[i]);
     const msg = messages[i];
 
-    if (msg.role !== 'assistant' || !msg.toolCalls?.length) {
+    if (msg.role !== 'assistant' || !Array.isArray(msg.content)) {
+      continue;
+    }
+
+    // Extract tool blocks from content
+    const toolBlocks = (msg.content as ContentBlock[]).filter(
+      (b): b is ContentBlock & { type: 'tool' } => b.type === 'tool',
+    );
+    if (toolBlocks.length === 0) {
       continue;
     }
 
@@ -57,7 +65,7 @@ function sanitizeMessages(messages: Message[]): Message[] {
     }
 
     // Inject missing tool_results
-    for (const tc of msg.toolCalls) {
+    for (const tc of toolBlocks) {
       if (!resultIds.has(tc.id)) {
         result.push({
           role: 'user',

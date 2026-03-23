@@ -12,6 +12,7 @@
 import {
   streamChatWithRetry,
   type Message,
+  type ContentBlock,
   type ToolDefinition,
 } from '../api.js';
 import { log } from '../logger.js';
@@ -60,12 +61,7 @@ export async function runSubAgent(config: SubAgentConfig): Promise<string> {
       return 'Error: cancelled';
     }
 
-    let assistantText = '';
-    const toolCalls: Array<{
-      id: string;
-      name: string;
-      input: Record<string, any>;
-    }> = [];
+    const contentBlocks: ContentBlock[] = [];
     let stopReason = 'end_turn';
 
     try {
@@ -83,17 +79,32 @@ export async function runSubAgent(config: SubAgentConfig): Promise<string> {
         }
 
         switch (event.type) {
-          case 'text':
-            assistantText += event.text;
+          case 'text': {
+            const lastBlock = contentBlocks.at(-1);
+            if (lastBlock?.type === 'text') {
+              lastBlock.text += event.text;
+            } else {
+              contentBlocks.push({ type: 'text', text: event.text });
+            }
             emit({ type: 'text', text: event.text });
             break;
+          }
 
           case 'thinking':
             emit({ type: 'thinking', text: event.text });
             break;
 
+          case 'thinking_complete':
+            contentBlocks.push({
+              type: 'thinking',
+              thinking: event.thinking,
+              signature: event.signature,
+            });
+            break;
+
           case 'tool_use':
-            toolCalls.push({
+            contentBlocks.push({
+              type: 'tool',
               id: event.id,
               name: event.name,
               input: event.input,
@@ -127,13 +138,20 @@ export async function runSubAgent(config: SubAgentConfig): Promise<string> {
     // Record assistant message
     messages.push({
       role: 'assistant',
-      content: assistantText,
-      toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+      content: contentBlocks,
     });
+
+    // Extract tool calls from content blocks
+    const toolCalls = contentBlocks.filter(
+      (b): b is ContentBlock & { type: 'tool' } => b.type === 'tool',
+    );
 
     // If no tool calls, we're done
     if (stopReason !== 'tool_use' || toolCalls.length === 0) {
-      return assistantText;
+      return contentBlocks
+        .filter((b): b is ContentBlock & { type: 'text' } => b.type === 'text')
+        .map((b) => b.text)
+        .join('');
     }
 
     // Execute tool calls

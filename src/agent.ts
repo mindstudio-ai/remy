@@ -21,6 +21,7 @@
 import {
   streamChatWithRetry,
   type Message,
+  type ContentBlock,
   type Attachment,
   type StreamEvent,
 } from './api.js';
@@ -34,6 +35,22 @@ import { log } from './logger.js';
 import { parsePartialJson } from './parsePartialJson.js';
 import { startStatusWatcher } from './statusWatcher.js';
 import { friendlyError } from './errors.js';
+
+// Content block helpers
+function getTextContent(blocks: ContentBlock[]): string {
+  return blocks
+    .filter((b): b is ContentBlock & { type: 'text' } => b.type === 'text')
+    .map((b) => b.text)
+    .join('');
+}
+
+function getToolCalls(
+  blocks: ContentBlock[],
+): Array<{ id: string; name: string; input: Record<string, any> }> {
+  return blocks.filter(
+    (b): b is ContentBlock & { type: 'tool' } => b.type === 'tool',
+  );
+}
 
 // Tools where the result comes from outside (sandbox/user), not local execution.
 const EXTERNAL_TOOLS = new Set([
@@ -184,12 +201,7 @@ export async function runTurn(params: {
       return;
     }
 
-    let assistantText = '';
-    const toolCalls: Array<{
-      id: string;
-      name: string;
-      input: Record<string, any>;
-    }> = [];
+    const contentBlocks: ContentBlock[] = [];
     const toolInputAccumulators = new Map<string, ToolInputAcc>();
     let stopReason = 'end_turn';
 
@@ -289,8 +301,11 @@ export async function runTurn(params: {
     const statusWatcher = startStatusWatcher({
       apiConfig,
       getContext: () => ({
-        assistantText: assistantText.slice(-500),
-        lastToolName: toolCalls.at(-1)?.name || lastCompletedTools || undefined,
+        assistantText: getTextContent(contentBlocks).slice(-500),
+        lastToolName:
+          getToolCalls(contentBlocks).at(-1)?.name ||
+          lastCompletedTools ||
+          undefined,
         lastToolResult: lastCompletedResult || undefined,
       }),
       onStatus: (label) => onEvent({ type: 'status', message: label }),
@@ -321,13 +336,28 @@ export async function runTurn(params: {
         }
 
         switch (event.type) {
-          case 'text':
-            assistantText += event.text;
+          case 'text': {
+            // Append to last text block if it exists, else push new one
+            const lastBlock = contentBlocks.at(-1);
+            if (lastBlock?.type === 'text') {
+              lastBlock.text += event.text;
+            } else {
+              contentBlocks.push({ type: 'text', text: event.text });
+            }
             onEvent({ type: 'text', text: event.text });
             break;
+          }
 
           case 'thinking':
             onEvent({ type: 'thinking', text: event.text });
+            break;
+
+          case 'thinking_complete':
+            contentBlocks.push({
+              type: 'thinking',
+              thinking: event.thinking,
+              signature: event.signature,
+            });
             break;
 
           case 'tool_input_delta': {
@@ -364,7 +394,8 @@ export async function runTurn(params: {
           }
 
           case 'tool_use': {
-            toolCalls.push({
+            contentBlocks.push({
+              type: 'tool',
               id: event.id,
               name: event.name,
               input: event.input,
@@ -413,11 +444,11 @@ export async function runTurn(params: {
 
     if (signal?.aborted) {
       // Record whatever the assistant produced before cancellation
-      if (assistantText) {
+      if (contentBlocks.length > 0) {
+        contentBlocks.push({ type: 'text', text: '\n\n(cancelled)' });
         state.messages.push({
           role: 'assistant',
-          content: assistantText + '\n\n(cancelled)',
-          toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+          content: contentBlocks,
         });
       }
       onEvent({ type: 'turn_cancelled' });
@@ -428,11 +459,11 @@ export async function runTurn(params: {
     // Record assistant message in conversation history
     state.messages.push({
       role: 'assistant',
-      content: assistantText,
-      toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+      content: contentBlocks,
     });
 
     // If no tool calls, the turn is complete
+    const toolCalls = getToolCalls(contentBlocks);
     if (stopReason !== 'tool_use' || toolCalls.length === 0) {
       saveSession(state);
       onEvent({ type: 'turn_done' });

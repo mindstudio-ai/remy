@@ -19,11 +19,17 @@ export interface Attachment {
   extractedTextUrl?: string;
 }
 
+// Typed content blocks for assistant messages — preserves ordering of
+// thinking, text, and tool calls as they occurred in the stream.
+export type ContentBlock =
+  | { type: 'thinking'; thinking: string; signature: string }
+  | { type: 'text'; text: string }
+  | { type: 'tool'; id: string; name: string; input: Record<string, any> };
+
 export interface Message {
   role: 'system' | 'user' | 'assistant';
-  content: string;
-  // Assistant messages may include tool calls alongside text
-  toolCalls?: Array<{ id: string; name: string; input: Record<string, any> }>;
+  // User/system messages: string. Assistant messages: ContentBlock[].
+  content: string | ContentBlock[];
   // User messages with toolCallId are tool results (not human messages)
   toolCallId?: string;
   isToolError?: boolean;
@@ -44,6 +50,7 @@ export interface ToolDefinition {
 export type StreamEvent =
   | { type: 'text'; text: string }
   | { type: 'thinking'; text: string }
+  | { type: 'thinking_complete'; thinking: string; signature: string }
   | { type: 'tool_input_delta'; id: string; name: string; delta: string }
   | {
       type: 'tool_input_args';
