@@ -5,6 +5,7 @@
 - Spring physics for natural-feeling motion
 - Purposeful micro-interactions — scaling, color shifts, depth changes on hover/click
 - Staggered entrance reveals — content appearing sequentially as it enters view
+- Pay attention to timing, duration, speed, and layout shift - make sure animations are beautiful, especially if they involve text or elements the user is reading or interacting with.
 
 ### Libraries
   - Prefer raw CSS animations when possible. 

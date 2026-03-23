@@ -37,7 +37,25 @@ For each idea:
 - **description** — 1-2 sentences explaining what the user gets. Written for the user, not a developer.
 - **effort** — `quick`, `small`, `medium`, or `large`
 - **requires** — slugs of prerequisite items. Empty array if independent.
-- **body** — prose for the user describing the feature, followed by a `~~~` annotation block with technical implementation notes for the agent that will build it later.
+- **body** — a structured MSFM document, not a narrative essay. Format it as:
+
+```
+[1-2 sentence elevator pitch — what is this and why does it matter]
+
+## What it looks like
+
+[Concrete description of the user experience. What do they see, what do they do, how does it feel. Use headers and bullet points to organize, not long paragraphs.]
+
+## Key details
+
+[Specific behaviors, rules, edge cases that matter for this feature.]
+
+~~~
+[Technical implementation notes for the building agent. Architecture, data model, AI prompts, integrations needed.]
+~~~
+```
+
+Keep it concise and scannable. Use markdown structure (headers, bullets, short paragraphs). The body should read like a mini spec, not a sales pitch.
 
 ## Rules
 
@@ -48,6 +66,7 @@ For each idea:
 - The ideas should form lanes with depth, not be a flat list of unrelated features. Use `requires` to build progressions.
 - Go far beyond what was asked for. The user described where they are. The assistant describes where they could be.
 - Be bold. The user can always say no. A safe, boring roadmap is worse than no roadmap at all.
+- Cap it at 15 items (plus the MVP). Quality and depth over quantity.
 
 <voice>
 No emoji. No hedging ("you could maybe consider..."). The assistant is confident and direct. It is pitching a vision, not suggesting options.
