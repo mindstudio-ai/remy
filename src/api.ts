@@ -59,28 +59,43 @@ export interface ToolDefinition {
   inputSchema: Record<string, any>;
 }
 
-// Events yielded by the SSE stream
+// Events yielded by the SSE stream. All events include an optional `ts`
+// timestamp from the platform (milliseconds). Falls back to Date.now() if absent.
 export type StreamEvent =
-  | { type: 'text'; text: string }
-  | { type: 'thinking'; text: string }
-  | { type: 'thinking_complete'; thinking: string; signature: string }
-  | { type: 'tool_input_delta'; id: string; name: string; delta: string }
+  | { type: 'text'; text: string; ts: number }
+  | { type: 'thinking'; text: string; ts: number }
+  | {
+      type: 'thinking_complete';
+      thinking: string;
+      signature: string;
+      ts: number;
+    }
+  | {
+      type: 'tool_input_delta';
+      id: string;
+      name: string;
+      delta: string;
+      ts: number;
+    }
   | {
       type: 'tool_input_args';
       id: string;
       name: string;
       args: Record<string, any>;
+      ts: number;
     }
   | {
       type: 'tool_use';
       id: string;
       name: string;
       input: Record<string, any>;
+      ts: number;
     }
   | {
       type: 'done';
       stopReason: string;
       usage: { inputTokens: number; outputTokens: number };
+      ts: number;
     }
   | { type: 'error'; error: string };
 

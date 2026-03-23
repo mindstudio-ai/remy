@@ -298,7 +298,7 @@ export async function runTurn(params: {
               contentBlocks.push({
                 type: 'text',
                 text: event.text,
-                startedAt: Date.now(),
+                startedAt: event.ts,
               });
             }
             onEvent({ type: 'text', text: event.text });
@@ -307,7 +307,7 @@ export async function runTurn(params: {
 
           case 'thinking':
             if (!thinkingStartedAt) {
-              thinkingStartedAt = Date.now();
+              thinkingStartedAt = event.ts;
             }
             onEvent({ type: 'thinking', text: event.text });
             break;
@@ -318,7 +318,7 @@ export async function runTurn(params: {
               thinking: event.thinking,
               signature: event.signature,
               startedAt: thinkingStartedAt,
-              completedAt: Date.now(),
+              completedAt: event.ts,
             });
             thinkingStartedAt = 0;
             break;
@@ -362,7 +362,7 @@ export async function runTurn(params: {
               id: event.id,
               name: event.name,
               input: event.input,
-              startedAt: Date.now(),
+              startedAt: event.ts,
             });
             const acc = toolInputAccumulators.get(event.id);
             const tool = getToolByName(event.name);

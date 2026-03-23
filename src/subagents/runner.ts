@@ -95,7 +95,7 @@ export async function runSubAgent(
               contentBlocks.push({
                 type: 'text',
                 text: event.text,
-                startedAt: Date.now(),
+                startedAt: event.ts,
               });
             }
             emit({ type: 'text', text: event.text });
@@ -104,7 +104,7 @@ export async function runSubAgent(
 
           case 'thinking':
             if (!thinkingStartedAt) {
-              thinkingStartedAt = Date.now();
+              thinkingStartedAt = event.ts;
             }
             emit({ type: 'thinking', text: event.text });
             break;
@@ -115,7 +115,7 @@ export async function runSubAgent(
               thinking: event.thinking,
               signature: event.signature,
               startedAt: thinkingStartedAt,
-              completedAt: Date.now(),
+              completedAt: event.ts,
             });
             thinkingStartedAt = 0;
             break;
