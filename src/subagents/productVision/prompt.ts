@@ -8,6 +8,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { loadSpecContext, loadRoadmapContext } from './executor.js';
+import { loadPlatformBrief } from '../common/context.js';
 
 const base =
   import.meta.dirname ?? path.dirname(new URL(import.meta.url).pathname);
@@ -24,7 +25,7 @@ export function getProductVisionPrompt(): string {
   const specContext = loadSpecContext();
   const roadmapContext = loadRoadmapContext();
 
-  const parts = [BASE_PROMPT];
+  const parts = [BASE_PROMPT, loadPlatformBrief()];
   if (specContext) {
     parts.push(specContext);
   }

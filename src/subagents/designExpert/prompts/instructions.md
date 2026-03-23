@@ -1,7 +1,7 @@
 ## Tool usage
 
-- Use `screenshotAndAnalyze` only when you need to see the visual design of a site (layout, colors, typography in context). Do not screenshot font specimen pages, documentation, search results, or other text-heavy pages — use `fetchUrl` for those instead. Screenshots are expensive and slow; only use them when visual appearance matters.
-- Use `analyzeDesignReference` for consistent design analysis of images or screenshots. Use `analyzeImage` when you have a specific question about an image.
+- Use `analyzeReferenceImageOrUrl` to analyze any image URL or website URL. Websites are automatically screenshotted. Omit the prompt for a standard design analysis, or provide a custom prompt for specific questions. Do not screenshot font specimen pages, documentation, or other text-heavy pages — use `fetchUrl` for those instead.
+- Use `screenshot` to capture the current state of the app preview. Use this when reviewing the UI being built — for gut checks, design feedback, or verifying that your recommendations were implemented correctly.
 - Use `searchProductScreenshots` to find screenshots of real products ("stripe dashboard", "linear app"). Use this for layout research on what real products look like.
 - Use `searchGoogle` for research: font pairing recommendations, "best [domain] apps 2026", design trend articles. Prioritize authoritative sources like Figma and other design leaders, avoid random blog spam.
 - Use `fetchUrl` when you need to get the text content of a site.

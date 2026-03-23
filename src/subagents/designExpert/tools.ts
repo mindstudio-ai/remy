@@ -53,49 +53,16 @@ export const DESIGN_RESEARCH_TOOLS: ToolDefinition[] = [
     },
   },
   {
-    name: 'analyzeImage',
+    name: 'analyzeReferenceImageOrUrl',
     description:
-      'Analyze an image using a vision model with a custom prompt. Use when you have a specific question about an image (e.g., "what colors dominate this image?", "describe the typography choices").',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        prompt: {
-          type: 'string',
-          description: 'What to analyze or extract from the image.',
-        },
-        imageUrl: {
-          type: 'string',
-          description: 'URL of the image to analyze.',
-        },
-      },
-      required: ['prompt', 'imageUrl'],
-    },
-  },
-  {
-    name: 'analyzeDesignReference',
-    description:
-      'Analyze a screenshot or design image for design inspiration. Returns a structured analysis: mood/aesthetic, color palette with hex values, typography style, layout composition, and what makes it distinctive. Use this instead of analyzeImage when studying a design reference.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        imageUrl: {
-          type: 'string',
-          description: 'URL of the screenshot or design image to analyze.',
-        },
-      },
-      required: ['imageUrl'],
-    },
-  },
-  {
-    name: 'screenshotAndAnalyze',
-    description:
-      'Screenshot a live URL and analyze it in one step. If no prompt is provided, performs a full design reference analysis (mood, color, typography, layout, distinctiveness). Provide a custom prompt to ask a specific question about the visual design instead.',
+      'Analyze any visual — pass an image URL or a website URL. Websites are automatically screenshotted first. If no prompt is provided, performs a full design reference analysis (mood, color, typography, layout, distinctiveness). Provide a custom prompt to ask a specific question instead.',
     inputSchema: {
       type: 'object',
       properties: {
         url: {
           type: 'string',
-          description: 'The URL to screenshot.',
+          description:
+            'URL to analyze. Can be an image URL or a website URL (will be screenshotted).',
         },
         prompt: {
           type: 'string',
@@ -104,6 +71,15 @@ export const DESIGN_RESEARCH_TOOLS: ToolDefinition[] = [
         },
       },
       required: ['url'],
+    },
+  },
+  {
+    name: 'screenshot',
+    description:
+      'Capture a screenshot of the app preview. Returns a CDN URL. Use to review the current state of the UI being built.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
     },
   },
   {
@@ -192,32 +168,29 @@ export async function executeDesignTool(
       );
     }
 
-    case 'analyzeImage':
-      return runCli(
-        `mindstudio analyze-image --prompt ${JSON.stringify(input.prompt)} --image-url ${JSON.stringify(input.imageUrl)} --no-meta`,
-      );
+    case 'analyzeReferenceImageOrUrl': {
+      const url = input.url as string;
+      const analysisPrompt = input.prompt || DESIGN_REFERENCE_PROMPT;
 
-    case 'analyzeDesignReference':
-      return runCli(
-        `mindstudio analyze-image --prompt ${JSON.stringify(DESIGN_REFERENCE_PROMPT)} --image-url ${JSON.stringify(input.imageUrl)} --no-meta`,
-      );
+      // Detect if this is a website URL (needs screenshotting) or an image URL
+      const isImageUrl = /\.(png|jpe?g|webp|gif|svg|avif)(\?|$)/i.test(url);
 
-    case 'screenshotAndAnalyze': {
-      // Step 1: take screenshot
-      const ssUrl = await runCli(
-        `mindstudio screenshot-url --url ${JSON.stringify(input.url)} --mode viewport --width 1440 --delay 2000 --output-key screenshotUrl --no-meta`,
-      );
-
-      if (ssUrl.startsWith('Error')) {
-        return `Could not screenshot ${input.url}: ${ssUrl}`;
+      let imageUrl = url;
+      if (!isImageUrl) {
+        // Screenshot the website first
+        const ssUrl = await runCli(
+          `mindstudio screenshot-url --url ${JSON.stringify(url)} --mode viewport --width 1440 --delay 2000 --output-key screenshotUrl --no-meta`,
+        );
+        if (ssUrl.startsWith('Error')) {
+          return `Could not screenshot ${url}: ${ssUrl}`;
+        }
+        imageUrl = ssUrl;
       }
 
-      // Step 2: analyze
-      const analysisPrompt = input.prompt || DESIGN_REFERENCE_PROMPT;
       const analysis = await runCli(
-        `mindstudio analyze-image --prompt ${JSON.stringify(analysisPrompt)} --image-url ${JSON.stringify(ssUrl)} --no-meta`,
+        `mindstudio analyze-image --prompt ${JSON.stringify(analysisPrompt)} --image-url ${JSON.stringify(imageUrl)} --output-key analysis --no-meta`,
       );
-      return `Screenshot: ${ssUrl}\n\n${analysis}`;
+      return isImageUrl ? analysis : `Screenshot: ${imageUrl}\n\n${analysis}`;
     }
 
     case 'searchProductScreenshots': {

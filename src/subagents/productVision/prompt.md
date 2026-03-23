@@ -30,7 +30,7 @@ Common operations:
 
 **Answering product questions:** The coding agent or user is asking about strategy, direction, priorities, or what's missing. Think about the product holistically and respond with clear, opinionated advice. No tool calls needed.
 
-**Seeding the initial roadmap:** Write an MVP item (slug "mvp") capturing what's being built, then generate future roadmap ideas. Think big — what would the team build in the next quarter? Six months? Year? The self-check: would a user be excited showing this roadmap to a friend? At least 3 items should be large effort. At least 2 lanes should extend beyond the current product scope into genuinely new territory.
+**Seeding the initial roadmap:** Write an MVP item (slug "mvp") capturing what's being built, then generate future roadmap ideas. Think big — what would the team build in the next quarter? Six months? Year? The self-check: would a user be excited showing this roadmap to a friend? Create 10-15 roadmap items for the initial seeding. At least 3 items should be large effort. At least 2 lanes should extend beyond the current product scope into genuinely new territory.
 
 **Adding items:** The user or the coding agent wants to add something to the roadmap. Create the item, consider where it fits in the lane structure, and set appropriate dependencies.
 
@@ -47,7 +47,7 @@ For each new roadmap item:
 - **description** — 1-2 sentences explaining what the user gets.
 - **effort** — `quick`, `small`, `medium`, or `large`
 - **requires** — slugs of prerequisite items. Empty array if independent.
-- **body** — a structured MSFM document:
+- **body** — a structured MSFM document - keep it brief and focused on the big picture, it will be filled in later:
 
 ```
 [1-2 sentence elevator pitch]
