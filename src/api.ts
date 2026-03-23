@@ -22,9 +22,21 @@ export interface Attachment {
 // Typed content blocks for assistant messages — preserves ordering of
 // thinking, text, and tool calls as they occurred in the stream.
 export type ContentBlock =
-  | { type: 'thinking'; thinking: string; signature: string }
-  | { type: 'text'; text: string }
-  | { type: 'tool'; id: string; name: string; input: Record<string, any> };
+  | {
+      type: 'thinking';
+      thinking: string;
+      signature: string;
+      startedAt: number;
+      completedAt: number;
+    }
+  | { type: 'text'; text: string; startedAt: number }
+  | {
+      type: 'tool';
+      id: string;
+      name: string;
+      input: Record<string, any>;
+      startedAt: number;
+    };
 
 export interface Message {
   role: 'system' | 'user' | 'assistant';

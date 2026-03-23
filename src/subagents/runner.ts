@@ -62,6 +62,7 @@ export async function runSubAgent(config: SubAgentConfig): Promise<string> {
     }
 
     const contentBlocks: ContentBlock[] = [];
+    let thinkingStartedAt = 0;
     let stopReason = 'end_turn';
 
     try {
@@ -84,13 +85,20 @@ export async function runSubAgent(config: SubAgentConfig): Promise<string> {
             if (lastBlock?.type === 'text') {
               lastBlock.text += event.text;
             } else {
-              contentBlocks.push({ type: 'text', text: event.text });
+              contentBlocks.push({
+                type: 'text',
+                text: event.text,
+                startedAt: Date.now(),
+              });
             }
             emit({ type: 'text', text: event.text });
             break;
           }
 
           case 'thinking':
+            if (!thinkingStartedAt) {
+              thinkingStartedAt = Date.now();
+            }
             emit({ type: 'thinking', text: event.text });
             break;
 
@@ -99,7 +107,10 @@ export async function runSubAgent(config: SubAgentConfig): Promise<string> {
               type: 'thinking',
               thinking: event.thinking,
               signature: event.signature,
+              startedAt: thinkingStartedAt,
+              completedAt: Date.now(),
             });
+            thinkingStartedAt = 0;
             break;
 
           case 'tool_use':
@@ -108,6 +119,7 @@ export async function runSubAgent(config: SubAgentConfig): Promise<string> {
               id: event.id,
               name: event.name,
               input: event.input,
+              startedAt: Date.now(),
             });
             emit({
               type: 'tool_start',

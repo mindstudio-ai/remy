@@ -202,6 +202,7 @@ export async function runTurn(params: {
     }
 
     const contentBlocks: ContentBlock[] = [];
+    let thinkingStartedAt = 0;
     const toolInputAccumulators = new Map<string, ToolInputAcc>();
     let stopReason = 'end_turn';
 
@@ -342,13 +343,20 @@ export async function runTurn(params: {
             if (lastBlock?.type === 'text') {
               lastBlock.text += event.text;
             } else {
-              contentBlocks.push({ type: 'text', text: event.text });
+              contentBlocks.push({
+                type: 'text',
+                text: event.text,
+                startedAt: Date.now(),
+              });
             }
             onEvent({ type: 'text', text: event.text });
             break;
           }
 
           case 'thinking':
+            if (!thinkingStartedAt) {
+              thinkingStartedAt = Date.now();
+            }
             onEvent({ type: 'thinking', text: event.text });
             break;
 
@@ -357,7 +365,10 @@ export async function runTurn(params: {
               type: 'thinking',
               thinking: event.thinking,
               signature: event.signature,
+              startedAt: thinkingStartedAt,
+              completedAt: Date.now(),
             });
+            thinkingStartedAt = 0;
             break;
 
           case 'tool_input_delta': {
@@ -399,6 +410,7 @@ export async function runTurn(params: {
               id: event.id,
               name: event.name,
               input: event.input,
+              startedAt: Date.now(),
             });
             const acc = toolInputAccumulators.get(event.id);
             const tool = getToolByName(event.name);
@@ -445,7 +457,11 @@ export async function runTurn(params: {
     if (signal?.aborted) {
       // Record whatever the assistant produced before cancellation
       if (contentBlocks.length > 0) {
-        contentBlocks.push({ type: 'text', text: '\n\n(cancelled)' });
+        contentBlocks.push({
+          type: 'text',
+          text: '\n\n(cancelled)',
+          startedAt: Date.now(),
+        });
         state.messages.push({
           role: 'assistant',
           content: contentBlocks,
