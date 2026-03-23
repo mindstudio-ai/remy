@@ -26,7 +26,7 @@ export const productVisionTool: Tool = {
         task: {
           type: 'string',
           description:
-            'What to do with the roadmap. Include relevant context. The tool reads spec and roadmap files automatically.',
+            'Brief description of what happened or what is needed. Do not specify how many items to create, what topics to cover, or how to think. The agent reads the spec files and decides for itself.',
         },
       },
       required: ['task'],
