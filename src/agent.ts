@@ -416,7 +416,7 @@ export async function runTurn(params: {
         });
         state.messages.push({
           role: 'assistant',
-          content: contentBlocks,
+          content: [...contentBlocks].sort((a, b) => a.startedAt - b.startedAt),
         });
       }
       onEvent({ type: 'turn_cancelled' });
@@ -427,7 +427,7 @@ export async function runTurn(params: {
     // Record assistant message in conversation history
     state.messages.push({
       role: 'assistant',
-      content: contentBlocks,
+      content: [...contentBlocks].sort((a, b) => a.startedAt - b.startedAt),
     });
 
     // If no tool calls, the turn is complete
