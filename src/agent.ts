@@ -143,6 +143,14 @@ export async function runTurn(params: {
   state.messages.push(userMsg);
 
   // Tool-call loop: keep going until the model stops requesting tools
+  // Internal tools that are invisible to the user — exclude from status labels
+  const STATUS_EXCLUDED_TOOLS = new Set([
+    'setProjectOnboardingState',
+    'setProjectName',
+    'clearSyncStatus',
+    'editsFinished',
+  ]);
+
   // Track last tool context across loop iterations so the status watcher
   // has something to report while waiting for the model's first token.
   let lastCompletedTools = '';
@@ -258,7 +266,9 @@ export async function runTurn(params: {
       getContext: () => ({
         assistantText: getTextContent(contentBlocks).slice(-500),
         lastToolName:
-          getToolCalls(contentBlocks).at(-1)?.name ||
+          getToolCalls(contentBlocks)
+            .filter((tc) => !STATUS_EXCLUDED_TOOLS.has(tc.name))
+            .at(-1)?.name ||
           lastCompletedTools ||
           undefined,
         lastToolResult: lastCompletedResult || undefined,
@@ -526,7 +536,10 @@ export async function runTurn(params: {
 
     // Remember what tools just ran so the streaming watcher has context
     // while waiting for the model's first token in the next iteration.
-    lastCompletedTools = toolCalls.map((tc) => tc.name).join(', ');
+    lastCompletedTools = toolCalls
+      .filter((tc) => !STATUS_EXCLUDED_TOOLS.has(tc.name))
+      .map((tc) => tc.name)
+      .join(', ');
     lastCompletedResult = results.at(-1)?.result ?? '';
 
     // Append tool results as user messages (with toolCallId to link them).

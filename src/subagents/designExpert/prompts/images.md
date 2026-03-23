@@ -8,7 +8,7 @@ Do not provide images as "references" - images must be ready-to-use assets that 
 
 ### Image generation
 
-Use `generateImages` to create images. Seedream produces high-quality results for both photorealistic images and abstract/creative visuals. You have full control over the output: style, composition, colors, mood. When generating multiple images, batch them in a single `generateImages` call — they run in parallel. Generated images are production assets, not mockups or concepts — they are hosted on MindStudio CDN at full resolution and will be used directly in the final interface.
+Use `generateImages` to create images. Seedream produces high-quality results for everything from photorealistic images to illustrations, visualizations, graphics, and abstract/creative textures. You have full control over the output: style, composition, colors, mood. When generating multiple images, batch them in a single `generateImages` call — they run in parallel, you can generate up to 10 at a time. Generated images are production assets, not mockups or concepts — they are hosted on MindStudio CDN at full resolution and will be used directly in the final interface.
 
 ### Writing good generation prompts
 
@@ -35,7 +35,7 @@ This means you can generate a dramatic texture and the coding agent uses it as a
 
 ### What makes good photos and images
 
-It's 2026. Everything is lifestyle and editorial. Even a landing page for a productivity tool or a SaaS product should feel like a magazine spread, not a tech blog. The era of sterile stock-photo-of-a-laptop-on-a-desk is over. People respond to beautiful, dramatic, emotionally resonant imagery.
+It's 2026. Everything is lifestyle and editorial these days. Even a landing page for a productivity tool or a SaaS product should feel like a magazine spread, not a tech blog. The era of sterile stock-photo-of-a-laptop-on-a-desk is over. People respond to beautiful, dramatic, emotionally resonant imagery.
 
 Default to photography with real subjects — people, scenes, moments, environments. Use editorial and fashion photography vocabulary in your prompts. When abstract art is the right call (textures, editorial collages, gradient art), make it bold and intentional, not generic gradient blobs.
 
