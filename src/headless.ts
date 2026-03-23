@@ -76,7 +76,7 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     string,
     {
       resolve: (result: string) => void;
-      timeout: ReturnType<typeof setTimeout>;
+      timeout?: ReturnType<typeof setTimeout>;
     }
   >();
   const earlyResults = new Map<string, string>();
@@ -139,9 +139,18 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     }
   }
 
+  // Tools that wait on user input — no timeout
+  const USER_FACING_TOOLS = new Set([
+    'promptUser',
+    'confirmDestructiveAction',
+    'presentPlan',
+    'presentSyncPlan',
+    'presentPublishPlan',
+  ]);
+
   function resolveExternalTool(
     id: string,
-    _name: string,
+    name: string,
     _input: Record<string, any>,
   ): Promise<string> {
     // If the result arrived before we got here, return it immediately.
@@ -150,14 +159,19 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       earlyResults.delete(id);
       return Promise.resolve(early);
     }
+
+    const shouldTimeout = !USER_FACING_TOOLS.has(name);
+
     // Otherwise, create a promise that tool_result will resolve later.
     return new Promise<string>((resolve) => {
-      const timeout = setTimeout(() => {
-        pendingTools.delete(id);
-        resolve(
-          'Error: Tool timed out — no response from the app environment after 5 minutes.',
-        );
-      }, EXTERNAL_TOOL_TIMEOUT_MS);
+      const timeout = shouldTimeout
+        ? setTimeout(() => {
+            pendingTools.delete(id);
+            resolve(
+              'Error: Tool timed out — no response from the app environment after 5 minutes.',
+            );
+          }, EXTERNAL_TOOL_TIMEOUT_MS)
+        : undefined;
 
       pendingTools.set(id, {
         resolve: (result: string) => {
