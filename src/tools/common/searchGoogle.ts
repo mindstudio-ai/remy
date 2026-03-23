@@ -5,8 +5,8 @@
  * underlying SERP API and returns structured results.
  */
 
-import { exec } from 'node:child_process';
 import type { Tool } from '../index.js';
+import { runCli } from '../../subagents/common/runCli.js';
 
 export const searchGoogleTool: Tool = {
   definition: {
@@ -27,25 +27,9 @@ export const searchGoogleTool: Tool = {
 
   async execute(input) {
     const query = input.query as string;
-
-    const cmd = `mindstudio search-google --query ${JSON.stringify(query)} --export-type json --output-key results --no-meta`;
-
-    return new Promise<string>((resolve) => {
-      exec(
-        cmd,
-        { timeout: 60_000, maxBuffer: 512 * 1024 },
-        (err, stdout, stderr) => {
-          if (stdout.trim()) {
-            resolve(stdout.trim());
-            return;
-          }
-          if (err) {
-            resolve(`Error: ${stderr.trim() || err.message}`);
-            return;
-          }
-          resolve('(no response)');
-        },
-      );
-    });
+    return runCli(
+      `mindstudio search-google --query ${JSON.stringify(query)} --export-type json --output-key results --no-meta`,
+      { maxBuffer: 512 * 1024 },
+    );
   },
 };

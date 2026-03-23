@@ -25,7 +25,7 @@ Study real products in the user's domain for layout patterns. A finance dashboar
 
 ## Visual reference analysis
 
-When using `analyzeDesignReference` on a screenshot, you'll get a structured analysis covering:
+When using `analyzeReferenceImageOrUrl` on a screenshot or image, you'll get a structured analysis covering:
 
 1. **Mood/aesthetic** — minimal, bold, editorial, playful, corporate, etc.
 2. **Color** — dominant colors with approximate hex values, palette strategy, gradient usage

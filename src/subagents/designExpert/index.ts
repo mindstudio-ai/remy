@@ -1,15 +1,14 @@
 /**
- * Design research sub-agent.
+ * Visual design expert sub-agent.
  *
- * Exports a tool that the main agent can call to research visual design:
- * color palettes, typography, inspiration sites, imagery. Returns
- * structured proposals that the main agent can use directly in specs.
+ * Handles fonts, colors, palettes, gradients, layouts, imagery, icons,
+ * and visual direction. Can answer from expertise alone or research the web.
  */
 
 import type { Tool, ToolExecutionContext } from '../../tools/index.js';
 import { runSubAgent } from '../runner.js';
-import { DESIGN_RESEARCH_TOOLS, executeDesignTool } from './tools.js';
-import { getDesignResearchPrompt } from './prompt.js';
+import { DESIGN_EXPERT_TOOLS, executeDesignExpertTool } from './tools.js';
+import { getDesignExpertPrompt } from './prompt.js';
 
 const DESCRIPTION = `
 Visual design expert. Handles fonts, colors, palettes, gradients, layouts, imagery, icons, and visual direction. Can answer from expertise alone or research the web. Returns concrete resources: hex values, font names with CSS URLs, image URLs, layout descriptions. Include app context in your task — the agent cannot see your conversation with the user.
@@ -34,18 +33,18 @@ export const designExpertTool: Tool = {
 
   async execute(input, context?: ToolExecutionContext) {
     if (!context) {
-      return 'Error: design research requires execution context';
+      return 'Error: visual design expert requires execution context';
     }
 
     const result = await runSubAgent({
-      system: getDesignResearchPrompt(),
+      system: getDesignExpertPrompt(),
       task: input.task,
-      tools: DESIGN_RESEARCH_TOOLS,
+      tools: DESIGN_EXPERT_TOOLS,
       externalTools: new Set(['screenshot']),
-      executeTool: executeDesignTool,
+      executeTool: executeDesignExpertTool,
       apiConfig: context.apiConfig,
       model: context.model,
-      subAgentId: 'designExpert',
+      subAgentId: 'visualDesignExpert',
       signal: context.signal,
       parentToolId: context.toolCallId,
       onEvent: context.onEvent,

@@ -5,8 +5,8 @@
  * extraction, and optional screenshotting.
  */
 
-import { exec } from 'node:child_process';
 import type { Tool } from '../index.js';
+import { runCli } from '../../subagents/common/runCli.js';
 
 export const fetchUrlTool: Tool = {
   definition: {
@@ -39,24 +39,8 @@ export const fetchUrlTool: Tool = {
       pageOptions.screenshot = true;
     }
 
-    const cmd = `mindstudio scrape-url --url ${JSON.stringify(url)} --page-options ${JSON.stringify(JSON.stringify(pageOptions))} --no-meta`;
-
-    return new Promise<string>((resolve) => {
-      exec(
-        cmd,
-        { timeout: 60_000, maxBuffer: 1024 * 1024 },
-        (err, stdout, stderr) => {
-          if (stdout.trim()) {
-            resolve(stdout.trim());
-            return;
-          }
-          if (err) {
-            resolve(`Error: ${stderr.trim() || err.message}`);
-            return;
-          }
-          resolve('(no response)');
-        },
-      );
-    });
+    return runCli(
+      `mindstudio scrape-url --url ${JSON.stringify(url)} --page-options ${JSON.stringify(JSON.stringify(pageOptions))} --no-meta`,
+    );
   },
 };

@@ -6,8 +6,8 @@
  * configuration option.
  */
 
-import { exec } from 'node:child_process';
 import type { Tool } from '../../tools/index.js';
+import { runCli } from '../common/runCli.js';
 
 export const askMindStudioSdkTool: Tool = {
   definition: {
@@ -29,23 +29,8 @@ export const askMindStudioSdkTool: Tool = {
 
   async execute(input) {
     const query = input.query as string;
-
-    return new Promise<string>((resolve) => {
-      exec(
-        `mindstudio ask ${JSON.stringify(query)}`,
-        { timeout: 60_000, maxBuffer: 512 * 1024 },
-        (err, stdout, stderr) => {
-          if (stdout.trim()) {
-            resolve(stdout.trim());
-            return;
-          }
-          if (err) {
-            resolve(`Error: ${stderr.trim() || err.message}`);
-            return;
-          }
-          resolve('(no response)');
-        },
-      );
+    return runCli(`mindstudio ask ${JSON.stringify(query)}`, {
+      maxBuffer: 512 * 1024,
     });
   },
 };

@@ -509,13 +509,18 @@ export async function runTurn(params: {
       }),
     );
 
-    // Attach sub-agent message histories to the corresponding tool content blocks
-    for (const [toolId, msgs] of subAgentMessages) {
+    // Attach results and sub-agent histories to tool content blocks
+    for (const r of results) {
       const block = contentBlocks.find(
-        (b) => b.type === 'tool' && b.id === toolId,
+        (b) => b.type === 'tool' && b.id === r.id,
       );
       if (block?.type === 'tool') {
-        block.subAgentMessages = msgs;
+        block.result = r.result;
+        block.isError = r.isError;
+        const msgs = subAgentMessages.get(r.id);
+        if (msgs) {
+          block.subAgentMessages = msgs;
+        }
       }
     }
 

@@ -1,12 +1,9 @@
 /**
- * Tool definitions for the design research sub-agent.
- *
- * All tools execute locally via the mindstudio CLI — no external
- * tool resolution needed.
+ * Tool definitions for the visual design expert sub-agent.
  */
 
-import { exec } from 'node:child_process';
 import type { ToolDefinition } from '../../api.js';
+import { runCli } from '../common/runCli.js';
 
 const DESIGN_REFERENCE_PROMPT = `Analyze this website/app screenshot as a design reference. Assess:
 1) Mood/aesthetic
@@ -16,7 +13,7 @@ const DESIGN_REFERENCE_PROMPT = `Analyze this website/app screenshot as a design
 5) What makes it distinctive and interesting vs generic AI-generated interfaces
 Be specific and concise.`;
 
-export const DESIGN_RESEARCH_TOOLS: ToolDefinition[] = [
+export const DESIGN_EXPERT_TOOLS: ToolDefinition[] = [
   {
     name: 'searchGoogle',
     description:
@@ -128,27 +125,7 @@ export const DESIGN_RESEARCH_TOOLS: ToolDefinition[] = [
   },
 ];
 
-function runCli(cmd: string): Promise<string> {
-  return new Promise<string>((resolve) => {
-    exec(
-      cmd,
-      { timeout: 60_000, maxBuffer: 1024 * 1024 },
-      (err, stdout, stderr) => {
-        if (stdout.trim()) {
-          resolve(stdout.trim());
-          return;
-        }
-        if (err) {
-          resolve(`Error: ${stderr.trim() || err.message}`);
-          return;
-        }
-        resolve('(no response)');
-      },
-    );
-  });
-}
-
-export async function executeDesignTool(
+export async function executeDesignExpertTool(
   name: string,
   input: Record<string, any>,
 ): Promise<string> {

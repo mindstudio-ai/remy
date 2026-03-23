@@ -2,10 +2,10 @@
 #
 # Compile inspiration.raw.json → inspiration.json
 #
-# Reads each image URL from inspiration.raw.json, runs analyzeImage via the
+# Reads each image URL from inspiration.raw.json, runs analyze-image via the
 # mindstudio CLI, and writes the compiled output with URL + analysis.
 #
-# Run manually: bash src/subagents/designResearch/data/compile-inspiration.sh
+# Run manually: bash src/subagents/designExpert/data/compile-inspiration.sh
 # Processes images sequentially (one API call at a time).
 # Supports resuming — skips URLs already present in the output file.
 
