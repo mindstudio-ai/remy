@@ -70,7 +70,7 @@ import { presentPlanTool } from './spec/presentPlan.js';
 import { setProjectOnboardingStateTool } from './common/setProjectOnboardingState.js';
 import { promptUserTool } from './common/promptUser.js';
 import { confirmDestructiveActionTool } from './common/confirmDestructiveAction.js';
-import { askMindStudioSdkTool } from './common/askMindStudioSdk.js';
+import { askMindStudioSdkTool } from '../subagents/sdkConsultant/index.js';
 import { fetchUrlTool } from './common/fetchUrl.js';
 import { searchGoogleTool } from './common/searchGoogle.js';
 import { setProjectNameTool } from './common/setProjectName.js';
@@ -93,6 +93,7 @@ import { screenshotTool } from './code/screenshot.js';
 import { browserAutomationTool } from '../subagents/browserAutomation/index.js';
 import { designExpertTool } from '../subagents/designExpert/index.js';
 import { productVisionTool } from '../subagents/productVision/index.js';
+import { codeSanityCheckTool } from '../subagents/codeSanityCheck/index.js';
 
 function getSpecTools(): Tool[] {
   return [readSpecTool, writeSpecTool, editSpecTool, listSpecFilesTool];
@@ -133,6 +134,7 @@ function getCommonTools(): Tool[] {
     setProjectNameTool,
     designExpertTool,
     productVisionTool,
+    codeSanityCheckTool,
   ];
 }
 

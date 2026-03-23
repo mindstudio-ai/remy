@@ -138,6 +138,8 @@ ${projectContext}
 {{static/authoring.md}}
 </spec_authoring_instructions>
 
+{{static/team.md}}
+
 <code_authoring_instructions>
 {{static/coding.md}}
 ${isLspConfigured() ? `<typescript_lsp>\n{{static/lsp.md}}\n</typescript_lsp>` : ''}

@@ -25,6 +25,7 @@ export interface SubAgentConfig {
   executeTool: (name: string, input: Record<string, any>) => Promise<string>;
   apiConfig: { baseUrl: string; apiKey: string };
   model?: string;
+  subAgentId?: string;
   signal?: AbortSignal;
   parentToolId: string;
   onEvent: (event: AgentEvent) => void;
@@ -40,6 +41,7 @@ export async function runSubAgent(config: SubAgentConfig): Promise<string> {
     executeTool,
     apiConfig,
     model,
+    subAgentId,
     signal,
     parentToolId,
     onEvent,
@@ -70,6 +72,7 @@ export async function runSubAgent(config: SubAgentConfig): Promise<string> {
       for await (const event of streamChatWithRetry({
         ...apiConfig,
         model,
+        subAgentId,
         system,
         messages,
         tools,

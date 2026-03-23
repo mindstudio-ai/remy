@@ -81,6 +81,7 @@ export async function* streamChat(params: {
   maxTokens?: number;
   temperature?: number;
   config?: Record<string, any>;
+  subAgentId?: string;
   signal?: AbortSignal;
 }): AsyncGenerator<StreamEvent> {
   const { baseUrl, apiKey, signal, ...body } = params;

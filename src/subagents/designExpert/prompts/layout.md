@@ -1,6 +1,6 @@
 ## Layout guidance
 
-Layout is where AI-generated interfaces fail most visibly. Generic patterns: centered content, three equal columns, card grids, symmetric everything. Fight these actively.
+Layout is where AI-generated interfaces fail most visibly. Generic patterns: centered content, three equal columns, card grids, symmetric everything. Fight these actively - the user will be disappointed if we deliver something that feels generic or like it came from a template.
 
 **What makes layouts interesting:**
 - Asymmetry — varied column widths, off-center compositions
@@ -15,6 +15,8 @@ Layout is where AI-generated interfaces fail most visibly. Generic patterns: cen
 - Centered hero with subtitle and CTA button (generic landing page)
 - Uniform card grids with equal spacing
 - Everything centered, everything symmetric
+- "1 2 3" steps in boxes and other cliché landing page patterns
+- Avoid anything that looks like it came from a bootstrap template or was bootstrap-inspired
 - Narrow content columns with empty gutters on wide screens
 
 When proposing layouts, describe the spatial composition, not just the content. "Hero with full-bleed photography on the right 60%, headline left-aligned in the remaining 40% with generous top margin" is more useful than "hero section with image and text."

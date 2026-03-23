@@ -9,7 +9,7 @@
 import type { Tool, ToolExecutionContext } from '../../tools/index.js';
 import { runSubAgent } from '../runner.js';
 import { BROWSER_TOOLS, BROWSER_EXTERNAL_TOOLS } from './tools.js';
-import { BROWSER_AUTOMATION_PROMPT } from './prompt.js';
+import { getBrowserAutomationPrompt } from './prompt.js';
 import { sidecarRequest } from '../../tools/_helpers/sidecar.js';
 
 export const browserAutomationTool: Tool = {
@@ -50,7 +50,7 @@ export const browserAutomationTool: Tool = {
     }
 
     return runSubAgent({
-      system: BROWSER_AUTOMATION_PROMPT,
+      system: getBrowserAutomationPrompt(),
       task: input.task,
       tools: BROWSER_TOOLS,
       externalTools: BROWSER_EXTERNAL_TOOLS,
@@ -67,6 +67,7 @@ export const browserAutomationTool: Tool = {
       },
       apiConfig: context.apiConfig,
       model: context.model,
+      subAgentId: 'browserAutomation',
       signal: context.signal,
       parentToolId: context.toolCallId,
       onEvent: context.onEvent,

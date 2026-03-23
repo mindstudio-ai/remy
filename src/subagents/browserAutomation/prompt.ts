@@ -1,6 +1,6 @@
 /**
  * System prompt for the browser automation sub-agent.
- * Loaded from prompt.md at module init.
+ * Loads prompt.md and injects the app spec for context.
  */
 
 import fs from 'node:fs';
@@ -9,13 +9,20 @@ import path from 'node:path';
 const base =
   import.meta.dirname ?? path.dirname(new URL(import.meta.url).pathname);
 
-// In source: base is src/subagents/browserAutomation/, prompt.md is adjacent.
-// In bundle: base is dist/, prompt.md is at dist/subagents/browserAutomation/.
 const local = path.join(base, 'prompt.md');
 const PROMPT_PATH = fs.existsSync(local)
   ? local
   : path.join(base, 'subagents', 'browserAutomation', 'prompt.md');
 
-export const BROWSER_AUTOMATION_PROMPT = fs
-  .readFileSync(PROMPT_PATH, 'utf-8')
-  .trim();
+const BASE_PROMPT = fs.readFileSync(PROMPT_PATH, 'utf-8').trim();
+
+/** Build the browser automation prompt with app context. */
+export function getBrowserAutomationPrompt(): string {
+  // Inject app.md so the test agent understands what the app is about
+  try {
+    const appSpec = fs.readFileSync('src/app.md', 'utf-8').trim();
+    return `${BASE_PROMPT}\n\n<app_context>\n${appSpec}\n</app_context>`;
+  } catch {
+    return BASE_PROMPT;
+  }
+}

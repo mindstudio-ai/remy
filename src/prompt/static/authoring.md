@@ -78,7 +78,7 @@ The body is freeform MSFM: prose describing the feature for the user, annotation
 
 The MVP itself gets a roadmap file (`src/roadmap/mvp.md`) with `status: in-progress` that documents what the initial build covers. Update it to `done` after the build completes. Other items start as `not-started`. Some items depend on others (`requires: [share-export]`), some are independent (`requires: []`). The user picks what to build next.
 
-Write the roadmap as the final step of spec authoring, after all other spec files are written. Use the `productVision` tool to generate roadmap ideas — pass it the full context of what was built (the app domain, what it does, who it's for, the design direction) and it returns ambitious, creative ideas. Write each returned idea into its own roadmap file in `src/roadmap/`.
+The `productVision` tool owns `src/roadmap/` — see the Team section for when and how to use it.
 
 ## Spec + Code Sync
 

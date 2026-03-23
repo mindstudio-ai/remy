@@ -22,8 +22,8 @@ Process logs are available at `.logs/` for debugging:
   - `.logs/requests.ndjson`: structured NDJSON log of every method and scenario execution with full input, output, errors (including stack traces), console output, and duration. Use `tail -5 .logs/requests.ndjson | jq .` or `grep '"success":false' .logs/requests.ndjson | jq .` to inspect.
   - `.logs/browser.ndjson`: browser-side events captured from the web preview. Includes console output, uncaught JS errors with stack traces, failed network requests, and user interactions (clicks). Use `grep '"type":"error"' .logs/browser.ndjson | jq .` to find frontend errors.
 
-### MindStudio SDK usage
-  - For any work involving AI models (text, image, video, TTS, transcription, etc), external actions like web scraping, searching Google, sending emails or SMS, or third-party API/Oauth connections to social media services, SaaS platforms, and other services, always prefer to use the `@mindstudio-ai/agent` SDK as it removes the need to research API methods, configure keys, tokens, retries, or require the user to create developer accounts/setup billing (they have a unified billing account for all services through MindStudio platform).
-  - Always use `askMindStudioSdk` to look up model IDs, action signatures, and config options before writing any code that calls the SDK. Model IDs change frequently across providers and guessing will produce invalid values, even if the ID looks plausible. 
-  - Always use `askMindStudioSdk` before writing a custom API connector to a third-party service. The tool will tell you if there is already a connector available, as well as whether or not the user has configured it to be ready fo use.
-  - Describe what you need in plain language and the assistant will return the correct method call with current parameters. You can including multiple requests in a single tool call.
+### MindStudio SDK
+For any work involving AI models, external actions (web scraping, email, SMS), or third-party API/OAuth connections, prefer the `@mindstudio-ai/agent` SDK. It removes the need to research API methods, configure keys and tokens, or require the user to set up developer accounts.
+
+### Dependencies
+Before installing a package you haven't used in this project, do a quick web search to confirm it's still the best option. The JavaScript ecosystem moves fast — the package you remember from training may have been superseded by something smaller, faster, or better maintained. A 10-second search beats debugging a deprecated library.

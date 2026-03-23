@@ -1,12 +1,14 @@
 /**
- * System prompt for the design research sub-agent.
+ * System prompt for the design expert sub-agent.
  *
  * Assembles the prompt from markdown templates (prompts/) and injects
  * fresh random samples of fonts and inspiration images on each call.
+ * Also injects current spec files so the agent has project context.
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { loadSpecContext } from '../common/context.js';
 
 // ---------------------------------------------------------------------------
 // File loading
@@ -166,8 +168,16 @@ ${imageList}
 </inspiration_images>`
     : '';
 
-  return PROMPT_TEMPLATE.replace('{{fonts_to_consider}}', fontsSection).replace(
-    '{{inspiration_images}}',
-    inspirationSection,
-  );
+  const specContext = loadSpecContext();
+
+  let prompt = PROMPT_TEMPLATE.replace(
+    '{{fonts_to_consider}}',
+    fontsSection,
+  ).replace('{{inspiration_images}}', inspirationSection);
+
+  if (specContext) {
+    prompt += `\n\n${specContext}`;
+  }
+
+  return prompt;
 }

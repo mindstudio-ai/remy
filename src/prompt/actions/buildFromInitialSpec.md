@@ -4,4 +4,4 @@ The user has reviewed the spec and is ready to build. Build everything in one tu
 
 When code generation is complete, verify your work: use `runScenario` to seed test data, then use `runMethod` to confirm a method works, then use `runAutomatedBrowserTest` to smoke-test the main UI flow. The dev database is a disposable snapshot, so don't worry about being destructive. Fix any errors before finishing.
 
-When everything is working, update `src/roadmap/mvp.md` to `status: done`, then call `setProjectOnboardingState({ state: "onboardingFinished" })`.
+When everything is working, use `productVision` to mark the MVP roadmap item as done, then call `setProjectOnboardingState({ state: "onboardingFinished" })`.
