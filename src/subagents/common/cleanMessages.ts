@@ -25,7 +25,7 @@ export function cleanMessagesForApi(messages: Message[]): Message[] {
             return { type: block.type, text: block.text };
           case 'tool':
             return {
-              type: block.type,
+              type: 'tool_use',
               id: block.id,
               name: block.name,
               input: block.input,
