@@ -455,6 +455,36 @@ export async function runTurn(params: {
       count: toolCalls.length,
       tools: toolCalls.map((tc) => tc.name),
     });
+    // Track sub-agent activity for status labels
+    let subAgentText = '';
+    const origOnEvent = onEvent;
+    const wrappedOnEvent = (e: AgentEvent) => {
+      // Capture sub-agent text for status watcher context
+      if ('parentToolId' in e && e.parentToolId) {
+        if (e.type === 'text') {
+          subAgentText = e.text;
+        } else if (e.type === 'tool_start') {
+          subAgentText = `Using ${e.name}`;
+        }
+      }
+      origOnEvent(e);
+    };
+
+    const toolStatusWatcher = startStatusWatcher({
+      apiConfig,
+      getContext: () => ({
+        assistantText:
+          subAgentText || getTextContent(contentBlocks).slice(-500),
+        lastToolName:
+          toolCalls
+            .filter((tc) => !STATUS_EXCLUDED_TOOLS.has(tc.name))
+            .map((tc) => tc.name)
+            .join(', ') || undefined,
+        lastToolResult: lastCompletedResult || undefined,
+      }),
+      onStatus: (label) => origOnEvent({ type: 'status', message: label }),
+      signal,
+    });
     const subAgentMessages = new Map<string, import('./api.js').Message[]>();
     const results = await Promise.all(
       toolCalls.map(async (tc) => {
@@ -483,7 +513,7 @@ export async function runTurn(params: {
               apiConfig,
               model,
               signal,
-              onEvent,
+              onEvent: wrappedOnEvent,
               resolveExternalTool,
               toolCallId: tc.id,
               subAgentMessages,
@@ -518,6 +548,8 @@ export async function runTurn(params: {
         }
       }),
     );
+
+    toolStatusWatcher.stop();
 
     // Attach results and sub-agent histories to tool content blocks
     for (const r of results) {
