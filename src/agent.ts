@@ -68,60 +68,12 @@ const EXTERNAL_TOOLS = new Set([
   'setProjectName',
 ]);
 
-// Events emitted to the UI layer
-export type AgentEvent =
-  | { type: 'text'; text: string; parentToolId?: string }
-  | { type: 'thinking'; text: string; parentToolId?: string }
-  | {
-      type: 'tool_input_delta';
-      id: string;
-      name: string;
-      result: string;
-      parentToolId?: string;
-    }
-  | {
-      type: 'tool_start';
-      id: string;
-      name: string;
-      input: Record<string, any>;
-      partial?: boolean;
-      parentToolId?: string;
-    }
-  | {
-      type: 'tool_done';
-      id: string;
-      name: string;
-      result: string;
-      isError: boolean;
-      parentToolId?: string;
-    }
-  | { type: 'turn_started' }
-  | { type: 'turn_done' }
-  | { type: 'turn_cancelled' }
-  | { type: 'status'; message: string }
-  | { type: 'error'; error: string };
-
-// Conversation state persisted across turns
-export interface AgentState {
-  messages: Message[];
-}
+export type { AgentEvent, AgentState, ExternalToolResolver } from './types.js';
+import type { AgentEvent, AgentState, ExternalToolResolver } from './types.js';
 
 export function createAgentState(): AgentState {
   return { messages: [] };
 }
-
-/**
- * Callback for resolving external tool results. The agent emits
- * tool_start, then calls this function which returns a promise that
- * resolves when the external system (sandbox) provides the result.
- *
- * If not provided, external tools fall back to local execution.
- */
-export type ExternalToolResolver = (
-  id: string,
-  name: string,
-  input: Record<string, any>,
-) => Promise<string>;
 
 /**
  * Run one user turn — may involve multiple LLM round-trips if the
@@ -491,6 +443,7 @@ export async function runTurn(params: {
       count: toolCalls.length,
       tools: toolCalls.map((tc) => tc.name),
     });
+    const subAgentMessages = new Map<string, import('./api.js').Message[]>();
     const results = await Promise.all(
       toolCalls.map(async (tc) => {
         if (signal?.aborted) {
@@ -521,6 +474,7 @@ export async function runTurn(params: {
               onEvent,
               resolveExternalTool,
               toolCallId: tc.id,
+              subAgentMessages,
             });
           }
 
@@ -552,6 +506,16 @@ export async function runTurn(params: {
         }
       }),
     );
+
+    // Attach sub-agent message histories to the corresponding tool content blocks
+    for (const [toolId, msgs] of subAgentMessages) {
+      const block = contentBlocks.find(
+        (b) => b.type === 'tool' && b.id === toolId,
+      );
+      if (block?.type === 'tool') {
+        block.subAgentMessages = msgs;
+      }
+    }
 
     // Remember what tools just ran so the streaming watcher has context
     // while waiting for the model's first token in the next iteration.

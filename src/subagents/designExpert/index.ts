@@ -37,7 +37,7 @@ export const designExpertTool: Tool = {
       return 'Error: design research requires execution context';
     }
 
-    return runSubAgent({
+    const result = await runSubAgent({
       system: getDesignResearchPrompt(),
       task: input.task,
       tools: DESIGN_RESEARCH_TOOLS,
@@ -51,5 +51,7 @@ export const designExpertTool: Tool = {
       onEvent: context.onEvent,
       resolveExternalTool: context.resolveExternalTool,
     });
+    context.subAgentMessages?.set(context.toolCallId, result.messages);
+    return result.text;
   },
 };

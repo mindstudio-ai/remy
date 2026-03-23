@@ -16,7 +16,7 @@ import {
   type ToolDefinition,
 } from '../api.js';
 import { log } from '../logger.js';
-import type { AgentEvent, ExternalToolResolver } from '../agent.js';
+import type { AgentEvent, ExternalToolResolver } from '../types.js';
 
 export interface SubAgentConfig {
   system: string;
@@ -33,7 +33,14 @@ export interface SubAgentConfig {
   resolveExternalTool?: ExternalToolResolver;
 }
 
-export async function runSubAgent(config: SubAgentConfig): Promise<string> {
+export interface SubAgentResult {
+  text: string;
+  messages: Message[];
+}
+
+export async function runSubAgent(
+  config: SubAgentConfig,
+): Promise<SubAgentResult> {
   const {
     system,
     task,
@@ -58,7 +65,7 @@ export async function runSubAgent(config: SubAgentConfig): Promise<string> {
 
   while (true) {
     if (signal?.aborted) {
-      return 'Error: cancelled';
+      return { text: 'Error: cancelled', messages };
     }
 
     const contentBlocks: ContentBlock[] = [];
@@ -134,7 +141,7 @@ export async function runSubAgent(config: SubAgentConfig): Promise<string> {
             break;
 
           case 'error':
-            return `Error: ${event.error}`;
+            return { text: `Error: ${event.error}`, messages };
         }
       }
     } catch (err: any) {
@@ -144,7 +151,7 @@ export async function runSubAgent(config: SubAgentConfig): Promise<string> {
     }
 
     if (signal?.aborted) {
-      return 'Error: cancelled';
+      return { text: 'Error: cancelled', messages };
     }
 
     // Record assistant message
@@ -160,10 +167,11 @@ export async function runSubAgent(config: SubAgentConfig): Promise<string> {
 
     // If no tool calls, we're done
     if (stopReason !== 'tool_use' || toolCalls.length === 0) {
-      return contentBlocks
+      const text = contentBlocks
         .filter((b): b is ContentBlock & { type: 'text' } => b.type === 'text')
         .map((b) => b.text)
         .join('');
+      return { text, messages };
     }
 
     // Execute tool calls

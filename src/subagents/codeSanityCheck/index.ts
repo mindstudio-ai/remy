@@ -52,7 +52,7 @@ export const codeSanityCheckTool: Tool = {
       ? `${BASE_PROMPT}\n\n${specContext}`
       : BASE_PROMPT;
 
-    return runSubAgent({
+    const result = await runSubAgent({
       system,
       task: input.task,
       tools: SANITY_CHECK_TOOLS,
@@ -66,5 +66,7 @@ export const codeSanityCheckTool: Tool = {
       onEvent: context.onEvent,
       resolveExternalTool: context.resolveExternalTool,
     });
+    context.subAgentMessages?.set(context.toolCallId, result.messages);
+    return result.text;
   },
 };

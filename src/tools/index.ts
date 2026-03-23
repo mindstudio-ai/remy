@@ -15,13 +15,18 @@ export interface ToolDefinition {
   inputSchema: Record<string, any>;
 }
 
+import type { AgentEvent, ExternalToolResolver } from '../types.js';
+import type { Message } from '../api.js';
+
 export interface ToolExecutionContext {
   apiConfig: { baseUrl: string; apiKey: string };
   model?: string;
   signal?: AbortSignal;
-  onEvent: (event: import('../agent.js').AgentEvent) => void;
-  resolveExternalTool?: import('../agent.js').ExternalToolResolver;
+  onEvent: (event: AgentEvent) => void;
+  resolveExternalTool?: ExternalToolResolver;
   toolCallId: string;
+  /** Sub-agent tools stash their message history here, keyed by toolCallId. */
+  subAgentMessages?: Map<string, Message[]>;
 }
 
 export interface Tool {

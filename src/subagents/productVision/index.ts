@@ -38,7 +38,7 @@ export const productVisionTool: Tool = {
       return 'Error: product vision requires execution context';
     }
 
-    return runSubAgent({
+    const result = await runSubAgent({
       system: getProductVisionPrompt(),
       task: input.task,
       tools: VISION_TOOLS,
@@ -52,5 +52,7 @@ export const productVisionTool: Tool = {
       onEvent: context.onEvent,
       resolveExternalTool: context.resolveExternalTool,
     });
+    context.subAgentMessages?.set(context.toolCallId, result.messages);
+    return result.text;
   },
 };

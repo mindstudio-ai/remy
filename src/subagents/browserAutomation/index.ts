@@ -49,7 +49,7 @@ export const browserAutomationTool: Tool = {
       return 'Error: could not check browser status. The dev environment may not be running.';
     }
 
-    return runSubAgent({
+    const result = await runSubAgent({
       system: getBrowserAutomationPrompt(),
       task: input.task,
       tools: BROWSER_TOOLS,
@@ -73,5 +73,7 @@ export const browserAutomationTool: Tool = {
       onEvent: context.onEvent,
       resolveExternalTool: context.resolveExternalTool,
     });
+    context.subAgentMessages?.set(context.toolCallId, result.messages);
+    return result.text;
   },
 };

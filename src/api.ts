@@ -36,6 +36,7 @@ export type ContentBlock =
       name: string;
       input: Record<string, any>;
       startedAt: number;
+      subAgentMessages?: Message[];
     };
 
 export interface Message {
