@@ -40,7 +40,7 @@ export const designExpertTool: Tool = {
       system: getDesignExpertPrompt(),
       task: input.task,
       tools: DESIGN_EXPERT_TOOLS,
-      externalTools: new Set(['screenshot']),
+      externalTools: new Set<string>(),
       executeTool: executeDesignExpertTool,
       apiConfig: context.apiConfig,
       model: context.model,

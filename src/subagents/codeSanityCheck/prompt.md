@@ -12,6 +12,18 @@ Most things are fine. These are fast-moving products built by non-technical user
 
 **Project organization needs a reset.** After heavy iteration, a file or folder structure might have grown unwieldy. If things would genuinely benefit from being reorganized, say so. But only at the structural level — "this 500-line component should be a folder" not "rename this variable."
 
+### Known exceptions (don't flag these)
+
+These are things we already know about and have decided to accept:
+
+- Limited browser support for `oklch` gradients using `in <colorspace>` syntax — we accept the compatibility tradeoff for better color quality
+
+### Common pitfalls (always flag these)
+
+These are recurring mistakes the coding agent makes. If you see the conditions for any of these, flag it proactively:
+
+- **CSS Module animation scoping.** If the agent defines `@keyframes` in a global CSS file but references the animation name from a CSS Module, the animation will silently fail. CSS Modules scope animation names, so a keyframe defined globally can't be found by a scoped class. The fix: define keyframes in the same CSS Module that uses them, or use `:global()` to escape the scoping.
+
 ## When to stay quiet
 
 Nits, style preferences, missing edge cases, things the agent will figure out as it goes, patterns that are "not ideal but fine," minor code smells. Let them slide. The agent is busy.

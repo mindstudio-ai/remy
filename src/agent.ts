@@ -66,7 +66,6 @@ const EXTERNAL_TOOLS = new Set([
   'runScenario',
   'runMethod',
   'browserCommand',
-  'screenshot',
   'setProjectName',
 ]);
 

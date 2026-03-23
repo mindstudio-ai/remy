@@ -4,6 +4,7 @@
 
 import type { ToolDefinition } from '../../api.js';
 import { runCli } from '../common/runCli.js';
+import { sidecarRequest } from '../../tools/_helpers/sidecar.js';
 
 const DESIGN_REFERENCE_PROMPT = `Analyze this website/app screenshot as a design reference. Assess:
 1) Mood/aesthetic
@@ -130,6 +131,25 @@ export async function executeDesignExpertTool(
   input: Record<string, any>,
 ): Promise<string> {
   switch (name) {
+    case 'screenshot': {
+      try {
+        const { url } = await sidecarRequest(
+          '/screenshot',
+          {},
+          { timeout: 30000 },
+        );
+        const analysisPrompt =
+          (input.prompt as string) ||
+          'Describe this app screenshot for a visual designer reviewing the current state. What is visible: layout, typography, colors, spacing, imagery. Note anything that looks broken or off. Be concise.';
+        const analysis = await runCli(
+          `mindstudio analyze-image --prompt ${JSON.stringify(analysisPrompt)} --image-url ${JSON.stringify(url)} --output-key analysis --no-meta`,
+        );
+        return `Screenshot: ${url}\n\n${analysis}`;
+      } catch (err: any) {
+        return `Error taking screenshot: ${err.message}`;
+      }
+    }
+
     case 'searchGoogle':
       return runCli(
         `mindstudio search-google --query ${JSON.stringify(input.query)} --export-type json --output-key results --no-meta`,
