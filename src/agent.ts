@@ -36,6 +36,8 @@ import { parsePartialJson } from './parsePartialJson.js';
 import { startStatusWatcher } from './statusWatcher.js';
 import { friendlyError } from './errors.js';
 
+import { cleanMessagesForApi } from './subagents/common/cleanMessages.js';
+
 // Content block helpers
 function getTextContent(blocks: ContentBlock[]): string {
   return blocks
@@ -271,7 +273,7 @@ export async function runTurn(params: {
           ...apiConfig,
           model,
           system,
-          messages: state.messages,
+          messages: cleanMessagesForApi(state.messages),
           tools,
           signal,
         },

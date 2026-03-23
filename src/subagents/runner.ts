@@ -17,6 +17,7 @@ import {
 } from '../api.js';
 import { log } from '../logger.js';
 import type { AgentEvent, ExternalToolResolver } from '../types.js';
+import { cleanMessagesForApi } from './common/cleanMessages.js';
 
 export interface SubAgentConfig {
   system: string;
@@ -78,7 +79,7 @@ export async function runSubAgent(
         model,
         subAgentId,
         system,
-        messages,
+        messages: cleanMessagesForApi(messages),
         tools,
         signal,
       })) {
