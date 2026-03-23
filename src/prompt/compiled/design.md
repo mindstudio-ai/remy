@@ -43,7 +43,7 @@ Derive additional implementation colors (borders, focus states, hover states, di
 
 ### Typography block format
 
-A `` ```typography `` fenced block in a `type: design/typography` spec file declares fonts (with source URLs) and one or two anchor styles (typically Display and Body). Derive additional styles (labels, buttons, captions, overlines) from these anchors:
+A `` ```typography `` fenced block in a `type: design/typography` spec file declares fonts (with source URLs) and one or two anchor styles (typically Display and Body). Styles can include an optional `case` field (`uppercase`, `lowercase`, `capitalize`) for text-transform. Derive additional styles (labels, buttons, captions, overlines) from these anchors:
 
 ```typography
 fonts:
@@ -59,6 +59,7 @@ styles:
     weight: 600
     letterSpacing: -0.03em
     lineHeight: 1.1
+    case: uppercase
     description: Page titles and hero text
   Body:
     font: Satoshi

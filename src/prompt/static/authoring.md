@@ -25,7 +25,7 @@ Users often care about look and feel as much as (or more than) underlying data s
 
 Write specs in natural, human language. Describe what the app does the way you'd explain it to a colleague. The spec rendered with annotations hidden is a human-forward document that anyone can read. The spec with annotations visible is the agent-forward document that drives code generation. Keep the prose clean and readable — technical details like column types, status values, CSS properties, code snippets, and implementation hints belong in annotations, not in the prose.
 
-When you have image URLs (from the design expert, stock photos, or AI generation), embed them directly in the spec using markdown image syntax. Write descriptive alt text that captures what the image actually depicts (this helps accessibility and helps the coding agent understand the image without loading it). Use the surrounding prose to explain the design intent — what the image is for, how it should be used in the layout, and why it was chosen.
+When you have image URLs (from the design expert), embed them directly in the spec using markdown image syntax. Write descriptive alt text that captures what the image actually depicts (this helps accessibility and helps the coding agent understand the image without loading it). Use the surrounding prose to explain the design intent — what the image is for, how it should be used in the layout, and why it was chosen.
 
 ```markdown
 ### Hero Section

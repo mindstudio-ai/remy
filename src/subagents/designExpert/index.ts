@@ -11,7 +11,7 @@ import { DESIGN_EXPERT_TOOLS, executeDesignExpertTool } from './tools.js';
 import { getDesignExpertPrompt } from './prompt.js';
 
 const DESCRIPTION = `
-Visual design expert. Handles fonts, colors, palettes, gradients, layouts, imagery, icons, and visual direction. Can answer from expertise alone or research the web. Returns concrete resources: hex values, font names with CSS URLs, image URLs, layout descriptions. Include app context in your task — the agent cannot see your conversation with the user.
+Visual design expert. Describe the situation and what you need — the agent decides what to deliver. It reads the spec files automatically. Include relevant user requirements and context it can't get from the spec, but do not list specific deliverables or tell it how to do its job.
 `.trim();
 
 export const designExpertTool: Tool = {

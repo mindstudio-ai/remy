@@ -181,6 +181,7 @@ styles:
     weight: 600
     letterSpacing: -0.03em
     lineHeight: 1.1
+    case: uppercase
     description: Page titles and hero text
   Body:
     font: Satoshi
