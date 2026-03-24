@@ -15,7 +15,12 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 RAW_FILE="$SCRIPT_DIR/inspiration.raw.json"
 OUT_FILE="$SCRIPT_DIR/inspiration.json"
 
-PROMPT="Analyze this website/app screenshot as a design reference. Assess: 1) Mood/aesthetic 2) Color palette with approximate hex values and palette strategy 3) Typography style 4) Layout composition (symmetric/asymmetric, grid structure, whitespace usage, content density) 5) What makes it distinctive and interesting vs generic AI-generated interfaces. Be specific and concise."
+PROMPT_FILE="$SCRIPT_DIR/../prompts/tool-prompts/design-analysis.md"
+if [ ! -f "$PROMPT_FILE" ]; then
+  echo "Error: $PROMPT_FILE not found"
+  exit 1
+fi
+PROMPT=$(cat "$PROMPT_FILE")
 
 if [ ! -f "$RAW_FILE" ]; then
   echo "Error: $RAW_FILE not found"

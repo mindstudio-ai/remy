@@ -55,3 +55,10 @@ export type ExternalToolResolver = (
   name: string,
   input: Record<string, any>,
 ) => Promise<string>;
+
+/** Wire protocol: every stdin command includes an action and optional requestId. */
+export interface StdinCommand {
+  action: string;
+  requestId?: string;
+  [key: string]: unknown;
+}

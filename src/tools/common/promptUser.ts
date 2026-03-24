@@ -78,7 +78,7 @@ export const promptUserTool: Tool = {
                   ],
                 },
                 description:
-                  'Options for select and checklist types. Each can be a string or { label, description }.',
+                  'Options for select and checklist types. Each can be a string or { label, description }. Image URLs (e.g. https://i.mscdn.ai/...) are rendered as visual previews, so use the URL directly as the option string when presenting images for the user to choose between.',
               },
               multiple: {
                 type: 'boolean',

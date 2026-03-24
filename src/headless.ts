@@ -2,8 +2,16 @@
  * Headless mode — stdin/stdout JSON protocol for programmatic control.
  *
  * Designed for parent processes like the mindstudio-sandbox C&C server.
- * Input: newline-delimited JSON on stdin  (e.g. {"action":"message","text":"..."})
- * Output: newline-delimited JSON on stdout (e.g. {"event":"text","text":"..."})
+ * Input: newline-delimited JSON on stdin  (e.g. {"action":"message","requestId":"r1","text":"..."})
+ * Output: newline-delimited JSON on stdout (e.g. {"event":"text","requestId":"r1","text":"..."})
+ *
+ * Protocol rules:
+ * - Every stdin command includes an `action` and a caller-provided `requestId`.
+ * - Every stdout event that is a response to a command includes the `requestId`.
+ * - System events (ready, session_restored, stopping, stopped) never have a requestId.
+ * - Every command ends with exactly one `completed` event:
+ *   {event:"completed", requestId, success:true|false, error?:string}
+ * - `tool_result` is fire-and-forget (resolves an in-flight promise, no completed event).
  */
 
 import { createInterface } from 'node:readline';
@@ -19,6 +27,7 @@ import {
   type AgentEvent,
 } from './agent.js';
 import { loadSession, clearSession } from './session.js';
+import type { StdinCommand } from './types.js';
 
 export interface HeadlessOptions {
   apiKey?: string;
@@ -35,9 +44,76 @@ function loadActionPrompt(name: string): string {
   return fs.readFileSync(path.join(ACTIONS_DIR, `${name}.md`), 'utf-8').trim();
 }
 
-function emit(event: string, data?: Record<string, unknown>): void {
-  process.stdout.write(JSON.stringify({ event, ...data }) + '\n');
+// ---------------------------------------------------------------------------
+// Wire protocol emit
+// ---------------------------------------------------------------------------
+
+function emit(
+  event: string,
+  data?: Record<string, unknown>,
+  requestId?: string,
+): void {
+  const payload: Record<string, unknown> = { event, ...data };
+  if (requestId) {
+    payload.requestId = requestId;
+  }
+  process.stdout.write(JSON.stringify(payload) + '\n');
 }
+
+// ---------------------------------------------------------------------------
+// Simple command handlers — pure functions that return data or throw
+// ---------------------------------------------------------------------------
+
+function handleGetHistory(state: AgentState): Record<string, unknown> {
+  return { messages: state.messages };
+}
+
+function handleClear(state: AgentState): Record<string, unknown> {
+  clearSession(state);
+  return {};
+}
+
+function handleCancel(
+  currentAbort: AbortController | null,
+  pendingTools: Map<
+    string,
+    { resolve: (r: string) => void; timeout?: ReturnType<typeof setTimeout> }
+  >,
+): Record<string, unknown> {
+  if (currentAbort) {
+    currentAbort.abort();
+  }
+  for (const [id, pending] of pendingTools) {
+    clearTimeout(pending.timeout);
+    pending.resolve('Error: cancelled');
+    pendingTools.delete(id);
+  }
+  return {};
+}
+
+/**
+ * Dispatch a simple (non-streaming) command: call the handler, emit an
+ * optional named event with its return data, then always emit `completed`.
+ */
+function dispatchSimple(
+  requestId: string | undefined,
+  eventName: string | null,
+  handler: () => Record<string, unknown>,
+): void {
+  try {
+    const data = handler();
+    if (eventName) {
+      emit(eventName, data, requestId);
+    }
+    emit('completed', { success: true }, requestId);
+  } catch (err: any) {
+    emit('completed', { success: false, error: err.message }, requestId);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Main entry point
+// ---------------------------------------------------------------------------
 
 export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
   // Redirect console to stderr so stdout stays clean for the JSON protocol
@@ -59,18 +135,22 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
   const state: AgentState = createAgentState();
   const resumed = loadSession(state);
   if (resumed) {
-    emit('session_restored', {
-      messageCount: state.messages.length,
-    });
+    emit('session_restored', { messageCount: state.messages.length });
   }
 
   let running = false;
   let currentAbort: AbortController | null = null;
 
+  // Track the requestId of the in-flight message command so onEvent can
+  // inject it into every streamed event.
+  let currentRequestId: string | undefined;
+  // Guard: runTurn may or may not emit turn_done/turn_cancelled. We track
+  // whether a terminal `completed` was already sent so we emit exactly one.
+  let completedEmitted = false;
+
+  // ---------------------------------------------------------------------------
   // External tool results — keyed by tool call id.
-  // resolveExternalTool creates a promise; tool_result resolves it.
-  // If tool_result arrives first (fast sandbox response), it's buffered
-  // in earlyResults and resolved immediately when the promise is created.
+  // ---------------------------------------------------------------------------
   const EXTERNAL_TOOL_TIMEOUT_MS = 300_000; // 5 minutes
   const pendingTools = new Map<
     string,
@@ -80,64 +160,6 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     }
   >();
   const earlyResults = new Map<string, string>();
-
-  function onEvent(e: AgentEvent): void {
-    switch (e.type) {
-      case 'text':
-        emit('text', {
-          text: e.text,
-          ...(e.parentToolId && { parentToolId: e.parentToolId }),
-        });
-        break;
-      case 'thinking':
-        emit('thinking', {
-          text: e.text,
-          ...(e.parentToolId && { parentToolId: e.parentToolId }),
-        });
-        break;
-      case 'tool_input_delta':
-        emit('tool_input_delta', {
-          id: e.id,
-          name: e.name,
-          result: e.result,
-          ...(e.parentToolId && { parentToolId: e.parentToolId }),
-        });
-        break;
-      case 'tool_start':
-        emit('tool_start', {
-          id: e.id,
-          name: e.name,
-          input: e.input,
-          ...(e.partial && { partial: true }),
-          ...(e.parentToolId && { parentToolId: e.parentToolId }),
-        });
-        break;
-      case 'tool_done':
-        emit('tool_done', {
-          id: e.id,
-          name: e.name,
-          result: e.result,
-          isError: e.isError,
-          ...(e.parentToolId && { parentToolId: e.parentToolId }),
-        });
-        break;
-      case 'turn_started':
-        emit('turn_started');
-        break;
-      case 'turn_done':
-        emit('turn_done');
-        break;
-      case 'turn_cancelled':
-        emit('turn_cancelled');
-        break;
-      case 'error':
-        emit('error', { error: e.error });
-        break;
-      case 'status':
-        emit('status', { message: e.message });
-        break;
-    }
-  }
 
   // Tools that wait on user input — no timeout
   const USER_FACING_TOOLS = new Set([
@@ -153,7 +175,6 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     name: string,
     _input: Record<string, any>,
   ): Promise<string> {
-    // If the result arrived before we got here, return it immediately.
     const early = earlyResults.get(id);
     if (early !== undefined) {
       earlyResults.delete(id);
@@ -161,8 +182,6 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     }
 
     const shouldTimeout = !USER_FACING_TOOLS.has(name);
-
-    // Otherwise, create a promise that tool_result will resolve later.
     return new Promise<string>((resolve) => {
       const timeout = shouldTimeout
         ? setTimeout(() => {
@@ -183,31 +202,195 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     });
   }
 
+  // ---------------------------------------------------------------------------
+  // AgentEvent → wire protocol translation
+  // ---------------------------------------------------------------------------
+
+  function onEvent(e: AgentEvent): void {
+    const rid = currentRequestId;
+
+    switch (e.type) {
+      // Suppressed — caller already knows the request started
+      case 'turn_started':
+        return;
+
+      // Terminal events — translate to `completed`
+      case 'turn_done':
+        completedEmitted = true;
+        emit('completed', { success: true }, rid);
+        return;
+      case 'turn_cancelled':
+        completedEmitted = true;
+        emit('completed', { success: false, error: 'cancelled' }, rid);
+        return;
+
+      // Streaming events — forward with requestId
+      case 'text':
+        emit(
+          'text',
+          {
+            text: e.text,
+            ...(e.parentToolId && { parentToolId: e.parentToolId }),
+          },
+          rid,
+        );
+        return;
+      case 'thinking':
+        emit(
+          'thinking',
+          {
+            text: e.text,
+            ...(e.parentToolId && { parentToolId: e.parentToolId }),
+          },
+          rid,
+        );
+        return;
+      case 'tool_input_delta':
+        emit(
+          'tool_input_delta',
+          {
+            id: e.id,
+            name: e.name,
+            result: e.result,
+            ...(e.parentToolId && { parentToolId: e.parentToolId }),
+          },
+          rid,
+        );
+        return;
+      case 'tool_start':
+        emit(
+          'tool_start',
+          {
+            id: e.id,
+            name: e.name,
+            input: e.input,
+            ...(e.partial && { partial: true }),
+            ...(e.parentToolId && { parentToolId: e.parentToolId }),
+          },
+          rid,
+        );
+        return;
+      case 'tool_done':
+        emit(
+          'tool_done',
+          {
+            id: e.id,
+            name: e.name,
+            result: e.result,
+            isError: e.isError,
+            ...(e.parentToolId && { parentToolId: e.parentToolId }),
+          },
+          rid,
+        );
+        return;
+      case 'status':
+        emit('status', { message: e.message }, rid);
+        return;
+      case 'error':
+        emit('error', { error: e.error }, rid);
+        return;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Message command handler (long-running / streaming)
+  // ---------------------------------------------------------------------------
+
+  async function handleMessage(
+    parsed: StdinCommand,
+    requestId: string | undefined,
+  ): Promise<void> {
+    if (running) {
+      emit(
+        'error',
+        { error: 'Agent is already processing a message' },
+        requestId,
+      );
+      emit(
+        'completed',
+        { success: false, error: 'Agent is already processing a message' },
+        requestId,
+      );
+      return;
+    }
+
+    running = true;
+    currentRequestId = requestId;
+    currentAbort = new AbortController();
+    completedEmitted = false;
+
+    const attachments = parsed.attachments as
+      | Array<{ url: string; extractedTextUrl?: string }>
+      | undefined;
+    if (attachments?.length) {
+      console.warn(
+        `[headless] Message has ${attachments.length} attachment(s):`,
+        attachments.map((a: { url: string }) => a.url),
+      );
+    }
+
+    // Resolve the user message — runCommand may substitute a built-in prompt
+    let userMessage = (parsed.text as string) ?? '';
+    const isCommand = !!parsed.runCommand;
+    if (parsed.runCommand === 'sync') {
+      userMessage = loadActionPrompt('sync');
+    } else if (parsed.runCommand === 'publish') {
+      userMessage = loadActionPrompt('publish');
+    } else if (parsed.runCommand === 'buildFromInitialSpec') {
+      userMessage = loadActionPrompt('buildFromInitialSpec');
+    }
+
+    const onboardingState =
+      (parsed.onboardingState as string) ?? 'onboardingFinished';
+    const system = buildSystemPrompt(
+      onboardingState,
+      parsed.viewContext as any,
+    );
+
+    try {
+      await runTurn({
+        state,
+        userMessage,
+        attachments,
+        apiConfig: config,
+        system,
+        model: opts.model,
+        onboardingState,
+        signal: currentAbort.signal,
+        onEvent,
+        resolveExternalTool,
+        hidden: isCommand,
+      });
+      // runTurn may have emitted turn_done or turn_cancelled (→ completed).
+      // If it returned without either (e.g. streaming error early-return),
+      // we need to emit the terminal event ourselves.
+      if (!completedEmitted) {
+        emit(
+          'completed',
+          { success: false, error: 'Turn ended unexpectedly' },
+          requestId,
+        );
+      }
+    } catch (err: any) {
+      if (!completedEmitted) {
+        emit('error', { error: err.message }, requestId);
+        emit('completed', { success: false, error: err.message }, requestId);
+      }
+    }
+
+    currentAbort = null;
+    currentRequestId = undefined;
+    running = false;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Stdin router
+  // ---------------------------------------------------------------------------
+
   const rl = createInterface({ input: process.stdin });
 
   rl.on('line', async (line: string) => {
-    let parsed: {
-      action?: string;
-      text?: string;
-      runCommand?: string;
-      onboardingState?: string;
-      viewContext?: {
-        mode:
-          | 'intake'
-          | 'preview'
-          | 'spec'
-          | 'code'
-          | 'databases'
-          | 'scenarios'
-          | 'logs';
-        openFiles?: string[];
-        activeFile?: string;
-      };
-      attachments?: Array<{ url: string; extractedTextUrl?: string }>;
-      // tool_result fields
-      id?: string;
-      result?: string;
-    };
+    let parsed: StdinCommand;
     try {
       parsed = JSON.parse(line);
     } catch {
@@ -215,94 +398,57 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       return;
     }
 
-    // --- tool_result: external tool response from sandbox ---
-    if (parsed.action === 'tool_result' && parsed.id) {
-      const pending = pendingTools.get(parsed.id);
+    const { action, requestId } = parsed;
+
+    // tool_result: fire-and-forget, resolves a pending external tool promise
+    if (action === 'tool_result' && parsed.id) {
+      const id = parsed.id as string;
+      const result = (parsed.result as string) ?? '';
+      const pending = pendingTools.get(id);
       if (pending) {
-        // Normal case: resolveExternalTool was called first, resolve the promise.
-        pendingTools.delete(parsed.id);
-        pending.resolve(parsed.result ?? '');
-      } else {
-        // Early case: result arrived before resolveExternalTool was called.
-        earlyResults.set(parsed.id, parsed.result ?? '');
-      }
-      return;
-    }
-
-    if (parsed.action === 'get_history') {
-      emit('history', {
-        messages: state.messages,
-      });
-      return;
-    }
-
-    if (parsed.action === 'clear') {
-      clearSession(state);
-      emit('session_cleared');
-      return;
-    }
-
-    if (parsed.action === 'cancel') {
-      if (currentAbort) {
-        currentAbort.abort();
-      }
-      // Also resolve any pending external tools so the agent doesn't hang
-      for (const [id, pending] of pendingTools) {
-        clearTimeout(pending.timeout);
-        pending.resolve('Error: cancelled');
         pendingTools.delete(id);
+        pending.resolve(result);
+      } else {
+        earlyResults.set(id, result);
       }
       return;
     }
 
-    if (parsed.action === 'message' && (parsed.text || parsed.runCommand)) {
-      if (running) {
-        emit('error', { error: 'Agent is already processing a message' });
-        return;
-      }
-      running = true;
-      currentAbort = new AbortController();
-      if (parsed.attachments?.length) {
-        console.warn(
-          `[headless] Message has ${parsed.attachments.length} attachment(s):`,
-          parsed.attachments.map((a) => a.url),
-        );
-      }
-
-      // Resolve the user message — runCommand may substitute a built-in prompt
-      let userMessage = parsed.text ?? '';
-      const isCommand = !!parsed.runCommand;
-      if (parsed.runCommand === 'sync') {
-        userMessage = loadActionPrompt('sync');
-      } else if (parsed.runCommand === 'publish') {
-        userMessage = loadActionPrompt('publish');
-      } else if (parsed.runCommand === 'buildFromInitialSpec') {
-        userMessage = loadActionPrompt('buildFromInitialSpec');
-      }
-
-      const onboardingState = parsed.onboardingState ?? 'onboardingFinished';
-      const system = buildSystemPrompt(onboardingState, parsed.viewContext);
-      try {
-        await runTurn({
-          state,
-          userMessage,
-          attachments: parsed.attachments,
-          apiConfig: config,
-          system,
-          model: opts.model,
-          onboardingState,
-          signal: currentAbort.signal,
-          onEvent,
-          resolveExternalTool,
-          hidden: isCommand,
-        });
-      } catch (err: any) {
-        emit('error', { error: err.message });
-      }
-      currentAbort = null;
-      running = false;
+    if (action === 'get_history') {
+      dispatchSimple(requestId, 'history', () => handleGetHistory(state));
+      return;
     }
+
+    if (action === 'clear') {
+      dispatchSimple(requestId, 'session_cleared', () => handleClear(state));
+      return;
+    }
+
+    if (action === 'cancel') {
+      handleCancel(currentAbort, pendingTools);
+      // The in-flight message's completed(success:false, error:"cancelled")
+      // is handled by onEvent when turn_cancelled fires.
+      emit('completed', { success: true }, requestId);
+      return;
+    }
+
+    if (action === 'message') {
+      await handleMessage(parsed, requestId);
+      return;
+    }
+
+    // Unknown action
+    emit('error', { error: `Unknown action: ${action}` }, requestId);
+    emit(
+      'completed',
+      { success: false, error: `Unknown action: ${action}` },
+      requestId,
+    );
   });
+
+  // ---------------------------------------------------------------------------
+  // Lifecycle
+  // ---------------------------------------------------------------------------
 
   rl.on('close', () => {
     emit('stopping');

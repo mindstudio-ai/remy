@@ -14,7 +14,8 @@
         700
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This serif typeface exhibits high stroke contrast with a vertical stress axis and bracketed serifs that are moderately thin and refined. Terminals show a mix of ball terminals (visible in 'a', 'c') and tapered endings, while apertures are moderately open in letters like 'e' and 'c'. The x-height is medium relative to cap height, proportions are regular width, and the construction follows a transitional model with both calligraphic influence and rational geometry, featuring a two-story 'g' and classical letterform proportions throughout."
     },
     {
       "name": "Synonym",
@@ -30,7 +31,8 @@
         700
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and a geometric construction characterized by circular bowls and optically-corrected curves. Terminals are primarily flat-cut with some subtle rounding, apertures are moderately open in letters like 'c' and 'e', and the x-height is relatively high compared to the cap height. The typeface features a single-story 'a' and 'g', regular width proportions, and demonstrates typical grotesque characteristics with minimal stroke modulation and rationalized, simplified letterforms."
     },
     {
       "name": "General Sans",
@@ -46,7 +48,8 @@
         700
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This grotesque sans-serif displays monolinear stroke weight with no stress angle and flat-cut terminals throughout. The typeface features a high x-height relative to cap height, regular width proportions, and moderately open apertures in letters like 'c', 'e', and 'a'. Notable glyphs include a single-story 'a' and 'g', with the construction showing geometric tendencies tempered by subtle humanist adjustments in curves and proportions."
     },
     {
       "name": "Gambarino",
@@ -57,7 +60,8 @@
         400
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This serif typeface exhibits high stroke contrast with a vertical stress axis, featuring sharp, unbracketed hairline serifs that create a distinctly modern appearance. The letterforms show moderate apertures in characters like 'e' and 'c', a medium x-height relative to cap height, and regular proportions with a rational construction that emphasizes geometric precision over calligraphic influence. Notable details include the single-story 'a', crisp terminals with minimal bracketing, and thin horizontal serifs that contrast sharply with the vertical stems, characteristic of a Didone or Modern serif classification."
     },
     {
       "name": "Rowan",
@@ -72,7 +76,8 @@
         700
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This serif typeface exhibits high stroke contrast with a vertical stress axis and features bracketed serifs with tapered terminals. The letterforms show a transitional construction with moderately open apertures visible in the 'e' and 'a', a medium-to-high x-height relative to the capitals, and regular proportions. Notable details include a single-story 'a', ball terminals on letters like 'r' and 'c', and pronounced thick-to-thin stroke modulation characteristic of transitional serif designs."
     },
     {
       "name": "Sentient",
@@ -87,7 +92,8 @@
         700
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This serif typeface exhibits moderate stroke contrast with a vertical stress and features sturdy, bracketed serifs with a slight wedge quality. The apertures are moderately open in letters like 'e' and 'a', while the x-height is relatively generous in proportion to the cap height, contributing to strong readability. The construction shows rational, contemporary proportions with a single-story 'g' and regular width, combining traditional serif elements with modern refinement in details like the ball terminals visible in characters such as 'a' and 'c'."
     },
     {
       "name": "Boska",
@@ -103,7 +109,8 @@
         900
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This serif typeface exhibits high stroke contrast with a vertical stress axis and features unbracketed, wedge-shaped serifs that are sharply cut and geometric in construction. The letterforms show moderate apertures in characters like 'e' and 'a', with a medium x-height relative to the cap height and regular width proportions. Notable details include a single-story 'a', ball terminals on some curved strokes, and distinctively sharp, angular serifs that create a modern, rationalist appearance rather than a traditional calligraphic one."
     },
     {
       "name": "Switzer",
@@ -122,7 +129,8 @@
         900
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif displays monolinear stroke weight with no stress angle and a grotesque construction characterized by optically-adjusted curves rather than purely geometric forms. The typeface features a high x-height relative to cap height, closed apertures in letters like 'e' and 'a', and flat-cut terminals throughout. Notable glyphs include a single-story 'a' and 'g', with the overall proportions appearing regular width, and the letterforms exhibit tight spacing and compact counters typical of Swiss grotesque design."
     },
     {
       "name": "Tabular",
@@ -137,7 +145,8 @@
         700
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This monolinear sans-serif exhibits geometric construction with nearly uniform stroke weight throughout and no discernible stress angle. Terminals are predominantly flat-cut and horizontal, while apertures in letters like 'c', 'e', and 'a' are moderately open. The x-height is relatively high compared to cap height, proportions are regular width, and the single-story 'a' and 'g' reinforce the typeface's rationalist, geometric character with minimal humanist influence."
     },
     {
       "name": "Tanker",
@@ -148,7 +157,8 @@
         400
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This condensed grotesque sans-serif displays monolinear stroke weight with no stress angle and flat-cut terminals throughout. The typeface features a very high x-height relative to cap height, extremely closed apertures in letters like 'c', 'e', and 'a', and notably tight letter spacing that emphasizes its compressed proportions. The construction is geometric with characteristic details including a single-story 'a', compact counters, and uniform stroke widths that create a dense, industrial appearance typical of early 20th-century grotesque designs."
     },
     {
       "name": "Expose",
@@ -162,7 +172,8 @@
         900
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif typeface exhibits a grotesque construction with low stroke contrast and nearly monolinear strokes. The letterforms feature closed apertures in characters like 'c', 'e', and 'a', with a double-story 'g' and single-story 'a'. The x-height is relatively high compared to the cap height, and terminals are primarily flat-cut with some subtle angles, while the overall proportions are slightly condensed with tight letter spacing."
     },
     {
       "name": "Pilcrow Rounded",
@@ -177,7 +188,8 @@
         900
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and a grotesque construction characterized by optically-adjusted rounded terminals throughout. The apertures are moderately open in letters like 'c', 'e', and 'a', with a single-story 'a' and 'g' construction, while the x-height is relatively high compared to the cap height. The letterforms display regular width proportions with distinctive rounded terminals that soften the otherwise geometric structure, and the bowls show consistent circular forms particularly visible in 'o', 'b', 'd', and 'p'."
     },
     {
       "name": "Melodrama",
@@ -192,7 +204,8 @@
         700
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This display serif exhibits high stroke contrast with a vertical stress axis and features distinctive ball terminals on letters like 'a', 'c', and 'r'. The serifs are unbracketed and hairline-thin, creating sharp transitions from the thick vertical strokes, while the apertures are moderately open in characters like 'e' and 'c'. The typeface shows a high x-height relative to cap height, regular width proportions, and a rational construction with geometric qualities, particularly evident in the circular bowls and precise vertical stems."
     },
     {
       "name": "New Title",
@@ -207,7 +220,8 @@
         700
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This condensed sans-serif displays high stroke contrast with a vertical stress axis, featuring flat-cut terminals and extremely narrow proportions. The apertures are moderately closed, particularly visible in the 'e' and 'c', while the x-height is relatively high compared to the cap height. The construction shows rationalist characteristics with geometric underpinnings, and notable details include a single-story 'a' and 'g', with distinctive narrow counters throughout all letterforms."
     },
     {
       "name": "Alpino",
@@ -223,7 +237,8 @@
         900
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and flat-cut terminals throughout. The letterforms display moderately open apertures in characters like 'c', 'e', and 'a' (which features a double-story construction), with a medium-to-high x-height relative to the cap height. The overall construction is geometric-rational with regular width proportions, characterized by circular bowls, minimal optical correction, and a double-story 'g' with a closed lower counter."
     },
     {
       "name": "Amulya",
@@ -237,7 +252,8 @@
         700
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This is a humanist sans-serif with low stroke contrast and subtle calligraphic stress, featuring open apertures in letters like 'c', 'e', and 'a'. The typeface exhibits a medium-to-high x-height relative to cap height, regular width proportions, and terminals that are primarily flat-cut with occasional slight tapering. Notable details include a double-story 'g', gently curved leg on 'R', and softly rounded corners throughout that distinguish it from purely geometric sans-serifs."
     },
     {
       "name": "Author",
@@ -253,7 +269,8 @@
         700
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and a geometric construction characterized by circular bowls and rationalized forms. Terminals are primarily flat-cut with some subtle rounding, apertures are moderately open in letters like 'c' and 'e', and the x-height is notably high relative to the cap height. The letterforms show regular width proportions with a double-story 'g', and distinctive features include the geometric circular counters and consistent stroke terminals throughout."
     },
     {
       "name": "Bespoke Sans",
@@ -268,7 +285,8 @@
         800
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif displays monolinear stroke weight with no stress angle and flat-cut terminals throughout. The typeface exhibits a high x-height relative to cap height, regular width proportions, and moderately open apertures in letters like 'c', 'e', and 'a'. Construction is geometric-rational with a double-story 'g', single-story 'a', and notably rounded forms in circular letters, while maintaining consistent stroke thickness across all weights shown."
     },
     {
       "name": "Bespoke Serif",
@@ -283,7 +301,8 @@
         800
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This serif typeface exhibits high stroke contrast with vertical stress and features heavily bracketed serifs with substantial weight. Terminals show a mix of ball terminals (as in 'a', 'c') and tapered forms, while apertures are moderately open in letters like 'e' and 'c'. The x-height is relatively high compared to cap height, with regular width proportions and a transitional construction that balances rational structure with calligraphic influence, evident in the two-story 'g' and the flowing bracketing of serifs into stems."
     },
     {
       "name": "Clash Grotesk",
@@ -299,7 +318,8 @@
         700
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This grotesque sans-serif displays monolinear stroke weight with no stress angle and flat-cut terminals throughout. The typeface exhibits a high x-height relative to cap height, regular width proportions, and moderately open apertures in letters like 'c', 'e', and 'a'. Notable features include a single-story 'a' and 'g', with the lowercase 'g' showing a simplified, geometric construction typical of early 20th-century grotesque designs."
     },
     {
       "name": "Clash Display",
@@ -315,7 +335,8 @@
         700
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif display typeface exhibits monolinear stroke weight with no stress angle and features distinctive geometric construction with highly closed apertures in letters like 'e' and 'a'. The terminals are primarily flat-cut, and the typeface has a condensed to regular width with a high x-height relative to cap height. Notable glyphs include a single-story 'a' and 'g', with the lowercase 'g' showing a simplified bowl construction, and several characters display unconventional geometric forms with sharp angles and tight counters that emphasize the face's display-oriented design."
     },
     {
       "name": "Chubbo",
@@ -330,7 +351,8 @@
         700
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This typeface exhibits unbracketed slab serifs with squared terminals, monolinear stroke weight with no discernible stress angle, and a very high x-height relative to the cap height. The apertures are moderately open in letters like 'c' and 'e', the construction is geometric with circular bowls, and notable features include a single-story 'a' and 'g', along with regular width proportions and consistent stroke thickness throughout all letterforms."
     },
     {
       "name": "Chillax",
@@ -346,7 +368,8 @@
         700
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and a geometric construction characterized by circular bowls and consistent curves. Terminals are flat-cut, apertures are moderately open in letters like 'c' and 'e', and the x-height is notably high relative to the cap height. The typeface features a single-story 'a' and 'g', regular width proportions, and distinctive rounded forms in characters like the 'o' and 'b' that emphasize its geometric foundation."
     },
     {
       "name": "Cabinet Grotesk",
@@ -364,7 +387,8 @@
         900
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This grotesque sans-serif displays monolinear stroke weight with no stress angle and flat-cut terminals throughout. The typeface features a high x-height relative to cap height, regular width proportions, and moderately open apertures visible in letters like 'e' and 'a'. Notable glyphs include a double-story 'g', and the overall construction shows geometric tendencies with slight humanist refinements in curves, particularly evident in the bowls of 'b', 'd', and 'p'."
     },
     {
       "name": "Britney",
@@ -378,7 +402,8 @@
         1000
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This script typeface exhibits high stroke contrast with a diagonal stress angle characteristic of calligraphic construction, featuring tapered terminals and flowing, connected letterforms typical of formal cursive writing. The letters display moderate apertures with a relatively high x-height compared to ascenders, and notable features include a single-story 'a' and 'g' with sweeping descenders that extend well below the baseline. The construction is distinctly humanist with variable stroke widths that mimic broad-nib pen strokes, and letterforms show organic, non-geometric proportions with pronounced entry and exit strokes that facilitate connections between characters."
     },
     {
       "name": "Bonny",
@@ -393,7 +418,8 @@
         700
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This serif typeface exhibits high stroke contrast with a vertical stress axis, featuring delicate hairline serifs that are minimally bracketed and approach a wedge-like construction at the terminals. The apertures are moderately open in letters like 'c' and 'e', while the x-height is relatively low compared to the cap height, creating elegant proportions in a regular width. Notable characteristics include sharp, tapered terminals on curves, a single-story 'g' with a distinctive open loop, and a rationalist construction that balances geometric precision with subtle calligraphic influences in the stroke modulation."
     },
     {
       "name": "Bevellier",
@@ -411,26 +437,8 @@
         900
       ],
       "italics": true,
-      "source": "fontshare"
-    },
-    {
-      "name": "Archivo",
-      "slug": "archivo",
-      "category": "Sans",
-      "variable": true,
-      "weights": [
-        100,
-        200,
-        300,
-        400,
-        500,
-        600,
-        700,
-        800,
-        900
-      ],
-      "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This display typeface exhibits extreme stroke contrast with thick verticals and horizontals against hairline-thin connecting strokes, creating a stencil-like appearance with breaks in letterforms. The construction is geometric and condensed, with a high x-height relative to capitals, closed apertures in letters like 'e' and 'a', and flat-cut terminals throughout. Notable features include a single-story 'a' and 'g', vertical stress, and the distinctive interrupted strokes that fragment each glyph where thin connectors would typically join to heavier stems."
     },
     {
       "name": "Dancing Script",
@@ -442,7 +450,8 @@
         700
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "DM Sans is a monolinear geometric sans-serif with no stroke contrast and flat-cut terminals throughout. The typeface features a high x-height relative to cap height, regular width proportions, and moderately open apertures in letters like c, e, and a. Notable characteristics include a single-story 'a', circular construction in bowls, and rationalized geometric forms with subtle optical corrections, particularly visible in the rounded letters."
     },
     {
       "name": "Bebas Neue",
@@ -453,7 +462,8 @@
         400
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif typeface exhibits extreme stroke contrast with hairline horizontals and heavy verticals, creating a stark geometric construction. The letterforms show vertical stress, very closed apertures (particularly evident in 'e' and 'a'), and a high x-height relative to cap height with condensed proportions. Terminals are predominantly flat-cut, and the design features single-story 'a' and 'g' forms with notably compressed counters and tight letter spacing, characteristic of a rational, high-contrast grotesque approach."
     },
     {
       "name": "Anton",
@@ -464,26 +474,8 @@
         400
       ],
       "italics": false,
-      "source": "fontshare"
-    },
-    {
-      "name": "Poppins",
-      "slug": "poppins",
-      "category": "Sans",
-      "variable": true,
-      "weights": [
-        100,
-        200,
-        300,
-        400,
-        500,
-        600,
-        700,
-        800,
-        900
-      ],
-      "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif display typeface exhibits extreme stroke contrast with very thick verticals and horizontals paired with dramatically thin joins and connections, creating a reverse-stress effect. The construction is geometric with condensed proportions, closed apertures in letters like 'e' and 'a', and a high x-height relative to the cap height. Terminals are predominantly flat-cut, and the single-story 'a' and 'g' feature minimal apertures, while distinctive characteristics include the compressed counters and the stark weight distribution that emphasizes vertical elements over horizontal ones."
     },
     {
       "name": "Be Vietnam Pro",
@@ -502,7 +494,8 @@
         900
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif displays monolinear stroke weight with no stress angle and a geometric construction evident in the circular bowls of letters like 'o' and 'd'. The typeface features a high x-height relative to cap height, regular width proportions, and moderately open apertures in characters such as 'c', 'e', and 'a'. Terminals are primarily flat-cut, the 'g' uses a double-story form, and the overall structure shows rationalized geometric forms with subtle optical corrections rather than pure geometric circles."
     },
     {
       "name": "Outfit",
@@ -521,7 +514,8 @@
         900
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This grotesque sans-serif displays monolinear stroke weight with no stress angle and flat-cut terminals throughout. The typeface features a high x-height relative to cap height, regular width proportions, and moderately open apertures in letters like 'e' and 'a'. Notable characteristics include a single-story 'a', geometric construction with slightly squared curves, and consistent stroke endings that create a sturdy, utilitarian appearance."
     },
     {
       "name": "Lora",
@@ -535,7 +529,8 @@
         700
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This serif typeface exhibits moderate stroke contrast with a vertical stress and features thick, unbracketed slab serifs with squared terminals. The construction shows a high x-height relative to cap height, regular width proportions, and moderately open apertures in letters like 'e' and 'a'. Notable characteristics include a double-story 'g', robust slab terminals on ascenders and descenders, and a rational, geometric construction typical of Egyptian or Clarendon-style serifs."
     },
     {
       "name": "Plus Jakarta Sans",
@@ -552,7 +547,8 @@
         800
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This grotesque sans-serif displays monolinear stroke weight with no stress angle and flat-cut terminals throughout. The typeface features a high x-height relative to cap height, regular width proportions, and moderately open apertures visible in the 'e' and 'a'. Notable glyphs include a single-story 'a' and 'g', with the construction showing rationalized, geometric tendencies particularly evident in the circular bowls and consistent stroke terminals."
     },
     {
       "name": "Nunito",
@@ -570,7 +566,8 @@
         900
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This geometric sans-serif displays monolinear strokes with no stress angle and flat-cut terminals throughout. The typeface features a high x-height relative to cap height, regular width proportions, and highly open apertures visible in letters like 'c', 'e', and 'a'. Notable glyphs include a single-story 'a' and 'g', rounded forms with circular construction, and distinctly geometric letterforms with minimal optical correction, characteristic of a rationalized geometric sans approach."
     },
     {
       "name": "Manrope",
@@ -587,26 +584,8 @@
         800
       ],
       "italics": false,
-      "source": "fontshare"
-    },
-    {
-      "name": "Work Sans",
-      "slug": "work-sans",
-      "category": "Sans",
-      "variable": true,
-      "weights": [
-        100,
-        200,
-        300,
-        400,
-        500,
-        600,
-        700,
-        800,
-        900
-      ],
-      "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and a geometric construction based on circular and rectangular forms. Terminals are primarily flat-cut with some subtle rounding, apertures are moderately open in letters like 'c' and 'e', and the x-height is relatively high compared to the cap height. The proportions are regular width with a double-story 'g', and notable features include the geometric circular bowls and consistent stroke terminals throughout the character set."
     },
     {
       "name": "Crimson Pro",
@@ -624,23 +603,8 @@
         900
       ],
       "italics": true,
-      "source": "fontshare"
-    },
-    {
-      "name": "Oswald",
-      "slug": "oswald",
-      "category": "Sans, Display",
-      "variable": true,
-      "weights": [
-        200,
-        300,
-        400,
-        500,
-        600,
-        700
-      ],
-      "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This serif typeface exhibits high stroke contrast with a vertical stress axis, featuring substantial weight variation between thick and thin strokes. The serifs are bracketed with a traditional structure, and terminals show a mix of ball terminals (as in 'a', 'c') and tapered endings. The apertures are moderately open in letters like 'e' and 'c', the x-height is medium-to-high relative to cap height, and the overall construction follows a transitional model with both calligraphic influence and rational geometry, using a double-story 'g' and single-story 'a'."
     },
     {
       "name": "Fira Sans",
@@ -659,7 +623,8 @@
         900
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and a geometric construction characterized by circular bowls and optically-corrected curves. Terminals are predominantly flat-cut with some subtle tapering, apertures are moderately open in letters like 'c' and 'e', and the x-height is notably high relative to cap height, creating strong horizontal emphasis. The letterforms display regular width proportions with a double-story 'g', single-story 'a', and distinctive diagonal cuts visible in characters like the 't' terminal."
     },
     {
       "name": "Asap",
@@ -673,7 +638,8 @@
         700
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This is a monolinear grotesque sans-serif with no stroke contrast and no stress angle, featuring flat-cut terminals throughout. The typeface exhibits moderate to slightly closed apertures in letters like 'c', 'e', and 'a', with a medium-high x-height relative to the cap height and regular width proportions. Notable glyphs include a single-story 'a' and 'g', with the 'g' displaying a simple, geometric construction typical of rationalist sans-serifs."
     },
     {
       "name": "Montserrat",
@@ -692,26 +658,8 @@
         900
       ],
       "italics": true,
-      "source": "fontshare"
-    },
-    {
-      "name": "Azeret Mono",
-      "slug": "azeret-mono",
-      "category": "Sans",
-      "variable": true,
-      "weights": [
-        100,
-        200,
-        300,
-        400,
-        500,
-        600,
-        700,
-        800,
-        900
-      ],
-      "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This geometric sans-serif displays monolinear strokes with no stress angle and flat-cut terminals throughout. The typeface features a high x-height relative to cap height, regular width proportions, and moderately open apertures in letters like 'e' and 'a'. Notable characteristics include a single-story 'a' and 'g', circular bowls in letters like 'o' and 'b', and consistent geometric construction with minimal optical adjustments, typical of early 20th-century geometric sans-serifs."
     },
     {
       "name": "Spline Sans",
@@ -726,7 +674,8 @@
         700
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif displays monolinear stroke weight with no stress angle and flat-cut terminals throughout. The typeface exhibits a high x-height relative to cap height, regular width proportions, and moderately open apertures visible in letters like 'e' and 'a'. Construction is geometric-grotesque with a single-story 'a', and notable features include slightly condensed letterforms and consistent stroke thickness across all weights shown."
     },
     {
       "name": "Epilogue",
@@ -745,7 +694,8 @@
         900
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and a geometric construction characterized by circular bowls and consistent curves. Terminals are flat-cut throughout, apertures are moderately open in letters like 'c' and 'e', and the x-height is notably high relative to the cap height. The letterforms display regular width proportions with distinctive features including a single-story 'a' and 'g', and the overall structure follows a rational, geometric model with minimal humanist influence."
     },
     {
       "name": "Public Sans",
@@ -764,25 +714,8 @@
         900
       ],
       "italics": true,
-      "source": "fontshare"
-    },
-    {
-      "name": "JetBrains Mono",
-      "slug": "jet-brains-mono",
-      "category": "Sans",
-      "variable": true,
-      "weights": [
-        100,
-        200,
-        300,
-        400,
-        500,
-        600,
-        700,
-        800
-      ],
-      "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This is a geometric sans-serif with monolinear stroke weight and no stress angle. The typeface features flat-cut terminals, closed apertures in letters like 'e' and 'a', and a high x-height relative to the cap height. Notable characteristics include a single-story 'a' and 'g', regular width proportions, and a rationalist construction with minimal stroke modulation across all weights shown."
     },
     {
       "name": "Familjen Grotesk",
@@ -796,7 +729,8 @@
         700
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This grotesque sans-serif displays monolinear strokes with no stress angle and flat-cut terminals throughout. The apertures are moderately open in letters like 'c', 'e', and 'a', with a medium-to-high x-height relative to the cap height and regular width proportions. The construction shows rationalized grotesque characteristics with a double-story 'g', closed aperture in the 'a', and consistent stroke weights across all glyphs, with subtle optical corrections visible in joins and curves."
     },
     {
       "name": "Pally",
@@ -809,7 +743,8 @@
         700
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and features a distinctly high x-height relative to the cap height. The letterforms show closed to moderate apertures in characters like 'e' and 'a', with terminals that are primarily flat-cut and horizontal. The construction is geometric with regular proportions, utilizing a single-story 'a' and 'g', and the overall structure demonstrates rationalized, simplified forms typical of contemporary geometric sans-serifs."
     },
     {
       "name": "Hind",
@@ -824,7 +759,8 @@
         700
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and flat-cut terminals throughout. The letterforms show moderately open apertures in characters like 'c', 'e', and 'a' (which features a double-story construction), with a medium-to-high x-height relative to the cap height. The overall construction is geometric-rational with regular proportions, characterized by optically circular bowls, consistent stroke widths, and minimal humanist influence in the letter shapes."
     },
     {
       "name": "Kalam",
@@ -837,7 +773,8 @@
         700
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This handwritten-style typeface exhibits monolinear stroke weight with no stress angle, maintaining consistent thickness throughout all letterforms. Terminals are predominantly tapered and organic, mimicking natural pen strokes, while apertures in letters like 'c', 'e', and 'a' are moderately open with the 'a' showing a single-story construction typical of cursive writing. The x-height is relatively high compared to ascenders, and the letterforms display irregular baseline alignment and connecting strokes between characters that create a flowing, script-like appearance with humanist construction based on casual handwriting rather than formal calligraphy."
     },
     {
       "name": "Erode",
@@ -852,7 +789,8 @@
         700
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This serif typeface exhibits high stroke contrast with a vertical stress axis, featuring bracketed serifs with subtle wedge-shaped terminals. The letterforms show moderately closed apertures in characters like 'e' and 'a', with a medium x-height relative to cap height and regular width proportions. The construction is transitional, displaying characteristics between old-style and modern classifications, with a single-story 'a' and refined, tapered terminals on ascenders and descenders."
     },
     {
       "name": "Roundo",
@@ -868,7 +806,8 @@
         700
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and a geometric construction characterized by circular bowls and rounded terminals. The apertures are moderately open in letters like 'c', 'e', and 'a', with the lowercase 'a' being single-story and the 'g' appearing single-story as well. The x-height is relatively high compared to the cap height, and the overall proportions are regular width with distinctly rounded forms that soften the geometric structure, particularly visible in characters like 'o', 'b', 'd', and 'p'."
     },
     {
       "name": "Neco",
@@ -882,7 +821,8 @@
         900
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This serif typeface exhibits high stroke contrast with a vertical stress axis, featuring substantial weight variation between thick and thin strokes. The serifs are heavily bracketed with a robust, slightly wedge-shaped construction, while terminals show a mix of ball terminals (as in 'a', 'c') and tapered endings. The apertures are moderately open, the x-height is relatively high compared to the cap height, and the overall width is regular with a transitional construction that balances classical proportions with refined, sharp detailing\u2014note the single-story 'a' and the distinctive heavy bracketing at serif junctions."
     },
     {
       "name": "Excon",
@@ -898,7 +838,8 @@
         900
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and a geometric construction characterized by circular bowls and consistent proportions. The apertures are moderately open in letters like 'c' and 'e', while terminals are flat-cut and perpendicular to stroke direction. The x-height is relatively high compared to the cap height, and the overall width is regular with a double-story 'g' and single-story 'a', typical of geometric sans-serifs with rationalized, optically-corrected forms."
     },
     {
       "name": "Space Grotesk",
@@ -913,7 +854,8 @@
         700
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This grotesque sans-serif displays monolinear stroke weight with no stress angle and flat-cut terminals throughout. The typeface features a high x-height relative to cap height, moderate to open apertures in letters like 'c', 'e', and 'a', and regular width proportions. Notable glyphs include a single-story 'a' and 'g', with the construction showing rationalized, geometric tendencies typical of neo-grotesque design, particularly visible in the circular bowls and optically-corrected curves."
     },
     {
       "name": "Pramukh Rounded",
@@ -931,7 +873,8 @@
         900
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and features distinctly rounded terminals throughout, particularly visible in letters like 'c', 'e', 'a', and 'r'. The apertures are moderately open, the x-height is relatively high compared to cap height, and the overall width is condensed with tight letter spacing. The construction shows geometric influence with rounded corners softening what would otherwise be grotesque forms, evident in the curved terminals of 'j', 'y', and the single-story 'a' and 'g'."
     },
     {
       "name": "Plein",
@@ -946,7 +889,8 @@
         900
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and a geometric construction. Terminals are flat-cut throughout, apertures are moderately open in letters like 'c' and 'e', and the x-height is notably high relative to cap height. The letterforms show regular width proportions with a double-story 'g', and distinctive features include the flat horizontal terminals on letters like 'a' and 'c', along with consistent geometric circular forms in bowls."
     },
     {
       "name": "Rajdhani",
@@ -961,7 +905,8 @@
         700
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no contrast and no stress angle, featuring flat-cut terminals throughout. The letterforms display closed to moderate apertures in characters like 'e' and 'a', with a high x-height relative to the cap height and slightly condensed proportions. The construction is geometric-grotesque with a double-story 'g', and notable characteristics include the straight-sided bowls and minimal optical adjustments, creating a utilitarian, technical appearance."
     },
     {
       "name": "Recia",
@@ -976,7 +921,8 @@
         700
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This serif typeface exhibits moderate stroke contrast with a vertical stress and features bracketed serifs with a traditional wedge-like construction. The letterforms show moderate apertures in characters like 'e' and 'a', with a medium x-height relative to cap height and regular proportions. The design demonstrates transitional characteristics with refined, rational construction visible in the consistent serif treatments and balanced stroke modulation, while the lowercase 'g' appears to be double-story and terminals show subtle tapering rather than ball or teardrop forms."
     },
     {
       "name": "Khand",
@@ -991,7 +937,8 @@
         700
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and flat-cut terminals throughout. The letterforms show a condensed width with a high x-height relative to the cap height, and moderately closed apertures visible in letters like 'e' and 'a'. The construction is geometric with a single-story 'a' and 'g', squared forms in characters like 'o' and 'c', and distinctive angular cuts in letters such as 't' and 'f'."
     },
     {
       "name": "Sharpie",
@@ -1006,7 +953,8 @@
         900
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This display typeface exhibits monolinear stroke weight with no stress angle, featuring a heavily slanted italic construction at approximately 15-20 degrees. The letterforms show flat-cut terminals throughout, with closed to moderate apertures in characters like 'e' and 'a', and the typeface employs a single-story 'a' and 'g' construction typical of sans-serif italics. The x-height is high relative to cap height, with regular width proportions, and the overall construction follows a geometric rationalist approach with consistent stroke thickness and sharp, angular joins particularly visible in letters like 'v', 'w', and 'k'."
     },
     {
       "name": "Supreme",
@@ -1023,7 +971,8 @@
         800
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and a geometric construction. The letterforms feature flat-cut terminals, closed apertures in characters like 'e' and 'a', and a high x-height relative to cap height. Notable details include a single-story 'a' and 'g', regular width proportions, and consistent geometric circles forming the bowls of characters like 'o' and 'd'."
     },
     {
       "name": "Quilon",
@@ -1037,7 +986,8 @@
         700
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif typeface exhibits low stroke contrast with a monolinear construction and no stress angle. The letterforms feature flat-cut terminals throughout, with moderately open apertures visible in the 'e', 'c', and 'a'. The x-height is relatively high compared to the cap height, and the overall width is regular with a geometric construction characterized by squared forms, particularly evident in the 'o' and 'a', which uses a double-story structure with a distinctive angular bowl."
     },
     {
       "name": "Ranade",
@@ -1052,7 +1002,8 @@
         700
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and a geometric construction. The letterforms show closed to moderate apertures in characters like 'e' and 'a', with a medium-high x-height relative to the cap height and regular width proportions. Terminals are primarily flat-cut, and the typeface features a double-story 'g' with a distinctive geometric bowl construction, while the 'a' appears to be single-story with a simple, rationalized form typical of geometric sans designs."
     },
     {
       "name": "Stardom",
@@ -1063,7 +1014,8 @@
         400
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This serif typeface exhibits high stroke contrast with vertical stress and features sharply tapered, hairline serifs that are minimally bracketed. The letterforms show moderate apertures in characters like 'e' and 'a', with a medium x-height relative to the capitals, and the construction leans toward a rational, high-contrast modern style with ball terminals visible on characters like 'a' and 'c'. Notable details include the elegant, thin serifs that create dramatic contrast with the thick main strokes, and the overall proportions are regular width with refined, delicate detailing throughout."
     },
     {
       "name": "Paquito",
@@ -1076,7 +1028,8 @@
         700
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This slab serif typeface exhibits moderate stroke contrast with vertical stress and thick, bracketed serifs that maintain substantial weight. The apertures are moderately closed, particularly visible in the 'e' and 'a', while the x-height is relatively high in proportion to the cap height. The construction shows a transitional character with humanist influences, featuring a two-story 'g' and slightly condensed proportions, with terminals that are primarily flat-cut with subtle bracketing where strokes meet serifs."
     },
     {
       "name": "Telma",
@@ -1091,7 +1044,8 @@
         900
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This script typeface exhibits high stroke contrast with a diagonal stress characteristic of calligraphic construction, featuring tapered terminals that taper to fine points. The letterforms show flowing, connected strokes with looping ascenders and descenders (notably the double-story 'g' with an exaggerated lower bowl), and the capitals display elaborate swashes and flourishes. Apertures are moderate to open in letters like 'e' and 'a', while the x-height is relatively high compared to the cap height, and the overall width proportion is regular with rhythmic, cursive connections between glyphs."
     },
     {
       "name": "Satoshi",
@@ -1106,23 +1060,8 @@
         900
       ],
       "italics": true,
-      "source": "fontshare"
-    },
-    {
-      "name": "Zodiak",
-      "slug": "zodiak",
-      "category": "Serif",
-      "variable": true,
-      "weights": [
-        100,
-        300,
-        400,
-        700,
-        800,
-        900
-      ],
-      "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif typeface exhibits low stroke contrast with nearly monolinear construction and no stress angle. Terminals are primarily flat-cut with some subtle rounding, and apertures in letters like 'c', 'e', and 'a' are moderately open. The x-height is relatively high compared to the cap height, with regular width proportions and a geometric-grotesque construction featuring a double-story 'g' and single-story 'a'."
     },
     {
       "name": "Red Hat Display",
@@ -1139,7 +1078,8 @@
         900
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif typeface exhibits monolinear stroke construction with no visible stress angle, featuring flat-cut terminals throughout. The letterforms display moderate to open apertures in characters like 'c', 'e', and 'a' (which uses a double-story construction), with a medium-to-high x-height relative to the cap height. The overall proportions are regular width with geometric tendencies, though subtle humanist influences appear in the slightly softened curves and balanced counters, while the 'g' employs a double-story design with a closed lower bowl."
     },
     {
       "name": "Sora",
@@ -1157,7 +1097,8 @@
         800
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif typeface exhibits monolinear stroke construction with no visible stress angle, featuring flat-cut terminals throughout. The letterforms display moderate to open apertures in characters like 'c', 'e', and 'a' (which uses a double-story construction), with a medium-to-high x-height relative to the cap height. The overall proportions are regular width with geometric-grotesque construction principles, showing consistent stroke weights and relatively uniform character widths, with notable features including the closed bowl of the double-story 'g' and the straight-sided bowls in characters like 'b' and 'd'."
     },
     {
       "name": "Literata",
@@ -1175,7 +1116,8 @@
         900
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This serif typeface exhibits high stroke contrast with vertical stress, featuring thick verticals and thin horizontals characteristic of a Didone or Modern construction. The serifs are unbracketed hairline serifs with flat, horizontal terminals, while letter terminals show a mix of ball terminals (as in 'a', 'c') and sharp cuts. The apertures are moderately open, the x-height is relatively high in proportion to the cap height, and the overall width is regular with a vertical, rational construction showing minimal calligraphic influence."
     },
     {
       "name": "Merriweather Sans",
@@ -1191,7 +1133,8 @@
         800
       ],
       "italics": true,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif typeface exhibits low stroke contrast with nearly monolinear construction and vertical stress. The letterforms show moderately open apertures in characters like 'c', 'e', and 'a', with a medium-to-high x-height relative to the cap height. Terminals are primarily flat-cut with some subtle rounding, and the overall construction is grotesque with regular proportions, featuring a single-story 'g' and straightforward, utilitarian letter shapes."
     },
     {
       "name": "Quicksand",
@@ -1206,7 +1149,8 @@
         700
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and a geometric construction. Terminals are flat-cut and apertures are moderately open in letters like 'c', 'e', and 'a'. The x-height is relatively high compared to the cap height, with regular width proportions and a single-story 'a' and 'g'. Notable features include circular bowls in 'b', 'd', 'p', and 'q', and consistent geometric forms throughout the character set."
     },
     {
       "name": "Teko",
@@ -1221,7 +1165,8 @@
         700
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and a geometric construction. Terminals are predominantly flat-cut, apertures are moderately open in letters like 'e' and 'a', and the x-height is relatively high compared to the cap height. The letterforms show regular width proportions with a single-story 'a' and 'g', and notably condensed or compact horizontal proportions in characters like 'o' and 'e'."
     },
     {
       "name": "Karma",
@@ -1236,7 +1181,8 @@
         700
       ],
       "italics": false,
-      "source": "fontshare"
+      "source": "fontshare",
+      "description": "This serif typeface exhibits moderate stroke contrast with a vertical stress and features bracketed serifs with a slightly wedge-shaped profile. The apertures are moderately open in letters like 'c', 'e', and 'a', while the x-height is relatively high in proportion to the cap height. The construction shows transitional characteristics with a double-story 'g', and the overall proportions are regular width with humanist influences visible in the subtle calligraphic qualities of the letterforms."
     },
     {
       "name": "M PLUS 1",
@@ -1257,7 +1203,8 @@
       ],
       "italics": false,
       "cssUrl": "https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@100;200;300;400;500;600;700;800;900&display=swap",
-      "variable": true
+      "variable": true,
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no contrast and no stress angle. Terminals are flat-cut and horizontal across all letterforms, with apertures that are moderately open in letters like 'e' and 'a'. The x-height is high relative to cap height, proportions are regular width, and construction is geometric with circular bowls, a single-story 'a', and a double-story 'g' featuring a closed lower bowl."
     },
     {
       "name": "Archivo",
@@ -1278,7 +1225,8 @@
       ],
       "italics": true,
       "cssUrl": "https://fonts.googleapis.com/css2?family=Archivo:wght@100;200;300;400;500;600;700;800;900&display=swap",
-      "variable": true
+      "variable": true,
+      "description": "This is a grotesque sans-serif with monolinear stroke weight and no stress angle. The typeface exhibits a high x-height relative to cap height, regular width proportions, and moderately open apertures visible in letters like 'e' and 'a'. Notable features include a single-story 'a' and 'g', flat-cut terminals throughout, and a geometric-leaning construction with subtle humanist influences in curves."
     },
     {
       "name": "Aileron",
@@ -1298,7 +1246,8 @@
       ],
       "italics": true,
       "variable": false,
-      "cssUrl": "https://fonts.cdnfonts.com/css/aileron"
+      "cssUrl": "https://fonts.cdnfonts.com/css/aileron",
+      "description": "This sans-serif displays monolinear stroke weight with no stress angle and a geometric construction evident in the circular bowls of letters like 'o' and 'b'. Terminals are flat-cut throughout, apertures are moderately open in 'c', 'e', and 'a', and the typeface features a double-story 'g' with a closed lower bowl and a high x-height relative to cap height. The proportions are regular width with characteristic geometric features including the single-story 'a' with a simple bowl and stem construction, and consistent stroke terminals across all glyphs."
     },
     {
       "name": "Bluu Next",
@@ -1310,7 +1259,8 @@
       ],
       "italics": true,
       "variable": false,
-      "cssUrl": "https://fonts.cdnfonts.com/css/bluu-next"
+      "cssUrl": "https://fonts.cdnfonts.com/css/bluu-next",
+      "description": "This serif typeface exhibits high stroke contrast with a vertical stress and features heavy, unbracketed slab serifs with blunt terminals. The letterforms show a medium x-height with moderate apertures in characters like 'e' and 'a', while the construction leans toward a rational, geometric approach with distinctive ball terminals visible on letters such as 'a' and 'c'. Notable characteristics include a single-story 'a', relatively condensed proportions, and thick horizontal serifs that maintain consistent weight across the design."
     },
     {
       "name": "Work Sans",
@@ -1331,7 +1281,8 @@
       ],
       "italics": true,
       "cssUrl": "https://fonts.googleapis.com/css2?family=Work+Sans:wght@100;200;300;400;500;600;700;800;900&display=swap",
-      "variable": true
+      "variable": true,
+      "description": "This sans-serif typeface exhibits a geometric construction with nearly monolinear strokes showing minimal contrast. The letterforms feature a high x-height relative to cap height, with closed apertures visible in characters like 'e' and 'a', and the 'a' displays a single-story construction. Terminals are predominantly flat-cut with no stress angle due to the uniform stroke weight, and the overall proportions are regular width with distinctively rounded forms in characters like 'o' and 'd'."
     },
     {
       "name": "Tex Gyre Heros",
@@ -1344,7 +1295,8 @@
       ],
       "italics": true,
       "variable": false,
-      "cssUrl": "https://fonts.cdnfonts.com/css/tex-gyre-heros"
+      "cssUrl": "https://fonts.cdnfonts.com/css/tex-gyre-heros",
+      "description": "This sans-serif typeface exhibits high stroke contrast with a pronounced vertical stress, featuring thick stems and dramatically thin horizontals that create a reverse-contrast effect. Terminals are predominantly flat-cut with some tapered endings, and the apertures are moderately open in letters like 'e' and 'c'. The x-height is medium relative to the cap height, with regular proportions and a construction that blends geometric principles with rational design, notably featuring a single-story 'a' and 'g' with distinctive thick vertical strokes contrasting sharply with hairline crossbars and curves."
     },
     {
       "name": "Terminal Grotesque",
@@ -1356,7 +1308,8 @@
       ],
       "italics": false,
       "variable": false,
-      "cssUrl": "https://fonts.cdnfonts.com/css/terminal-grotesque-open"
+      "cssUrl": "https://fonts.cdnfonts.com/css/terminal-grotesque-open",
+      "description": "This typeface exhibits high stroke contrast with a vertical stress axis and features distinctive wedge serifs that are sharply cut and unbracketed, characteristic of Didone or Modern classification. The apertures are moderately open in letters like 'e' and 'c', while the x-height is relatively low compared to the cap height, creating elegant proportions. Terminals show a mix of ball terminals (as in 'a' and 'c') and sharp, flat-cut endings, with the lowercase 'g' displaying a single-story construction and the overall letterforms demonstrating rational, high-contrast construction with thin hairlines and thick vertical stems."
     },
     {
       "name": "Roboto",
@@ -1374,7 +1327,8 @@
       ],
       "italics": true,
       "cssUrl": "https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500;700;900&display=swap",
-      "variable": true
+      "variable": true,
+      "description": "This is a geometric sans-serif with monolinear stroke weight and no stress angle. The typeface features flat-cut terminals throughout, open apertures in letters like 'c' and 'e', and a medium x-height relative to cap height. Notable characteristics include a single-story 'a' and 'g', regular width proportions, and mechanically precise, circular construction typical of geometric grotesques, with minimal stroke modulation across all weights shown."
     },
     {
       "name": "Reglo",
@@ -1387,7 +1341,8 @@
       ],
       "italics": false,
       "variable": false,
-      "cssUrl": "https://fonts.cdnfonts.com/css/reglo"
+      "cssUrl": "https://fonts.cdnfonts.com/css/reglo",
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and flat-cut terminals throughout. The letterforms display a condensed width with a high x-height relative to the cap height, and apertures in c, e, and s are moderately closed. The construction is grotesque with distinctive features including a single-story 'a', closed aperture in the 'g', and compact proportions that emphasize vertical compression over horizontal space."
     },
     {
       "name": "Poppins",
@@ -1408,7 +1363,8 @@
       ],
       "italics": true,
       "cssUrl": "https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap",
-      "variable": true
+      "variable": true,
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and a geometric construction characterized by circular bowls and optically-corrected curves. The letterforms feature closed apertures in characters like 'e' and 'a', with a single-story 'a' and 'g', and terminals are flat-cut perpendicular to stroke direction. The x-height is high relative to cap height, proportions are regular width, and distinctive features include perfectly circular dots on 'i' and 'j', and uniform stroke terminals throughout."
     },
     {
       "name": "Oswald",
@@ -1426,7 +1382,8 @@
       ],
       "italics": false,
       "cssUrl": "https://fonts.googleapis.com/css2?family=Oswald:wght@200;300;400;500;600;700&display=swap",
-      "variable": true
+      "variable": true,
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and flat-cut terminals throughout. The letterforms show a condensed to narrow width proportion with a high x-height relative to the cap height, creating compact vertical proportions. Apertures are moderately closed, particularly visible in the 'e' and 'a', with the lowercase 'a' featuring a single-story construction and the 'g' appearing to be single-story as well. The overall construction is grotesque with subtle geometric influences, characterized by tight letter spacing and minimal optical adjustments in the heavier weights."
     },
     {
       "name": "Ostrich Sans",
@@ -1441,7 +1398,8 @@
       ],
       "italics": false,
       "variable": false,
-      "cssUrl": "https://fonts.cdnfonts.com/css/ostrich-sans-2"
+      "cssUrl": "https://fonts.cdnfonts.com/css/ostrich-sans-2",
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and flat-cut terminals throughout. The letterforms display a condensed width with a high x-height relative to cap height, and apertures in letters like 'e' and 'a' are moderately closed. The construction is geometric and rational, with distinctive features including a single-story 'a', straight-sided rectangular forms, and notably tall, compressed proportions that create a vertical emphasis in the overall texture."
     },
     {
       "name": "Young Serif",
@@ -1454,7 +1412,8 @@
       ],
       "italics": false,
       "cssUrl": "https://fonts.googleapis.com/css2?family=Young+Serif:wght@400&display=swap",
-      "variable": true
+      "variable": true,
+      "description": "This serif typeface exhibits moderate stroke contrast with a vertical stress axis and features bracketed serifs with rounded transitions to the stems. Terminals show a mix of ball terminals (visible in 'a', 'c', 'f') and some tapered endings, while apertures are moderately open in letters like 'e' and 'c'. The x-height is relatively high compared to the cap height, proportions are regular width, and the construction leans humanist with calligraphic influences, evidenced by the single-story 'a', traditional double-story 'g', and organic curves throughout."
     },
     {
       "name": "Office Code Pro",
@@ -1470,7 +1429,8 @@
       ],
       "italics": true,
       "variable": false,
-      "cssUrl": "https://fontlibrary.org/face/office-code-pro"
+      "cssUrl": "https://fontlibrary.org/face/office-code-pro",
+      "description": "This monospaced typeface exhibits low stroke contrast with a nearly monolinear construction and vertical stress. Terminals are primarily flat-cut with some subtle rounding, and apertures in letters like 'c', 'e', and 'a' are moderately open. The x-height is relatively high compared to the cap height, and the single-story 'a' and 'g' follow a simplified, geometric construction typical of coding fonts, with consistent character widths enforced across all glyphs."
     },
     {
       "name": "Nimbus Sans L",
@@ -1483,7 +1443,8 @@
       ],
       "italics": true,
       "variable": false,
-      "cssUrl": "https://fonts.cdnfonts.com/css/nimbus-sans-l"
+      "cssUrl": "https://fonts.cdnfonts.com/css/nimbus-sans-l",
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and a grotesque construction characterized by optically-adjusted geometric forms. The letterforms display open apertures in characters like 'c', 'e', and 'a' (which features a double-story structure), moderate x-height relative to cap height, and terminals that are primarily flat-cut with subtle horizontal endings. The overall proportions are regular width with consistent stroke thickness throughout, and notable details include the closed bowl of the 'g' with a distinctive ear, and numerals that appear to be lining figures with geometric consistency."
     },
     {
       "name": "Libre Baskerville",
@@ -1497,7 +1458,8 @@
       ],
       "italics": true,
       "cssUrl": "https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap",
-      "variable": true
+      "variable": true,
+      "description": "This serif typeface exhibits high stroke contrast with a vertical stress axis and bracketed serifs with subtle wedge-shaped terminals. The letterforms show transitional characteristics with moderately open apertures in c, e, and s, a medium-to-high x-height relative to capitals, and regular width proportions. Notable features include a single-story 'a', classical proportions in the capitals with slight variation in character widths, and ball terminals visible on lowercase letters like 'a' and 'c'. The construction balances rational geometry with calligraphic influences, particularly evident in the thick-to-thin stroke transitions and the refined bracketing of serifs."
     },
     {
       "name": "Liberation Sans",
@@ -1510,7 +1472,8 @@
       ],
       "italics": true,
       "variable": false,
-      "cssUrl": "https://fonts.cdnfonts.com/css/liberation-sans"
+      "cssUrl": "https://fonts.cdnfonts.com/css/liberation-sans",
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and flat-cut terminals throughout. The letterforms show moderate to open apertures in characters like 'c', 'e', and 'a', with a medium x-height relative to cap height and regular width proportions. The construction is humanist with subtle calligraphic influences visible in the slightly asymmetric bowls and gentle curves, featuring a double-story 'g' and single-story 'a' with a straightforward, classical structure."
     },
     {
       "name": "League Gothic",
@@ -1523,7 +1486,8 @@
       ],
       "italics": false,
       "cssUrl": "https://fonts.googleapis.com/css2?family=League+Gothic:wght@400&display=swap",
-      "variable": true
+      "variable": true,
+      "description": "This condensed sans-serif displays extreme stroke contrast with thick verticals and dramatically thinned horizontals, creating a distinctive reverse-stress effect where horizontal strokes are hairline-thin compared to heavy vertical stems. The typeface features flat-cut terminals, very closed apertures in letters like 'e' and 'a', and a high x-height relative to cap height. The construction is geometric and rational with a narrow width, monolinear vertical strokes, and the letterforms show a single-story 'a' and 'g', with the extreme horizontal compression creating a tall, compressed appearance throughout."
     },
     {
       "name": "Junicode",
@@ -1536,7 +1500,8 @@
       ],
       "italics": true,
       "variable": false,
-      "cssUrl": "https://fonts.cdnfonts.com/css/junicode"
+      "cssUrl": "https://fonts.cdnfonts.com/css/junicode",
+      "description": "This serif typeface exhibits moderate stroke contrast with a vertical stress and features bracketed serifs with subtle wedge-shaped terminals. The letterforms show a medium x-height, regular width proportions, and moderately open apertures visible in the 'e' and 'c'. Construction appears transitional with a single-story 'a', and notable characteristics include slightly tapered descenders and classical proportions that blend rational geometry with subtle calligraphic influence."
     },
     {
       "name": "Inter",
@@ -1557,7 +1522,8 @@
       ],
       "italics": true,
       "cssUrl": "https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap",
-      "variable": true
+      "variable": true,
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle, featuring flat-cut terminals throughout. The letterforms display a high x-height relative to cap height, regular width proportions, and moderately open apertures visible in characters like 'e' and 'a'. The construction is rational and geometric with a single-story 'a' and 'g', minimal optical corrections, and consistent stroke widths that suggest a contemporary grotesque approach with simplified, functional forms."
     },
     {
       "name": "Gap Sans",
@@ -1570,7 +1536,8 @@
       ],
       "italics": false,
       "variable": false,
-      "cssUrl": "https://fonts.cdnfonts.com/css/gap-sans"
+      "cssUrl": "https://fonts.cdnfonts.com/css/gap-sans",
+      "description": "This grotesque sans-serif exhibits monolinear stroke weight with no stress angle and a medium x-height relative to cap height. The letterforms feature open apertures in c, e, and a, with a single-story 'a' and 'g' construction. Terminals are primarily flat-cut or slightly rounded, and the overall proportions are regular width with humanist influences visible in the subtle variations of curved forms like 'o' and 'e'."
     },
     {
       "name": "EB Garamond",
@@ -1587,7 +1554,8 @@
       ],
       "italics": true,
       "cssUrl": "https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600;700;800&display=swap",
-      "variable": true
+      "variable": true,
+      "description": "This serif typeface exhibits high stroke contrast with a vertical stress axis, featuring bracketed serifs with subtle wedge-shaped terminals. The letterforms show a medium x-height relative to cap height, with moderately open apertures visible in the 'e' and 'a', and the construction appears transitional with refined, rational proportions rather than purely geometric or calligraphic qualities. Notable details include a single-story 'a' and relatively short descenders, with serifs that are neither hairline nor full slab weight but occupy a middle ground with gentle bracketing."
     },
     {
       "name": "Cotham Sans",
@@ -1599,7 +1567,8 @@
       ],
       "italics": false,
       "variable": false,
-      "cssUrl": "https://fonts.cdnfonts.com/css/cotham-sans"
+      "cssUrl": "https://fonts.cdnfonts.com/css/cotham-sans",
+      "description": "This sans-serif displays monolinear stroke weight with no stress angle and flat-cut terminals throughout. The typeface exhibits a geometric construction with circular bowls, a high x-height relative to cap height, and moderate to open apertures in letters like 'c', 'e', and 'a'. Notable features include a single-story 'a' and 'g', regular width proportions, and consistent geometric forms that suggest a rationalized, modernist approach to letterform construction."
     },
     {
       "name": "Cooper Hewitt",
@@ -1618,19 +1587,235 @@
       ],
       "italics": true,
       "variable": false,
-      "cssUrl": "https://fonts.cdnfonts.com/css/cooper-hewitt"
+      "cssUrl": "https://fonts.cdnfonts.com/css/cooper-hewitt",
+      "description": "This sans-serif typeface exhibits low stroke contrast with nearly monolinear strokes and no stress angle. The letterforms show open apertures in characters like 'c', 'e', and 'a', with a high x-height relative to cap height creating strong horizontal emphasis. The construction is grotesque with subtle humanist influences, featuring a single-story 'a' and 'g', slightly condensed proportions, and flat-cut terminals with occasional subtle angles, particularly visible in the italic where letters display a pronounced slant and more dynamic stroke endings."
     },
     {
-      "name": "Bagnard",
-      "slug": "bagnard",
-      "category": "Serif",
-      "source": "open-foundry",
+      "name": "DM Sans",
+      "slug": "dm-sans",
+      "category": "Sans",
+      "variable": true,
       "weights": [
-        400
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900
+      ],
+      "italics": true,
+      "source": "google-fonts",
+      "googleFontsFamily": "DM Sans",
+      "cssUrl": "https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,100..900;1,100..900&display=swap"
+    },
+    {
+      "name": "Bricolage Grotesque",
+      "slug": "bricolage-grotesque",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800
       ],
       "italics": false,
+      "source": "google-fonts",
+      "googleFontsFamily": "Bricolage Grotesque",
+      "cssUrl": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@200..800&display=swap",
+      "description": "This grotesque sans-serif displays monolinear stroke weight with no stress angle and flat-cut terminals throughout. The typeface features a high x-height relative to cap height, regular width proportions, and moderately open apertures in letters like 'c', 'e', and 'a'. Notable glyphs include a double-story 'g' and a single-story 'a', with construction showing rationalized grotesque characteristics rather than purely geometric forms."
+    },
+    {
+      "name": "Figtree",
+      "slug": "figtree",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900
+      ],
+      "italics": true,
+      "source": "google-fonts",
+      "googleFontsFamily": "Figtree",
+      "cssUrl": "https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap",
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and a geometric construction characterized by circular bowls and precise, rationalized forms. The letterforms display a high x-height relative to cap height, regular width proportions, and moderately open apertures visible in characters like 'e' and 'a'. Terminals are flat-cut and perpendicular to stroke direction, while the lowercase 'g' features a double-story construction and the 'a' shows a single-story form with a geometric bowl."
+    },
+    {
+      "name": "Albert Sans",
+      "slug": "albert-sans",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900
+      ],
+      "italics": true,
+      "source": "google-fonts",
+      "googleFontsFamily": "Albert Sans",
+      "cssUrl": "https://fonts.googleapis.com/css2?family=Albert+Sans:ital,wght@0,100..900;1,100..900&display=swap",
+      "description": "This geometric sans-serif displays monolinear strokes with no stress angle and flat-cut terminals throughout. The typeface features a high x-height relative to cap height, regular width proportions, and moderately open apertures in letters like 'e' and 'a'. Notable characteristics include a single-story 'a' and 'g', circular construction in bowls, and perfectly horizontal terminals on letters such as 'c' and 's', consistent with a rationalized geometric approach."
+    },
+    {
+      "name": "Syne",
+      "slug": "syne",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        400,
+        500,
+        600,
+        700,
+        800
+      ],
+      "italics": false,
+      "source": "google-fonts",
+      "googleFontsFamily": "Syne",
+      "cssUrl": "https://fonts.googleapis.com/css2?family=Syne:wght@400..800&display=swap",
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and a geometric construction characterized by wide, extended proportions. Terminals are predominantly flat-cut with some subtle rounding, apertures are moderately open in letters like 'e' and 'a', and the x-height is relatively high compared to the cap height. Notable features include a single-story 'a', distinctive angular cuts on diagonal strokes (visible in 'k' and 'x'), and uniformly wide character spacing that emphasizes the extended width of each glyph."
+    },
+    {
+      "name": "Mona Sans",
+      "slug": "mona-sans",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900
+      ],
+      "italics": true,
+      "source": "google-fonts",
+      "googleFontsFamily": "Mona Sans",
+      "cssUrl": "https://fonts.googleapis.com/css2?family=Mona+Sans:ital,wght@0,200..900;1,200..900&display=swap",
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and flat-cut terminals throughout. The letterforms display a geometric construction with nearly circular bowls (as seen in 'o', 'b', 'd'), a high x-height relative to cap height, and moderately open apertures in characters like 'c', 'e', and 'a'. Notable features include a single-story 'a' and 'g', wide proportions approaching extended width, and consistent geometric regularity across all glyphs with minimal optical correction."
+    },
+    {
+      "name": "Geist",
+      "slug": "geist",
+      "category": "Sans",
+      "variable": true,
+      "weights": [
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900
+      ],
+      "italics": false,
+      "source": "google-fonts",
+      "googleFontsFamily": "Geist",
+      "cssUrl": "https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap",
+      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and a geometric construction. The letterforms feature flat-cut terminals, closed apertures in letters like 'e' and 'a', and a medium-to-high x-height relative to cap height. Notable characteristics include a single-story 'a' and 'g', regular width proportions, and minimal stroke contrast throughout, consistent with geometric grotesque design principles."
+    },
+    {
+      "name": "Montagu Slab",
+      "slug": "montagu-slab",
+      "category": "Serif",
+      "variable": true,
+      "weights": [
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": false,
+      "source": "google-fonts",
+      "googleFontsFamily": "Montagu Slab",
+      "cssUrl": "https://fonts.googleapis.com/css2?family=Montagu+Slab:wght@100..700&display=swap",
+      "description": "This slab serif typeface exhibits heavy, unbracketed serifs with flat terminals and low stroke contrast approaching monolinear construction. The letterforms display a medium x-height, regular width proportions, and moderately open apertures visible in the 'e' and 'a'. Notable features include a double-story 'g', geometric construction with rationalized curves, and substantial slab terminals that maintain consistent weight with the main strokes."
+    },
+    {
+      "name": "JetBrains Mono",
+      "slug": "jetbrains-mono",
+      "category": "Mono",
+      "variable": true,
+      "weights": [
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800
+      ],
+      "italics": true,
+      "source": "google-fonts",
+      "googleFontsFamily": "JetBrains Mono",
+      "cssUrl": "https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap",
+      "description": "This monospaced typeface exhibits monolinear stroke weight with no contrast and no stress angle. Terminals are flat-cut and perpendicular to stroke direction, with no serifs present. The apertures are moderately open in letters like 'c', 'e', and 'a', while the x-height is relatively high compared to the cap height, and the overall width is regular as dictated by the monospaced construction. The letterforms show geometric construction with a single-story 'a' and 'g', characteristic of a grotesque sans-serif adapted for fixed-width spacing."
+    },
+    {
+      "name": "Geist Mono",
+      "slug": "geist-mono",
+      "category": "Mono",
+      "variable": true,
+      "weights": [
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900
+      ],
+      "italics": false,
+      "source": "google-fonts",
+      "googleFontsFamily": "Geist Mono",
+      "cssUrl": "https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&display=swap",
+      "description": "This monospaced typeface exhibits monolinear stroke weight with no stress angle, featuring flat-cut terminals throughout. The letterforms display moderate apertures in characters like 'c', 'e', and 'a', with a medium x-height relative to cap height and regular width proportions constrained by the fixed-width requirement. The construction is geometric-rational with characteristic monospace features including a single-story 'a' and 'g', and the overall structure prioritizes uniform character width over optical balance, typical of coding and terminal fonts."
+    },
+    {
+      "name": "IBM Plex Mono",
+      "slug": "ibm-plex-mono",
+      "category": "Mono",
       "variable": false,
-      "cssUrl": "https://fonts.cdnfonts.com/css/bagnard"
+      "weights": [
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "italics": true,
+      "source": "google-fonts",
+      "googleFontsFamily": "IBM Plex Mono",
+      "cssUrl": "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap",
+      "description": "This monospaced typeface exhibits monolinear stroke weight with no stress angle, featuring flat-cut terminals throughout and no serifs. The construction is geometric and rational with a medium x-height, showing characteristic monospace features including a single-story 'a' and 'g', highly open apertures in letters like 'c', 'e', and 'a', and uniform character width across all glyphs. Notable details include a dotless 'i' in some weights, squared forms in circular letters, and consistent vertical terminals that reinforce the technical, code-oriented design."
     }
   ],
   "pairings": [
@@ -1888,18 +2073,6 @@
     },
     {
       "heading": {
-        "font": "Zodiak",
-        "slug": "zodiak",
-        "weight": 700
-      },
-      "body": {
-        "font": "Plus Jakarta Sans",
-        "slug": "plus-jakarta-sans",
-        "weight": 400
-      }
-    },
-    {
-      "heading": {
         "font": "Britney",
         "slug": "britney",
         "weight": 400
@@ -1956,18 +2129,6 @@
         "font": "Ranade",
         "slug": "ranade",
         "weight": 300
-      }
-    },
-    {
-      "heading": {
-        "font": "Bebas Neue",
-        "slug": "bebas-neue",
-        "weight": 400
-      },
-      "body": {
-        "font": "Zodiak",
-        "slug": "zodiak",
-        "weight": 400
       }
     },
     {
@@ -2243,6 +2404,78 @@
       "body": {
         "font": "Satoshi",
         "slug": "satoshi",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Bricolage Grotesque",
+        "slug": "bricolage-grotesque",
+        "weight": 600
+      },
+      "body": {
+        "font": "Inter",
+        "slug": "inter",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Syne",
+        "slug": "syne",
+        "weight": 700
+      },
+      "body": {
+        "font": "Plus Jakarta Sans",
+        "slug": "plus-jakarta-sans",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Libre Baskerville",
+        "slug": "libre-baskerville",
+        "weight": 700
+      },
+      "body": {
+        "font": "DM Sans",
+        "slug": "dm-sans",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Clash Display",
+        "slug": "clash-display",
+        "weight": 600
+      },
+      "body": {
+        "font": "Satoshi",
+        "slug": "satoshi",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "Montagu Slab",
+        "slug": "montagu-slab",
+        "weight": 600
+      },
+      "body": {
+        "font": "Figtree",
+        "slug": "figtree",
+        "weight": 400
+      }
+    },
+    {
+      "heading": {
+        "font": "JetBrains Mono",
+        "slug": "jetbrains-mono",
+        "weight": 500
+      },
+      "body": {
+        "font": "Work Sans",
+        "slug": "work-sans",
         "weight": 400
       }
     }

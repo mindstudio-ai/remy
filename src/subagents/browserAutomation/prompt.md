@@ -21,9 +21,10 @@ Each interactive element has a `[ref=eN]` you can use to target it.
 - `snapshot`: Get the current page state. Always do this first and after action batches to verify results. Waits for network requests to settle.
 - `click`: Click an element. The cursor animates to it, then dispatches full pointer/mouse/click events.
 - `type`: Type text into an input. Characters appear one at a time. Set `clear: true` to clear the field first.
+- `select`: Select a dropdown option by text. Target the `<select>` element, set `option` to the option text.
 - `wait`: Wait for an element to appear (polls every 100ms, default 5s timeout). Also waits for network to settle after the element is found.
 - `evaluate`: Run arbitrary JavaScript in the page and return the result.
-- `screenshot`: Capture a screenshot of the current page. Returns a CDN URL with dimensions. Separate tool call (not a browserCommand step).
+- `screenshot`: Full-page viewport-stitched screenshot. Returns base64 JPEG with dimensions. Available both as a browserCommand step (useful at the end of an action batch) and as a separate tool call (returns a CDN URL).
 
 ## Element targeting (tried in order)
 
@@ -74,6 +75,16 @@ Navigate to a sub-page and verify content:
     { "command": "snapshot" },
     { "command": "click", "text": "Settings" },
     { "command": "wait", "text": "Account Settings" }
+  ]
+}
+```
+
+Select a dropdown option and screenshot the result:
+```json
+{
+  "steps": [
+    { "command": "select", "label": "Country", "option": "United States" },
+    { "command": "screenshot" }
   ]
 }
 ```

@@ -92,6 +92,20 @@ const server = createServer(async (req, res) => {
       return;
     }
 
+    if (path === '/specimens/fonts' && method === 'GET') {
+      const html = readFileSync(join(__dirname, 'specimens-fonts.html'), 'utf-8');
+      res.writeHead(200, { 'Content-Type': 'text/html' });
+      res.end(html);
+      return;
+    }
+
+    if (path === '/specimens/pairings' && method === 'GET') {
+      const html = readFileSync(join(__dirname, 'specimens-pairings.html'), 'utf-8');
+      res.writeHead(200, { 'Content-Type': 'text/html' });
+      res.end(html);
+      return;
+    }
+
     // --- Fonts API ---
 
     if (path === '/api/fonts' && method === 'GET') {
@@ -178,13 +192,8 @@ const server = createServer(async (req, res) => {
       const { url } = await parseBody(req);
       if (!url) return error(res, 'url is required');
 
-      const prompt = `Analyze this website/app screenshot as a design reference. Assess:
-1) Mood/aesthetic
-2) Color palette with approximate hex values and palette strategy
-3) Typography style
-4) Layout composition (symmetric/asymmetric, grid structure, whitespace usage, content density)
-5) What makes it distinctive and interesting vs generic AI-generated interfaces
-Be specific and concise.`;
+      const promptFile = join(dataDir, '..', 'prompts', 'tool-prompts', 'design-analysis.md');
+      const prompt = readFileSync(promptFile, 'utf-8').trim();
 
       try {
         const result = execSync(

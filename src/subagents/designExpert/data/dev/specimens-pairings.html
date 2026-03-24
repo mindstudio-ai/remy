@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=1440" />
+<title>Pairing Specimens</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #fff;
+    color: #000;
+    width: 1440px;
+  }
+  .row {
+    height: 240px;
+    width: 1440px;
+    border-bottom: 1px solid #ddd;
+    padding: 24px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .meta {
+    font-size: 12px;
+    font-weight: 600;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #999;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .heading {
+    font-size: 48px;
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+  .body {
+    font-size: 17px;
+    line-height: 1.6;
+    color: #444;
+    max-width: 800px;
+  }
+</style>
+</head>
+<body>
+<script>
+const CSS_URL_PATTERN = 'https://api.fontshare.com/v2/css?f[]={slug}@{weights}&display=swap';
+const loaded = new Set();
+
+function loadFontBySlug(slug, fonts) {
+  if (loaded.has(slug)) return;
+  loaded.add(slug);
+  const font = fonts.find(f => f.slug === slug);
+  if (!font) return;
+  let cssUrl;
+  if (font.source === 'fontshare') {
+    cssUrl = CSS_URL_PATTERN
+      .replace('{slug}', font.slug)
+      .replace('{weights}', font.weights.join(','));
+  } else if (font.cssUrl) {
+    cssUrl = font.cssUrl;
+  } else {
+    return;
+  }
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = cssUrl;
+  document.head.appendChild(link);
+}
+
+async function init() {
+  const params = new URLSearchParams(window.location.search);
+  const page = parseInt(params.get('page') || '1', 10);
+  const perPage = 33;
+
+  const res = await fetch('/api/fonts');
+  const data = await res.json();
+  const fonts = data.fonts;
+  const allPairings = data.pairings;
+  const totalPages = Math.ceil(allPairings.length / perPage);
+  const pairings = allPairings.slice((page - 1) * perPage, page * perPage);
+
+  document.title = `Pairing Specimens — Page ${page}/${totalPages}`;
+
+  pairings.forEach(p => {
+    loadFontBySlug(p.heading.slug, fonts);
+    loadFontBySlug(p.body.slug, fonts);
+  });
+
+  // Wait for fonts to load
+  await new Promise(r => setTimeout(r, 3000));
+
+  pairings.forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `
+      <div class="meta">${p.heading.font} (${p.heading.weight}) + ${p.body.font} (${p.body.weight})</div>
+      <div class="heading" style="font-family: '${p.heading.font}'; font-weight: ${p.heading.weight}">
+        The quick brown fox jumps over the lazy dog
+      </div>
+      <div class="body" style="font-family: '${p.body.font}'; font-weight: ${p.body.weight}">
+        Good design is as little design as possible. Less, but better — because it concentrates on the essential aspects, and the products are not burdened with non-essentials. Back to purity, back to simplicity.
+      </div>
+    `;
+    document.body.appendChild(row);
+  });
+}
+
+init();
+</script>
+</body>
+</html>

@@ -2,17 +2,21 @@
  * Tool definitions for the visual design expert sub-agent.
  */
 
+import fs from 'node:fs';
+import path from 'node:path';
 import type { ToolDefinition } from '../../api.js';
 import { runCli } from '../common/runCli.js';
 import { sidecarRequest } from '../../tools/_helpers/sidecar.js';
 
-const DESIGN_REFERENCE_PROMPT = `Analyze this website/app screenshot as a design reference. Assess:
-1) Mood/aesthetic
-2) Color palette with approximate hex values and palette strategy
-3) Typography style
-4) Layout composition (symmetric/asymmetric, grid structure, whitespace usage, content density)
-5) What makes it distinctive and interesting vs generic AI-generated interfaces
-Be specific and concise.`;
+const base =
+  import.meta.dirname ?? path.dirname(new URL(import.meta.url).pathname);
+
+const DESIGN_REFERENCE_PROMPT = fs
+  .readFileSync(
+    path.join(base, 'prompts', 'tool-prompts', 'design-analysis.md'),
+    'utf-8',
+  )
+  .trim();
 
 export const DESIGN_EXPERT_TOOLS: ToolDefinition[] = [
   {

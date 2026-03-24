@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=1440" />
+<title>Font Specimens</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #fff;
+    color: #000;
+    width: 1440px;
+  }
+  .row {
+    height: 200px;
+    width: 1440px;
+    border-bottom: 1px solid #ddd;
+    padding: 24px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .name {
+    font-size: 12px;
+    font-weight: 600;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #999;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .preview-large {
+    font-size: 42px;
+    line-height: 1.1;
+    margin-bottom: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .preview-medium {
+    font-size: 24px;
+    line-height: 1.3;
+    color: #333;
+    margin-bottom: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .preview-small {
+    font-size: 15px;
+    line-height: 1.5;
+    color: #666;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+</style>
+</head>
+<body>
+<script>
+const CSS_URL_PATTERN = 'https://api.fontshare.com/v2/css?f[]={slug}@{weights}&display=swap';
+
+function loadFont(font) {
+  let cssUrl;
+  if (font.source === 'fontshare') {
+    cssUrl = CSS_URL_PATTERN
+      .replace('{slug}', font.slug)
+      .replace('{weights}', font.weights.join(','));
+  } else if (font.cssUrl) {
+    cssUrl = font.cssUrl;
+  } else {
+    return;
+  }
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = cssUrl;
+  document.head.appendChild(link);
+}
+
+async function init() {
+  const params = new URLSearchParams(window.location.search);
+  const page = parseInt(params.get('page') || '1', 10);
+  const perPage = 40;
+
+  const res = await fetch('/api/fonts');
+  const data = await res.json();
+  const allFonts = [...data.fonts].sort((a, b) => a.name.localeCompare(b.name));
+  const totalPages = Math.ceil(allFonts.length / perPage);
+  const fonts = allFonts.slice((page - 1) * perPage, page * perPage);
+
+  document.title = `Font Specimens — Page ${page}/${totalPages}`;
+
+  fonts.forEach(f => loadFont(f));
+
+  // Wait for fonts to load
+  await new Promise(r => setTimeout(r, 3000));
+
+  fonts.forEach(font => {
+    const midWeight = font.weights[Math.floor(font.weights.length / 2)] || 400;
+    const lightWeight = font.weights[0] || 400;
+    const heavyWeight = font.weights[font.weights.length - 1] || 400;
+
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `
+      <div class="name">${font.name} &middot; ${font.category} &middot; ${font.source}</div>
+      <div class="preview-large" style="font-family: '${font.name}'; font-weight: ${heavyWeight}">
+        The quick brown fox jumps over the lazy dog
+      </div>
+      <div class="preview-medium" style="font-family: '${font.name}'; font-weight: ${midWeight}">
+        Pack my box with five dozen liquor jugs &mdash; 0123456789
+      </div>
+      <div class="preview-small" style="font-family: '${font.name}'; font-weight: ${lightWeight}">
+        A wizard's job is to vex chumps quickly in fog. The five boxing wizards jump quickly. How vexingly quick daft zebras jump!
+      </div>
+    `;
+    document.body.appendChild(row);
+  });
+}
+
+init();
+</script>
+</body>
+</html>

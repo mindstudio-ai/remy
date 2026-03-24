@@ -21,7 +21,8 @@
     z-index: 100;
     background: #fff;
     border-bottom: 1px solid #000;
-    padding: 10px 20px;
+    height: 48px;
+    padding: 0 20px;
     display: flex;
     align-items: center;
     gap: 20px;
@@ -136,6 +137,13 @@
     color: #666;
   }
 
+  .font-desc {
+    font-size: 12px;
+    color: #666;
+    line-height: 1.5;
+    margin-top: 8px;
+  }
+
   .font-meta {
     font-size: 11px;
     color: #999;
@@ -172,7 +180,8 @@
   /* Inspiration — filmstrip + detail */
   .inspiration-layout {
     display: flex;
-    height: calc(100vh - 39px);
+    height: calc(100vh - 48px);
+    overflow: hidden;
   }
 
   .inspiration-sidebar {
@@ -194,7 +203,7 @@
     opacity: 0.5;
     transition: opacity 0.1s;
     background: #f5f5f5;
-    scroll-snap-align: start;
+    scroll-snap-align: center;
   }
 
   .inspiration-thumb:hover { opacity: 0.8; }
@@ -318,7 +327,7 @@
   /* Filter bar */
   .filter-bar {
     position: sticky;
-    top: 39px;
+    top: 48px;
     z-index: 99;
     background: #fff;
     display: flex;
@@ -625,6 +634,7 @@ function FontCard({ font, onDelete }) {
           Self-host required — no preview available
         </div>
       `}
+      ${font.description ? html`<div class="font-desc">${font.description}</div>` : null}
       <div class="font-meta">
         Weights: ${font.weights.join(', ')}${font.variable ? ' · Variable' : ''}${font.italics ? ' · Italics' : ''}
       </div>
@@ -820,7 +830,7 @@ function InspirationTab({ inspiration }) {
   const select = (i) => {
     const clamped = Math.max(0, Math.min(i, images.length - 1));
     setSelected(clamped);
-    sidebarRef.current?.children[clamped]?.scrollIntoView({ block: 'nearest' });
+    sidebarRef.current?.children[clamped]?.scrollIntoView({ block: 'center' });
   };
 
   const onKey = (e) => {
@@ -829,8 +839,9 @@ function InspirationTab({ inspiration }) {
   };
 
   const handleDelete = async (index) => {
+    const nextIndex = index >= images.length - 1 ? Math.max(0, index - 1) : index;
+    setSelected(nextIndex);
     await inspiration.deleteImage(index);
-    if (selected >= images.length - 1) setSelected(Math.max(0, images.length - 2));
   };
 
   return html`

@@ -66,6 +66,7 @@ interface Font {
   variable?: boolean;
   weights: number[];
   italics: boolean;
+  description?: string;
 }
 
 interface Pairing {
@@ -128,7 +129,8 @@ export function getDesignExpertPrompt(): string {
       } else if (f.source === 'open-foundry') {
         cssInfo = ' (self-host required)';
       }
-      return `- **${f.name}** — ${f.category}. Weights: ${f.weights.join(', ')}.${f.variable ? ' Variable.' : ''}${f.italics ? ' Has italics.' : ''}${cssInfo}`;
+      const desc = f.description ? ` ${f.description}` : '';
+      return `- **${f.name}** — ${f.category}. Weights: ${f.weights.join(', ')}.${f.variable ? ' Variable.' : ''}${f.italics ? ' Has italics.' : ''}${cssInfo}${desc}`;
     })
     .join('\n');
 

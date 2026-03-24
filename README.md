@@ -45,13 +45,20 @@ Remy saves conversation history to `.remy-session.json` in the working directory
 
 Tool availability depends on the project's onboarding state, sent by the sandbox on each message.
 
-### Always Available
+### Common Tools (all onboarding states)
 
 | Tool | Description |
 |------|-------------|
 | `setProjectOnboardingState` | Advance the onboarding flow (intake → initialSpecAuthoring → initialCodegen → onboardingFinished) |
+| `setProjectName` | Set the project name |
 | `promptUser` | Ask the user structured questions (form or inline display) |
 | `confirmDestructiveAction` | Confirm a destructive or irreversible action with the user |
+| `askMindStudioSdk` | MindStudio SDK expert — answers questions about actions, models, connectors, and configuration (sub-agent) |
+| `fetchUrl` | Fetch a URL and return its contents |
+| `searchGoogle` | Search Google and return results |
+| `visualDesignExpert` | Visual design expert for fonts, colors, palettes, gradients, layouts, imagery, and icons (sub-agent) |
+| `productVision` | Owns the product roadmap — creates/updates/deletes roadmap items in `src/roadmap/` (sub-agent) |
+| `codeSanityCheck` | Quick readonly sanity check on architecture and package choices before building (sub-agent) |
 
 ### Spec Tools
 
@@ -78,7 +85,10 @@ Available from `initialCodegen` onward.
 | `glob` | Find files by pattern |
 | `listDir` | List directory contents |
 | `editsFinished` | Signal that file edits are complete for live preview |
-| `askMindStudioSdk` | Ask the MindStudio SDK assistant about actions, models, connectors, and integrations |
+| `runScenario` | Run a scenario to seed the dev database with test data |
+| `runMethod` | Run a method in the dev environment and return the result |
+| `screenshot` | Capture a screenshot of the app preview and get a description of what's on screen |
+| `runAutomatedBrowserTest` | Run an automated browser test against the live preview with DOM snapshots and interaction execution (sub-agent) |
 
 ### LSP Tools (sandbox only)
 
@@ -119,12 +129,38 @@ User input
       ← text, thinking, tool_input_delta, tool_input_args, tool_use events
     → Execute tools locally in parallel
       → External tools wait for sandbox response
+      → Sub-agent tools run their own nested LLM loops
     → Send tool results back
     → Loop until done
     → Save session to .remy-session.json
 ```
 
 The agent core (`src/agent.ts`) is a pure async function with no UI dependencies. The TUI (`src/tui/`) is an Ink + React layer on top. Headless mode (`src/headless.ts`) provides the same agent over a stdin/stdout JSON protocol for the sandbox.
+
+### Sub-Agents
+
+Some tools are backed by sub-agents — they run their own nested LLM loops with specialized system prompts and tool subsets. Sub-agent events are tagged with `parentToolId` so the caller can associate them with the parent tool call.
+
+| Sub-Agent | Tool Name | Location |
+|-----------|-----------|----------|
+| SDK Consultant | `askMindStudioSdk` | `src/subagents/sdkConsultant/` |
+| Design Expert | `visualDesignExpert` | `src/subagents/designExpert/` |
+| Product Vision | `productVision` | `src/subagents/productVision/` |
+| Code Sanity Check | `codeSanityCheck` | `src/subagents/codeSanityCheck/` |
+| Browser Automation | `runAutomatedBrowserTest` | `src/subagents/browserAutomation/` |
+
+### External Tools
+
+Some tools are resolved by the sandbox rather than executed locally. Remy emits `tool_start`, then waits for the sandbox to send back a `tool_result` via stdin:
+
+- `promptUser` — renders a form or inline prompt, blocks until user responds
+- `setProjectOnboardingState` — advances the onboarding flow
+- `setProjectName` — sets the project name
+- `confirmDestructiveAction` — renders a confirmation dialog
+- `clearSyncStatus` — clears sync dirty flags and updates git sync ref
+- `presentSyncPlan` — renders a full-screen markdown plan for user approval
+- `presentPublishPlan` — renders a full-screen changelog for user approval
+- `presentPlan` — renders a full-screen implementation plan for user approval
 
 ### Project Structure
 
@@ -133,11 +169,14 @@ src/
   index.tsx              CLI entry point
   agent.ts               Core tool-call loop (pure async, no UI)
   api.ts                 SSE streaming client for platform API
-  parsePartialJson.ts    Partial JSON parser for streaming tool input
+  types.ts               Shared types (AgentEvent, StdinCommand, etc.)
+  headless.ts            stdin/stdout JSON protocol for sandbox
   session.ts             .remy-session.json persistence
   config.ts              API key/URL resolution
+  errors.ts              Friendly error message mapping
+  statusWatcher.ts       Background status label polling
+  parsePartialJson.ts    Partial JSON parser for streaming tool input
   logger.ts              Structured logging
-  headless.ts            stdin/stdout JSON protocol for sandbox
 
   prompt/
     index.ts             System prompt builder (onboarding-state-aware)
@@ -149,7 +188,9 @@ src/
       identity.md
       intake.md
       authoring.md
+      coding.md
       instructions.md
+      team.md
       lsp.md
       projectContext.ts  Reads manifest, spec metadata, file listing at runtime
     compiled/            Platform docs distilled for agent consumption
@@ -160,14 +201,18 @@ src/
     _helpers/
       diff.ts            Unified diff generator
       lsp.ts             LSP sidecar HTTP client
-    spec/                Spec and external tools
+    common/              Always-available tools
+      promptUser.ts
+      confirmDestructiveAction.ts
+      setProjectOnboardingState.ts
+      setProjectName.ts
+      fetchUrl.ts
+      searchGoogle.ts
+    spec/                Spec tools
       readSpec.ts
       writeSpec.ts
       editSpec.ts
       listSpecFiles.ts
-      setProjectOnboardingState.ts
-      promptUser.ts
-      confirmDestructiveAction.ts
       clearSyncStatus.ts
       presentSyncPlan.ts
       presentPublishPlan.ts
@@ -184,9 +229,19 @@ src/
       glob.ts
       listDir.ts
       editsFinished.ts
-      askMindStudioSdk.ts
+      runScenario.ts
+      runMethod.ts
+      screenshot.ts
       lspDiagnostics.ts
       restartProcess.ts
+
+  subagents/
+    runner.ts            Sub-agent LLM loop runner
+    sdkConsultant/       MindStudio SDK expert
+    designExpert/        Visual design expert
+    productVision/       Product roadmap manager
+    codeSanityCheck/     Architecture sanity checker
+    browserAutomation/   Automated browser testing
 
   tui/                   Interactive terminal UI (Ink + React)
     App.tsx
@@ -195,18 +250,6 @@ src/
     ThinkingBlock.tsx
     ToolCall.tsx
 ```
-
-### External Tools
-
-Some tools are resolved by the sandbox rather than executed locally. Remy emits `tool_start`, then waits for the sandbox to send back a `tool_result` via stdin:
-
-- `promptUser` — renders a form or inline prompt, blocks until user responds
-- `setProjectOnboardingState` — advances the onboarding flow
-- `confirmDestructiveAction` — renders a confirmation dialog
-- `clearSyncStatus` — clears sync dirty flags and updates git sync ref
-- `presentSyncPlan` — renders a full-screen markdown plan for user approval
-- `presentPublishPlan` — renders a full-screen changelog for user approval
-- `presentPlan` — renders a full-screen implementation plan for user approval
 
 ### Project Instructions
 
@@ -218,19 +261,32 @@ Remy automatically loads project-level agent instructions on startup. It checks 
 
 Run `remy --headless` for programmatic control via newline-delimited JSON. This is how the sandbox C&C server runs remy as a managed child process.
 
+### Protocol Overview
+
+The headless IPC protocol uses request correlation and a unified response pattern:
+
+- Every stdin command includes a caller-provided `requestId`
+- Every stdout response to a command includes the same `requestId`
+- System events (lifecycle, shutdown) never have a `requestId`
+- Every command ends with exactly one `completed` event: `{event:"completed", requestId, success, error?}`
+- The caller distinguishes command responses from system events with a single check: `if (msg.requestId)`
+
+This enables a simple promise-based RPC layer: send a command with a unique ID, store a pending promise keyed by that ID, resolve it when you see `completed` with the matching ID.
+
 ### Input Actions (stdin)
 
-Send JSON commands, one per line.
+Send JSON commands, one per line. Every command should include a `requestId`.
 
 #### `message`
 
 Send a user message to the agent.
 
 ```json
-{"action": "message", "text": "fix the bug in auth.ts", "onboardingState": "onboardingFinished"}
+{"action": "message", "requestId": "r1", "text": "fix the bug in auth.ts", "onboardingState": "onboardingFinished"}
 ```
 
 Fields:
+- `requestId` — caller-provided correlation ID (echoed on all response events)
 - `text` — the user message (required unless `runCommand` is set)
 - `onboardingState` — controls tool availability and prompt context. One of: `intake`, `initialSpecAuthoring`, `initialCodegen`, `onboardingFinished` (default: `onboardingFinished`)
 - `viewContext` — `{ mode, openFiles?, activeFile? }` for prompt context
@@ -241,7 +297,7 @@ When `runCommand` is set, the message text is replaced with a built-in prompt an
 
 #### `tool_result`
 
-Send the result of an external tool back to the agent.
+Send the result of an external tool back to the agent. Fire-and-forget — no `completed` event is emitted.
 
 ```json
 {"action": "tool_result", "id": "toolu_abc123", "result": "ok"}
@@ -252,17 +308,17 @@ Send the result of an external tool back to the agent.
 Return the full conversation history.
 
 ```json
-{"action": "get_history"}
+{"action": "get_history", "requestId": "r2"}
 ```
 
 Messages with `hidden: true` were generated by `runCommand` actions and should not be displayed in the UI.
 
 #### `cancel`
 
-Cancel the current turn.
+Cancel the current turn. The cancel command gets `completed(success:true)`. The in-flight message command (if any) gets its own `completed(success:false, error:"cancelled")`.
 
 ```json
-{"action": "cancel"}
+{"action": "cancel", "requestId": "r3"}
 ```
 
 #### `clear`
@@ -270,43 +326,95 @@ Cancel the current turn.
 Clear conversation history and delete the session file.
 
 ```json
-{"action": "clear"}
+{"action": "clear", "requestId": "r4"}
 ```
 
 ### Output Events (stdout)
 
-Events are emitted as newline-delimited JSON.
+Events are emitted as newline-delimited JSON. Command responses include `requestId`; system events do not.
 
-#### Lifecycle Events
+#### System Events
 
 | Event | Fields | Description |
 |-------|--------|-------------|
 | `ready` | | Headless mode initialized, ready for input |
 | `session_restored` | `messageCount` | Previous session loaded |
-| `session_cleared` | | Session history cleared |
 | `stopping` | | Shutdown initiated |
 | `stopped` | | Shutdown complete |
 
-#### Agent Events (streamed during message processing)
+#### Command Responses
+
+All command responses include the `requestId` from the originating command.
 
 | Event | Fields | Description |
 |-------|--------|-------------|
-| `turn_started` | | Agent began processing a message |
-| `text` | `text` | Streaming text chunk |
-| `thinking` | `text` | Agent's internal reasoning |
-| `tool_start` | `id`, `name`, `input`, `partial?` | Tool execution started. `partial: true` means more `tool_start` events will follow for this id (progressive input streaming). |
-| `tool_input_delta` | `id`, `name`, `result` | Progressive tool content (streaming tools only) |
-| `tool_done` | `id`, `name`, `result`, `isError` | Tool execution completed |
-| `turn_done` | | Agent finished responding |
-| `turn_cancelled` | | Turn was cancelled |
-| `error` | `error` | Error message |
+| `text` | `text`, `parentToolId?` | Streaming text chunk |
+| `thinking` | `text`, `parentToolId?` | Agent's internal reasoning |
+| `tool_start` | `id`, `name`, `input`, `partial?`, `parentToolId?` | Tool execution started. `partial: true` means more `tool_start` events will follow for this id (progressive input streaming). |
+| `tool_input_delta` | `id`, `name`, `result`, `parentToolId?` | Progressive tool content (streaming tools only) |
+| `tool_done` | `id`, `name`, `result`, `isError`, `parentToolId?` | Tool execution completed |
+| `status` | `message` | Contextual status label (e.g., "Writing files...") |
+| `error` | `error` | Error message (may precede `completed`) |
 | `history` | `messages` | Response to `get_history` |
+| `session_cleared` | | Response to `clear` |
+| `completed` | `success`, `error?` | Terminal event — exactly one per command |
+
+#### Example Session
+
+```jsonl
+← {"event":"ready"}
+← {"event":"session_restored","messageCount":5}
+→ {"action":"message","requestId":"r1","text":"fix the login bug"}
+← {"event":"thinking","requestId":"r1","text":"Let me look at the auth code..."}
+← {"event":"text","requestId":"r1","text":"I'll fix the login validation."}
+← {"event":"tool_start","requestId":"r1","id":"tc_1","name":"editFile","input":{"path":"auth.ts","old":"...","new":"..."}}
+← {"event":"tool_done","requestId":"r1","id":"tc_1","name":"editFile","result":"OK","isError":false}
+← {"event":"completed","requestId":"r1","success":true}
+→ {"action":"get_history","requestId":"r2"}
+← {"event":"history","requestId":"r2","messages":[...]}
+← {"event":"completed","requestId":"r2","success":true}
+→ {"action":"cancel","requestId":"r3"}
+← {"event":"completed","requestId":"r3","success":true}
+```
 
 ### Logging
 
 In headless mode, structured logs go to **stderr**. Stdout is reserved for the JSON protocol. Log levels: `error`, `warn`, `info`, `debug`.
 
 In interactive mode, logs go to `.remy-debug.log` in the working directory (default level: `error`). Override with `--log-level`.
+
+## Design Data Dev Tool
+
+A lightweight local tool for browsing and managing the design expert's font catalog and inspiration image library.
+
+```bash
+node src/subagents/designExpert/data/dev/serve.mjs
+# Opens http://localhost:3333
+```
+
+Three tabs:
+- **Fonts** — browse all fonts rendered in their actual typefaces, search/filter by category and source, delete
+- **Pairings** — heading + body font pairings rendered live, delete
+- **Inspiration** — filmstrip browser for curated design reference screenshots with analyses, add new images with auto-analyze
+
+### Data compilation scripts
+
+```bash
+# Regenerate inspiration analyses from raw image URLs
+bash src/subagents/designExpert/data/compile-inspiration.sh
+
+# Generate typographic descriptions for all fonts from specimen images
+bash src/subagents/designExpert/data/compile-font-descriptions.sh
+```
+
+### Specimen pages
+
+For generating font specimen images (used by the font description pipeline):
+
+- `http://localhost:3333/specimens/fonts?page=1` — paginated font specimens (40 per page)
+- `http://localhost:3333/specimens/pairings?page=1` — paginated pairing specimens (33 per page)
+
+Screenshot these as full-page PNGs, then slice into individual images with the Python script in the session history. Specimen images live in `src/subagents/designExpert/data/specimens/` and are hosted at `https://i.mscdn.ai/remy-font-specimens/`.
 
 ## Development
 

@@ -21,9 +21,17 @@ export const BROWSER_TOOLS: ToolDefinition[] = [
             properties: {
               command: {
                 type: 'string',
-                enum: ['snapshot', 'click', 'type', 'wait', 'evaluate'],
+                enum: [
+                  'snapshot',
+                  'click',
+                  'type',
+                  'select',
+                  'wait',
+                  'evaluate',
+                  'screenshot',
+                ],
                 description:
-                  'snapshot: accessibility tree of the page (waits for network to settle). click: click an element (animated cursor, full event sequence). type: type text into input (one char at a time, works with React/Vue/Svelte). wait: wait for an element to appear (polls 100ms, waits for network). evaluate: run JS in the page.',
+                  'snapshot: accessibility tree of the page (waits for network to settle). click: click an element (animated cursor, full event sequence). type: type text into input (one char at a time, works with React/Vue/Svelte). select: select a dropdown option by text. wait: wait for an element to appear (polls 100ms, waits for network). evaluate: run JS in the page. screenshot: full-page viewport-stitched screenshot (returns base64 JPEG with dimensions).',
               },
               ref: {
                 type: 'string',
@@ -47,6 +55,11 @@ export const BROWSER_TOOLS: ToolDefinition[] = [
               selector: {
                 type: 'string',
                 description: 'CSS selector fallback (last resort).',
+              },
+              option: {
+                type: 'string',
+                description:
+                  'For select: the option text to select from a dropdown.',
               },
               clear: {
                 type: 'boolean',
