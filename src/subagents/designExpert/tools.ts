@@ -84,10 +84,20 @@ export const DESIGN_EXPERT_TOOLS: ToolDefinition[] = [
   {
     name: 'screenshot',
     description:
-      'Capture a screenshot of the app preview. Returns a CDN URL. Use to review the current state of the UI being built.',
+      'Capture a screenshot of the app preview. Returns a CDN URL with visual analysis. Use to review the current state of the UI being built. Set viewportOnly to capture just what the user sees on screen.',
     inputSchema: {
       type: 'object',
-      properties: {},
+      properties: {
+        prompt: {
+          type: 'string',
+          description: 'Optional specific question about the screenshot.',
+        },
+        viewportOnly: {
+          type: 'boolean',
+          description:
+            'Capture only the visible viewport instead of the full scrollable page. Use when checking above-the-fold layout or viewport-relative sizing like 100vh.',
+        },
+      },
     },
   },
   {
@@ -160,7 +170,10 @@ export async function executeDesignExpertTool(
   switch (name) {
     case 'screenshot': {
       try {
-        return await captureAndAnalyzeScreenshot(input.prompt as string);
+        return await captureAndAnalyzeScreenshot({
+          prompt: input.prompt as string,
+          viewportOnly: input.viewportOnly as boolean,
+        });
       } catch (err: any) {
         return `Error taking screenshot: ${err.message}`;
       }
