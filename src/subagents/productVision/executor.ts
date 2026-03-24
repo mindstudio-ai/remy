@@ -7,6 +7,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { unifiedDiff } from '../../tools/_helpers/diff.js';
 
 export { loadSpecContext, loadRoadmapContext } from '../common/context.js';
 
@@ -41,6 +42,10 @@ export async function executeVisionTool(
       try {
         fs.mkdirSync(ROADMAP_DIR, { recursive: true });
 
+        const oldContent = fs.existsSync(filePath)
+          ? fs.readFileSync(filePath, 'utf-8')
+          : '';
+
         const content = `---
 name: ${itemName}
 type: roadmap
@@ -53,7 +58,9 @@ requires: ${formatRequires(requires)}
 ${body}
 `;
         fs.writeFileSync(filePath, content, 'utf-8');
-        return `Wrote ${filePath}`;
+        const lineCount = content.split('\n').length;
+        const label = oldContent ? 'Updated' : 'Wrote';
+        return `${label} ${filePath} (${lineCount} lines)\n${unifiedDiff(filePath, oldContent, content)}`;
       } catch (err: any) {
         return `Error writing ${filePath}: ${err.message}`;
       }
@@ -68,7 +75,8 @@ ${body}
           return `Error: ${filePath} does not exist`;
         }
 
-        let content = fs.readFileSync(filePath, 'utf-8');
+        const oldContent = fs.readFileSync(filePath, 'utf-8');
+        let content = oldContent;
 
         // Update frontmatter fields
         if (input.status) {
@@ -119,7 +127,8 @@ ${body}
         }
 
         fs.writeFileSync(filePath, content, 'utf-8');
-        return `Updated ${filePath}`;
+        const lineCount = content.split('\n').length;
+        return `Updated ${filePath} (${lineCount} lines)\n${unifiedDiff(filePath, oldContent, content)}`;
       } catch (err: any) {
         return `Error updating ${filePath}: ${err.message}`;
       }
@@ -133,8 +142,9 @@ ${body}
         if (!fs.existsSync(filePath)) {
           return `Error: ${filePath} does not exist`;
         }
+        const oldContent = fs.readFileSync(filePath, 'utf-8');
         fs.unlinkSync(filePath);
-        return `Deleted ${filePath}`;
+        return `Deleted ${filePath}\n${unifiedDiff(filePath, oldContent, '')}`;
       } catch (err: any) {
         return `Error deleting ${filePath}: ${err.message}`;
       }
