@@ -18,6 +18,10 @@ These are things we already know about and have decided to accept:
 
 - Limited browser support for `oklch` gradients using `in <colorspace>` syntax — we accept the compatibility tradeoff for better color quality
 - Limited browser support for CSS scroll-driven animations (`animation-timeline: scroll()` / `view()`)  - we accept this tradeoff
+- Libraries we know are actively maintained, don't bother checking:
+  - swr
+  - framer-motion
+  - styled-components
 
 ### Common pitfalls (always flag these)
 

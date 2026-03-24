@@ -84,7 +84,7 @@ export const DESIGN_EXPERT_TOOLS: ToolDefinition[] = [
   {
     name: 'screenshot',
     description:
-      'Capture a screenshot of the app preview. Returns a CDN URL with visual analysis. Use to review the current state of the UI being built. Set viewportOnly to capture just what the user sees on screen.',
+      'Capture a screenshot of the app preview. Returns a CDN URL with visual analysis. Use to review the current state of the UI being built. By default captures the viewport. Set fullPage to capture the entire scrollable page.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -92,10 +92,10 @@ export const DESIGN_EXPERT_TOOLS: ToolDefinition[] = [
           type: 'string',
           description: 'Optional specific question about the screenshot.',
         },
-        viewportOnly: {
+        fullPage: {
           type: 'boolean',
           description:
-            'Capture only the visible viewport instead of the full scrollable page. Use when checking above-the-fold layout or viewport-relative sizing like 100vh.',
+            'Capture the full scrollable page instead of just the viewport. Use when you need to see below-the-fold content.',
         },
       },
     },
@@ -150,13 +150,14 @@ export async function executeDesignExpertTool(
   name: string,
   input: Record<string, any>,
   context?: ToolExecutionContext,
+  toolCallId?: string,
 ): Promise<string> {
   switch (name) {
     case 'screenshot': {
       try {
         return await captureAndAnalyzeScreenshot({
           prompt: input.prompt as string,
-          viewportOnly: input.viewportOnly as boolean,
+          fullPage: input.fullPage as boolean,
         });
       } catch (err: any) {
         return `Error taking screenshot: ${err.message}`;
@@ -271,7 +272,13 @@ export async function executeDesignExpertTool(
       if (!context) {
         return 'Error: browser testing requires execution context (only available in headless mode)';
       }
-      return browserAutomationTool.execute({ task: input.task }, context);
+      return browserAutomationTool.execute(
+        { task: input.task },
+        {
+          ...context,
+          toolCallId: toolCallId || context.toolCallId,
+        },
+      );
     }
 
     default:

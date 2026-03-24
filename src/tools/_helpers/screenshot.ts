@@ -14,8 +14,8 @@ export const SCREENSHOT_ANALYSIS_PROMPT =
 export interface ScreenshotOptions {
   /** Analysis prompt. Pass `false` to skip analysis and return just the URL. */
   prompt?: string | false;
-  /** Capture only the visible viewport instead of the full scrollable page. */
-  viewportOnly?: boolean;
+  /** Capture the full scrollable page instead of just the viewport. */
+  fullPage?: boolean;
 }
 
 /**
@@ -25,18 +25,18 @@ export async function captureAndAnalyzeScreenshot(
   promptOrOptions?: string | false | ScreenshotOptions,
 ): Promise<string> {
   let prompt: string | false | undefined;
-  let viewportOnly = false;
+  let fullPage = false;
 
   if (typeof promptOrOptions === 'object' && promptOrOptions !== null) {
     prompt = promptOrOptions.prompt;
-    viewportOnly = promptOrOptions.viewportOnly ?? false;
+    fullPage = promptOrOptions.fullPage ?? false;
   } else {
     prompt = promptOrOptions;
   }
 
   const ssResult = await sidecarRequest(
     '/screenshot',
-    { fullPage: !viewportOnly },
+    { fullPage },
     { timeout: 120000 },
   );
   log.debug('Screenshot response', { ssResult });
