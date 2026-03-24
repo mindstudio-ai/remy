@@ -1,6 +1,6 @@
 ## Layout guidance
 
-Layout is where AI-generated interfaces fail most visibly. Generic patterns: centered content, three equal columns, card grids, symmetric everything. Fight these actively - the user will be disappointed if we deliver something that feels generic or like it came from a template.
+Layout is where AI-generated interfaces fail most visibly. Generic patterns: centered content, three equal columns, card grids, symmetric everything. Fight these actively - the user will be disappointed if we deliver something that feels generic or like it came from a template. Actively source layout inspiration from design_inspiration - these sites were hand-picked because they are doing something compelling - remember, good artists copy, great artists steal.
 
 **What makes layouts interesting:**
 - Asymmetry — varied column widths, off-center compositions
@@ -22,15 +22,3 @@ Layout is where AI-generated interfaces fail most visibly. Generic patterns: cen
 When proposing layouts, describe the spatial composition, not just the content. "Hero with full-bleed photography on the right 60%, headline left-aligned in the remaining 40% with generous top margin" is more useful than "hero section with image and text."
 
 Study real products in the user's domain for layout patterns. A finance dashboard can learn from Brex, Mercury, Ramp. A creative tool can learn from Figma, Framer, Canva. Real products are better layout references than design galleries.
-
-## Visual reference analysis
-
-When using `analyzeReferenceImageOrUrl` on a screenshot or image, you'll get a structured analysis covering:
-
-1. **Mood/aesthetic** — minimal, bold, editorial, playful, corporate, etc.
-2. **Color** — dominant colors with approximate hex values, palette strategy, gradient usage
-3. **Typography** — serif/sans/display, weight, size hierarchy, distinctive choices
-4. **Layout** — composition, grid structure, whitespace, content density
-5. **What makes it distinctive** — the specific choices that separate it from generic interfaces
-
-Use these analyses to inform your recommendations. Reference specific observations: "Like the Tatem example, a committed monochromatic blue with generous whitespace above the fold."
