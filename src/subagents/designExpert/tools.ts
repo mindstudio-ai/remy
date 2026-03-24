@@ -11,11 +11,15 @@ import { sidecarRequest } from '../../tools/_helpers/sidecar.js';
 const base =
   import.meta.dirname ?? path.dirname(new URL(import.meta.url).pathname);
 
+function resolvePath(filename: string): string {
+  const local = path.join(base, filename);
+  return fs.existsSync(local)
+    ? local
+    : path.join(base, 'subagents', 'designExpert', filename);
+}
+
 const DESIGN_REFERENCE_PROMPT = fs
-  .readFileSync(
-    path.join(base, 'prompts', 'tool-prompts', 'design-analysis.md'),
-    'utf-8',
-  )
+  .readFileSync(resolvePath('prompts/tool-prompts/design-analysis.md'), 'utf-8')
   .trim();
 
 export const DESIGN_EXPERT_TOOLS: ToolDefinition[] = [
