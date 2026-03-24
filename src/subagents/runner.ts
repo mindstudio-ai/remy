@@ -219,8 +219,19 @@ export async function runSubAgent(
       }),
     );
 
-    // Append tool results
+    // Merge results onto the tool content blocks (so sub-agent messages
+    // are self-contained — the frontend can read result directly from
+    // the tool block without cross-referencing user messages).
     for (const r of results) {
+      const block = contentBlocks.find(
+        (b) => b.type === 'tool' && b.id === r.id,
+      );
+      if (block?.type === 'tool') {
+        block.result = r.result;
+        block.isError = r.isError;
+      }
+
+      // Still append as user messages — the LLM needs them for the next loop iteration
       messages.push({
         role: 'user',
         content: r.result,
