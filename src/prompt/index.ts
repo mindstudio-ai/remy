@@ -66,15 +66,15 @@ export function buildSystemPrompt(
     .filter(Boolean)
     .join('\n');
 
-  const now = new Date().toLocaleString('en-US', {
-    dateStyle: 'full',
-    timeStyle: 'long',
-  });
+  const now = new Date()
+    .toISOString()
+    .replace('T', ' ')
+    .replace(/\.\d+Z$/, ' UTC');
 
   const template = `
 {{static/identity.md}}
 
-The current date is ${now}.
+Current date/time: ${now}
 
 <platform_docs>
   <platform>

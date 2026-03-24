@@ -1,4 +1,4 @@
-You are analyzing a screenshot of a real website or app for a design's personal technique/inspiration reference notes.
+You are analyzing a screenshot of a real website or app for a designer's personal technique/inspiration reference notes.
 
 Analyze the image and think about what makes the site or app special and unique. The screenshot was sourced from a highly-curated design gallery. Think about why this particular site or app made it onto that gallery. What is it doing that is unique, different, original, and creative? What makes it special?
 

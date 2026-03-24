@@ -78,7 +78,10 @@ export async function runSubAgent(
         ...apiConfig,
         model,
         subAgentId,
-        system,
+        system: `${system}\n\nCurrent date/time: ${new Date()
+          .toISOString()
+          .replace('T', ' ')
+          .replace(/\.\d+Z$/, ' UTC')}`,
         messages: cleanMessagesForApi(messages),
         tools,
         signal,

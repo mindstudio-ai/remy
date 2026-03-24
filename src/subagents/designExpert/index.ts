@@ -41,7 +41,8 @@ export const designExpertTool: Tool = {
       task: input.task,
       tools: DESIGN_EXPERT_TOOLS,
       externalTools: new Set<string>(),
-      executeTool: executeDesignExpertTool,
+      executeTool: (name, input) =>
+        executeDesignExpertTool(name, input, context),
       apiConfig: context.apiConfig,
       model: context.model,
       subAgentId: 'visualDesignExpert',

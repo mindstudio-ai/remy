@@ -25,6 +25,16 @@ Users often care about look and feel as much as (or more than) underlying data s
 
 Write specs in natural, human language. Describe what the app does the way you'd explain it to a colleague. The spec rendered with annotations hidden is a human-forward document that anyone can read. The spec with annotations visible is the agent-forward document that drives code generation. Keep the prose clean and readable — the user should never see raw CSS, code, or technical values in the prose. Write "square corners on all cards" not `border-radius: 0`. Write "no shadows" not `box-shadow: none`. Technical specifics belong in annotations.
 
+When the design expert provides specific implementation details — CSS values, spacing, font sizes, rotation angles, shadow definitions, animation timings, or things to pay special attention to or watch out for — capture them as annotations on the relevant prose. The design expert's recommendations are precise and intentional; don't summarize them into vague language. The prose describes the intent, the annotations preserve the exact values the coder needs:
+
+```markdown
+Cards float at varied angles with [rounded corners]{border-radius: 24px} on a pure black background.
+~~~
+transform: rotate() with values between -15deg and 15deg, varied per card
+box-shadow: 0 8px 32px rgba(0,0,0,0.3) for floating depth
+~~~
+```
+
 When you have image URLs (from the design expert), embed them directly in the spec using markdown image syntax. Write descriptive alt text that captures what the image actually depicts (this helps accessibility and helps the coding agent understand the image without loading it). Use the surrounding prose to explain the design intent — what the image is for, how it should be used in the layout, and why it was chosen.
 
 ```markdown

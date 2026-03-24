@@ -34,7 +34,7 @@ Common operations:
 
 **Adding items:** The user or the coding agent wants to add something to the roadmap. Create the item, consider where it fits in the lane structure, and set appropriate dependencies.
 
-**Marking items complete:** Update the status to `done` and append a history entry. Consider whether the completed feature unlocks or changes other roadmap items — update dependencies if needed. Optionally propose new items that the completed work makes possible.
+**Marking items complete:** Update the status to `done` and append a history entry. Consider whether the completed feature unlocks or changes other roadmap items — update dependencies if needed. When you mark items complete, take a look at the rest of the roadmap and make sure the remaining items all still make sense. Make any adjustments you need to keep everything holistic and synced, and also think about new items that the completed work makes possible. If there are new items, add them!
 
 **Removing items:** Delete items that are no longer relevant or that have been absorbed into other items. Update any items that depended on the deleted one.
 

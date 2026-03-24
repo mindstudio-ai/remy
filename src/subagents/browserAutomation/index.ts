@@ -11,19 +11,25 @@ import { runSubAgent } from '../runner.js';
 import { BROWSER_TOOLS, BROWSER_EXTERNAL_TOOLS } from './tools.js';
 import { getBrowserAutomationPrompt } from './prompt.js';
 import { sidecarRequest } from '../../tools/_helpers/sidecar.js';
+import {
+  captureAndAnalyzeScreenshot,
+  SCREENSHOT_ANALYSIS_PROMPT,
+} from '../../tools/_helpers/screenshot.js';
+import { runCli } from '../common/runCli.js';
+import { log } from '../../logger.js';
 
 export const browserAutomationTool: Tool = {
   definition: {
     name: 'runAutomatedBrowserTest',
     description:
-      'Run an automated browser test against the live preview. The test agent always starts on the main page, so include navigation instructions if the test involves a sub-page. The browser uses the current user roles and dev database state, so run a scenario first if you need specific data or roles. Use after writing or modifying frontend code, to reproduce user-reported issues, or to test end-to-end flows.',
+      'Run an automated browser test against the live preview. Describe what to test — the agent figures out how. Use after writing or modifying frontend code, to reproduce user-reported issues, or to test end-to-end flows.',
     inputSchema: {
       type: 'object',
       properties: {
         task: {
           type: 'string',
           description:
-            'What to test, in natural language. Include how to navigate to the relevant page and what data/roles to expect.',
+            'What to test, in natural language. Keep it brief — the agent reads the spec and figures out navigation, data setup, and test strategy on its own.',
         },
       },
       required: ['task'],
@@ -57,15 +63,7 @@ export const browserAutomationTool: Tool = {
       executeTool: async (name) => {
         if (name === 'screenshot') {
           try {
-            const { url } = await sidecarRequest(
-              '/screenshot',
-              {},
-              { timeout: 120000 },
-            );
-            if (!url) {
-              return 'Error: screenshot returned no URL';
-            }
-            return url;
+            return await captureAndAnalyzeScreenshot();
           } catch (err: any) {
             return `Error taking screenshot: ${err.message}`;
           }
@@ -86,7 +84,60 @@ export const browserAutomationTool: Tool = {
       signal: context.signal,
       parentToolId: context.toolCallId,
       onEvent: context.onEvent,
-      resolveExternalTool: context.resolveExternalTool,
+      resolveExternalTool: async (id, name, input) => {
+        if (!context.resolveExternalTool) {
+          return 'Error: no external tool resolver';
+        }
+        const result = await context.resolveExternalTool(id, name, input);
+
+        // Auto-analyze screenshots in browserCommand results
+        if (name === 'browserCommand') {
+          try {
+            const parsed = JSON.parse(result);
+            const screenshotSteps = (parsed.steps || []).filter(
+              (s: any) => s.command === 'screenshot' && s.result?.url,
+            );
+            if (screenshotSteps.length > 0) {
+              const batchInput = screenshotSteps.map((s: any) => ({
+                stepType: 'analyzeImage',
+                step: {
+                  imageUrl: s.result.url,
+                  prompt: SCREENSHOT_ANALYSIS_PROMPT,
+                },
+              }));
+              const batchResult = await runCli(
+                `mindstudio batch --no-meta ${JSON.stringify(JSON.stringify(batchInput))}`,
+                { timeout: 120000 },
+              );
+              try {
+                const analyses = JSON.parse(batchResult);
+                let ai = 0;
+                for (const step of parsed.steps) {
+                  if (
+                    step.command === 'screenshot' &&
+                    step.result?.url &&
+                    ai < analyses.length
+                  ) {
+                    step.result.analysis =
+                      analyses[ai]?.output?.analysis ||
+                      analyses[ai]?.output ||
+                      '';
+                    ai++;
+                  }
+                }
+              } catch {
+                log.debug('Failed to parse batch analysis result', {
+                  batchResult,
+                });
+              }
+              return JSON.stringify(parsed);
+            }
+          } catch {
+            // Not JSON or no screenshots — return as-is
+          }
+        }
+        return result;
+      },
     });
     context.subAgentMessages?.set(context.toolCallId, result.messages);
     return result.text;

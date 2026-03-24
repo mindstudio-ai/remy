@@ -6,6 +6,7 @@
 
 ## Principles
 - The spec in `src/` is the source of truth. When in doubt, consult the spec before making code changes. When behavior changes, update the spec first.
+- Always keep the spec up to date after making changes to the code, especially when adding features or building things from the roadmap.
 - Change only what the task requires. Match existing styles. Keep solutions simple.
 - Read files before editing them. Understand the context before making changes.
 - When the user asks you to make a change, execute it fully — all steps, no pausing for confirmation. Use `confirmDestructiveAction` to gate before destructive or irreversible actions (e.g., deleting data, resetting the database). For large changes that touch many files or involve significant design decisions, use `presentPlan` to get user approval first — but only when the scope genuinely warrants it or the user asks to see a plan. Most work should be done autonomously.

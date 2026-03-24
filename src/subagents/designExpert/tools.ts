@@ -5,10 +5,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { ToolDefinition } from '../../api.js';
+import type { ToolExecutionContext } from '../../tools/index.js';
 import { runCli } from '../common/runCli.js';
-import { sidecarRequest } from '../../tools/_helpers/sidecar.js';
-import { log } from '../../logger.js';
-import { SCREENSHOT_ANALYSIS_PROMPT } from '../../tools/code/screenshot.js';
+import { captureAndAnalyzeScreenshot } from '../../tools/_helpers/screenshot.js';
+import { browserAutomationTool } from '../browserAutomation/index.js';
 
 const base =
   import.meta.dirname ?? path.dirname(new URL(import.meta.url).pathname);
@@ -107,6 +107,22 @@ export const DESIGN_EXPERT_TOOLS: ToolDefinition[] = [
     },
   },
   {
+    name: 'runBrowserTest',
+    description:
+      'Run an automated browser test against the live app preview. Use to verify visual implementation: check computed styles, navigate between pages, take analyzed screenshots. Describe what you want to verify and the browser agent handles the interaction.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        task: {
+          type: 'string',
+          description:
+            'What to verify, in natural language. E.g., "Check that the hero section cards have border-radius: 24px and the correct rotation angles" or "Navigate to /about and screenshot it".',
+        },
+      },
+      required: ['task'],
+    },
+  },
+  {
     name: 'generateImages',
     description:
       'Generate images using AI (Seedream). Returns CDN URLs with a quality analysis for each image. Produces high-quality results for both photorealistic images and abstract/creative visuals. Pass multiple prompts to generate in parallel. No need to analyze images separately after generating — the analysis is included.',
@@ -139,26 +155,12 @@ export const DESIGN_EXPERT_TOOLS: ToolDefinition[] = [
 export async function executeDesignExpertTool(
   name: string,
   input: Record<string, any>,
+  context?: ToolExecutionContext,
 ): Promise<string> {
   switch (name) {
     case 'screenshot': {
       try {
-        const ssResult = await sidecarRequest(
-          '/screenshot',
-          {},
-          { timeout: 120000 },
-        );
-        log.debug('Design expert screenshot response', { ssResult });
-        const url = ssResult?.url || ssResult?.screenshotUrl;
-        if (!url) {
-          return `Error taking screenshot: no URL in sidecar response. The browser may not be ready yet. Response: ${JSON.stringify(ssResult)}`;
-        }
-        const analysisPrompt =
-          (input.prompt as string) || SCREENSHOT_ANALYSIS_PROMPT;
-        const analysis = await runCli(
-          `mindstudio analyze-image --prompt ${JSON.stringify(analysisPrompt)} --image-url ${JSON.stringify(url)} --output-key analysis --no-meta`,
-        );
-        return `Screenshot: ${url}\n\n${analysis}`;
+        return await captureAndAnalyzeScreenshot(input.prompt as string);
       } catch (err: any) {
         return `Error taking screenshot: ${err.message}`;
       }
@@ -271,6 +273,13 @@ export async function executeDesignExpertTool(
       );
 
       return analyses.join('\n\n');
+    }
+
+    case 'runBrowserTest': {
+      if (!context) {
+        return 'Error: browser testing requires execution context (only available in headless mode)';
+      }
+      return browserAutomationTool.execute({ task: input.task }, context);
     }
 
     default:

@@ -27,11 +27,13 @@ export const BROWSER_TOOLS: ToolDefinition[] = [
                   'type',
                   'select',
                   'wait',
+                  'navigate',
                   'evaluate',
+                  'styles',
                   'screenshot',
                 ],
                 description:
-                  'snapshot: accessibility tree of the page (waits for network to settle). click: click an element (animated cursor, full event sequence). type: type text into input (one char at a time, works with React/Vue/Svelte). select: select a dropdown option by text. wait: wait for an element to appear (polls 100ms, waits for network). evaluate: run JS in the page. screenshot: full-page viewport-stitched screenshot (returns base64 JPEG with dimensions).',
+                  'snapshot: accessibility tree of the page (waits for network to settle). click: click an element (animated cursor, full event sequence). type: type text into input (one char at a time, works with React/Vue/Svelte). select: select a dropdown option by text. wait: wait for an element to appear (polls 100ms, waits for network). navigate: navigate to a URL within the app (waits for load, subsequent steps run on new page). evaluate: run JS in the page. styles: read computed CSS styles from elements (pass properties array with camelCase names, or omit for defaults). screenshot: full-page viewport-stitched screenshot (returns base64 JPEG with dimensions).',
               },
               ref: {
                 type: 'string',
@@ -72,6 +74,17 @@ export const BROWSER_TOOLS: ToolDefinition[] = [
               script: {
                 type: 'string',
                 description: 'For evaluate: JavaScript to run in the page.',
+              },
+              url: {
+                type: 'string',
+                description:
+                  'For navigate: the URL to navigate to (e.g., "/quiz", "/settings").',
+              },
+              properties: {
+                type: 'array',
+                items: { type: 'string' },
+                description:
+                  'For styles: camelCase CSS property names to read (e.g., ["backgroundColor", "borderRadius", "fontSize"]). Omit for a default set.',
               },
             },
             required: ['command'],
