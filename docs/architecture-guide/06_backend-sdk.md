@@ -64,7 +64,12 @@ interface Vendor {
 const Vendors = db.defineTable<Vendor>('vendors');
 ```
 
-`defineTable<T>(name, options?)` returns a `Table<T>`, a lazy handle. No HTTP until a query executes. Options: `{ database?: string }` for apps with multiple databases.
+`defineTable<T>(name, options?)` returns a `Table<T>`, a lazy handle. No HTTP until a query executes.
+
+Options (`DefineTableOptions<T>`):
+- `database?: string` — for apps with multiple databases
+- `unique?: (keyof T & string)[][]` — column groups that form unique constraints. Each entry is a string array of column names (e.g., `[['email']]`, `[['userId', 'orgId']]`). Stored in `TableConfig`, used for `upsert()` validation at call time. Schema sync (creating the actual SQLite UNIQUE indexes) is handled by the platform.
+- `defaults?: Partial<Omit<T, SystemFields>>` — default values applied client-side in `push()` and `upsert()` before building the INSERT. Merged as `{ ...defaults, ...userInput }` — explicit values override defaults. No platform change needed.
 
 ### System Columns
 
@@ -129,6 +134,28 @@ const vendors = await Vendors.push([
   { name: 'Globex', status: 'pending' },
 ]);
 ```
+
+`push()` merges `defaults` from the table config before building the INSERT (`{ ...defaults, ...userInput }`).
+
+Upsert (insert or update on conflict):
+```typescript
+const user = await Users.upsert('email', {
+  email: 'alice@acme.com',
+  name: 'Alice',
+  role: 'admin',
+});
+
+// Compound conflict key
+const membership = await Memberships.upsert(['userId', 'orgId'], {
+  userId: user.id, orgId: org.id, role: 'member',
+});
+```
+
+`upsert(conflictKey, data)` generates `INSERT ... ON CONFLICT(...) DO UPDATE SET ...` via `buildUpsert()` in `src/db/sql.ts`. Uses SQLite's `excluded.` syntax. All non-conflict columns are updated on conflict. If all columns are conflict columns, falls back to `DO NOTHING`. Returns a `Mutation<T>` — works with `await` or inside `db.batch()`.
+
+Validates at call time that the conflict key matches a declared `unique` constraint. Throws `MindStudioError` with code `no_unique_constraint` if no match.
+
+Both `Query<T>` and `Mutation<T>` support `.then()` and `.catch()` directly on the chain.
 
 ### Predicate Compiler
 

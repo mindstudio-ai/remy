@@ -20,6 +20,23 @@ export const Vendors = db.defineTable<Vendor>('vendors');
 
 One export per file. The export name is referenced in `mindstudio.json` and imported in methods. Only define your own columns in the interface — do not add `id`, `created_at`, `updated_at`, or `last_updated_by` (they're provided automatically, see below).
 
+### Table Options
+
+`defineTable<T>()` accepts an optional second argument with table-level configuration:
+
+```typescript
+export const Users = db.defineTable<User>('users', {
+  unique: [['email']],
+  defaults: { role: 'member', status: 'active' },
+});
+```
+
+- **`unique`** — `(keyof T & string)[][]` — Column groups that form unique constraints. Each entry is a string array of column names. These are required for `upsert()` (see below). Schema sync on the platform creates the actual SQLite UNIQUE indexes.
+  - Single column: `[['email']]`
+  - Compound: `[['userId', 'orgId']]`
+  - Multiple constraints: `[['email'], ['slug']]`
+- **`defaults`** — `Partial<T>` — Default values applied client-side in `push()` and `upsert()` before building the INSERT. Explicit values in the input override defaults.
+
 ### Column Types
 
 | TypeScript type | SQLite type | Notes |
@@ -78,6 +95,30 @@ const vendors = await Vendors.push([
   { name: 'Globex', status: 'pending', ... },
 ]);
 ```
+
+If the table has `defaults` configured, missing fields are filled in automatically. Explicit values override defaults.
+
+### Upsert (Insert or Update)
+
+```typescript
+// Insert if no conflict on 'email', otherwise update the existing row
+const user = await Users.upsert('email', {
+  email: 'alice@acme.com',
+  name: 'Alice',
+  role: 'admin',
+});
+
+// Compound conflict key — pass an array
+const membership = await Memberships.upsert(['userId', 'orgId'], {
+  userId: user.id,
+  orgId: org.id,
+  role: 'member',
+});
+```
+
+`upsert(conflictKey, data)` generates `INSERT ... ON CONFLICT(...) DO UPDATE SET ...` using SQLite's `excluded.` syntax. All non-conflict columns are updated on conflict. Returns a `Mutation<T>` — works with `await` standalone or inside `db.batch()`, same as `push()` and `update()`.
+
+The conflict key must match a declared `unique` constraint on the table. Throws `MindStudioError` with code `no_unique_constraint` if no match.
 
 ### Reading Records
 
@@ -162,9 +203,20 @@ db.ago(db.days(7) + db.hours(12)) // composable — 7.5 days ago
 Invoices.filter(i => i.dueDate < db.ago(db.days(30)))
 ```
 
+### Error Handling on Queries
+
+Both `Query<T>` and `Mutation<T>` support `.then()` and `.catch()` directly:
+
+```typescript
+const user = await Users.upsert('email', data).catch(err => {
+  if (err.code === 'no_unique_constraint') { /* ... */ }
+  throw err;
+});
+```
+
 ### Batching
 
-`db.batch()` combines multiple operations into a single HTTP round-trip. Every `await` on a table operation is a network call, so batching is critical for performance. Use it whenever you have multiple reads, writes, or a mix of both:
+`db.batch()` combines multiple operations into a single HTTP round-trip. Every `await` on a table operation is a network call, so batching is critical for performance. Use it whenever you have multiple reads, writes, or a mix of both. `upsert()` works in batches just like `push()` and `update()`:
 
 ```typescript
 // Reads: fetch related data in one call instead of sequential awaits
