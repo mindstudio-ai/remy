@@ -8,6 +8,7 @@
 import type { Tool } from '../index.js';
 import { sidecarRequest } from '../_helpers/sidecar.js';
 import { runCli } from '../../subagents/common/runCli.js';
+import { log } from '../../logger.js';
 
 const DEFAULT_PROMPT =
   'Describe this app screenshot for a developer who cannot see it. What is visible on screen: the layout, content, interactive elements, any loading or error states. Be concise and factual.';
@@ -31,11 +32,16 @@ export const screenshotTool: Tool = {
 
   async execute(input) {
     try {
-      const { url } = await sidecarRequest(
+      const ssResult = await sidecarRequest(
         '/screenshot',
         {},
         { timeout: 120000 },
       );
+      log.debug('Screenshot response', { ssResult });
+      const url = ssResult?.url || ssResult?.screenshotUrl;
+      if (!url) {
+        return `Error taking screenshot: no URL in sidecar response. The browser may not be ready yet. Response: ${JSON.stringify(ssResult)}`;
+      }
 
       const analysisPrompt = (input.prompt as string) || DEFAULT_PROMPT;
       const analysis = await runCli(

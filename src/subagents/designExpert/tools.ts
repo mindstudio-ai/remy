@@ -7,6 +7,7 @@ import path from 'node:path';
 import type { ToolDefinition } from '../../api.js';
 import { runCli } from '../common/runCli.js';
 import { sidecarRequest } from '../../tools/_helpers/sidecar.js';
+import { log } from '../../logger.js';
 
 const base =
   import.meta.dirname ?? path.dirname(new URL(import.meta.url).pathname);
@@ -141,11 +142,16 @@ export async function executeDesignExpertTool(
   switch (name) {
     case 'screenshot': {
       try {
-        const { url } = await sidecarRequest(
+        const ssResult = await sidecarRequest(
           '/screenshot',
           {},
           { timeout: 120000 },
         );
+        log.debug('Design expert screenshot response', { ssResult });
+        const url = ssResult?.url || ssResult?.screenshotUrl;
+        if (!url) {
+          return `Error taking screenshot: no URL in sidecar response. The browser may not be ready yet. Response: ${JSON.stringify(ssResult)}`;
+        }
         const analysisPrompt =
           (input.prompt as string) ||
           'Describe this app screenshot for a visual designer reviewing the current state. What is visible: layout, typography, colors, spacing, imagery. Note anything that looks broken or off. Be concise.';
