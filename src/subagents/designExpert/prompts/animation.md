@@ -1,7 +1,7 @@
 ## Modern Animations
 
 ### Patterns
-- CSS scroll-driven animations (`animation-timeline: scroll()` / `view()`) — native, off main thread, ~85% browser support
+- CSS scroll-driven animations (`animation-timeline: scroll()` / `view()`) — native, off main thread, even though there is still a little lag in browser support we should use this!
 - Spring physics for natural-feeling motion
 - Purposeful micro-interactions — scaling, color shifts, depth changes on hover/click
 - Staggered entrance reveals — content appearing sequentially as it enters view
