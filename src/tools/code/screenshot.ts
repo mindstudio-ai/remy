@@ -10,8 +10,8 @@ import { sidecarRequest } from '../_helpers/sidecar.js';
 import { runCli } from '../../subagents/common/runCli.js';
 import { log } from '../../logger.js';
 
-const DEFAULT_PROMPT =
-  'Describe this app screenshot for a developer who cannot see it. What is visible on screen: the layout, content, interactive elements, any loading or error states. Be concise and factual.';
+export const SCREENSHOT_ANALYSIS_PROMPT =
+  'Describe everything visible on screen from top to bottom — every element, its position, its size relative to the viewport, its colors, its content. Be thorough and spatial. After the inventory, note anything that looks visually broken (overlapping elements, clipped text, misaligned components).';
 
 export const screenshotTool: Tool = {
   definition: {
@@ -43,7 +43,8 @@ export const screenshotTool: Tool = {
         return `Error taking screenshot: no URL in sidecar response. The browser may not be ready yet. Response: ${JSON.stringify(ssResult)}`;
       }
 
-      const analysisPrompt = (input.prompt as string) || DEFAULT_PROMPT;
+      const analysisPrompt =
+        (input.prompt as string) || SCREENSHOT_ANALYSIS_PROMPT;
       const analysis = await runCli(
         `mindstudio analyze-image --prompt ${JSON.stringify(analysisPrompt)} --image-url ${JSON.stringify(url)} --output-key analysis --no-meta`,
       );
