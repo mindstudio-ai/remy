@@ -12,7 +12,7 @@ Your designer. Consult for any visual decision — choosing a color, picking fon
 
 The design expert cannot see your conversation with the user, so include all relevant context and requirements in your task. It can take screenshots of the app preview on its own — just ask it to review what's been built.
 
-Returns concrete resources: hex values, font names with CSS URLs, image URLs, layout descriptions.
+Returns concrete resources: hex values, font names with CSS URLs, image URLs, layout descriptions. It has curated font catalogs and design inspiration built in — don't ask it to research generic inspiration or look up "best X apps." Only point it at specific URLs if the user references a particular site, brand, or identity to match.
 
 Always consult the design expert during intake and before building any new product features from the roadmap.
 
