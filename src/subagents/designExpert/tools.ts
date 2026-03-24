@@ -101,22 +101,6 @@ export const DESIGN_EXPERT_TOOLS: ToolDefinition[] = [
     },
   },
   {
-    name: 'searchProductScreenshots',
-    description:
-      'Search for screenshots of real products and apps. Use to find what existing products look like ("stripe dashboard", "linear app", "notion workspace"). Returns image results of actual product UI. Use this for layout and design research on real products, NOT for abstract design inspiration.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        product: {
-          type: 'string',
-          description:
-            'The product or app to find screenshots of (e.g., "stripe dashboard", "figma editor", "mercury banking app").',
-        },
-      },
-      required: ['product'],
-    },
-  },
-  {
     name: 'runBrowserTest',
     description:
       'Run an automated browser test against the live app preview. Use to verify visual implementation: check computed styles, navigate between pages, take analyzed screenshots. Describe what you want to verify and the browser agent handles the interaction.',
@@ -217,13 +201,6 @@ export async function executeDesignExpertTool(
         `mindstudio analyze-image --prompt ${JSON.stringify(analysisPrompt)} --image-url ${JSON.stringify(imageUrl)} --output-key analysis --no-meta`,
       );
       return isImageUrl ? analysis : `Screenshot: ${imageUrl}\n\n${analysis}`;
-    }
-
-    case 'searchProductScreenshots': {
-      const query = `${input.product} product screenshot UI 2026`;
-      return runCli(
-        `mindstudio search-google-images --query ${JSON.stringify(query)} --export-type json --output-key images --no-meta`,
-      );
     }
 
     case 'generateImages': {
