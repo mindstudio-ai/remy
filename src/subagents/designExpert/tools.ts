@@ -273,19 +273,19 @@ export async function executeDesignExpertTool(
       }
 
       // Analyze each image in parallel
-      const analyses = await Promise.all(
+      const images = await Promise.all(
         imageUrls.map(async (url, i) => {
           if (url.startsWith('Error')) {
-            return `Image ${i + 1}: ${url}`;
+            return { prompt: prompts[i], error: url };
           }
           const analysis = await runCli(
             `mindstudio analyze-image --prompt ${JSON.stringify(ANALYZE_PROMPT)} --image-url ${JSON.stringify(url)} --output-key analysis --no-meta`,
           );
-          return `**Image ${i + 1}:** ${url}\nPrompt: ${prompts[i]}\nAnalysis: ${analysis}`;
+          return { url, prompt: prompts[i], analysis, width, height };
         }),
       );
 
-      return analyses.join('\n\n');
+      return JSON.stringify({ images });
     }
 
     case 'runBrowserTest': {
