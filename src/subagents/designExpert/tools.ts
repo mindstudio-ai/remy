@@ -246,6 +246,7 @@ export async function executeDesignExpertTool(
         });
         const url = await runCli(
           `mindstudio generate-image '${step}' --output-key imageUrl --no-meta`,
+          { jsonLogs: true },
         );
         imageUrls = [url];
       } else {
@@ -261,6 +262,7 @@ export async function executeDesignExpertTool(
         }));
         const batchResult = await runCli(
           `mindstudio batch '${JSON.stringify(steps)}' --no-meta`,
+          { jsonLogs: true },
         );
         try {
           const parsed = JSON.parse(batchResult);
@@ -285,7 +287,7 @@ export async function executeDesignExpertTool(
         }),
       );
 
-      return JSON.stringify({ images });
+      return `%%JSON%%${JSON.stringify({ images })}`;
     }
 
     case 'runBrowserTest': {

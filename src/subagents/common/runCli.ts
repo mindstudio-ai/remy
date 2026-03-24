@@ -20,16 +20,17 @@ interface CliLogEntry {
 
 export function runCli(
   cmd: string,
-  options?: { timeout?: number; maxBuffer?: number },
+  options?: { timeout?: number; maxBuffer?: number; jsonLogs?: boolean },
 ): Promise<string> {
   return new Promise<string>((resolve) => {
     const timeout = options?.timeout ?? 60_000;
     const maxBuffer = options?.maxBuffer ?? 1024 * 1024;
 
-    // Inject --json-logs before any existing flags if not already present
-    const cmdWithLogs = cmd.includes('--json-logs')
-      ? cmd
-      : cmd.replace(/^(mindstudio\s+\S+)/, '$1 --json-logs');
+    // Only inject --json-logs when explicitly opted in
+    const cmdWithLogs =
+      options?.jsonLogs && !cmd.includes('--json-logs')
+        ? cmd.replace(/^(mindstudio\s+\S+)/, '$1 --json-logs')
+        : cmd;
 
     const child = spawn('sh', ['-c', cmdWithLogs], {
       stdio: ['ignore', 'pipe', 'pipe'],
