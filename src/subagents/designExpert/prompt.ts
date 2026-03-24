@@ -66,7 +66,6 @@ interface Font {
   variable?: boolean;
   weights: number[];
   italics: boolean;
-  tags: string[];
 }
 
 interface Pairing {
@@ -121,7 +120,6 @@ export function getDesignExpertPrompt(): string {
 
   const fontList = fonts
     .map((f) => {
-      const tags = f.tags.length ? ` (${f.tags.join(', ')})` : '';
       let cssInfo = '';
       if (f.source === 'fontshare') {
         cssInfo = ` CSS: ${fontData.cssUrlPattern.replace('{slug}', f.slug).replace('{weights}', f.weights.join(','))}`;
@@ -130,7 +128,7 @@ export function getDesignExpertPrompt(): string {
       } else if (f.source === 'open-foundry') {
         cssInfo = ' (self-host required)';
       }
-      return `- **${f.name}** — ${f.category}${tags}. Weights: ${f.weights.join(', ')}.${f.variable ? ' Variable.' : ''}${f.italics ? ' Has italics.' : ''}${cssInfo}`;
+      return `- **${f.name}** — ${f.category}. Weights: ${f.weights.join(', ')}.${f.variable ? ' Variable.' : ''}${f.italics ? ' Has italics.' : ''}${cssInfo}`;
     })
     .join('\n');
 

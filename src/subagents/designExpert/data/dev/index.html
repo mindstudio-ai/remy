@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Design Data — Dev Tool</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #fff;
+    color: #000;
+    line-height: 1.5;
+  }
+
+  /* Header */
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: #fff;
+    border-bottom: 1px solid #000;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .header h1 {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .tabs { display: flex; gap: 0; }
+
+  .tab {
+    padding: 6px 14px;
+    border: none;
+    background: transparent;
+    color: #999;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .tab:hover { color: #000; }
+  .tab.active { color: #000; text-decoration: underline; text-underline-offset: 3px; }
+
+  .content { padding: 0; }
+
+  /* Grid — full bleed, border-based */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  }
+
+  .card {
+    padding: 20px;
+    border-bottom: 1px solid #ddd;
+    border-right: 1px solid #ddd;
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+
+  .card-header h3 { font-size: 14px; font-weight: 600; }
+
+  /* Buttons */
+  .btn {
+    padding: 5px 10px;
+    border: 1px solid #ddd;
+    background: #fff;
+    color: #000;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .btn:hover { border-color: #000; }
+
+  .btn-accent {
+    background: #000;
+    border-color: #000;
+    color: #fff;
+  }
+
+  .btn-accent:hover { background: #333; }
+
+  .btn-danger {
+    background: transparent;
+    border: none;
+    color: #ccc;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+
+  .btn-danger:hover { color: #e00; }
+
+  .btn-sm { padding: 3px 8px; font-size: 11px; }
+
+  /* Badges */
+  .badge {
+    display: inline-block;
+    padding: 1px 6px;
+    font-size: 11px;
+    color: #666;
+    border: 1px solid #ddd;
+  }
+
+  .badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+
+  /* Font preview */
+  .font-preview {
+    margin: 10px 0;
+    overflow: hidden;
+  }
+
+  .font-preview-line {
+    margin-bottom: 4px;
+    font-size: 24px;
+    color: #000;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .font-preview-small {
+    font-size: 14px;
+    color: #666;
+  }
+
+  .font-meta {
+    font-size: 11px;
+    color: #999;
+    margin-top: 8px;
+  }
+
+  /* Pairing preview */
+  .pairing-card {
+    padding: 20px;
+    border-bottom: 1px solid #ddd;
+    border-right: 1px solid #ddd;
+  }
+
+  .pairing-heading {
+    font-size: 28px;
+    margin-bottom: 8px;
+  }
+
+  .pairing-body {
+    font-size: 15px;
+    color: #444;
+    line-height: 1.6;
+  }
+
+  .pairing-meta {
+    margin-top: 12px;
+    font-size: 11px;
+    color: #999;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* Inspiration — filmstrip + detail */
+  .inspiration-layout {
+    display: flex;
+    height: calc(100vh - 39px);
+  }
+
+  .inspiration-sidebar {
+    width: 160px;
+    min-width: 160px;
+    border-right: 1px solid #ddd;
+    overflow-y: auto;
+    scroll-snap-type: y mandatory;
+    outline: none;
+  }
+
+  .inspiration-thumb {
+    aspect-ratio: 16/10;
+    object-fit: cover;
+    display: block;
+    width: 100%;
+    cursor: pointer;
+    border-bottom: 1px solid #ddd;
+    opacity: 0.5;
+    transition: opacity 0.1s;
+    background: #f5f5f5;
+    scroll-snap-align: start;
+  }
+
+  .inspiration-thumb:hover { opacity: 0.8; }
+  .inspiration-thumb.active { opacity: 1; }
+
+  .inspiration-detail {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+  }
+
+  .inspiration-detail-img {
+    width: 50%;
+    object-fit: contain;
+    object-position: top;
+    display: block;
+    background: #f5f5f5;
+    border-right: 1px solid #ddd;
+  }
+
+  .inspiration-detail-body {
+    width: 50%;
+    overflow-y: auto;
+    padding: 20px;
+  }
+
+  .inspiration-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .inspiration-detail-header span {
+    font-size: 12px;
+    color: #999;
+  }
+
+  .inspiration-analysis {
+    font-size: 13px;
+    color: #444;
+    line-height: 1.7;
+  }
+
+  .inspiration-analysis h1,
+  .inspiration-analysis h2 {
+    font-size: 13px;
+    font-weight: 600;
+    color: #000;
+    margin-top: 16px;
+    margin-bottom: 4px;
+  }
+
+  .inspiration-analysis h1:first-child,
+  .inspiration-analysis h2:first-child {
+    margin-top: 0;
+  }
+
+  .inspiration-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    color: #999;
+    font-size: 13px;
+  }
+
+  /* Forms */
+  .form-section {
+    border-bottom: 1px solid #ddd;
+    padding: 16px 20px;
+  }
+
+  .form-section h3 {
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #999;
+  }
+
+  .form-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .form-field label {
+    font-size: 11px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  input, select, textarea {
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    background: #fff;
+    color: #000;
+    font-size: 13px;
+    font-family: inherit;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #000;
+  }
+
+  textarea { resize: vertical; min-height: 60px; }
+
+  /* Filter bar */
+  .filter-bar {
+    position: sticky;
+    top: 39px;
+    z-index: 99;
+    background: #fff;
+    display: flex;
+    gap: 8px;
+    padding: 8px 20px;
+    border-bottom: 1px solid #ddd;
+    align-items: center;
+  }
+
+  .filter-bar input,
+  .filter-bar select {
+    border: none;
+    outline: none;
+    font-size: 13px;
+    padding: 4px 0;
+  }
+
+  .filter-bar input {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .filter-bar select { color: #999; cursor: pointer; }
+  .filter-bar select:focus { color: #000; }
+
+  .toggle-group { display: flex; gap: 12px; }
+
+  .toggle {
+    padding: 4px 0;
+    border: none;
+    background: transparent;
+    color: #999;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .toggle:hover { color: #000; }
+  .toggle.active { color: #000; }
+
+  /* Loading */
+  .loading {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #ddd;
+    border-top-color: #000;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 10px 16px;
+    font-size: 13px;
+    z-index: 200;
+    animation: slideUp 0.2s ease-out;
+  }
+
+  .toast.error { border-color: #e00; color: #e00; }
+  .toast.success { border-color: #000; }
+
+  @keyframes slideUp {
+    from { transform: translateY(10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  /* Color swatch */
+  .color-swatch {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    vertical-align: middle;
+    margin-right: 2px;
+    border: 1px solid #ddd;
+  }
+
+  /* Duplicate banner */
+  .dupe-banner {
+    background: #fffbeb;
+    color: #92400e;
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script type="module">
+import { h, render } from 'https://esm.sh/preact@10.25.4';
+import { useState, useEffect, useCallback, useMemo } from 'https://esm.sh/preact@10.25.4/hooks';
+import htm from 'https://esm.sh/htm@3.1.1';
+
+const html = htm.bind(h);
+
+// ---------------------------------------------------------------------------
+// API helpers
+// ---------------------------------------------------------------------------
+
+async function api(path, opts = {}) {
+  const res = await fetch(path, {
+    headers: { 'Content-Type': 'application/json' },
+    ...opts,
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
+
+// ---------------------------------------------------------------------------
+// Hooks
+// ---------------------------------------------------------------------------
+
+function useFonts() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const reload = useCallback(async () => {
+    try {
+      setLoading(true);
+      const d = await api('/api/fonts');
+      setData(d);
+      setError(null);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { reload(); }, [reload]);
+
+  const deleteFont = useCallback(async (slug) => {
+    await api('/api/fonts/' + encodeURIComponent(slug), { method: 'DELETE' });
+    await reload();
+  }, [reload]);
+
+  const deletePairing = useCallback(async (index) => {
+    await api('/api/pairings/' + index, { method: 'DELETE' });
+    await reload();
+  }, [reload]);
+
+  return { data, loading, error, deleteFont, deletePairing, reload };
+}
+
+function useInspiration() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const reload = useCallback(async () => {
+    try {
+      setLoading(true);
+      const d = await api('/api/inspiration');
+      setData(d);
+      setError(null);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { reload(); }, [reload]);
+
+  const addImage = useCallback(async (entry) => {
+    await api('/api/inspiration', { method: 'POST', body: entry });
+    await reload();
+  }, [reload]);
+
+  const deleteImage = useCallback(async (index) => {
+    await api('/api/inspiration/' + index, { method: 'DELETE' });
+    await reload();
+  }, [reload]);
+
+  const analyze = useCallback(async (url) => {
+    return api('/api/inspiration/analyze', { method: 'POST', body: { url } });
+  }, []);
+
+  const dedup = useCallback(async () => {
+    const result = await api('/api/inspiration/dedup', { method: 'POST' });
+    await reload();
+    return result;
+  }, [reload]);
+
+  return { data, loading, error, addImage, deleteImage, analyze, dedup, reload };
+}
+
+// ---------------------------------------------------------------------------
+// Toast
+// ---------------------------------------------------------------------------
+
+function useToast() {
+  const [toast, setToast] = useState(null);
+
+  const show = useCallback((message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  }, []);
+
+  const Toast = () => toast
+    ? html`<div class="toast ${toast.type}">${toast.message}</div>`
+    : null;
+
+  return { show, Toast };
+}
+
+// ---------------------------------------------------------------------------
+// Font CSS loading
+// ---------------------------------------------------------------------------
+
+const loadedFonts = new Set();
+const CSS_URL_PATTERN = 'https://api.fontshare.com/v2/css?f[]={slug}@{weights}&display=swap';
+
+function ensureFontLoaded(font) {
+  if (loadedFonts.has(font.slug)) return;
+  loadedFonts.add(font.slug);
+
+  let cssUrl;
+  if (font.source === 'fontshare') {
+    cssUrl = CSS_URL_PATTERN
+      .replace('{slug}', font.slug)
+      .replace('{weights}', font.weights.join(','));
+  } else if (font.cssUrl) {
+    cssUrl = font.cssUrl;
+  } else {
+    return; // Can't load (e.g. self-host only)
+  }
+
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = cssUrl;
+  document.head.appendChild(link);
+}
+
+// Also load by slug for pairings
+function ensureFontLoadedBySlug(slug, fonts) {
+  const font = fonts?.find(f => f.slug === slug);
+  if (font) ensureFontLoaded(font);
+}
+
+// ---------------------------------------------------------------------------
+// Markdown-lite renderer
+// ---------------------------------------------------------------------------
+
+function renderAnalysis(text) {
+  if (!text) return '';
+  // Simple markdown: headers, bold, hex colors
+  return text
+    .replace(/^### (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/#([0-9A-Fa-f]{6})\b/g, '<span class="color-swatch" style="background:#$1"></span>#$1')
+    .replace(/\n/g, '<br/>');
+}
+
+// ---------------------------------------------------------------------------
+// Components
+// ---------------------------------------------------------------------------
+
+function FontCard({ font, onDelete }) {
+  ensureFontLoaded(font);
+  const family = font.name;
+  const sourceClass = font.source === 'fontshare' ? 'source-fontshare'
+    : font.source === 'google-fonts' ? 'source-google' : 'source-open-foundry';
+  const canPreview = font.source !== 'open-foundry' || font.cssUrl;
+
+  return html`
+    <div class="card">
+      <div class="card-header">
+        <h3>${font.name}</h3>
+        <button class="btn-danger" onClick=${() => onDelete(font.slug)} title="Delete">✕</button>
+      </div>
+      ${canPreview ? html`
+        <div class="font-preview">
+          <div class="font-preview-line" style="font-family: '${family}'; font-weight: ${font.weights[Math.floor(font.weights.length / 2)] || 400}">
+            The quick brown fox jumps
+          </div>
+          <div class="font-preview-small" style="font-family: '${family}'; font-weight: ${font.weights[0] || 400}">
+            Pack my box with five dozen liquor jugs — 0123456789
+          </div>
+        </div>
+      ` : html`
+        <div class="font-preview" style="color: var(--text2); font-size: 13px; font-style: italic;">
+          Self-host required — no preview available
+        </div>
+      `}
+      <div class="font-meta">
+        Weights: ${font.weights.join(', ')}${font.variable ? ' · Variable' : ''}${font.italics ? ' · Italics' : ''}
+      </div>
+      <div class="badges">
+        <span class="badge category">${font.category}</span>
+        <span class="badge ${sourceClass}">${font.source}</span>
+      </div>
+    </div>
+  `;
+}
+
+function PairingCard({ pairing, index, fonts, onDelete }) {
+  ensureFontLoadedBySlug(pairing.heading.slug, fonts);
+  ensureFontLoadedBySlug(pairing.body.slug, fonts);
+
+  return html`
+    <div class="pairing-card">
+      <div class="pairing-heading" style="font-family: '${pairing.heading.font}'; font-weight: ${pairing.heading.weight}">
+        A thoughtful heading
+      </div>
+      <div class="pairing-body" style="font-family: '${pairing.body.font}'; font-weight: ${pairing.body.weight}">
+        Good design is as little design as possible. Less, but better — because it concentrates on the essential aspects, and the products are not burdened with non-essentials.
+      </div>
+      <div class="pairing-meta">
+        <span>${pairing.heading.font} (${pairing.heading.weight}) + ${pairing.body.font} (${pairing.body.weight})</span>
+        <button class="btn-danger" onClick=${() => onDelete(index)} title="Delete">✕</button>
+      </div>
+    </div>
+  `;
+}
+
+function InspirationDetail({ image, index, onDelete }) {
+  if (!image) return html`<div class="inspiration-empty">Select an image</div>`;
+
+  return html`
+    <div class="inspiration-detail">
+      <img class="inspiration-detail-img" src=${image.url} alt="Design reference" />
+      <div class="inspiration-detail-body">
+        <div class="inspiration-detail-header">
+          <span>#${index}</span>
+          <button class="btn-danger" onClick=${() => onDelete(index)} title="Delete">✕</button>
+        </div>
+        <div class="inspiration-analysis"
+          dangerouslySetInnerHTML=${{ __html: renderAnalysis(image.analysis) }}
+        />
+      </div>
+    </div>
+  `;
+}
+
+
+function AddInspirationForm({ onAdd, onAnalyze, toast }) {
+  const [open, setOpen] = useState(false);
+  const [url, setUrl] = useState('');
+  const [analysis, setAnalysis] = useState('');
+  const [analyzing, setAnalyzing] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const runAnalysis = async () => {
+    if (!url) return;
+    setAnalyzing(true);
+    try {
+      const result = await onAnalyze(url);
+      setAnalysis(result.analysis);
+      toast.show('Analysis complete');
+    } catch (e) {
+      toast.show(e.message, 'error');
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const submit = async () => {
+    if (!url || !analysis) return;
+    setSaving(true);
+    try {
+      await onAdd({ url, analysis });
+      toast.show('Image added');
+      setUrl('');
+      setAnalysis('');
+      setOpen(false);
+    } catch (e) {
+      toast.show(e.message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!open) return html`<button class="btn btn-accent" onClick=${() => setOpen(true)}>+ Add image</button>`;
+
+  return html`
+    <div class="form-section">
+      <h3>Add inspiration image</h3>
+      <div class="form-row">
+        <div class="form-field" style="flex: 3">
+          <label>Image URL</label>
+          <input value=${url} onInput=${e => setUrl(e.target.value)} placeholder="https://..." />
+        </div>
+        <div class="form-field" style="flex: 0; align-self: flex-end; min-width: auto;">
+          <button class="btn" onClick=${runAnalysis} disabled=${analyzing || !url}>
+            ${analyzing ? html`<span class="spinner" style="width:14px;height:14px;border-width:2px;vertical-align:middle;margin-right:6px"></span> Analyzing...` : 'Analyze'}
+          </button>
+        </div>
+      </div>
+      ${url ? html`<img src=${url} style="max-width:300px;border-radius:6px;margin:8px 0" />` : null}
+      <div class="form-field" style="margin-top: 8px">
+        <label>Analysis</label>
+        <textarea rows="8" value=${analysis} onInput=${e => setAnalysis(e.target.value)} placeholder="Paste or auto-generate analysis..." />
+      </div>
+      <div style="display: flex; gap: 8px; margin-top: 8px;">
+        <button class="btn btn-accent" onClick=${submit} disabled=${saving || !url || !analysis}>
+          ${saving ? 'Saving...' : 'Save'}
+        </button>
+        <button class="btn" onClick=${() => setOpen(false)}>Cancel</button>
+      </div>
+    </div>
+  `;
+}
+
+// ---------------------------------------------------------------------------
+// Tabs
+// ---------------------------------------------------------------------------
+
+function FontsTab({ fonts }) {
+  const [search, setSearch] = useState('');
+  const [filterCategory, setFilterCategory] = useState('');
+  const [filterSource, setFilterSource] = useState('');
+
+  if (fonts.loading) return html`<div class="loading"><span class="spinner"></span></div>`;
+  if (fonts.error) return html`<div class="loading" style="color:#e00">Error: ${fonts.error}</div>`;
+  if (!fonts.data) return null;
+
+  const fontList = fonts.data.fonts;
+  const categories = [...new Set(fontList.map(f => f.category))].sort();
+  const sources = [...new Set(fontList.map(f => f.source))].sort();
+  const sorted = [...fontList].sort((a, b) => a.name.localeCompare(b.name));
+
+  const filtered = sorted.filter(f => {
+    if (search && !f.name.toLowerCase().includes(search.toLowerCase())) return false;
+    if (filterCategory && f.category !== filterCategory) return false;
+    if (filterSource && f.source !== filterSource) return false;
+    return true;
+  });
+
+  return html`
+    <div class="filter-bar">
+      <input placeholder="Search fonts..." value=${search} onInput=${e => setSearch(e.target.value)} />
+      <select value=${filterCategory} onChange=${e => setFilterCategory(e.target.value)}>
+        <option value="">All categories</option>
+        ${categories.map(c => html`<option>${c}</option>`)}
+      </select>
+      <div class="toggle-group">
+        <button class="toggle ${filterSource === '' ? 'active' : ''}" onClick=${() => setFilterSource('')}>All</button>
+        ${sources.map(s => html`
+          <button class="toggle ${filterSource === s ? 'active' : ''}" onClick=${() => setFilterSource(filterSource === s ? '' : s)}>${s}</button>
+        `)}
+      </div>
+      ${(search || filterCategory || filterSource) ? html`
+        <span style="font-size:13px;color:#999">${filtered.length} shown</span>
+      ` : null}
+    </div>
+    <div class="grid">
+      ${filtered.map(f => html`<${FontCard} key=${f.slug} font=${f} onDelete=${fonts.deleteFont} />`)}
+    </div>
+  `;
+}
+
+function PairingsTab({ fonts }) {
+  if (fonts.loading) return html`<div class="loading"><span class="spinner"></span></div>`;
+  if (fonts.error) return html`<div class="loading" style="color:#e00">Error: ${fonts.error}</div>`;
+  if (!fonts.data) return null;
+
+  const { fonts: fontList, pairings } = fonts.data;
+
+  return html`
+    <div class="grid">
+      ${pairings.map((p, i) => html`<${PairingCard} key=${i} pairing=${p} index=${i} fonts=${fontList} onDelete=${fonts.deletePairing} />`)}
+    </div>
+  `;
+}
+
+function InspirationTab({ inspiration }) {
+  const [selected, setSelected] = useState(0);
+  const sidebarRef = { current: null };
+
+  if (inspiration.loading) return html`<div class="loading"><span class="spinner"></span></div>`;
+  if (inspiration.error) return html`<div class="loading" style="color:#e00">Error: ${inspiration.error}</div>`;
+  if (!inspiration.data) return null;
+
+  const images = inspiration.data.images;
+  const current = images[selected] || null;
+
+  const select = (i) => {
+    const clamped = Math.max(0, Math.min(i, images.length - 1));
+    setSelected(clamped);
+    sidebarRef.current?.children[clamped]?.scrollIntoView({ block: 'nearest' });
+  };
+
+  const onKey = (e) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); select(selected + 1); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); select(selected - 1); }
+  };
+
+  const handleDelete = async (index) => {
+    await inspiration.deleteImage(index);
+    if (selected >= images.length - 1) setSelected(Math.max(0, images.length - 2));
+  };
+
+  return html`
+    <div class="inspiration-layout">
+      <div class="inspiration-sidebar" ref=${el => sidebarRef.current = el} tabindex="0" onKeyDown=${onKey}>
+        ${images.map((img, i) => html`
+          <img
+            key=${i}
+            class="inspiration-thumb ${i === selected ? 'active' : ''}"
+            src=${img.url}
+            loading="lazy"
+            onClick=${() => select(i)}
+          />
+        `)}
+      </div>
+      <${InspirationDetail} image=${current} index=${selected} onDelete=${handleDelete} />
+    </div>
+  `;
+}
+
+// ---------------------------------------------------------------------------
+// App
+// ---------------------------------------------------------------------------
+
+function App() {
+  const [tab, setTab] = useState('fonts');
+  const fonts = useFonts();
+  const inspiration = useInspiration();
+  const toast = useToast();
+
+  return html`
+    <div class="header">
+      <div class="tabs">
+        <button class="tab ${tab === 'fonts' ? 'active' : ''}" onClick=${() => setTab('fonts')}>Fonts${fonts.data ? ` (${fonts.data.fonts.length})` : ''}</button>
+        <button class="tab ${tab === 'pairings' ? 'active' : ''}" onClick=${() => setTab('pairings')}>Pairings${fonts.data ? ` (${fonts.data.pairings.length})` : ''}</button>
+        <button class="tab ${tab === 'inspiration' ? 'active' : ''}" onClick=${() => setTab('inspiration')}>Inspiration${inspiration.data ? ` (${inspiration.data.images.length})` : ''}</button>
+      </div>
+      ${tab === 'inspiration' ? html`
+        <div style="margin-left: auto;">
+          <${AddInspirationForm} onAdd=${inspiration.addImage} onAnalyze=${inspiration.analyze} toast=${toast} />
+        </div>
+      ` : null}
+    </div>
+    <div class="content">
+      ${tab === 'fonts' ? html`<${FontsTab} fonts=${fonts} />`
+        : tab === 'pairings' ? html`<${PairingsTab} fonts=${fonts} />`
+        : html`<${InspirationTab} inspiration=${inspiration} />`
+      }
+    </div>
+    <${toast.Toast} />
+  `;
+}
+
+render(html`<${App} />`, document.getElementById('app'));
+</script>
+</body>
+</html>

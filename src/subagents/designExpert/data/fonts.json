@@ -14,12 +14,6 @@
         700
       ],
       "italics": true,
-      "tags": [
-        "Newspapers",
-        "Text",
-        "Books",
-        "Magazines"
-      ],
       "source": "fontshare"
     },
     {
@@ -36,13 +30,6 @@
         700
       ],
       "italics": false,
-      "tags": [
-        "Posters",
-        "Editorial",
-        "Books",
-        "Branding",
-        "Magazines"
-      ],
       "source": "fontshare"
     },
     {
@@ -59,12 +46,6 @@
         700
       ],
       "italics": true,
-      "tags": [
-        "Branding",
-        "Logos",
-        "Poster",
-        "Websites"
-      ],
       "source": "fontshare"
     },
     {
@@ -76,12 +57,6 @@
         400
       ],
       "italics": false,
-      "tags": [
-        "Magazines",
-        "Posters",
-        "Books",
-        "Editorial"
-      ],
       "source": "fontshare"
     },
     {
@@ -97,12 +72,6 @@
         700
       ],
       "italics": true,
-      "tags": [
-        "Books",
-        "Text",
-        "Reading",
-        "Editorial"
-      ],
       "source": "fontshare"
     },
     {
@@ -118,12 +87,6 @@
         700
       ],
       "italics": true,
-      "tags": [
-        "Poster",
-        "Newspapers",
-        "Books",
-        "Magazines"
-      ],
       "source": "fontshare"
     },
     {
@@ -140,14 +103,6 @@
         900
       ],
       "italics": true,
-      "tags": [
-        "Magazines",
-        "Poster",
-        "Websites",
-        "Books",
-        "Logo",
-        "Screen"
-      ],
       "source": "fontshare"
     },
     {
@@ -167,14 +122,6 @@
         900
       ],
       "italics": true,
-      "tags": [
-        "Websites",
-        "Books",
-        "Logo",
-        "Magazines",
-        "Poster",
-        "Screen"
-      ],
       "source": "fontshare"
     },
     {
@@ -190,12 +137,6 @@
         700
       ],
       "italics": true,
-      "tags": [
-        "Code",
-        "Websites",
-        "Posters",
-        "Magazines"
-      ],
       "source": "fontshare"
     },
     {
@@ -207,13 +148,6 @@
         400
       ],
       "italics": false,
-      "tags": [
-        "Books",
-        "Banners",
-        "Editorial",
-        "Logos",
-        "Poster"
-      ],
       "source": "fontshare"
     },
     {
@@ -228,13 +162,6 @@
         900
       ],
       "italics": false,
-      "tags": [
-        "Magazines",
-        "Branding",
-        "Banners",
-        "Apps",
-        "Websites"
-      ],
       "source": "fontshare"
     },
     {
@@ -250,12 +177,6 @@
         900
       ],
       "italics": false,
-      "tags": [
-        "Logos",
-        "Magazines",
-        "Branding",
-        "Books"
-      ],
       "source": "fontshare"
     },
     {
@@ -271,32 +192,6 @@
         700
       ],
       "italics": false,
-      "tags": [
-        "Websites",
-        "Magazines",
-        "Branding",
-        "Banners",
-        "Posters"
-      ],
-      "source": "fontshare"
-    },
-    {
-      "name": "Kohinoor Zerone",
-      "slug": "kohinoor-zerone",
-      "category": "Display",
-      "variable": false,
-      "weights": [
-        100,
-        200
-      ],
-      "italics": false,
-      "tags": [
-        "Beauty",
-        "Headlines",
-        "Posters",
-        "Lettering",
-        "Cosmetic"
-      ],
       "source": "fontshare"
     },
     {
@@ -312,14 +207,6 @@
         700
       ],
       "italics": false,
-      "tags": [
-        "Magazines",
-        "Branding",
-        "Titles",
-        "Films",
-        "Credits",
-        "Logos"
-      ],
       "source": "fontshare"
     },
     {
@@ -336,12 +223,6 @@
         900
       ],
       "italics": false,
-      "tags": [
-        "Magazines",
-        "Posters",
-        "Branding",
-        "Books"
-      ],
       "source": "fontshare"
     },
     {
@@ -356,12 +237,6 @@
         700
       ],
       "italics": true,
-      "tags": [
-        "Books",
-        "Logos",
-        "Posters",
-        "Magazines"
-      ],
       "source": "fontshare"
     },
     {
@@ -378,12 +253,6 @@
         700
       ],
       "italics": true,
-      "tags": [
-        "Branding",
-        "Books",
-        "Logos",
-        "Magazines"
-      ],
       "source": "fontshare"
     },
     {
@@ -399,12 +268,6 @@
         800
       ],
       "italics": true,
-      "tags": [
-        "Poster",
-        "Websites",
-        "Logos",
-        "Magazines"
-      ],
       "source": "fontshare"
     },
     {
@@ -420,13 +283,6 @@
         800
       ],
       "italics": true,
-      "tags": [
-        "Magazines",
-        "Posters",
-        "Books",
-        "Branding",
-        "Editorial"
-      ],
       "source": "fontshare"
     },
     {
@@ -443,12 +299,6 @@
         700
       ],
       "italics": false,
-      "tags": [
-        "Text",
-        "Editorial",
-        "Magazines",
-        "Reading"
-      ],
       "source": "fontshare"
     },
     {
@@ -465,11 +315,6 @@
         700
       ],
       "italics": false,
-      "tags": [
-        "Banners",
-        "Editorial",
-        "Magazines"
-      ],
       "source": "fontshare"
     },
     {
@@ -485,13 +330,6 @@
         700
       ],
       "italics": true,
-      "tags": [
-        "Logos",
-        "Magazines",
-        "Poster",
-        "Banners",
-        "Books"
-      ],
       "source": "fontshare"
     },
     {
@@ -508,13 +346,6 @@
         700
       ],
       "italics": false,
-      "tags": [
-        "Magazines",
-        "Logos",
-        "Books",
-        "Banners",
-        "Poster"
-      ],
       "source": "fontshare"
     },
     {
@@ -533,12 +364,6 @@
         900
       ],
       "italics": false,
-      "tags": [
-        "Books",
-        "Magazines",
-        "Editorial",
-        "Posters"
-      ],
       "source": "fontshare"
     },
     {
@@ -553,17 +378,6 @@
         1000
       ],
       "italics": false,
-      "tags": [
-        "Packaging",
-        "Poster",
-        "Screen",
-        "Websites",
-        "Album Covers",
-        "Books",
-        "Headlines",
-        "Logo",
-        "Magazines"
-      ],
       "source": "fontshare"
     },
     {
@@ -579,13 +393,6 @@
         700
       ],
       "italics": false,
-      "tags": [
-        "Banners",
-        "Books",
-        "Logos",
-        "Magazines",
-        "Poster"
-      ],
       "source": "fontshare"
     },
     {
@@ -604,12 +411,6 @@
         900
       ],
       "italics": true,
-      "tags": [
-        "Logos",
-        "Poster",
-        "Magazines",
-        "Websites"
-      ],
       "source": "fontshare"
     },
     {
@@ -629,13 +430,6 @@
         900
       ],
       "italics": true,
-      "tags": [
-        "Legible",
-        "Banners",
-        "Clean",
-        "Websites",
-        "Screen"
-      ],
       "source": "fontshare"
     },
     {
@@ -648,13 +442,6 @@
         700
       ],
       "italics": false,
-      "tags": [
-        "Packaging",
-        "Banners",
-        "luxury",
-        "Posters",
-        "Beauty"
-      ],
       "source": "fontshare"
     },
     {
@@ -666,12 +453,6 @@
         400
       ],
       "italics": false,
-      "tags": [
-        "Credits",
-        "Websites",
-        "Packaging",
-        "Menus"
-      ],
       "source": "fontshare"
     },
     {
@@ -683,13 +464,6 @@
         400
       ],
       "italics": false,
-      "tags": [
-        "Headlines",
-        "Banners",
-        "Books",
-        "Apps",
-        "Tight"
-      ],
       "source": "fontshare"
     },
     {
@@ -709,13 +483,6 @@
         900
       ],
       "italics": true,
-      "tags": [
-        "Apps",
-        "Corporate",
-        "Poppins",
-        "Broadcast",
-        "Banners"
-      ],
       "source": "fontshare"
     },
     {
@@ -735,12 +502,6 @@
         900
       ],
       "italics": true,
-      "tags": [
-        "Websites",
-        "Apps",
-        "Banners",
-        "Legible"
-      ],
       "source": "fontshare"
     },
     {
@@ -760,13 +521,6 @@
         900
       ],
       "italics": false,
-      "tags": [
-        "Screen",
-        "Headline",
-        "Magazines",
-        "Websites",
-        "Packaging"
-      ],
       "source": "fontshare"
     },
     {
@@ -781,12 +535,6 @@
         700
       ],
       "italics": true,
-      "tags": [
-        "Publishing",
-        "Legible",
-        "Websites",
-        "Clean"
-      ],
       "source": "fontshare"
     },
     {
@@ -804,12 +552,6 @@
         800
       ],
       "italics": true,
-      "tags": [
-        "Screen",
-        "Banners",
-        "Apps",
-        "General"
-      ],
       "source": "fontshare"
     },
     {
@@ -828,12 +570,6 @@
         900
       ],
       "italics": true,
-      "tags": [
-        "Invitation",
-        "Films",
-        "friendly",
-        "Headline"
-      ],
       "source": "fontshare"
     },
     {
@@ -851,12 +587,6 @@
         800
       ],
       "italics": false,
-      "tags": [
-        "Logos",
-        "Websites",
-        "Banners",
-        "Apps"
-      ],
       "source": "fontshare"
     },
     {
@@ -876,12 +606,6 @@
         900
       ],
       "italics": true,
-      "tags": [
-        "News",
-        "Headline",
-        "workhorse",
-        "Corporate"
-      ],
       "source": "fontshare"
     },
     {
@@ -900,11 +624,6 @@
         900
       ],
       "italics": true,
-      "tags": [
-        "Magazines",
-        "Publishing",
-        "Editorial"
-      ],
       "source": "fontshare"
     },
     {
@@ -921,12 +640,6 @@
         700
       ],
       "italics": false,
-      "tags": [
-        "Compact",
-        "Magazines",
-        "Posters",
-        "Headlines"
-      ],
       "source": "fontshare"
     },
     {
@@ -946,12 +659,6 @@
         900
       ],
       "italics": true,
-      "tags": [
-        "Apps",
-        "Magazines",
-        "Screen",
-        "Branding"
-      ],
       "source": "fontshare"
     },
     {
@@ -966,12 +673,6 @@
         700
       ],
       "italics": true,
-      "tags": [
-        "friendly",
-        "Packaging",
-        "Soft",
-        "Posters"
-      ],
       "source": "fontshare"
     },
     {
@@ -991,13 +692,6 @@
         900
       ],
       "italics": true,
-      "tags": [
-        "Banners",
-        "Packaging",
-        "General",
-        "Posters",
-        "Websites"
-      ],
       "source": "fontshare"
     },
     {
@@ -1017,11 +711,6 @@
         900
       ],
       "italics": true,
-      "tags": [
-        "Programming",
-        "coding",
-        "Apps"
-      ],
       "source": "fontshare"
     },
     {
@@ -1037,11 +726,6 @@
         700
       ],
       "italics": false,
-      "tags": [
-        "Apps",
-        "workhorse",
-        "Headlines"
-      ],
       "source": "fontshare"
     },
     {
@@ -1061,13 +745,6 @@
         900
       ],
       "italics": true,
-      "tags": [
-        "Headline",
-        "Banners",
-        "Logo",
-        "Websites",
-        "Products"
-      ],
       "source": "fontshare"
     },
     {
@@ -1087,12 +764,6 @@
         900
       ],
       "italics": true,
-      "tags": [
-        "Headlines",
-        "Reading",
-        "Clean",
-        "Logos"
-      ],
       "source": "fontshare"
     },
     {
@@ -1111,12 +782,6 @@
         800
       ],
       "italics": true,
-      "tags": [
-        "Monospaced",
-        "Display",
-        "Code",
-        "Programming"
-      ],
       "source": "fontshare"
     },
     {
@@ -1131,13 +796,6 @@
         700
       ],
       "italics": true,
-      "tags": [
-        "Headline",
-        "Websites",
-        "Packaging",
-        "General",
-        "Banners"
-      ],
       "source": "fontshare"
     },
     {
@@ -1151,15 +809,6 @@
         700
       ],
       "italics": false,
-      "tags": [
-        "Books",
-        "Comics",
-        "Editorial",
-        "Funny",
-        "Informal",
-        "Kids",
-        "Poster"
-      ],
       "source": "fontshare"
     },
     {
@@ -1175,13 +824,6 @@
         700
       ],
       "italics": false,
-      "tags": [
-        "Broadcast",
-        "Books",
-        "Banners",
-        "Beauty",
-        "Branding"
-      ],
       "source": "fontshare"
     },
     {
@@ -1195,11 +837,6 @@
         700
       ],
       "italics": false,
-      "tags": [
-        "handwritten",
-        "Comic",
-        "Children"
-      ],
       "source": "fontshare"
     },
     {
@@ -1215,12 +852,6 @@
         700
       ],
       "italics": true,
-      "tags": [
-        "Magazines",
-        "Posters",
-        "Books",
-        "Branding"
-      ],
       "source": "fontshare"
     },
     {
@@ -1237,12 +868,6 @@
         700
       ],
       "italics": false,
-      "tags": [
-        "App",
-        "Websites",
-        "Headline",
-        "Editorial"
-      ],
       "source": "fontshare"
     },
     {
@@ -1257,12 +882,6 @@
         900
       ],
       "italics": true,
-      "tags": [
-        "Reading",
-        "Menus",
-        "Magazines",
-        "Books"
-      ],
       "source": "fontshare"
     },
     {
@@ -1279,11 +898,6 @@
         900
       ],
       "italics": false,
-      "tags": [
-        "Books",
-        "Editorial",
-        "Logos"
-      ],
       "source": "fontshare"
     },
     {
@@ -1299,12 +913,6 @@
         700
       ],
       "italics": false,
-      "tags": [
-        "Modern",
-        "Corporate",
-        "Banners",
-        "Apps"
-      ],
       "source": "fontshare"
     },
     {
@@ -1323,13 +931,6 @@
         900
       ],
       "italics": true,
-      "tags": [
-        "Headlines",
-        "Books",
-        "Editorial",
-        "Text",
-        "Posters"
-      ],
       "source": "fontshare"
     },
     {
@@ -1345,12 +946,6 @@
         900
       ],
       "italics": true,
-      "tags": [
-        "Poster",
-        "Books",
-        "Magazines",
-        "Newspapers"
-      ],
       "source": "fontshare"
     },
     {
@@ -1366,13 +961,6 @@
         700
       ],
       "italics": false,
-      "tags": [
-        "Headlines",
-        "Tech",
-        "Websites",
-        "Branding",
-        "Broadcast"
-      ],
       "source": "fontshare"
     },
     {
@@ -1388,12 +976,6 @@
         700
       ],
       "italics": true,
-      "tags": [
-        "Code",
-        "Posters",
-        "Websites",
-        "Magazines"
-      ],
       "source": "fontshare"
     },
     {
@@ -1409,12 +991,6 @@
         700
       ],
       "italics": false,
-      "tags": [
-        "Banners",
-        "Broadcast",
-        "Display",
-        "Logotype"
-      ],
       "source": "fontshare"
     },
     {
@@ -1430,13 +1006,6 @@
         900
       ],
       "italics": false,
-      "tags": [
-        "Posters",
-        "Magazines",
-        "Lettering",
-        "Calligraphy",
-        "Pen"
-      ],
       "source": "fontshare"
     },
     {
@@ -1454,14 +1023,6 @@
         800
       ],
       "italics": true,
-      "tags": [
-        "Poster",
-        "Magazines",
-        "Books",
-        "Logo",
-        "Websites",
-        "Screen"
-      ],
       "source": "fontshare"
     },
     {
@@ -1476,12 +1037,6 @@
         700
       ],
       "italics": false,
-      "tags": [
-        "Websites",
-        "Banners",
-        "Magazines",
-        "Posters"
-      ],
       "source": "fontshare"
     },
     {
@@ -1497,12 +1052,6 @@
         700
       ],
       "italics": true,
-      "tags": [
-        "Magazines",
-        "Books",
-        "Editorial",
-        "Posters"
-      ],
       "source": "fontshare"
     },
     {
@@ -1514,13 +1063,6 @@
         400
       ],
       "italics": false,
-      "tags": [
-        "Branding",
-        "Fun",
-        "Poster",
-        "Experimental",
-        "Logos"
-      ],
       "source": "fontshare"
     },
     {
@@ -1534,14 +1076,6 @@
         700
       ],
       "italics": false,
-      "tags": [
-        "Funny",
-        "Books",
-        "Comics",
-        "Informal",
-        "Kids",
-        "Poster"
-      ],
       "source": "fontshare"
     },
     {
@@ -1557,12 +1091,6 @@
         900
       ],
       "italics": false,
-      "tags": [
-        "Invitation",
-        "Logos",
-        "Poster",
-        "Banners"
-      ],
       "source": "fontshare"
     },
     {
@@ -1578,11 +1106,6 @@
         900
       ],
       "italics": true,
-      "tags": [
-        "Logos",
-        "Magazines",
-        "Branding"
-      ],
       "source": "fontshare"
     },
     {
@@ -1599,11 +1122,6 @@
         900
       ],
       "italics": true,
-      "tags": [
-        "Editorial",
-        "Magazines",
-        "Books"
-      ],
       "source": "fontshare"
     },
     {
@@ -1621,12 +1139,6 @@
         900
       ],
       "italics": true,
-      "tags": [
-        "Magazines",
-        "Banners",
-        "Corporate",
-        "Websites"
-      ],
       "source": "fontshare"
     },
     {
@@ -1645,12 +1157,6 @@
         800
       ],
       "italics": true,
-      "tags": [
-        "Legible",
-        "Logotype",
-        "Websites",
-        "Products"
-      ],
       "source": "fontshare"
     },
     {
@@ -1669,11 +1175,6 @@
         900
       ],
       "italics": true,
-      "tags": [
-        "Legible",
-        "Clean",
-        "Books"
-      ],
       "source": "fontshare"
     },
     {
@@ -1690,11 +1191,6 @@
         800
       ],
       "italics": true,
-      "tags": [
-        "Branding",
-        "Legible",
-        "Readable"
-      ],
       "source": "fontshare"
     },
     {
@@ -1710,12 +1206,6 @@
         700
       ],
       "italics": false,
-      "tags": [
-        "Headlines",
-        "Branding",
-        "Fashion",
-        "Poster"
-      ],
       "source": "fontshare"
     },
     {
@@ -1731,11 +1221,6 @@
         700
       ],
       "italics": false,
-      "tags": [
-        "Banners",
-        "Headlines",
-        "Credits"
-      ],
       "source": "fontshare"
     },
     {
@@ -1751,10 +1236,6 @@
         700
       ],
       "italics": false,
-      "tags": [
-        "Banners",
-        "Editorial"
-      ],
       "source": "fontshare"
     },
     {
@@ -1775,10 +1256,6 @@
         900
       ],
       "italics": false,
-      "tags": [
-        "japanese",
-        "clean"
-      ],
       "cssUrl": "https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@100;200;300;400;500;600;700;800;900&display=swap",
       "variable": true
     },
@@ -1800,10 +1277,6 @@
         900
       ],
       "italics": true,
-      "tags": [
-        "grotesque",
-        "versatile"
-      ],
       "cssUrl": "https://fonts.googleapis.com/css2?family=Archivo:wght@100;200;300;400;500;600;700;800;900&display=swap",
       "variable": true
     },
@@ -1824,11 +1297,8 @@
         900
       ],
       "italics": true,
-      "tags": [
-        "neo-grotesque",
-        "helvetica-like"
-      ],
-      "variable": false
+      "variable": false,
+      "cssUrl": "https://fonts.cdnfonts.com/css/aileron"
     },
     {
       "name": "Bluu Next",
@@ -1839,11 +1309,8 @@
         700
       ],
       "italics": true,
-      "tags": [
-        "editorial",
-        "bold"
-      ],
-      "variable": false
+      "variable": false,
+      "cssUrl": "https://fonts.cdnfonts.com/css/bluu-next"
     },
     {
       "name": "Work Sans",
@@ -1863,10 +1330,6 @@
         900
       ],
       "italics": true,
-      "tags": [
-        "geometric",
-        "clean"
-      ],
       "cssUrl": "https://fonts.googleapis.com/css2?family=Work+Sans:wght@100;200;300;400;500;600;700;800;900&display=swap",
       "variable": true
     },
@@ -1880,11 +1343,8 @@
         700
       ],
       "italics": true,
-      "tags": [
-        "neo-grotesque",
-        "helvetica-like"
-      ],
-      "variable": false
+      "variable": false,
+      "cssUrl": "https://fonts.cdnfonts.com/css/tex-gyre-heros"
     },
     {
       "name": "Terminal Grotesque",
@@ -1895,11 +1355,8 @@
         400
       ],
       "italics": false,
-      "tags": [
-        "experimental",
-        "display"
-      ],
-      "variable": false
+      "variable": false,
+      "cssUrl": "https://fonts.cdnfonts.com/css/terminal-grotesque-open"
     },
     {
       "name": "Roboto",
@@ -1916,10 +1373,6 @@
         900
       ],
       "italics": true,
-      "tags": [
-        "neo-grotesque",
-        "neutral"
-      ],
       "cssUrl": "https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500;700;900&display=swap",
       "variable": true
     },
@@ -1933,11 +1386,8 @@
         700
       ],
       "italics": false,
-      "tags": [
-        "geometric",
-        "bold"
-      ],
-      "variable": false
+      "variable": false,
+      "cssUrl": "https://fonts.cdnfonts.com/css/reglo"
     },
     {
       "name": "Poppins",
@@ -1957,10 +1407,6 @@
         900
       ],
       "italics": true,
-      "tags": [
-        "geometric",
-        "friendly"
-      ],
       "cssUrl": "https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap",
       "variable": true
     },
@@ -1979,10 +1425,6 @@
         700
       ],
       "italics": false,
-      "tags": [
-        "condensed",
-        "gothic"
-      ],
       "cssUrl": "https://fonts.googleapis.com/css2?family=Oswald:wght@200;300;400;500;600;700&display=swap",
       "variable": true
     },
@@ -1998,11 +1440,8 @@
         900
       ],
       "italics": false,
-      "tags": [
-        "inline",
-        "tall"
-      ],
-      "variable": false
+      "variable": false,
+      "cssUrl": "https://fonts.cdnfonts.com/css/ostrich-sans-2"
     },
     {
       "name": "Young Serif",
@@ -2014,10 +1453,6 @@
         400
       ],
       "italics": false,
-      "tags": [
-        "old-style",
-        "warm"
-      ],
       "cssUrl": "https://fonts.googleapis.com/css2?family=Young+Serif:wght@400&display=swap",
       "variable": true
     },
@@ -2034,11 +1469,8 @@
         700
       ],
       "italics": true,
-      "tags": [
-        "monospace",
-        "coding"
-      ],
-      "variable": false
+      "variable": false,
+      "cssUrl": "https://fontlibrary.org/face/office-code-pro"
     },
     {
       "name": "Nimbus Sans L",
@@ -2050,11 +1482,8 @@
         700
       ],
       "italics": true,
-      "tags": [
-        "neo-grotesque",
-        "helvetica-like"
-      ],
-      "variable": false
+      "variable": false,
+      "cssUrl": "https://fonts.cdnfonts.com/css/nimbus-sans-l"
     },
     {
       "name": "Libre Baskerville",
@@ -2067,10 +1496,6 @@
         700
       ],
       "italics": true,
-      "tags": [
-        "classical",
-        "readable"
-      ],
       "cssUrl": "https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap",
       "variable": true
     },
@@ -2084,11 +1509,8 @@
         700
       ],
       "italics": true,
-      "tags": [
-        "neo-grotesque",
-        "arial-like"
-      ],
-      "variable": false
+      "variable": false,
+      "cssUrl": "https://fonts.cdnfonts.com/css/liberation-sans"
     },
     {
       "name": "League Gothic",
@@ -2100,10 +1522,6 @@
         400
       ],
       "italics": false,
-      "tags": [
-        "condensed",
-        "headline"
-      ],
       "cssUrl": "https://fonts.googleapis.com/css2?family=League+Gothic:wght@400&display=swap",
       "variable": true
     },
@@ -2117,11 +1535,8 @@
         700
       ],
       "italics": true,
-      "tags": [
-        "medieval",
-        "scholarly"
-      ],
-      "variable": false
+      "variable": false,
+      "cssUrl": "https://fonts.cdnfonts.com/css/junicode"
     },
     {
       "name": "Inter",
@@ -2141,10 +1556,6 @@
         900
       ],
       "italics": true,
-      "tags": [
-        "humanist",
-        "ui"
-      ],
       "cssUrl": "https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap",
       "variable": true
     },
@@ -2158,11 +1569,8 @@
         700
       ],
       "italics": false,
-      "tags": [
-        "geometric",
-        "minimal"
-      ],
-      "variable": false
+      "variable": false,
+      "cssUrl": "https://fonts.cdnfonts.com/css/gap-sans"
     },
     {
       "name": "EB Garamond",
@@ -2178,10 +1586,6 @@
         800
       ],
       "italics": true,
-      "tags": [
-        "classical",
-        "humanist"
-      ],
       "cssUrl": "https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600;700;800&display=swap",
       "variable": true
     },
@@ -2194,11 +1598,8 @@
         400
       ],
       "italics": false,
-      "tags": [
-        "quirky",
-        "display"
-      ],
-      "variable": false
+      "variable": false,
+      "cssUrl": "https://fonts.cdnfonts.com/css/cotham-sans"
     },
     {
       "name": "Cooper Hewitt",
@@ -2216,11 +1617,8 @@
         800
       ],
       "italics": true,
-      "tags": [
-        "humanist",
-        "museum"
-      ],
-      "variable": false
+      "variable": false,
+      "cssUrl": "https://fonts.cdnfonts.com/css/cooper-hewitt"
     },
     {
       "name": "Bagnard",
@@ -2231,11 +1629,8 @@
         400
       ],
       "italics": false,
-      "tags": [
-        "didone",
-        "elegant"
-      ],
-      "variable": false
+      "variable": false,
+      "cssUrl": "https://fonts.cdnfonts.com/css/bagnard"
     }
   ],
   "pairings": [
