@@ -55,6 +55,21 @@ export const browserAutomationTool: Tool = {
       tools: BROWSER_TOOLS,
       externalTools: BROWSER_EXTERNAL_TOOLS,
       executeTool: async (name) => {
+        if (name === 'screenshot') {
+          try {
+            const { url } = await sidecarRequest(
+              '/screenshot',
+              {},
+              { timeout: 120000 },
+            );
+            if (!url) {
+              return 'Error: screenshot returned no URL';
+            }
+            return url;
+          } catch (err: any) {
+            return `Error taking screenshot: ${err.message}`;
+          }
+        }
         if (name === 'resetBrowser') {
           try {
             await sidecarRequest('/reset-browser', {}, { timeout: 5000 });

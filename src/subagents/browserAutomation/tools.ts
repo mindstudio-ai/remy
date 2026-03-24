@@ -88,4 +88,4 @@ export const BROWSER_TOOLS: ToolDefinition[] = [
   },
 ];
 
-export const BROWSER_EXTERNAL_TOOLS = new Set(['browserCommand', 'screenshot']);
+export const BROWSER_EXTERNAL_TOOLS = new Set(['browserCommand']);
