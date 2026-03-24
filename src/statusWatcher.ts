@@ -17,6 +17,8 @@ export interface StatusWatcherConfig {
     assistantText: string;
     lastToolName?: string;
     lastToolResult?: string;
+    onboardingState?: string;
+    userMessage?: string;
   };
   onStatus: (label: string) => void;
   interval?: number;
@@ -65,6 +67,8 @@ export function startStatusWatcher(config: StatusWatcherConfig): StatusWatcher {
           assistantText: ctx.assistantText.slice(-500),
           lastToolName: ctx.lastToolName,
           lastToolResult: ctx.lastToolResult?.slice(-200),
+          onboardingState: ctx.onboardingState,
+          userMessage: ctx.userMessage?.slice(-200),
         }),
         signal,
       });

@@ -136,7 +136,7 @@ export async function executeDesignExpertTool(
         const { url } = await sidecarRequest(
           '/screenshot',
           {},
-          { timeout: 30000 },
+          { timeout: 120000 },
         );
         const analysisPrompt =
           (input.prompt as string) ||

@@ -34,7 +34,7 @@ export const screenshotTool: Tool = {
       const { url } = await sidecarRequest(
         '/screenshot',
         {},
-        { timeout: 30000 },
+        { timeout: 120000 },
       );
 
       const analysisPrompt = (input.prompt as string) || DEFAULT_PROMPT;

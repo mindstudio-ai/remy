@@ -271,6 +271,8 @@ export async function runTurn(params: {
           lastCompletedTools ||
           undefined,
         lastToolResult: lastCompletedResult || undefined,
+        onboardingState,
+        userMessage,
       }),
       onStatus: (label) => onEvent({ type: 'status', message: label }),
       signal,
@@ -480,6 +482,8 @@ export async function runTurn(params: {
             .map((tc) => tc.name)
             .join(', ') || undefined,
         lastToolResult: lastCompletedResult || undefined,
+        onboardingState,
+        userMessage,
       }),
       onStatus: (label) => origOnEvent({ type: 'status', message: label }),
       signal,
