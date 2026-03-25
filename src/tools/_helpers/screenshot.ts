@@ -54,6 +54,7 @@ export async function captureAndAnalyzeScreenshot(
   const analysisPrompt = prompt || SCREENSHOT_ANALYSIS_PROMPT;
   const analysis = await runCli(
     `mindstudio analyze-image --prompt ${JSON.stringify(analysisPrompt)} --image-url ${JSON.stringify(url)} --output-key analysis --no-meta`,
+    { timeout: 200_000 },
   );
   return JSON.stringify({ url, analysis });
 }

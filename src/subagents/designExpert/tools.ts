@@ -191,6 +191,7 @@ export async function executeDesignExpertTool(
         // Screenshot the website first
         const ssUrl = await runCli(
           `mindstudio screenshot-url --url ${JSON.stringify(url)} --mode viewport --width 1440 --delay 2000 --output-key screenshotUrl --no-meta`,
+          { timeout: 120_000 },
         );
         if (ssUrl.startsWith('Error')) {
           return `Could not screenshot ${url}: ${ssUrl}`;
@@ -200,6 +201,7 @@ export async function executeDesignExpertTool(
 
       const analysis = await runCli(
         `mindstudio analyze-image --prompt ${JSON.stringify(analysisPrompt)} --image-url ${JSON.stringify(imageUrl)} --output-key analysis --no-meta`,
+        { timeout: 200_000 },
       );
       return isImageUrl ? analysis : `Screenshot: ${imageUrl}\n\n${analysis}`;
     }
@@ -224,7 +226,7 @@ export async function executeDesignExpertTool(
         });
         const url = await runCli(
           `mindstudio generate-image '${step}' --output-key imageUrl --no-meta`,
-          { jsonLogs: true },
+          { jsonLogs: true, timeout: 200_000 },
         );
         imageUrls = [url];
       } else {
@@ -240,7 +242,7 @@ export async function executeDesignExpertTool(
         }));
         const batchResult = await runCli(
           `mindstudio batch '${JSON.stringify(steps)}' --no-meta`,
-          { jsonLogs: true },
+          { jsonLogs: true, timeout: 200_000 },
         );
         try {
           const parsed = JSON.parse(batchResult);
@@ -260,6 +262,7 @@ export async function executeDesignExpertTool(
           }
           const analysis = await runCli(
             `mindstudio analyze-image --prompt ${JSON.stringify(ANALYZE_PROMPT)} --image-url ${JSON.stringify(url)} --output-key analysis --no-meta`,
+            { timeout: 200_000 },
           );
           return { url, prompt: prompts[i], analysis, width, height };
         }),
