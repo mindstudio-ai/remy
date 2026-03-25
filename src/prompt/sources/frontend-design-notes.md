@@ -93,14 +93,6 @@ Interfaces run fullscreen in the user's browser or a wrapped webview mobile app.
 - **Spacing:** Consistent and generous. Padding and margins should be uniform across all components — nothing should feel cramped or uneven. White space is a feature, not wasted space.
 - **Components:** Every component (buttons, inputs, cards, modals, lists) should look like it belongs to the same design system. Consistent border radii, consistent shadows, consistent padding. If two buttons on the same screen look different for no reason, that's a bug.
 
-## Animation
-
-Use motion to make interactions feel polished, not to show off. Focus on high-impact moments: a well-orchestrated page load with staggered reveals creates more delight than scattered micro-interactions everywhere.
-
-- Transitions between states should be smooth but fast.
-- Streaming content should flow into containers that grow naturally without pushing sibling elements around.
-- No parallax, no cheesy scroll effects, no bounce/elastic easing, no gratuitous loading animations.
-
 ## Layout Stability
 
 Layout shift is never acceptable. Elements jumping around as content loads or streams in makes an interface feel broken.
@@ -140,26 +132,22 @@ The UI should feel instant. Never make the user wait for a server round-trip to 
 - **Mutate after actions.** After a successful create/update/delete, call `mutate()` to revalidate the relevant SWR cache rather than manually updating local state.
 - **Skeleton loading.** Show skeletons that mirror the layout on initial load. Never show a blank page or centered spinner while data is loading.
 
-## What Good Looks Like
+## FTUE
 
-- A dashboard that feels like Linear — clean data, clear hierarchy, every pixel intentional.
-- A form that feels like Stripe Checkout — focused, calm, confident.
-- A settings page that feels like iOS Settings — organized, scannable, no clutter.
-- A list view that feels like Notion — flexible, spacious, information-dense without feeling crowded.
+All interactive apps must be intuitive and easy to use. Form elements must be well-labelled. Complex interfaces should have descriptions or tooltips when helpful. Complex apps benefit from a beautiful simple onboarding modal on first use or a simple click tour. Even if the app is intuitive and easy to use, users showing up for the first time might still be overwhelmed or confused, and we have an opportunity to set expectations, provide context, and make the user confident as they use our product. Don't neglect this.
 
 ## What to Actively Avoid
 
-These are the hallmarks of generic AI-generated interfaces. Every one of them makes an interface look like it was auto-generated rather than designed.
+- **Avoid generic fonts.** Overused defaults that strip away all personality. Instead: pick a distinctive Google Font that fits the app's character.
+- **Avoid purple or indigo anything.** Purple gradients, purple buttons, purple accents are overused. The user will be dismissive of our designs if they come out looking purple or indigo.
+- **Avoid colored left-border callout boxes.** Rounded divs with a thick colored `border-left` — the generic "info card" pattern. Instead: use typography, spacing, and background tints to create hierarchy. If you need to call something out, use a full subtle background or a top border.
+- **Avoid three equal boxes with icons.** The default AI landing page layout. Instead: use asymmetric layouts, varied column widths, or a single focused content area.
+- **Avoid timid color palettes.** Evenly distributed, non-committal colors. Instead: one or two dominant colors with sharp accents. Commit to a direction.
+- **Avoid card-heavy nested layouts.** Cards inside cards, everything boxed. Instead: use space, typography, and dividers to create hierarchy without extra containers.
+- **Avoid inconsistent spacing.** 12px here, 20px there, 8px somewhere else. Instead: define a spacing scale (4/8/12/16/24/32/48/64) and use it everywhere.
+- **Avoid components from different visual languages.** Rounded buttons next to square inputs, shadows mixed with flat design. Instead: pick one system and apply it consistently.
+- **Avoid long scrolling forms with no visual grouping.** Instead: group fields into sections with clear headings, cards, or stepped flows.
+- **Avoid cramped layouts.** Text pressed against edges, no room to breathe. Instead: generous padding, comfortable margins, let the content float.
+- **Avoid loading states that are just a centered spinner on a blank page.** Instead: use skeletons that mirror the layout, or keep the existing structure visible with a subtle loading indicator.
 
-- **Generic fonts.** Overused defaults that strip away all personality. Instead: pick a distinctive Google Font that fits the app's character.
-- **Purple or indigo anything.** Purple gradients, purple buttons, purple accents. This is the #1 AI-generated aesthetic cliché. Instead: use a color palette that fits the app's domain — greens for finance, warm neutrals for productivity, bold primaries for creative tools, or just confident grayscale.
-- **Colored left-border callout boxes.** Rounded divs with a thick colored `border-left` — the generic "info card" pattern. Instead: use typography, spacing, and background tints to create hierarchy. If you need to call something out, use a full subtle background or a top border.
-- **Three equal boxes with icons.** The default AI landing page layout. Instead: use asymmetric layouts, varied column widths, or a single focused content area.
-- **Timid color palettes.** Evenly distributed, non-committal colors. Instead: one or two dominant colors with sharp accents. Commit to a direction.
-- **Card-heavy nested layouts.** Cards inside cards, everything boxed. Instead: use space, typography, and dividers to create hierarchy without extra containers.
-- **Inconsistent spacing.** 12px here, 20px there, 8px somewhere else. Instead: define a spacing scale (4/8/12/16/24/32/48/64) and use it everywhere.
-- **Components from different visual languages.** Rounded buttons next to square inputs, shadows mixed with flat design. Instead: pick one system and apply it consistently.
-- **Long scrolling forms with no visual grouping.** Instead: group fields into sections with clear headings, cards, or stepped flows.
-- **Cramped layouts.** Text pressed against edges, no room to breathe. Instead: generous padding, comfortable margins, let the content float.
-- **Loading states that are just a centered spinner on a blank page.** Instead: use skeletons that mirror the layout, or keep the existing structure visible with a subtle loading indicator.
-- **Any interface where the first reaction is "this looks like a demo" or "this looks like it was made with a website builder."**
+Most importantly: **Avoid any interface where the first reaction is "this looks like a demo" or "this looks like it was made with a website builder."**
