@@ -40,7 +40,7 @@ function sample<T>(arr: T[], n: number): T[] {
 // ---------------------------------------------------------------------------
 
 export function getDesignReferencesSample(): string {
-  const images = sample(inspirationImages, 25);
+  const images = sample(inspirationImages, 30);
 
   if (!images.length) {
     return '';
