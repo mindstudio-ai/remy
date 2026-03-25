@@ -24,6 +24,8 @@ export interface RunCliOptions {
   jsonLogs?: boolean;
   /** Called for each parsed log line as it arrives on stderr. */
   onLog?: (line: string) => void;
+  /** Data to pipe to stdin. */
+  stdin?: string;
 }
 
 export function runCli(cmd: string, options?: RunCliOptions): Promise<string> {
@@ -38,8 +40,13 @@ export function runCli(cmd: string, options?: RunCliOptions): Promise<string> {
         : cmd;
 
     const child = spawn('sh', ['-c', cmdWithLogs], {
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: [options?.stdin ? 'pipe' : 'ignore', 'pipe', 'pipe'],
     });
+
+    if (options?.stdin) {
+      child.stdin!.write(options.stdin);
+      child.stdin!.end();
+    }
 
     const logs: string[] = [];
     let stdout = '';
@@ -48,7 +55,7 @@ export function runCli(cmd: string, options?: RunCliOptions): Promise<string> {
     let stderrSize = 0;
     let killed = false;
 
-    child.stdout.on('data', (chunk: Buffer) => {
+    child.stdout!.on('data', (chunk: Buffer) => {
       stdoutSize += chunk.length;
       if (stdoutSize <= maxBuffer) {
         stdout += chunk.toString();
@@ -58,7 +65,7 @@ export function runCli(cmd: string, options?: RunCliOptions): Promise<string> {
       }
     });
 
-    child.stderr.on('data', (chunk: Buffer) => {
+    child.stderr!.on('data', (chunk: Buffer) => {
       stderrSize += chunk.length;
       if (stderrSize > maxBuffer) {
         if (!killed) {

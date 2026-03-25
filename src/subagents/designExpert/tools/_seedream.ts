@@ -53,10 +53,12 @@ export async function seedreamGenerate(opts: SeedreamOptions): Promise<string> {
         },
       },
     }));
-    const batchResult = await runCli(
-      `mindstudio batch ${JSON.stringify(JSON.stringify(steps))} --no-meta`,
-      { jsonLogs: true, timeout: 200_000, onLog },
-    );
+    const batchResult = await runCli(`mindstudio batch --no-meta`, {
+      jsonLogs: true,
+      timeout: 200_000,
+      onLog,
+      stdin: JSON.stringify(steps),
+    });
     try {
       const parsed = JSON.parse(batchResult);
       imageUrls = parsed.map(
