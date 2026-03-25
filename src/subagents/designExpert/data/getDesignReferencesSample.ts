@@ -46,7 +46,9 @@ export function getDesignReferencesSample(): string {
     return '';
   }
 
-  const imageList = images.map((img) => `- ${img.analysis}`).join('\n\n');
+  const imageList = images
+    .map((img, i) => `### Reference ${i + 1}\n${img.analysis}`)
+    .join('\n\n');
 
   return `
 ## Design References

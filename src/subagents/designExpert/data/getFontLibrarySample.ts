@@ -53,8 +53,8 @@ function sample<T>(arr: T[], n: number): T[] {
 // ---------------------------------------------------------------------------
 
 export function getFontLibrarySample(): string {
-  const fonts = sample(fontData.fonts, 30);
-  const pairings = sample(fontData.pairings, 20);
+  const fonts = sample(fontData.fonts, 60);
+  const pairings = sample(fontData.pairings, 30);
 
   if (!fonts.length) {
     return '';
@@ -86,7 +86,6 @@ export function getFontLibrarySample(): string {
 ## Font Library
 
 A random sample from a curated font library. Use these as starting points for font selection.
-CSS URL pattern: ${fontData.cssUrlPattern}
 
 ### Fonts
 
