@@ -19,7 +19,7 @@
     "remy": "./dist/index.js"
   },
   "scripts": {
-    "build": "tsup && cp -r src/prompt/static src/prompt/compiled src/prompt/actions dist/ && cd src/subagents && find . -name '*.md' -exec sh -c 'mkdir -p ../../dist/subagents/$(dirname {}) && cp {} ../../dist/subagents/{}' \\;",
+    "build": "tsup && rsync -a --include='*/' --include='*.md' --include='*.json' --include='*.txt' --include='*.sh' --include='*.mjs' --include='*.html' --exclude='*.ts' --exclude='*.tsx' --exclude='node_modules' src/ dist/",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "lint:fix": "prettier --write ./src",
