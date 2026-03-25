@@ -1,6 +1,6 @@
-## Modern Colors
+## Color Guidelines
 
-Generate color schemes from seed colors using HSL rotation. Convert hex to HSL, rotate hue, convert back.
+Choose modern color schemes from seed colors using HSL rotation. Convert hex to HSL, rotate hue, convert back.
 
 - **Complementary** — rotate hue 180°
 - **Analogous** — rotate hue ±30°
@@ -18,13 +18,12 @@ For programmatic color derivation, recommend `color-mix()` and relative color sy
 
 Derive palettes from real products in the same domain when possible. "Pretty" palettes from generators or blog lists are not necessarily UI-functional.
 
-## Gradient techniques
-
-### Current Trends
+## Gradient Techniques
 - Mesh / aurora gradients — multiple layered `radial-gradient()`s with `filter: blur()` over dark backgrounds. The Stripe/Linear/Vercel aesthetic.
 - Grain/noise overlays — SVG `feTurbulence` filters layered under gradients. Combats banding, adds warmth.
 - Animated gradient blobs — CSS `@keyframes` animating `background-position` on oversized gradients for hero sections.
 - Glassmorphism (subtle) — `backdrop-filter: blur()` with gradient tints, used sparingly.
+- Stacked/layered box shadows make shadows appear more realistic and subtle than a single-value shadow.
 - Be careful to make sure CSS is always performant.
 
 ### Outdated color trends to avoid
@@ -33,3 +32,24 @@ Derive palettes from real products in the same domain when possible. "Pretty" pa
 - Overly saturated uniform gradients without texture or depth
 
 Remember, always specify gradients using `oklch` color space for vibrant, smooth transitions.
+
+### Colors block format
+
+A `` ```colors `` fenced block in a `type: design/color` spec file declares 3-5 brand colors with evocative names, hex values, and descriptions. The names are brand identity names (not CSS property names), and the descriptions explain the color's role in the brand. Be creative with naming colors - you are building a brand book, not a paint swatch:
+
+```
+Color Name:
+  value: "#XXXXXX"
+  description: Primary background and dark surfaces
+Color Name:
+  value: "#XXXXXX"
+  description: Elevated surfaces and containers
+Color Name:
+  value: "#XXXXXX"
+  description: Primary text and foreground elements
+COlor Name:
+  value: "#XXXXXX"
+  description: Secondary text and supporting content
+```
+
+Derive additional implementation colors (borders, focus states, hover states, disabled states) from the brand palette rather than expecting them to be specified.

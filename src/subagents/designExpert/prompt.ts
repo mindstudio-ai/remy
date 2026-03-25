@@ -9,6 +9,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { loadSpecContext } from '../common/context.js';
+import { getFontLibrarySample } from './data/getFontLibrarySample.js';
+import { getDesignReferencesSample } from './data/getDesignReferencesSample.js';
 
 // ---------------------------------------------------------------------------
 // File loading
@@ -28,22 +30,11 @@ function readFile(filename: string): string {
   return fs.readFileSync(resolvePath(filename), 'utf-8').trim();
 }
 
-function readJson<T>(filename: string, fallback: T): T {
-  try {
-    return JSON.parse(fs.readFileSync(resolvePath(filename), 'utf-8'));
-  } catch {
-    return fallback;
-  }
-}
-
 // ---------------------------------------------------------------------------
 // Template assembly (runs once at module init)
 // ---------------------------------------------------------------------------
 
-const RUNTIME_PLACEHOLDERS = new Set([
-  'fonts_to_consider',
-  'inspiration_images',
-]);
+const RUNTIME_PLACEHOLDERS = new Set(['font_library', 'design_references']);
 
 const PROMPT_TEMPLATE = readFile('prompt.md')
   .replace(/\{\{([^}]+)\}\}/g, (match, key) => {
@@ -51,60 +42,6 @@ const PROMPT_TEMPLATE = readFile('prompt.md')
     return RUNTIME_PLACEHOLDERS.has(k) ? match : readFile(k);
   })
   .replace(/\n{3,}/g, '\n\n');
-
-// ---------------------------------------------------------------------------
-// Data (loaded once at module init)
-// ---------------------------------------------------------------------------
-
-interface Font {
-  name: string;
-  slug: string;
-  category: string;
-  source: 'fontshare' | 'google-fonts' | 'open-foundry';
-  googleFontsFamily?: string;
-  cssUrl?: string;
-  variable?: boolean;
-  weights: number[];
-  italics: boolean;
-  description?: string;
-}
-
-interface Pairing {
-  heading: { font: string; slug: string; weight: number };
-  body: { font: string; slug: string; weight: number };
-}
-
-const fontData = readJson('data/fonts.json', {
-  cssUrlPattern: '',
-  fonts: [] as Font[],
-  pairings: [] as Pairing[],
-});
-
-interface InspirationEntry {
-  url: string;
-  analysis: string;
-}
-
-const inspirationImages = readJson('data/inspiration.json', {
-  images: [] as InspirationEntry[],
-}).images;
-
-// ---------------------------------------------------------------------------
-// Sampling
-// ---------------------------------------------------------------------------
-
-/** Pick n random items from an array (Fisher-Yates). */
-function sample<T>(arr: T[], n: number): T[] {
-  if (arr.length <= n) {
-    return [...arr];
-  }
-  const copy = [...arr];
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy.slice(0, n);
-}
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -115,65 +52,12 @@ function sample<T>(arr: T[], n: number): T[] {
  * Call per invocation, not once at init.
  */
 export function getDesignExpertPrompt(): string {
-  const fonts = sample(fontData.fonts, 30);
-  const pairings = sample(fontData.pairings, 20);
-  const images = sample(inspirationImages, 15);
-
-  const fontList = fonts
-    .map((f) => {
-      let cssInfo = '';
-      if (f.source === 'fontshare') {
-        cssInfo = ` CSS: ${fontData.cssUrlPattern.replace('{slug}', f.slug).replace('{weights}', f.weights.join(','))}`;
-      } else if (f.cssUrl) {
-        cssInfo = ` CSS: ${f.cssUrl}`;
-      } else if (f.source === 'open-foundry') {
-        cssInfo = ' (self-host required)';
-      }
-      const desc = f.description ? ` ${f.description}` : '';
-      return `- **${f.name}** — ${f.category}. Weights: ${f.weights.join(', ')}.${f.variable ? ' Variable.' : ''}${f.italics ? ' Has italics.' : ''}${cssInfo}${desc}`;
-    })
-    .join('\n');
-
-  const pairingList = pairings
-    .map(
-      (p) =>
-        `- **${p.heading.font}** (${p.heading.weight}) heading + **${p.body.font}** (${p.body.weight}) body`,
-    )
-    .join('\n');
-
-  const fontsSection = fonts.length
-    ? `<fonts_to_consider>
-## Fonts to consider
-
-A random sample from Fontshare, Open Foundry, and Google Fonts. Use these as starting points for font selection.
-CSS URL pattern: ${fontData.cssUrlPattern}
-
-${fontList}
-
-### Suggested pairings
-
-${pairingList}
-</fonts_to_consider>`
-    : '';
-
-  const imageList = images.map((img) => `- ${img.analysis}`).join('\n\n');
-
-  const inspirationSection = images.length
-    ? `<design_inspiration>
-## Design inspiration
-
-This is what the bar looks like. These are real sites that made it onto curated design galleries because they did something bold, intentional, and memorable. Use them as inspiration and let the takeaways guide your work. Your designs should feel like they belong in this company.
-
-${imageList}
-</design_inspiration>`
-    : '';
-
   const specContext = loadSpecContext();
 
   let prompt = PROMPT_TEMPLATE.replace(
-    '{{fonts_to_consider}}',
-    fontsSection,
-  ).replace('{{inspiration_images}}', inspirationSection);
+    '{{font_library}}',
+    getFontLibrarySample(),
+  ).replace('{{design_references}}', getDesignReferencesSample());
 
   if (specContext) {
     prompt += `\n\n${specContext}`;

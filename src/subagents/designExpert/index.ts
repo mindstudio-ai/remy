@@ -7,7 +7,7 @@
 
 import type { Tool, ToolExecutionContext } from '../../tools/index.js';
 import { runSubAgent } from '../runner.js';
-import { DESIGN_EXPERT_TOOLS, executeDesignExpertTool } from './tools.js';
+import { DESIGN_EXPERT_TOOLS, executeDesignExpertTool } from './tools/index.js';
 import { getDesignExpertPrompt } from './prompt.js';
 
 const DESCRIPTION = `
@@ -24,7 +24,7 @@ export const designExpertTool: Tool = {
         task: {
           type: 'string',
           description:
-            'What you need, in natural language. Include context about the app when relevant.',
+            'What you need, in natural language. Include context about the project when relevant.',
         },
       },
       required: ['task'],
