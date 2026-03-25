@@ -327,3 +327,43 @@ export async function* streamChatWithRetry(
     return;
   }
 }
+
+// --- Background ack generation ---
+
+const FALLBACK_ACK =
+  '[Message sent to agent. Agent is working in the background and will report back with its results when finished.]';
+
+/**
+ * Generate a friendly acknowledgment message for a backgrounded sub-agent.
+ * Falls back to a generic ack on any failure.
+ */
+export async function generateBackgroundAck(params: {
+  apiConfig: { baseUrl: string; apiKey: string };
+  agentName: string;
+  task: string;
+}): Promise<string> {
+  try {
+    const res = await fetch(
+      `${params.apiConfig.baseUrl}/_internal/v2/agent/remy/generate-ack`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${params.apiConfig.apiKey}`,
+        },
+        body: JSON.stringify({
+          agentName: params.agentName,
+          task: params.task,
+        }),
+        signal: AbortSignal.timeout(5000),
+      },
+    );
+    if (!res.ok) {
+      return FALLBACK_ACK;
+    }
+    const data = (await res.json()) as { message?: string };
+    return data.message || FALLBACK_ACK;
+  } catch {
+    return FALLBACK_ACK;
+  }
+}

@@ -11,6 +11,7 @@
 
 import {
   streamChatWithRetry,
+  generateBackgroundAck,
   type Message,
   type ContentBlock,
   type ToolDefinition,
@@ -53,7 +54,9 @@ export interface SubAgentResult {
   backgrounded?: boolean;
 }
 
-export function runSubAgent(config: SubAgentConfig): Promise<SubAgentResult> {
+export async function runSubAgent(
+  config: SubAgentConfig,
+): Promise<SubAgentResult> {
   const {
     system,
     task,
@@ -376,9 +379,12 @@ export function runSubAgent(config: SubAgentConfig): Promise<SubAgentResult> {
     return run();
   }
 
-  // Background: resolve immediately with ack, run the loop detached.
-  const ack =
-    '[Message sent to agent. Agent is working in the background and will report back with its results when finished.]';
+  // Background: generate a friendly ack, run the loop detached.
+  const ack = await generateBackgroundAck({
+    apiConfig,
+    agentName: subAgentId || 'agent',
+    task,
+  });
 
   // Run detached — deliver result via callback when done.
   run()
@@ -387,5 +393,5 @@ export function runSubAgent(config: SubAgentConfig): Promise<SubAgentResult> {
       onBackgroundComplete?.({ text: `Error: ${err.message}`, messages: [] }),
     );
 
-  return Promise.resolve({ text: ack, messages: [], backgrounded: true });
+  return { text: ack, messages: [], backgrounded: true };
 }
