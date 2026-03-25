@@ -103,7 +103,7 @@ export const DESIGN_EXPERT_TOOLS: ToolDefinition[] = [
   {
     name: 'runBrowserTest',
     description:
-      'Run an automated browser test against the live app preview. Use to verify implementation details via getComputedStyle: font-family names, exact colors, spacing, borders, shadows, font sizes, transforms. Also supports navigation between pages and screenshots. Use this to confirm the right fonts are loaded and CSS values match the spec.',
+      "Run an automated browser test against the live app preview. Use to verify implementation details via getComputedStyle: font-family names, exact colors, spacing, borders, shadows, font sizes, transforms. Only use this to evaluate computed CSS properties that can't be deduced from sceenshots.",
     inputSchema: {
       type: 'object',
       properties: {
