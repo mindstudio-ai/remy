@@ -77,15 +77,20 @@ export async function runSubAgent(
     let thinkingStartedAt = 0;
     let stopReason = 'end_turn';
 
+    const fullSystem = `${system}\n\nCurrent date/time: ${new Date()
+      .toISOString()
+      .replace('T', ' ')
+      .replace(/\.\d+Z$/, ' UTC')}`;
+    log.debug(`Sub-agent system prompt [${subAgentId || 'unknown'}]`, {
+      system: fullSystem,
+    });
+
     try {
       for await (const event of streamChatWithRetry({
         ...apiConfig,
         model,
         subAgentId,
-        system: `${system}\n\nCurrent date/time: ${new Date()
-          .toISOString()
-          .replace('T', ' ')
-          .replace(/\.\d+Z$/, ' UTC')}`,
+        system: fullSystem,
         messages: cleanMessagesForApi(messages),
         tools,
         signal,
