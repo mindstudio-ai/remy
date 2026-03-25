@@ -72,5 +72,6 @@ export async function execute(
     `mindstudio analyze-image --prompt ${JSON.stringify(analysisPrompt)} --image-url ${JSON.stringify(imageUrl)} --output-key analysis --no-meta`,
     { timeout: 200_000, onLog },
   );
-  return isImageUrl ? analysis : `Screenshot: ${imageUrl}\n\n${analysis}`;
+
+  return JSON.stringify({ url: imageUrl, analysis });
 }
