@@ -17,12 +17,16 @@ export const definition: ToolDefinition = {
   },
 };
 
-export async function execute(input: Record<string, any>): Promise<string> {
+export async function execute(
+  input: Record<string, any>,
+  onLog?: (line: string) => void,
+): Promise<string> {
   const pageOptions: Record<string, any> = { onlyMainContent: true };
   if (input.screenshot) {
     pageOptions.screenshot = true;
   }
   return runCli(
     `mindstudio scrape-url --url ${JSON.stringify(input.url)} --page-options ${JSON.stringify(JSON.stringify(pageOptions))} --no-meta`,
+    { onLog },
   );
 }

@@ -32,10 +32,11 @@ export async function executeDesignExpertTool(
   input: Record<string, any>,
   context?: ToolExecutionContext,
   toolCallId?: string,
+  onLog?: (line: string) => void,
 ): Promise<string> {
   const tool = tools[name as keyof typeof tools];
   if (!tool) {
     return `Error: unknown tool "${name}"`;
   }
-  return tool.execute(input);
+  return tool.execute(input, onLog);
 }

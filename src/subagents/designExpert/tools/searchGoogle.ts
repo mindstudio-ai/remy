@@ -17,8 +17,12 @@ export const definition: ToolDefinition = {
   },
 };
 
-export async function execute(input: Record<string, any>): Promise<string> {
+export async function execute(
+  input: Record<string, any>,
+  onLog?: (line: string) => void,
+): Promise<string> {
   return runCli(
     `mindstudio search-google --query ${JSON.stringify(input.query)} --export-type json --output-key results --no-meta`,
+    { onLog },
   );
 }

@@ -27,11 +27,12 @@ export const askMindStudioSdkTool: Tool = {
     },
   },
 
-  async execute(input) {
+  async execute(input, context) {
     const query = input.query as string;
     return runCli(`mindstudio ask ${JSON.stringify(query)}`, {
       timeout: 200_000,
       maxBuffer: 512 * 1024,
+      onLog: context?.onLog,
     });
   },
 };

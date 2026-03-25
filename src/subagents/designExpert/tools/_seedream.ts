@@ -14,10 +14,11 @@ export interface SeedreamOptions {
   /** Source/reference image URLs for image-to-image editing. */
   sourceImages?: string[];
   transparentBackground?: boolean;
+  onLog?: (line: string) => void;
 }
 
 export async function seedreamGenerate(opts: SeedreamOptions): Promise<string> {
-  const { prompts, sourceImages, transparentBackground } = opts;
+  const { prompts, sourceImages, transparentBackground, onLog } = opts;
   const width = opts.width || 2048;
   const height = opts.height || 2048;
 
@@ -38,7 +39,7 @@ export async function seedreamGenerate(opts: SeedreamOptions): Promise<string> {
     });
     const url = await runCli(
       `mindstudio generate-image '${step}' --output-key imageUrl --no-meta`,
-      { jsonLogs: true, timeout: 200_000 },
+      { jsonLogs: true, timeout: 200_000, onLog },
     );
     imageUrls = [url];
   } else {
@@ -54,7 +55,7 @@ export async function seedreamGenerate(opts: SeedreamOptions): Promise<string> {
     }));
     const batchResult = await runCli(
       `mindstudio batch '${JSON.stringify(steps)}' --no-meta`,
-      { jsonLogs: true, timeout: 200_000 },
+      { jsonLogs: true, timeout: 200_000, onLog },
     );
     try {
       const parsed = JSON.parse(batchResult);
@@ -75,7 +76,7 @@ export async function seedreamGenerate(opts: SeedreamOptions): Promise<string> {
         }
         const result = await runCli(
           `mindstudio remove-background-from-image --image-url ${JSON.stringify(url)} --output-key imageUrl --no-meta`,
-          { timeout: 200_000 },
+          { timeout: 200_000, onLog },
         );
         return result.startsWith('Error') ? url : result;
       }),
@@ -90,11 +91,11 @@ export async function seedreamGenerate(opts: SeedreamOptions): Promise<string> {
       }
       const analysis = await runCli(
         `mindstudio analyze-image --prompt ${JSON.stringify(ANALYZE_PROMPT)} --image-url ${JSON.stringify(url)} --output-key analysis --no-meta`,
-        { timeout: 200_000 },
+        { timeout: 200_000, onLog },
       );
       return { url, prompt: prompts[i], analysis, width, height };
     }),
   );
 
-  return `%%JSON%%${JSON.stringify({ images })}`;
+  return JSON.stringify({ images });
 }

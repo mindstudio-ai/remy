@@ -33,7 +33,7 @@ export const BROWSER_TOOLS: ToolDefinition[] = [
                   'screenshot',
                 ],
                 description:
-                  'snapshot: accessibility tree of the page (waits for network to settle). click: click an element (animated cursor, full event sequence). type: type text into input (one char at a time, works with React/Vue/Svelte). select: select a dropdown option by text. wait: wait for an element to appear (polls 100ms, waits for network). navigate: navigate to a URL within the app (waits for load, subsequent steps run on new page). evaluate: run JS in the page. styles: read computed CSS styles from elements (pass properties array with camelCase names, or omit for defaults). screenshot: full-page viewport-stitched screenshot (returns base64 JPEG with dimensions).',
+                  'snapshot: accessibility tree of the page (waits for network to settle). click: click an element (animated cursor, full event sequence). type: type text into input (one char at a time, works with React/Vue/Svelte). select: select a dropdown option by text. wait: wait for an element to appear (polls 100ms, waits for network). navigate: navigate to a URL within the app (waits for load, subsequent steps run on new page). evaluate: run JS in the page. styles: read computed CSS styles from elements (pass properties array with camelCase names, or omit for defaults). screenshot: full-page viewport-stitched screenshot (returns CDN url with dimensions).',
               },
               ref: {
                 type: 'string',
@@ -95,9 +95,9 @@ export const BROWSER_TOOLS: ToolDefinition[] = [
     },
   },
   {
-    name: 'screenshot',
+    name: 'screenshotFullPage',
     description:
-      'Capture a screenshot of the current page. Returns a CDN URL with dimensions.',
+      'Capture a full-height screenshot of the current page. Returns a CDN URL with full text analysis and description.',
     inputSchema: {
       type: 'object',
       properties: {},

@@ -4,9 +4,9 @@
  * and common tools (fetchUrl, searchGoogle).
  *
  * Passes --json-logs so the CLI emits structured progress events on
- * stderr. These are collected and prepended to the result so they
- * persist in conversation history (useful for debugging and for the
- * LLM to understand what happened during execution).
+ * stderr. When an `onLog` callback is provided, log lines are streamed
+ * in real-time and omitted from the final result. Without `onLog`,
+ * logs are accumulated and prepended to the result (legacy behavior).
  */
 
 import { spawn } from 'node:child_process';
@@ -18,10 +18,15 @@ interface CliLogEntry {
   ts?: number;
 }
 
-export function runCli(
-  cmd: string,
-  options?: { timeout?: number; maxBuffer?: number; jsonLogs?: boolean },
-): Promise<string> {
+export interface RunCliOptions {
+  timeout?: number;
+  maxBuffer?: number;
+  jsonLogs?: boolean;
+  /** Called for each parsed log line as it arrives on stderr. */
+  onLog?: (line: string) => void;
+}
+
+export function runCli(cmd: string, options?: RunCliOptions): Promise<string> {
   return new Promise<string>((resolve) => {
     const timeout = options?.timeout ?? 60_000;
     const maxBuffer = options?.maxBuffer ?? 1024 * 1024;
@@ -76,7 +81,12 @@ export function runCli(
           const entry: CliLogEntry = JSON.parse(trimmed);
           if (entry.type === 'log' && entry.value) {
             const prefix = entry.tag ? `[${entry.tag}]` : '[log]';
-            logs.push(`${prefix} ${entry.value}`);
+            const formatted = `${prefix} ${entry.value}`;
+            if (options?.onLog) {
+              options.onLog(formatted);
+            } else {
+              logs.push(formatted);
+            }
           }
         } catch {
           // Not a JSON log line — ignore
@@ -92,7 +102,9 @@ export function runCli(
     child.on('close', (code) => {
       clearTimeout(timer);
 
-      const logBlock = logs.length > 0 ? logs.join('\n') + '\n\n' : '';
+      // When onLog is provided, logs were already streamed — don't prepend.
+      const logBlock =
+        !options?.onLog && logs.length > 0 ? logs.join('\n') + '\n\n' : '';
       const out = stdout.trim();
 
       if (out) {

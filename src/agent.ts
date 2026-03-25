@@ -520,6 +520,13 @@ export async function runTurn(params: {
               resolveExternalTool,
               toolCallId: tc.id,
               subAgentMessages,
+              onLog: (line) =>
+                wrappedOnEvent({
+                  type: 'tool_input_delta',
+                  id: tc.id,
+                  name: tc.name,
+                  result: line,
+                }),
             });
           }
 

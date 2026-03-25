@@ -14,8 +14,8 @@ export const SCREENSHOT_ANALYSIS_PROMPT =
 export interface ScreenshotOptions {
   /** Analysis prompt. Pass `false` to skip analysis and return just the URL. */
   prompt?: string | false;
-  /** Capture the full scrollable page instead of just the viewport. */
-  fullPage?: boolean;
+  /** Called for each log line emitted during CLI execution. */
+  onLog?: (line: string) => void;
 }
 
 /**
@@ -25,20 +25,18 @@ export async function captureAndAnalyzeScreenshot(
   promptOrOptions?: string | false | ScreenshotOptions,
 ): Promise<string> {
   let prompt: string | false | undefined;
-  let fullPage = false;
+  let onLog: ((line: string) => void) | undefined;
 
   if (typeof promptOrOptions === 'object' && promptOrOptions !== null) {
     prompt = promptOrOptions.prompt;
-    fullPage = promptOrOptions.fullPage ?? false;
+    onLog = promptOrOptions.onLog;
   } else {
     prompt = promptOrOptions;
   }
 
-  const ssResult = await sidecarRequest(
-    '/screenshot',
-    { fullPage },
-    { timeout: 120000 },
-  );
+  const ssResult = await sidecarRequest('/screenshot-full-page', undefined, {
+    timeout: 120000,
+  });
   log.debug('Screenshot response', { ssResult });
   const url = ssResult?.url || ssResult?.screenshotUrl;
   if (!url) {
@@ -54,7 +52,7 @@ export async function captureAndAnalyzeScreenshot(
   const analysisPrompt = prompt || SCREENSHOT_ANALYSIS_PROMPT;
   const analysis = await runCli(
     `mindstudio analyze-image --prompt ${JSON.stringify(analysisPrompt)} --image-url ${JSON.stringify(url)} --output-key analysis --no-meta`,
-    { timeout: 200_000 },
+    { timeout: 200_000, onLog },
   );
   return JSON.stringify({ url, analysis });
 }

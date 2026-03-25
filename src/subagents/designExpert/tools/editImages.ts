@@ -42,12 +42,16 @@ export const definition: ToolDefinition = {
   },
 };
 
-export async function execute(input: Record<string, any>): Promise<string> {
+export async function execute(
+  input: Record<string, any>,
+  onLog?: (line: string) => void,
+): Promise<string> {
   return seedreamGenerate({
     prompts: input.prompts as string[],
     sourceImages: input.sourceImages as string[],
     width: input.width as number | undefined,
     height: input.height as number | undefined,
     transparentBackground: input.transparentBackground as boolean | undefined,
+    onLog,
   });
 }

@@ -22,7 +22,7 @@ export const browserAutomationTool: Tool = {
   definition: {
     name: 'runAutomatedBrowserTest',
     description:
-      'Run an automated browser test against the live preview. Describe what to test — the agent figures out how. Use after writing or modifying frontend code, to reproduce user-reported issues, or to test end-to-end flows.',
+      'Run an automated browser test against the live preview. Describe what to test — the agent figures out how. Use after meaningful changes frontend code, to reproduce user-reported issues, or to test end-to-end flows.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -60,10 +60,10 @@ export const browserAutomationTool: Tool = {
       task: input.task,
       tools: BROWSER_TOOLS,
       externalTools: BROWSER_EXTERNAL_TOOLS,
-      executeTool: async (name) => {
-        if (name === 'screenshot') {
+      executeTool: async (name, _input, _toolCallId, onLog) => {
+        if (name === 'screenshotFullPage') {
           try {
-            return await captureAndAnalyzeScreenshot();
+            return await captureAndAnalyzeScreenshot({ onLog });
           } catch (err: any) {
             return `Error taking screenshot: ${err.message}`;
           }
@@ -90,12 +90,12 @@ export const browserAutomationTool: Tool = {
         }
         const result = await context.resolveExternalTool(id, name, input);
 
-        // Auto-analyze screenshots in browserCommand results
+        // Auto-analyze screenshotViewport results in browserCommand results
         if (name === 'browserCommand') {
           try {
             const parsed = JSON.parse(result);
             const screenshotSteps = (parsed.steps || []).filter(
-              (s: any) => s.command === 'screenshot' && s.result?.url,
+              (s: any) => s.command === 'screenshotViewport' && s.result?.url,
             );
             if (screenshotSteps.length > 0) {
               const batchInput = screenshotSteps.map((s: any) => ({
@@ -114,7 +114,7 @@ export const browserAutomationTool: Tool = {
                 let ai = 0;
                 for (const step of parsed.steps) {
                   if (
-                    step.command === 'screenshot' &&
+                    step.command === 'screenshotViewport' &&
                     step.result?.url &&
                     ai < analyses.length
                   ) {

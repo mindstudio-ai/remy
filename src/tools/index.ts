@@ -27,6 +27,8 @@ export interface ToolExecutionContext {
   toolCallId: string;
   /** Sub-agent tools stash their message history here, keyed by toolCallId. */
   subAgentMessages?: Map<string, Message[]>;
+  /** Called for each log line emitted during tool execution (e.g., CLI stderr). */
+  onLog?: (line: string) => void;
 }
 
 export interface Tool {

@@ -25,13 +25,16 @@ export const definition: ToolDefinition = {
   },
 };
 
-export async function execute(input: Record<string, any>): Promise<string> {
+export async function execute(
+  input: Record<string, any>,
+  onLog?: (line: string) => void,
+): Promise<string> {
   const imageUrl = input.imageUrl as string;
   const prompt = (input.prompt as string) || DEFAULT_PROMPT;
 
   const analysis = await runCli(
     `mindstudio analyze-image --prompt ${JSON.stringify(prompt)} --image-url ${JSON.stringify(imageUrl)} --output-key analysis --no-meta`,
-    { timeout: 200_000 },
+    { timeout: 200_000, onLog },
   );
   return JSON.stringify({ url: imageUrl, analysis });
 }

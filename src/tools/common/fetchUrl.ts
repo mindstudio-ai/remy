@@ -30,7 +30,7 @@ export const fetchUrlTool: Tool = {
     },
   },
 
-  async execute(input) {
+  async execute(input, context) {
     const url = input.url as string;
     const screenshot = input.screenshot as boolean | undefined;
 
@@ -41,6 +41,7 @@ export const fetchUrlTool: Tool = {
 
     return runCli(
       `mindstudio scrape-url --url ${JSON.stringify(url)} --page-options ${JSON.stringify(JSON.stringify(pageOptions))} --no-meta`,
+      { onLog: context?.onLog },
     );
   },
 };

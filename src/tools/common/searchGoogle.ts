@@ -25,11 +25,11 @@ export const searchGoogleTool: Tool = {
     },
   },
 
-  async execute(input) {
+  async execute(input, context) {
     const query = input.query as string;
     return runCli(
       `mindstudio search-google --query ${JSON.stringify(query)} --export-type json --output-key results --no-meta`,
-      { maxBuffer: 512 * 1024 },
+      { maxBuffer: 512 * 1024, onLog: context?.onLog },
     );
   },
 };

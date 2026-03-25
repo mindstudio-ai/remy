@@ -45,7 +45,10 @@ export const definition: ToolDefinition = {
   },
 };
 
-export async function execute(input: Record<string, any>): Promise<string> {
+export async function execute(
+  input: Record<string, any>,
+  onLog?: (line: string) => void,
+): Promise<string> {
   const url = input.url as string;
   const analysisPrompt = input.prompt || DESIGN_REFERENCE_PROMPT;
 
@@ -57,7 +60,7 @@ export async function execute(input: Record<string, any>): Promise<string> {
     // Screenshot the website first
     const ssUrl = await runCli(
       `mindstudio screenshot-url --url ${JSON.stringify(url)} --mode viewport --width 1440 --delay 2000 --output-key screenshotUrl --no-meta`,
-      { timeout: 120_000 },
+      { timeout: 120_000, onLog },
     );
     if (ssUrl.startsWith('Error')) {
       return `Could not screenshot ${url}: ${ssUrl}`;
@@ -67,7 +70,7 @@ export async function execute(input: Record<string, any>): Promise<string> {
 
   const analysis = await runCli(
     `mindstudio analyze-image --prompt ${JSON.stringify(analysisPrompt)} --image-url ${JSON.stringify(imageUrl)} --output-key analysis --no-meta`,
-    { timeout: 200_000 },
+    { timeout: 200_000, onLog },
   );
   return isImageUrl ? analysis : `Screenshot: ${imageUrl}\n\n${analysis}`;
 }

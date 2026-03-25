@@ -9,7 +9,7 @@ export const screenshotTool: Tool = {
   definition: {
     name: 'screenshot',
     description:
-      "Capture a screenshot of the app preview and get a description of what's on screen. Optionally provide a specific question about what you're looking for. By default captures the viewport (what the user sees). Set fullPage to capture the entire scrollable page.",
+      "Capture a full-height screenshot of the app preview and get a description of what's on screen. Optionally provide a specific question about what you're looking for..",
     inputSchema: {
       type: 'object',
       properties: {
@@ -18,20 +18,15 @@ export const screenshotTool: Tool = {
           description:
             "Optional question about the screenshot. If omitted, returns a general description of what's visible.",
         },
-        fullPage: {
-          type: 'boolean',
-          description:
-            'Capture the full scrollable page instead of just the viewport. Use when you need to see below-the-fold content.',
-        },
       },
     },
   },
 
-  async execute(input) {
+  async execute(input, context) {
     try {
       return await captureAndAnalyzeScreenshot({
         prompt: input.prompt as string,
-        fullPage: input.fullPage as boolean,
+        onLog: context?.onLog,
       });
     } catch (err: any) {
       return `Error taking screenshot: ${err.message}`;

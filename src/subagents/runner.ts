@@ -28,6 +28,7 @@ export interface SubAgentConfig {
     name: string,
     input: Record<string, any>,
     toolCallId?: string,
+    onLog?: (line: string) => void,
   ) => Promise<string>;
   apiConfig: { baseUrl: string; apiKey: string };
   model?: string;
@@ -202,7 +203,14 @@ export async function runSubAgent(
           if (externalTools.has(tc.name) && resolveExternalTool) {
             result = await resolveExternalTool(tc.id, tc.name, tc.input);
           } else {
-            result = await executeTool(tc.name, tc.input, tc.id);
+            const onLog = (line: string) =>
+              emit({
+                type: 'tool_input_delta',
+                id: tc.id,
+                name: tc.name,
+                result: line,
+              });
+            result = await executeTool(tc.name, tc.input, tc.id, onLog);
           }
 
           const isError = result.startsWith('Error');
