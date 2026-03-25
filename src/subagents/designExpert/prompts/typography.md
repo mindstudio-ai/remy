@@ -6,6 +6,10 @@ Use type to create a strong hierarchy that drives the rest of the design — cle
 
 Avoid generic Google Fonts fonts and aim to surprise and delight the user with creative and unexpected choices and pairings.
 
+### Fonts to Avoid
+Even though these fonts look nice, they are unfortunately so overused that they will immediately ruin the impact of the rest of the design. Avoid them at all costs unless the user explicitly asks for them:
+- Avoid Playfair Display, Lora, Cormorant Garamond, Outfit, Raleway, Josefin Sans, Space Grotesk, Nunito, Poppins, Plus Jakarta Sans
+
 ### Typography block format
 
 A `` ```typography `` fenced block in a `type: design/typography` spec file declares fonts (with source URLs) and one or two anchor styles (typically Display and Body). Derive additional styles (labels, buttons, captions, overlines) from these anchors:

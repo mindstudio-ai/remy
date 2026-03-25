@@ -498,41 +498,6 @@
       "description": "This sans-serif displays monolinear stroke weight with no stress angle and a geometric construction evident in the circular bowls of letters like 'o' and 'd'. The typeface features a high x-height relative to cap height, regular width proportions, and moderately open apertures in characters such as 'c', 'e', and 'a'. Terminals are primarily flat-cut, the 'g' uses a double-story form, and the overall structure shows rationalized geometric forms with subtle optical corrections rather than pure geometric circles."
     },
     {
-      "name": "Outfit",
-      "slug": "outfit",
-      "category": "Sans",
-      "variable": true,
-      "weights": [
-        100,
-        200,
-        300,
-        400,
-        500,
-        600,
-        700,
-        800,
-        900
-      ],
-      "italics": false,
-      "source": "fontshare",
-      "description": "This grotesque sans-serif displays monolinear stroke weight with no stress angle and flat-cut terminals throughout. The typeface features a high x-height relative to cap height, regular width proportions, and moderately open apertures in letters like 'e' and 'a'. Notable characteristics include a single-story 'a', geometric construction with slightly squared curves, and consistent stroke endings that create a sturdy, utilitarian appearance."
-    },
-    {
-      "name": "Lora",
-      "slug": "lora",
-      "category": "Serif",
-      "variable": true,
-      "weights": [
-        400,
-        500,
-        600,
-        700
-      ],
-      "italics": true,
-      "source": "fontshare",
-      "description": "This serif typeface exhibits moderate stroke contrast with a vertical stress and features thick, unbracketed slab serifs with squared terminals. The construction shows a high x-height relative to cap height, regular width proportions, and moderately open apertures in letters like 'e' and 'a'. Notable characteristics include a double-story 'g', robust slab terminals on ascenders and descenders, and a rational, geometric construction typical of Egyptian or Clarendon-style serifs."
-    },
-    {
       "name": "Plus Jakarta Sans",
       "slug": "plus-jakarta-sans",
       "category": "Sans",
@@ -840,22 +805,6 @@
       "italics": false,
       "source": "fontshare",
       "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and a geometric construction characterized by circular bowls and consistent proportions. The apertures are moderately open in letters like 'c' and 'e', while terminals are flat-cut and perpendicular to stroke direction. The x-height is relatively high compared to the cap height, and the overall width is regular with a double-story 'g' and single-story 'a', typical of geometric sans-serifs with rationalized, optically-corrected forms."
-    },
-    {
-      "name": "Space Grotesk",
-      "slug": "space-grotesk",
-      "category": "Sans",
-      "variable": true,
-      "weights": [
-        300,
-        400,
-        500,
-        600,
-        700
-      ],
-      "italics": false,
-      "source": "fontshare",
-      "description": "This grotesque sans-serif displays monolinear stroke weight with no stress angle and flat-cut terminals throughout. The typeface features a high x-height relative to cap height, moderate to open apertures in letters like 'c', 'e', and 'a', and regular width proportions. Notable glyphs include a single-story 'a' and 'g', with the construction showing rationalized, geometric tendencies typical of neo-grotesque design, particularly visible in the circular bowls and optically-corrected curves."
     },
     {
       "name": "Pramukh Rounded",
@@ -1343,28 +1292,6 @@
       "variable": false,
       "cssUrl": "https://fonts.cdnfonts.com/css/reglo",
       "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and flat-cut terminals throughout. The letterforms display a condensed width with a high x-height relative to the cap height, and apertures in c, e, and s are moderately closed. The construction is grotesque with distinctive features including a single-story 'a', closed aperture in the 'g', and compact proportions that emphasize vertical compression over horizontal space."
-    },
-    {
-      "name": "Poppins",
-      "slug": "poppins",
-      "category": "Sans",
-      "source": "google-fonts",
-      "googleFontsFamily": "Poppins",
-      "weights": [
-        100,
-        200,
-        300,
-        400,
-        500,
-        600,
-        700,
-        800,
-        900
-      ],
-      "italics": true,
-      "cssUrl": "https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap",
-      "variable": true,
-      "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and a geometric construction characterized by circular bowls and optically-corrected curves. The letterforms feature closed apertures in characters like 'e' and 'a', with a single-story 'a' and 'g', and terminals are flat-cut perpendicular to stroke direction. The x-height is high relative to cap height, proportions are regular width, and distinctive features include perfectly circular dots on 'i' and 'j', and uniform stroke terminals throughout."
     },
     {
       "name": "Oswald",
@@ -1917,18 +1844,6 @@
     },
     {
       "heading": {
-        "font": "Melodrama",
-        "slug": "melodrama",
-        "weight": 500
-      },
-      "body": {
-        "font": "Nunito",
-        "slug": "nunito",
-        "weight": 400
-      }
-    },
-    {
-      "heading": {
         "font": "Tanker",
         "slug": "tanker",
         "weight": 400
@@ -2416,18 +2331,6 @@
       "body": {
         "font": "Inter",
         "slug": "inter",
-        "weight": 400
-      }
-    },
-    {
-      "heading": {
-        "font": "Syne",
-        "slug": "syne",
-        "weight": 700
-      },
-      "body": {
-        "font": "Plus Jakarta Sans",
-        "slug": "plus-jakarta-sans",
         "weight": 400
       }
     },
