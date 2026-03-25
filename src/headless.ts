@@ -15,8 +15,7 @@
  */
 
 import { createInterface } from 'node:readline';
-import fs from 'node:fs';
-import path from 'node:path';
+import { readAsset } from './assets.js';
 import { resolveConfig } from './config.js';
 import { buildSystemPrompt } from './prompt/index.js';
 import { setLspBaseUrl } from './tools/_helpers/lsp.js';
@@ -36,12 +35,8 @@ export interface HeadlessOptions {
   lspUrl?: string;
 }
 
-const BASE_DIR =
-  import.meta.dirname ?? path.dirname(new URL(import.meta.url).pathname);
-const ACTIONS_DIR = path.join(BASE_DIR, 'actions');
-
 function loadActionPrompt(name: string): string {
-  return fs.readFileSync(path.join(ACTIONS_DIR, `${name}.md`), 'utf-8').trim();
+  return readAsset('prompt', 'actions', `${name}.md`);
 }
 
 // ---------------------------------------------------------------------------

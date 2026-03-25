@@ -7,28 +7,12 @@
  */
 
 import fs from 'node:fs';
-import path from 'node:path';
+import { readAsset } from '../../assets.js';
 import { loadSpecContext } from '../common/context.js';
 import { getFontLibrarySample } from './data/getFontLibrarySample.js';
 import { getDesignReferencesSample } from './data/getDesignReferencesSample.js';
 
-// ---------------------------------------------------------------------------
-// File loading
-// ---------------------------------------------------------------------------
-
-const base =
-  import.meta.dirname ?? path.dirname(new URL(import.meta.url).pathname);
-
-function resolvePath(filename: string): string {
-  const local = path.join(base, filename);
-  return fs.existsSync(local)
-    ? local
-    : path.join(base, 'subagents', 'designExpert', filename);
-}
-
-function readFile(filename: string): string {
-  return fs.readFileSync(resolvePath(filename), 'utf-8').trim();
-}
+const SUBAGENT = 'subagents/designExpert';
 
 // ---------------------------------------------------------------------------
 // Template assembly (runs once at module init)
@@ -36,10 +20,10 @@ function readFile(filename: string): string {
 
 const RUNTIME_PLACEHOLDERS = new Set(['font_library', 'design_references']);
 
-const PROMPT_TEMPLATE = readFile('prompt.md')
+const PROMPT_TEMPLATE = readAsset(SUBAGENT, 'prompt.md')
   .replace(/\{\{([^}]+)\}\}/g, (match, key) => {
     const k = key.trim();
-    return RUNTIME_PLACEHOLDERS.has(k) ? match : readFile(k);
+    return RUNTIME_PLACEHOLDERS.has(k) ? match : readAsset(SUBAGENT, k);
   })
   .replace(/\n{3,}/g, '\n\n');
 

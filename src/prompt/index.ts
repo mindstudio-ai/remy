@@ -10,8 +10,7 @@
  * at the bottom (recency — what we most need the model to follow).
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
+import { readAsset } from '../assets.js';
 import { isLspConfigured } from '../tools/_helpers/lsp.js';
 import {
   loadProjectInstructions,
@@ -20,22 +19,10 @@ import {
   loadSpecFileMetadata,
 } from './static/projectContext.js';
 
-const PROMPT_DIR =
-  import.meta.dirname ?? path.dirname(new URL(import.meta.url).pathname);
-
-function requireFile(filePath: string): string {
-  const full = path.join(PROMPT_DIR, filePath);
-  try {
-    return fs.readFileSync(full, 'utf-8').trim();
-  } catch {
-    throw new Error(`Required prompt file missing: ${full}`);
-  }
-}
-
 /** Replace all {{path/to/file.md}} with the file contents. */
 function resolveIncludes(template: string): string {
   const result = template.replace(/\{\{([^}]+)\}\}/g, (_, filePath) =>
-    requireFile(filePath.trim()),
+    readAsset('prompt', filePath.trim()),
   );
   return result.replace(/\n{3,}/g, '\n\n').trim();
 }

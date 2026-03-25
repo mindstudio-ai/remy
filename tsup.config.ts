@@ -2,22 +2,20 @@ import { defineConfig } from 'tsup';
 import { cpSync } from 'fs';
 import { resolve } from 'path';
 
-/** Copy non-code assets (markdown, JSON) into dist/ preserving directory structure. */
+const ASSET_PATTERN = /\.(md|json|sh|txt|mjs|html)$/;
+const assetFilter = (p: string) => !p.includes('.') || ASSET_PATTERN.test(p);
+
+/** Copy non-code assets into dist/ preserving directory structure from src/. */
 function copyAssets() {
-  const pairs = [
+  const pairs: Array<[string, string]> = [
     ['src/prompt', 'dist/prompt'],
     ['src/subagents', 'dist/subagents'],
-    ['src/actions', 'dist/actions'],
   ];
   for (const [src, dest] of pairs) {
     try {
       cpSync(resolve(src), resolve(dest), {
         recursive: true,
-        filter: (path) => {
-          // Copy directories, .md, .json, and .sh files
-          if (!path.includes('.')) return true;
-          return /\.(md|json|sh)$/.test(path);
-        },
+        filter: assetFilter,
       });
     } catch {
       // Directory may not exist

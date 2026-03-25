@@ -5,20 +5,11 @@
  * files and roadmap state as XML context.
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
+import { readAsset } from '../../assets.js';
 import { loadSpecContext, loadRoadmapContext } from './executor.js';
 import { loadPlatformBrief } from '../common/context.js';
 
-const base =
-  import.meta.dirname ?? path.dirname(new URL(import.meta.url).pathname);
-
-const local = path.join(base, 'prompt.md');
-const PROMPT_PATH = fs.existsSync(local)
-  ? local
-  : path.join(base, 'subagents', 'productVision', 'prompt.md');
-
-const BASE_PROMPT = fs.readFileSync(PROMPT_PATH, 'utf-8').trim();
+const BASE_PROMPT = readAsset('subagents/productVision', 'prompt.md');
 
 /** Build the system prompt with current spec and roadmap context. */
 export function getProductVisionPrompt(): string {

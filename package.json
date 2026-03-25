@@ -19,7 +19,7 @@
     "remy": "./dist/index.js"
   },
   "scripts": {
-    "build": "tsup && rsync -a --include='*/' --include='*.md' --include='*.json' --include='*.txt' --include='*.sh' --include='*.mjs' --include='*.html' --exclude='*.ts' --exclude='*.tsx' --exclude='node_modules' src/ dist/",
+    "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "lint:fix": "prettier --write ./src",

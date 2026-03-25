@@ -1,5 +1,4 @@
-import fs from 'node:fs';
-import path from 'node:path';
+import { readJsonAsset } from '../../../assets.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -27,22 +26,10 @@ interface Pairing {
 // Data (loaded once at module init)
 // ---------------------------------------------------------------------------
 
-const base =
-  import.meta.dirname ?? path.dirname(new URL(import.meta.url).pathname);
-
-function readJson<T>(filename: string, fallback: T): T {
-  try {
-    return JSON.parse(fs.readFileSync(path.join(base, filename), 'utf-8'));
-  } catch {
-    return fallback;
-  }
-}
-
-const fontData = readJson('sources/fonts.json', {
-  cssUrlPattern: '',
-  fonts: [] as Font[],
-  pairings: [] as Pairing[],
-});
+const fontData = readJsonAsset(
+  { cssUrlPattern: '', fonts: [] as Font[], pairings: [] as Pairing[] },
+  'subagents/designExpert/data/sources/fonts.json',
+);
 
 // ---------------------------------------------------------------------------
 // Sampling

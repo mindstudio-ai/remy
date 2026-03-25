@@ -6,23 +6,14 @@
  * and the SDK consultant to verify packages and architecture decisions.
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
 import type { Tool, ToolExecutionContext } from '../../tools/index.js';
+import { readAsset } from '../../assets.js';
 import { runSubAgent } from '../runner.js';
 import { loadSpecContext, loadPlatformBrief } from '../common/context.js';
 import { executeTool } from '../../tools/index.js';
 import { SANITY_CHECK_TOOLS } from './tools.js';
 
-const base =
-  import.meta.dirname ?? path.dirname(new URL(import.meta.url).pathname);
-
-const local = path.join(base, 'prompt.md');
-const PROMPT_PATH = fs.existsSync(local)
-  ? local
-  : path.join(base, 'subagents', 'codeSanityCheck', 'prompt.md');
-
-const BASE_PROMPT = fs.readFileSync(PROMPT_PATH, 'utf-8').trim();
+const BASE_PROMPT = readAsset('subagents/codeSanityCheck', 'prompt.md');
 
 export const codeSanityCheckTool: Tool = {
   definition: {

@@ -1,5 +1,4 @@
-import fs from 'node:fs';
-import path from 'node:path';
+import { readJsonAsset } from '../../../assets.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -14,20 +13,10 @@ interface InspirationEntry {
 // Data (loaded once at module init)
 // ---------------------------------------------------------------------------
 
-const base =
-  import.meta.dirname ?? path.dirname(new URL(import.meta.url).pathname);
-
-function readJson<T>(filename: string, fallback: T): T {
-  try {
-    return JSON.parse(fs.readFileSync(path.join(base, filename), 'utf-8'));
-  } catch {
-    return fallback;
-  }
-}
-
-const inspirationImages = readJson('sources/inspiration.json', {
-  images: [] as InspirationEntry[],
-}).images;
+const inspirationImages = readJsonAsset(
+  { images: [] as InspirationEntry[] },
+  'subagents/designExpert/data/sources/inspiration.json',
+).images;
 
 // ---------------------------------------------------------------------------
 // Sampling
