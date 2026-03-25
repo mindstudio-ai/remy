@@ -24,6 +24,7 @@ export type AgentEvent =
       name: string;
       input: Record<string, any>;
       partial?: boolean;
+      background?: boolean;
       parentToolId?: string;
     }
   | {

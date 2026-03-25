@@ -160,6 +160,53 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
   // Tool lifecycle management — shared across all nesting depths
   const toolRegistry = new ToolRegistry();
 
+  // Background agent result queue — flushed after each turn or immediately if idle
+  const backgroundQueue: Array<{
+    toolCallId: string;
+    name: string;
+    result: string;
+    completedAt: number;
+  }> = [];
+
+  function flushBackgroundQueue(): void {
+    if (backgroundQueue.length === 0) {
+      return;
+    }
+
+    const results = backgroundQueue.splice(0);
+    const xmlParts = results
+      .map(
+        (r) =>
+          `<tool_result id="${r.toolCallId}" name="${r.name}">\n${r.result}\n</tool_result>`,
+      )
+      .join('\n\n');
+    const message = `@@automated::background_results@@\n<background_results>\n${xmlParts}\n</background_results>`;
+
+    // Deliver as a hidden automated message
+    handleMessage(
+      { action: 'message', text: message, hidden: true } as any,
+      undefined,
+    );
+  }
+
+  function onBackgroundComplete(
+    toolCallId: string,
+    name: string,
+    result: string,
+  ): void {
+    backgroundQueue.push({
+      toolCallId,
+      name,
+      result,
+      completedAt: Date.now(),
+    });
+
+    // If idle, deliver immediately. Otherwise queued for after turn_done.
+    if (!running) {
+      flushBackgroundQueue();
+    }
+  }
+
   // Tools that wait on user input — no timeout
   const USER_FACING_TOOLS = new Set([
     'promptUser',
@@ -217,6 +264,9 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       case 'turn_done':
         completedEmitted = true;
         emit('completed', { success: true }, rid);
+        // Flush any background results that arrived during this turn
+        // (deferred to next tick so `running` is cleared first)
+        setTimeout(() => flushBackgroundQueue(), 0);
         return;
       case 'turn_cancelled':
         completedEmitted = true;
@@ -264,6 +314,7 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
             name: e.name,
             input: e.input,
             ...(e.partial && { partial: true }),
+            ...(e.background && { background: true }),
             ...(e.parentToolId && { parentToolId: e.parentToolId }),
           },
           rid,
@@ -394,6 +445,7 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
         resolveExternalTool,
         hidden: isCommand,
         toolRegistry,
+        onBackgroundComplete,
       });
       // runTurn may have emitted turn_done or turn_cancelled (→ completed).
       // If it returned without either (e.g. streaming error early-return),

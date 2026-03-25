@@ -32,6 +32,12 @@ export interface ToolExecutionContext {
   onLog?: (line: string) => void;
   /** Shared registry for tool lifecycle management (stop/restart). */
   toolRegistry?: ToolRegistry;
+  /** Called when a backgrounded sub-agent completes. */
+  onBackgroundComplete?: (
+    toolCallId: string,
+    name: string,
+    result: string,
+  ) => void;
 }
 
 export interface Tool {

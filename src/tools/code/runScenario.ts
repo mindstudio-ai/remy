@@ -14,7 +14,7 @@ export const runScenarioTool: Tool = {
   definition: {
     name: 'runScenario',
     description:
-      'Run a scenario to seed the dev database with test data. Truncates all tables first, then executes the seed function and impersonates the scenario roles. Blocks until complete. Scenario IDs are defined in mindstudio.json. If it fails, check .logs/tunnel.log or .logs/requests.ndjson for details.',
+      'Run a scenario to seed the dev database with test data. Truncates all tables first, then executes the seed function and impersonates the scenario roles. Blocks until complete. Scenario IDs are defined in mindstudio.json. If it fails, check .logs/tunnel.log or .logs/requests.ndjson for details. Return synchronously - no need to sleep before checking results.',
     inputSchema: {
       type: 'object',
       properties: {

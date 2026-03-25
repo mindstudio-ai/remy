@@ -12,7 +12,7 @@ export const runMethodTool: Tool = {
   definition: {
     name: 'runMethod',
     description:
-      'Run a method in the dev environment and return the result. Use for testing methods after writing or modifying them. Returns output, captured console output, errors with stack traces, and duration. If it fails, check .logs/tunnel.log or .logs/requests.ndjson for more details.',
+      'Run a method in the dev environment and return the result. Use for testing methods after writing or modifying them. Returns output, captured console output, errors with stack traces, and duration. If it fails, check .logs/tunnel.log or .logs/requests.ndjson for more details. Return synchronously - no need to sleep before checking results.',
     inputSchema: {
       type: 'object',
       properties: {

@@ -26,6 +26,11 @@ export const designExpertTool: Tool = {
           description:
             'What you need, in natural language. Include context about the project when relevant.',
         },
+        background: {
+          type: 'boolean',
+          description:
+            "Run in background — returns immediately and doesn't block while continuing to do work in the background. Reports results when finished working.",
+        },
       },
       required: ['task'],
     },
@@ -51,6 +56,20 @@ export const designExpertTool: Tool = {
       onEvent: context.onEvent,
       resolveExternalTool: context.resolveExternalTool,
       toolRegistry: context.toolRegistry,
+      background: input.background as boolean | undefined,
+      onBackgroundComplete: input.background
+        ? (bgResult) => {
+            context.subAgentMessages?.set(
+              context.toolCallId,
+              bgResult.messages,
+            );
+            context.onBackgroundComplete?.(
+              context.toolCallId,
+              'visualDesignExpert',
+              bgResult.text,
+            );
+          }
+        : undefined,
     });
     context.subAgentMessages?.set(context.toolCallId, result.messages);
     return result.text;

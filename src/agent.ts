@@ -94,6 +94,11 @@ export async function runTurn(params: {
   resolveExternalTool?: ExternalToolResolver;
   hidden?: boolean;
   toolRegistry?: import('./toolRegistry.js').ToolRegistry;
+  onBackgroundComplete?: (
+    toolCallId: string,
+    name: string,
+    result: string,
+  ) => void;
 }): Promise<void> {
   const {
     state,
@@ -108,6 +113,7 @@ export async function runTurn(params: {
     resolveExternalTool,
     hidden,
     toolRegistry,
+    onBackgroundComplete,
   } = params;
   const tools = getToolDefinitions(onboardingState);
 
@@ -538,6 +544,7 @@ export async function runTurn(params: {
                 toolCallId: tc.id,
                 subAgentMessages,
                 toolRegistry,
+                onBackgroundComplete,
                 onLog: (line) =>
                   wrappedOnEvent({
                     type: 'tool_input_delta',

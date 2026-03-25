@@ -28,6 +28,11 @@ export const productVisionTool: Tool = {
           description:
             'Brief description of what happened or what is needed. Do not specify how many items to create, what topics to cover, or how to think. The agent reads the spec files and decides for itself.',
         },
+        background: {
+          type: 'boolean',
+          description:
+            "Run in background — returns immediately and doesn't block while continuing to do work in the background. Reports results when finished working.",
+        },
       },
       required: ['task'],
     },
@@ -52,6 +57,20 @@ export const productVisionTool: Tool = {
       onEvent: context.onEvent,
       resolveExternalTool: context.resolveExternalTool,
       toolRegistry: context.toolRegistry,
+      background: input.background as boolean | undefined,
+      onBackgroundComplete: input.background
+        ? (bgResult) => {
+            context.subAgentMessages?.set(
+              context.toolCallId,
+              bgResult.messages,
+            );
+            context.onBackgroundComplete?.(
+              context.toolCallId,
+              'productVision',
+              bgResult.text,
+            );
+          }
+        : undefined,
     });
     context.subAgentMessages?.set(context.toolCallId, result.messages);
     return result.text;

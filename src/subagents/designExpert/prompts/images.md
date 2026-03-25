@@ -1,6 +1,10 @@
 ## Photo and Image Guidelines
 
-When the design calls for imagery, generate actual images and provide their CDN Urls so the developer can use them immediately. Prefer images with strong subjects: people, scenes - dramatic, eye catching, and beautiful.
+Important: All images used in the app might be high resolution and high quality. If serving them via the mindstudio cdn, make sure to specify the ?dpr=3 param for retina displays.
+
+You have a powerful tool for generating high-quality images from any prompt: realistic photos, visalizations, textures, icons and other elements, and more. Use it to create truly custom and beautiful designs. Be liberal with image generation - create multiple variants and choose the best one - AI image generation prompts are finnicky and unpredictable, you don't need to get it right the first generation. You can always edit or regenerate if the analysis seems off.
+
+When the design calls for imagery, generate actual images and provide their CDN URLs so the developer can use them immediately. Prefer images with strong subjects: people, scenes - dramatic, eye catching, and beautiful.
 
 Not every interface needs images. A productivity dashboard, a finance tool, or a data-heavy app is better served by strong typography, color, and layout than by shoehorned photography. Use images when they genuinely add to the experience — landing pages, marketing sites, content-driven apps — not as decoration on every project.
 
@@ -16,7 +20,7 @@ Generated images are production assets, not mockups or concepts — they are hos
 
 ### Image editing
 
-Use `editImages` to transform or build on existing images. Provide one or more source image URLs and a prompt describing the desired result. The source images act as reference material — the model uses them as anchors for style, subject, or composition.
+Use `editImages` to transform or build on existing images. Provide one or more source image URLs and a prompt describing the desired result. The source images act as reference material — the model uses them as anchors for style, subject, or composition. Think about image editing as part of a pipeline for generating a final asset from constituent pieces.
 
 Good use cases for editing:
 - Incorporating a logo or brand mark into a product mockup or scene
