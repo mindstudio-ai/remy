@@ -26,7 +26,7 @@ Lead with the visual style, then describe the content. This order helps the mode
 - Describing positions of arms, legs, or specific limb arrangements.
 - Conflicting style instructions ("photorealistic cartoon").
 - Describing what you don't want — say "empty street" not "street with no cars."
-- Words like "editorial", "magazine", "Vogue", "cover" — the model interprets these literally and renders magazine masthead text over the image. Describe the lighting, composition, and mood you want instead of referencing publications.
+- Image models have a high risk of rendering text. Any word or phrase in your prompt that could be interpreted as a title, label, or caption risks appearing as literal text in the image. Triggers like "magazine cover" also risk making it render a literal mockup of a magazine masthread, even if all you wanted was a certain photography stype. Common triggers: "poster", "editorial", "magazine", "cover", "sign", or brand names, industry jargon, etc. Be thoughtful, careful, and intentional with your prompt - especially when describing abtract visualizations - and describe the visual qualities you want instead of referencing formats or concepts as shorthand.
 
 ### How generated images work in the UI
 
