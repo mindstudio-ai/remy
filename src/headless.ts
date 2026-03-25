@@ -27,6 +27,7 @@ import {
 } from './agent.js';
 import { loadSession, clearSession } from './session.js';
 import type { StdinCommand } from './types.js';
+import { ToolRegistry } from './toolRegistry.js';
 
 export interface HeadlessOptions {
   apiKey?: string;
@@ -156,6 +157,9 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
   >();
   const earlyResults = new Map<string, string>();
 
+  // Tool lifecycle management — shared across all nesting depths
+  const toolRegistry = new ToolRegistry();
+
   // Tools that wait on user input — no timeout
   const USER_FACING_TOOLS = new Set([
     'promptUser',
@@ -278,14 +282,48 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
           rid,
         );
         return;
+      case 'tool_stopped':
+        emit(
+          'tool_stopped',
+          {
+            id: e.id,
+            name: e.name,
+            mode: e.mode,
+            ...(e.parentToolId && { parentToolId: e.parentToolId }),
+          },
+          rid,
+        );
+        return;
+      case 'tool_restarted':
+        emit(
+          'tool_restarted',
+          {
+            id: e.id,
+            name: e.name,
+            input: e.input,
+            ...(e.parentToolId && { parentToolId: e.parentToolId }),
+          },
+          rid,
+        );
+        return;
       case 'status':
-        emit('status', { message: e.message }, rid);
+        emit(
+          'status',
+          {
+            message: e.message,
+            ...(e.parentToolId && { parentToolId: e.parentToolId }),
+          },
+          rid,
+        );
         return;
       case 'error':
         emit('error', { error: e.error }, rid);
         return;
     }
   }
+
+  // Wire registry events through the same onEvent handler
+  toolRegistry.onEvent = onEvent;
 
   // ---------------------------------------------------------------------------
   // Message command handler (long-running / streaming)
@@ -355,6 +393,7 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
         onEvent,
         resolveExternalTool,
         hidden: isCommand,
+        toolRegistry,
       });
       // runTurn may have emitted turn_done or turn_cancelled (→ completed).
       // If it returned without either (e.g. streaming error early-return),
@@ -424,6 +463,38 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       // The in-flight message's completed(success:false, error:"cancelled")
       // is handled by onEvent when turn_cancelled fires.
       emit('completed', { success: true }, requestId);
+      return;
+    }
+
+    if (action === 'stop_tool') {
+      const id = parsed.id as string;
+      const mode = ((parsed.mode as string) ?? 'hard') as 'graceful' | 'hard';
+      const found = toolRegistry.stop(id, mode);
+      if (found) {
+        emit('completed', { success: true }, requestId);
+      } else {
+        emit(
+          'completed',
+          { success: false, error: 'Tool not found' },
+          requestId,
+        );
+      }
+      return;
+    }
+
+    if (action === 'restart_tool') {
+      const id = parsed.id as string;
+      const patchedInput = parsed.input as Record<string, any> | undefined;
+      const found = toolRegistry.restart(id, patchedInput);
+      if (found) {
+        emit('completed', { success: true }, requestId);
+      } else {
+        emit(
+          'completed',
+          { success: false, error: 'Tool not found' },
+          requestId,
+        );
+      }
       return;
     }
 

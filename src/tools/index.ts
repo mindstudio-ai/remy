@@ -17,6 +17,7 @@ export interface ToolDefinition {
 
 import type { AgentEvent, ExternalToolResolver } from '../types.js';
 import type { Message } from '../api.js';
+import type { ToolRegistry } from '../toolRegistry.js';
 
 export interface ToolExecutionContext {
   apiConfig: { baseUrl: string; apiKey: string };
@@ -29,6 +30,8 @@ export interface ToolExecutionContext {
   subAgentMessages?: Map<string, Message[]>;
   /** Called for each log line emitted during tool execution (e.g., CLI stderr). */
   onLog?: (line: string) => void;
+  /** Shared registry for tool lifecycle management (stop/restart). */
+  toolRegistry?: ToolRegistry;
 }
 
 export interface Tool {

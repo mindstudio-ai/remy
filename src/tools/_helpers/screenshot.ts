@@ -9,7 +9,7 @@ import { runCli } from '../../subagents/common/runCli.js';
 import { log } from '../../logger.js';
 
 export const SCREENSHOT_ANALYSIS_PROMPT =
-  'Describe everything visible on screen from top to bottom — every element, its position, its size relative to the viewport, its colors, its content. Be thorough and spatial. After the inventory, note anything that looks visually broken (overlapping elements, clipped text, misaligned components).';
+  'Describe everything visible on screen from top to bottom — every element, its position, its size relative to the viewport, its colors, its content. Be comprehensive, thorough, and spatial. After the inventory, note anything that looks visually broken (overlapping elements, clipped text, misaligned components). Respond only with your analysis as Markdown and absolutely no other text. Do not use emojis - use unicode if you need symbols.';
 
 export interface ScreenshotOptions {
   /** Analysis prompt. Pass `false` to skip analysis and return just the URL. */

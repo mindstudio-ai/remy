@@ -7,7 +7,7 @@ MindStudio has three CDN hosts:
 - **Files:** `f.mscdn.ai`
 
 Always use CDN transform parameters to request appropriately sized images
-rather than CSS-scaling full-resolution originals.
+rather than CSS-scaling full-resolution originals. Always set dpr=3 when sizing images to make sure they look good on Retina displays.
 
 ## CDN Image Transforms
 

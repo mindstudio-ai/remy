@@ -5,7 +5,7 @@
 import { runCli } from '../../common/runCli.js';
 
 const ANALYZE_PROMPT =
-  'You are reviewing this image for a visual designer sourcing assets for a project. Describe: what the image depicts, the mood and color palette, how the lighting and composition work, whether there are any issues (unwanted text, artifacts, distortions), and how it could be used in a layout (hero background, feature section, card texture, etc). Be concise and practical.';
+  'You are reviewing this image for a visual designer sourcing assets for a project. Describe: what the image depicts, the mood and color palette, how the lighting and composition work, whether there are any issues (unwanted text, artifacts, distortions), and how it could be used in a layout (hero background, feature section, card texture, etc). Be concise and practical. Respond only with your analysis as Markdown and absolutely no other text. Do not use emojis - use unicode if you need symbols.';
 
 export interface SeedreamOptions {
   prompts: string[];
@@ -59,7 +59,7 @@ export async function seedreamGenerate(opts: SeedreamOptions): Promise<string> {
     );
     try {
       const parsed = JSON.parse(batchResult);
-      imageUrls = parsed.results.map(
+      imageUrls = parsed.map(
         (r: any) => r.output?.imageUrl ?? `Error: ${r.error}`,
       );
     } catch {

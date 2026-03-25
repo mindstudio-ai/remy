@@ -17,6 +17,8 @@ import {
 } from '../api.js';
 import { log } from '../logger.js';
 import type { AgentEvent, ExternalToolResolver } from '../types.js';
+import type { ToolRegistry } from '../toolRegistry.js';
+import { startStatusWatcher } from '../statusWatcher.js';
 import { cleanMessagesForApi } from './common/cleanMessages.js';
 
 export interface SubAgentConfig {
@@ -37,6 +39,7 @@ export interface SubAgentConfig {
   parentToolId: string;
   onEvent: (event: AgentEvent) => void;
   resolveExternalTool?: ExternalToolResolver;
+  toolRegistry?: ToolRegistry;
 }
 
 export interface SubAgentResult {
@@ -60,6 +63,7 @@ export async function runSubAgent(
     parentToolId,
     onEvent,
     resolveExternalTool,
+    toolRegistry,
   } = config;
 
   // Tag all events with the parent tool ID
@@ -69,14 +73,49 @@ export async function runSubAgent(
 
   const messages: Message[] = [{ role: 'user', content: task }];
 
+  /** Collect accumulated text from content blocks for graceful interruption. */
+  function getPartialText(blocks: ContentBlock[]): string {
+    return blocks
+      .filter((b): b is ContentBlock & { type: 'text' } => b.type === 'text')
+      .map((b) => b.text)
+      .join('');
+  }
+
+  function abortResult(blocks: ContentBlock[]): SubAgentResult {
+    if (signal?.reason === 'graceful') {
+      const partial = getPartialText(blocks);
+      return {
+        text: partial
+          ? `[INTERRUPTED]\n\n${partial}`
+          : '[INTERRUPTED] Sub-agent was interrupted before producing output.',
+        messages,
+      };
+    }
+    return { text: 'Error: cancelled', messages };
+  }
+
+  let lastToolResult = '';
+
   while (true) {
     if (signal?.aborted) {
-      return { text: 'Error: cancelled', messages };
+      return abortResult([]);
     }
 
     const contentBlocks: ContentBlock[] = [];
     let thinkingStartedAt = 0;
     let stopReason = 'end_turn';
+    let currentToolNames = '';
+
+    const statusWatcher = startStatusWatcher({
+      apiConfig,
+      getContext: () => ({
+        assistantText: getPartialText(contentBlocks),
+        lastToolName: currentToolNames || undefined,
+        lastToolResult: lastToolResult || undefined,
+      }),
+      onStatus: (label) => emit({ type: 'status', message: label }),
+      signal,
+    });
 
     const fullSystem = `${system}\n\nCurrent date/time: ${new Date()
       .toISOString()
@@ -162,7 +201,8 @@ export async function runSubAgent(
     }
 
     if (signal?.aborted) {
-      return { text: 'Error: cancelled', messages };
+      statusWatcher.stop();
+      return abortResult(contentBlocks);
     }
 
     // Record assistant message
@@ -178,6 +218,7 @@ export async function runSubAgent(
 
     // If no tool calls, we're done
     if (stopReason !== 'tool_use' || toolCalls.length === 0) {
+      statusWatcher.stop();
       const text = contentBlocks
         .filter((b): b is ContentBlock & { type: 'text' } => b.type === 'text')
         .map((b) => b.text)
@@ -191,50 +232,99 @@ export async function runSubAgent(
       count: toolCalls.length,
       tools: toolCalls.map((tc) => tc.name),
     });
+    currentToolNames = toolCalls.map((tc) => tc.name).join(', ');
 
     const results = await Promise.all(
       toolCalls.map(async (tc) => {
         if (signal?.aborted) {
           return { id: tc.id, result: 'Error: cancelled', isError: true };
         }
-        try {
-          let result: string;
 
-          if (externalTools.has(tc.name) && resolveExternalTool) {
-            result = await resolveExternalTool(tc.id, tc.name, tc.input);
-          } else {
-            const onLog = (line: string) =>
-              emit({
-                type: 'tool_input_delta',
-                id: tc.id,
-                name: tc.name,
-                result: line,
-              });
-            result = await executeTool(tc.name, tc.input, tc.id, onLog);
+        // Per-tool controllable promise + abort
+        let settle!: (result: string, isError: boolean) => void;
+        const resultPromise = new Promise<{
+          id: string;
+          result: string;
+          isError: boolean;
+        }>((res) => {
+          settle = (result, isError) => res({ id: tc.id, result, isError });
+        });
+
+        let toolAbort = new AbortController();
+        const cascadeAbort = () => toolAbort.abort();
+        signal?.addEventListener('abort', cascadeAbort, { once: true });
+
+        let settled = false;
+        const safeSettle = (result: string, isError: boolean) => {
+          if (settled) {
+            return;
           }
+          settled = true;
+          signal?.removeEventListener('abort', cascadeAbort);
+          settle(result, isError);
+        };
 
-          const isError = result.startsWith('Error');
-          emit({
-            type: 'tool_done',
-            id: tc.id,
-            name: tc.name,
-            result,
-            isError,
-          });
-          return { id: tc.id, result, isError };
-        } catch (err: any) {
-          const errorMsg = `Error: ${err.message}`;
-          emit({
-            type: 'tool_done',
-            id: tc.id,
-            name: tc.name,
-            result: errorMsg,
-            isError: true,
-          });
-          return { id: tc.id, result: errorMsg, isError: true };
-        }
+        const run = async (input: Record<string, any>) => {
+          try {
+            let result: string;
+            if (externalTools.has(tc.name) && resolveExternalTool) {
+              result = await resolveExternalTool(tc.id, tc.name, input);
+            } else {
+              const onLog = (line: string) =>
+                emit({
+                  type: 'tool_input_delta',
+                  id: tc.id,
+                  name: tc.name,
+                  result: line,
+                });
+              result = await executeTool(tc.name, input, tc.id, onLog);
+            }
+            safeSettle(result, result.startsWith('Error'));
+          } catch (err: any) {
+            safeSettle(`Error: ${err.message}`, true);
+          }
+        };
+
+        // Register for lifecycle management
+        const entry = {
+          id: tc.id,
+          name: tc.name,
+          input: tc.input,
+          parentToolId,
+          abortController: toolAbort,
+          startedAt: Date.now(),
+          settle: safeSettle,
+          rerun: (newInput: Record<string, any>) => {
+            settled = false;
+            toolAbort = new AbortController();
+            signal?.addEventListener('abort', () => toolAbort.abort(), {
+              once: true,
+            });
+            entry.abortController = toolAbort;
+            entry.input = newInput;
+            run(newInput);
+          },
+        };
+        toolRegistry?.register(entry);
+
+        run(tc.input);
+
+        const r = await resultPromise;
+        toolRegistry?.unregister(tc.id);
+
+        emit({
+          type: 'tool_done',
+          id: tc.id,
+          name: tc.name,
+          result: r.result,
+          isError: r.isError,
+        });
+        return r;
       }),
     );
+
+    statusWatcher.stop();
+    lastToolResult = results.at(-1)?.result ?? '';
 
     // Merge results onto the tool content blocks (so sub-agent messages
     // are self-contained — the frontend can read result directly from
@@ -246,6 +336,7 @@ export async function runSubAgent(
       if (block?.type === 'tool') {
         block.result = r.result;
         block.isError = r.isError;
+        block.completedAt = Date.now();
       }
 
       // Still append as user messages — the LLM needs them for the next loop iteration

@@ -20,7 +20,7 @@ Brief description of the types used on the page. If you can identify the actual 
 ## Techniques
 Identify the specific design moves that make this page interesting and unique, described in terms of how a designer with a technical background would write them down as notes in their notebook for inspiration. Focus only on the non-obvious, hard-to-think-of techniques — the things that make this page gallery-worthy. Skip basics like "high contrast CTA" or "generous whitespace" that any competent designer already knows.
 
-Respond only with the analysis and absolutely no other text.
+Respond only with your analysis as Markdown and absolutely no other text. Do not use emojis - use unicode if you need symbols.
 `;
 
 export const definition: ToolDefinition = {

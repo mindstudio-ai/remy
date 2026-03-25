@@ -50,6 +50,7 @@ export const designExpertTool: Tool = {
       parentToolId: context.toolCallId,
       onEvent: context.onEvent,
       resolveExternalTool: context.resolveExternalTool,
+      toolRegistry: context.toolRegistry,
     });
     context.subAgentMessages?.set(context.toolCallId, result.messages);
     return result.text;

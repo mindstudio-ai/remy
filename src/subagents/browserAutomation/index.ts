@@ -138,6 +138,7 @@ export const browserAutomationTool: Tool = {
         }
         return result;
       },
+      toolRegistry: context.toolRegistry,
     });
     context.subAgentMessages?.set(context.toolCallId, result.messages);
     return result.text;

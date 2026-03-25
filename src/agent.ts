@@ -93,6 +93,7 @@ export async function runTurn(params: {
   onEvent: (event: AgentEvent) => void;
   resolveExternalTool?: ExternalToolResolver;
   hidden?: boolean;
+  toolRegistry?: import('./toolRegistry.js').ToolRegistry;
 }): Promise<void> {
   const {
     state,
@@ -106,6 +107,7 @@ export async function runTurn(params: {
     onEvent,
     resolveExternalTool,
     hidden,
+    toolRegistry,
   } = params;
   const tools = getToolDefinitions(onboardingState);
 
@@ -166,6 +168,30 @@ export async function runTurn(params: {
     let thinkingStartedAt = 0;
     const toolInputAccumulators = new Map<string, ToolInputAcc>();
     let stopReason = 'end_turn';
+
+    // Mutable state for the unified status watcher
+    let subAgentText = '';
+    let currentToolNames = '';
+
+    const statusWatcher = startStatusWatcher({
+      apiConfig,
+      getContext: () => ({
+        assistantText:
+          subAgentText || getTextContent(contentBlocks).slice(-500),
+        lastToolName:
+          currentToolNames ||
+          getToolCalls(contentBlocks)
+            .filter((tc) => !STATUS_EXCLUDED_TOOLS.has(tc.name))
+            .at(-1)?.name ||
+          lastCompletedTools ||
+          undefined,
+        lastToolResult: lastCompletedResult || undefined,
+        onboardingState,
+        userMessage,
+      }),
+      onStatus: (label) => onEvent({ type: 'status', message: label }),
+      signal,
+    });
 
     type ToolInputAcc = {
       name: string;
@@ -260,24 +286,6 @@ export async function runTurn(params: {
     }
 
     // Stream one LLM turn
-    const statusWatcher = startStatusWatcher({
-      apiConfig,
-      getContext: () => ({
-        assistantText: getTextContent(contentBlocks).slice(-500),
-        lastToolName:
-          getToolCalls(contentBlocks)
-            .filter((tc) => !STATUS_EXCLUDED_TOOLS.has(tc.name))
-            .at(-1)?.name ||
-          lastCompletedTools ||
-          undefined,
-        lastToolResult: lastCompletedResult || undefined,
-        onboardingState,
-        userMessage,
-      }),
-      onStatus: (label) => onEvent({ type: 'status', message: label }),
-      signal,
-    });
-
     try {
       for await (const event of streamChatWithRetry(
         {
@@ -415,11 +423,10 @@ export async function runTurn(params: {
       } else {
         throw err;
       }
-    } finally {
-      statusWatcher.stop();
     }
 
     if (signal?.aborted) {
+      statusWatcher.stop();
       // Record whatever the assistant produced before cancellation
       if (contentBlocks.length > 0) {
         contentBlocks.push({
@@ -446,6 +453,7 @@ export async function runTurn(params: {
     // If no tool calls, the turn is complete
     const toolCalls = getToolCalls(contentBlocks);
     if (stopReason !== 'tool_use' || toolCalls.length === 0) {
+      statusWatcher.stop();
       saveSession(state);
       onEvent({ type: 'turn_done' });
       return;
@@ -456,9 +464,13 @@ export async function runTurn(params: {
       count: toolCalls.length,
       tools: toolCalls.map((tc) => tc.name),
     });
-    // Track sub-agent activity for status labels
-    let subAgentText = '';
-    const origOnEvent = onEvent;
+
+    // Update status watcher context for tool execution phase
+    currentToolNames = toolCalls
+      .filter((tc) => !STATUS_EXCLUDED_TOOLS.has(tc.name))
+      .map((tc) => tc.name)
+      .join(', ');
+
     const wrappedOnEvent = (e: AgentEvent) => {
       // Capture sub-agent text for status watcher context
       if ('parentToolId' in e && e.parentToolId) {
@@ -468,98 +480,126 @@ export async function runTurn(params: {
           subAgentText = `Using ${e.name}`;
         }
       }
-      origOnEvent(e);
+      onEvent(e);
     };
-
-    const toolStatusWatcher = startStatusWatcher({
-      apiConfig,
-      getContext: () => ({
-        assistantText:
-          subAgentText || getTextContent(contentBlocks).slice(-500),
-        lastToolName:
-          toolCalls
-            .filter((tc) => !STATUS_EXCLUDED_TOOLS.has(tc.name))
-            .map((tc) => tc.name)
-            .join(', ') || undefined,
-        lastToolResult: lastCompletedResult || undefined,
-        onboardingState,
-        userMessage,
-      }),
-      onStatus: (label) => origOnEvent({ type: 'status', message: label }),
-      signal,
-    });
     const subAgentMessages = new Map<string, import('./api.js').Message[]>();
     const results = await Promise.all(
       toolCalls.map(async (tc) => {
         if (signal?.aborted) {
-          return {
-            id: tc.id,
-            result: 'Error: cancelled',
-            isError: true,
-          };
+          return { id: tc.id, result: 'Error: cancelled', isError: true };
         }
+
         const toolStart = Date.now();
-        try {
-          let result: string;
 
-          if (EXTERNAL_TOOLS.has(tc.name) && resolveExternalTool) {
-            // External tool — save before blocking on user/sandbox response
-            saveSession(state);
-            log.info('Waiting for external tool result', {
-              name: tc.name,
-              id: tc.id,
-            });
-            result = await resolveExternalTool(tc.id, tc.name, tc.input);
-          } else {
-            // Local tool — execute directly
-            result = await executeTool(tc.name, tc.input, {
-              apiConfig,
-              model,
-              signal,
-              onEvent: wrappedOnEvent,
-              resolveExternalTool,
-              toolCallId: tc.id,
-              subAgentMessages,
-              onLog: (line) =>
-                wrappedOnEvent({
-                  type: 'tool_input_delta',
-                  id: tc.id,
-                  name: tc.name,
-                  result: line,
-                }),
-            });
+        // Controllable promise — can be settled externally by stop/restart
+        let settle!: (result: string, isError: boolean) => void;
+        const resultPromise = new Promise<{
+          id: string;
+          result: string;
+          isError: boolean;
+        }>((res) => {
+          settle = (result, isError) => res({ id: tc.id, result, isError });
+        });
+
+        // Per-tool abort — cascades from parent turn signal
+        let toolAbort = new AbortController();
+        const cascadeAbort = () => toolAbort.abort();
+        signal?.addEventListener('abort', cascadeAbort, { once: true });
+
+        // Whether this slot has already been settled (prevent double-settle)
+        let settled = false;
+        const safeSettle = (result: string, isError: boolean) => {
+          if (settled) {
+            return;
           }
+          settled = true;
+          signal?.removeEventListener('abort', cascadeAbort);
+          settle(result, isError);
+        };
 
-          const isError = result.startsWith('Error');
-          log.info('Tool completed', {
-            name: tc.name,
-            elapsed: `${Date.now() - toolStart}ms`,
-            isError,
-            resultLength: result.length,
-          });
-          onEvent({
-            type: 'tool_done',
-            id: tc.id,
-            name: tc.name,
-            result,
-            isError,
-          });
-          return { id: tc.id, result, isError };
-        } catch (err: any) {
-          const errorMsg = `Error: ${err.message}`;
-          onEvent({
-            type: 'tool_done',
-            id: tc.id,
-            name: tc.name,
-            result: errorMsg,
-            isError: true,
-          });
-          return { id: tc.id, result: errorMsg, isError: true };
-        }
+        // The execution function — can be called multiple times for restart
+        const run = async (input: Record<string, any>) => {
+          try {
+            let result: string;
+            if (EXTERNAL_TOOLS.has(tc.name) && resolveExternalTool) {
+              saveSession(state);
+              log.info('Waiting for external tool result', {
+                name: tc.name,
+                id: tc.id,
+              });
+              result = await resolveExternalTool(tc.id, tc.name, input);
+            } else {
+              result = await executeTool(tc.name, input, {
+                apiConfig,
+                model,
+                signal: toolAbort.signal,
+                onEvent: wrappedOnEvent,
+                resolveExternalTool,
+                toolCallId: tc.id,
+                subAgentMessages,
+                toolRegistry,
+                onLog: (line) =>
+                  wrappedOnEvent({
+                    type: 'tool_input_delta',
+                    id: tc.id,
+                    name: tc.name,
+                    result: line,
+                  }),
+              });
+            }
+            safeSettle(result, result.startsWith('Error'));
+          } catch (err: any) {
+            safeSettle(`Error: ${err.message}`, true);
+          }
+        };
+
+        // Register for lifecycle management
+        const entry = {
+          id: tc.id,
+          name: tc.name,
+          input: tc.input,
+          abortController: toolAbort,
+          startedAt: toolStart,
+          settle: safeSettle,
+          rerun: (newInput: Record<string, any>) => {
+            // Reset for new execution
+            settled = false;
+            toolAbort = new AbortController();
+            signal?.addEventListener('abort', () => toolAbort.abort(), {
+              once: true,
+            });
+            entry.abortController = toolAbort;
+            entry.input = newInput;
+            run(newInput);
+          },
+        };
+        toolRegistry?.register(entry);
+
+        // Start execution
+        run(tc.input);
+
+        // Await result (transparent to stop/restart)
+        const r = await resultPromise;
+        toolRegistry?.unregister(tc.id);
+
+        log.info('Tool completed', {
+          name: tc.name,
+          elapsed: `${Date.now() - toolStart}ms`,
+          isError: r.isError,
+          resultLength: r.result.length,
+        });
+        onEvent({
+          type: 'tool_done',
+          id: tc.id,
+          name: tc.name,
+          result: r.result,
+          isError: r.isError,
+        });
+        return r;
       }),
     );
 
-    toolStatusWatcher.stop();
+    statusWatcher.stop();
 
     // Attach results and sub-agent histories to tool content blocks
     for (const r of results) {
@@ -569,6 +609,7 @@ export async function runTurn(params: {
       if (block?.type === 'tool') {
         block.result = r.result;
         block.isError = r.isError;
+        block.completedAt = Date.now();
         const msgs = subAgentMessages.get(r.id);
         if (msgs) {
           block.subAgentMessages = msgs;

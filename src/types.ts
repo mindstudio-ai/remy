@@ -34,10 +34,24 @@ export type AgentEvent =
       isError: boolean;
       parentToolId?: string;
     }
+  | {
+      type: 'tool_stopped';
+      id: string;
+      name: string;
+      mode: 'graceful' | 'hard';
+      parentToolId?: string;
+    }
+  | {
+      type: 'tool_restarted';
+      id: string;
+      name: string;
+      input: Record<string, any>;
+      parentToolId?: string;
+    }
   | { type: 'turn_started' }
   | { type: 'turn_done' }
   | { type: 'turn_cancelled' }
-  | { type: 'status'; message: string }
+  | { type: 'status'; message: string; parentToolId?: string }
   | { type: 'error'; error: string };
 
 // Conversation state persisted across turns
