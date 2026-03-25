@@ -36,6 +36,13 @@ export type AgentEvent =
       parentToolId?: string;
     }
   | {
+      type: 'tool_background_complete';
+      id: string;
+      name: string;
+      result: string;
+      parentToolId?: string;
+    }
+  | {
       type: 'tool_stopped';
       id: string;
       name: string;

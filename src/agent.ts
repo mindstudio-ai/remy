@@ -98,6 +98,7 @@ export async function runTurn(params: {
     toolCallId: string,
     name: string,
     result: string,
+    subAgentMessages?: import('./api.js').Message[],
   ) => void;
 }): Promise<void> {
   const {
@@ -130,13 +131,10 @@ export async function runTurn(params: {
 
   onEvent({ type: 'turn_started' });
 
-  // Strip @@automated::...@@ sentinel prefix before sending to the LLM.
-  // The frontend uses this to mark automated messages for custom rendering,
-  // but the agent should see them as normal user messages.
-  const cleanMessage = userMessage.replace(/^@@automated::[^@]*@@/, '');
-
-  // Add user message to conversation
-  const userMsg: Message = { role: 'user', content: cleanMessage };
+  // Store the original message (with @@automated:: prefix if present) in history
+  // so the frontend can identify automated messages. The prefix is stripped by
+  // cleanMessagesForApi before sending to the LLM.
+  const userMsg: Message = { role: 'user', content: userMessage };
   if (hidden) {
     userMsg.hidden = true;
   }

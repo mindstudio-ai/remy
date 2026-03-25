@@ -37,6 +37,7 @@ export interface ToolExecutionContext {
     toolCallId: string,
     name: string,
     result: string,
+    subAgentMessages?: import('../api.js').Message[],
   ) => void;
 }
 

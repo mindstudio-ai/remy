@@ -10,6 +10,18 @@ import type { Message, ContentBlock } from '../../api.js';
 
 export function cleanMessagesForApi(messages: Message[]): Message[] {
   return messages.map((msg) => {
+    // Strip @@automated::...@@ sentinel from user messages before sending to LLM
+    if (
+      msg.role === 'user' &&
+      typeof msg.content === 'string' &&
+      msg.content.startsWith('@@automated::')
+    ) {
+      return {
+        ...msg,
+        content: msg.content.replace(/^@@automated::[^@]*@@\n?/, ''),
+      };
+    }
+
     if (!Array.isArray(msg.content)) {
       return msg;
     }

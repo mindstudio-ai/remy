@@ -40,6 +40,8 @@ export type ContentBlock =
       result?: string;
       isError?: boolean;
       subAgentMessages?: Message[];
+      /** Final result from a backgrounded sub-agent (set when background work completes). */
+      backgroundResult?: string;
     };
 
 export interface Message {

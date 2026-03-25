@@ -193,7 +193,33 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     toolCallId: string,
     name: string,
     result: string,
+    subAgentMessages?: import('./api.js').Message[],
   ): void {
+    // Update the tool block in history with the real result and sub-agent messages
+    for (const msg of state.messages) {
+      if (!Array.isArray(msg.content)) {
+        continue;
+      }
+      for (const block of msg.content) {
+        if (block.type === 'tool' && block.id === toolCallId) {
+          block.backgroundResult = result;
+          block.completedAt = Date.now();
+          if (subAgentMessages) {
+            block.subAgentMessages = subAgentMessages;
+          }
+        }
+      }
+    }
+
+    // Emit event so frontend can update immediately
+    onEvent({
+      type: 'tool_background_complete',
+      id: toolCallId,
+      name,
+      result,
+    });
+
+    // Queue the synthetic message for the LLM
     backgroundQueue.push({
       toolCallId,
       name,
@@ -333,6 +359,18 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
           rid,
         );
         return;
+      case 'tool_background_complete':
+        emit(
+          'tool_background_complete',
+          {
+            id: e.id,
+            name: e.name,
+            result: e.result,
+            ...(e.parentToolId && { parentToolId: e.parentToolId }),
+          },
+          rid,
+        );
+        return;
       case 'tool_stopped':
         emit(
           'tool_stopped',
@@ -416,6 +454,7 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     // Resolve the user message — runCommand may substitute a built-in prompt
     let userMessage = (parsed.text as string) ?? '';
     const isCommand = !!parsed.runCommand;
+    const isHidden = isCommand || !!(parsed.hidden as boolean);
     if (parsed.runCommand === 'sync') {
       userMessage = loadActionPrompt('sync');
     } else if (parsed.runCommand === 'publish') {
@@ -443,7 +482,7 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
         signal: currentAbort.signal,
         onEvent,
         resolveExternalTool,
-        hidden: isCommand,
+        hidden: isHidden,
         toolRegistry,
         onBackgroundComplete,
       });

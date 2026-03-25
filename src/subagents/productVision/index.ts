@@ -60,14 +60,11 @@ export const productVisionTool: Tool = {
       background: input.background as boolean | undefined,
       onBackgroundComplete: input.background
         ? (bgResult) => {
-            context.subAgentMessages?.set(
-              context.toolCallId,
-              bgResult.messages,
-            );
             context.onBackgroundComplete?.(
               context.toolCallId,
               'productVision',
               bgResult.text,
+              bgResult.messages,
             );
           }
         : undefined,
