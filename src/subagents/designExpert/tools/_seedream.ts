@@ -38,7 +38,7 @@ export async function seedreamGenerate(opts: SeedreamOptions): Promise<string> {
       },
     });
     const url = await runCli(
-      `mindstudio generate-image '${step}' --output-key imageUrl --no-meta`,
+      `mindstudio generate-image ${JSON.stringify(step)} --output-key imageUrl --no-meta`,
       { jsonLogs: true, timeout: 200_000, onLog },
     );
     imageUrls = [url];
@@ -54,7 +54,7 @@ export async function seedreamGenerate(opts: SeedreamOptions): Promise<string> {
       },
     }));
     const batchResult = await runCli(
-      `mindstudio batch '${JSON.stringify(steps)}' --no-meta`,
+      `mindstudio batch ${JSON.stringify(JSON.stringify(steps))} --no-meta`,
       { jsonLogs: true, timeout: 200_000, onLog },
     );
     try {
