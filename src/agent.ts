@@ -388,6 +388,7 @@ export async function runTurn(params: {
               name: event.name,
               input: event.input,
               startedAt: event.ts,
+              ...(event.input.background && { background: true }),
             });
             const acc = toolInputAccumulators.get(event.id);
             const tool = getToolByName(event.name);
