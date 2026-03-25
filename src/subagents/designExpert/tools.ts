@@ -103,14 +103,14 @@ export const DESIGN_EXPERT_TOOLS: ToolDefinition[] = [
   {
     name: 'runBrowserTest',
     description:
-      'Run an automated browser test against the live app preview. Use to verify visual implementation: check computed styles, navigate between pages, take analyzed screenshots. Describe what you want to verify and the browser agent handles the interaction.',
+      'Run an automated browser test against the live app preview. Use to verify implementation details via getComputedStyle: font-family names, exact colors, spacing, borders, shadows, font sizes, transforms. Also supports navigation between pages and screenshots. Use this to confirm the right fonts are loaded and CSS values match the spec.',
     inputSchema: {
       type: 'object',
       properties: {
         task: {
           type: 'string',
           description:
-            'What to verify, in natural language. E.g., "Check that the hero section cards have border-radius: 24px and the correct rotation angles" or "Navigate to /about and screenshot it".',
+            'What to verify, in natural language. Focus on measurable properties: "Check the hero cards have border-radius: 24px and box-shadow" or "Verify the background color of the CTA section is #C4FF0D".',
         },
       },
       required: ['task'],
