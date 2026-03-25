@@ -28,9 +28,6 @@
   <animation>
     {{prompts/animation.md}}
   </animation>
-  <icons>
-    {{prompts/icons.md}}
-  </icons>
   <images>
     {{prompts/images.md}}
   </images>
