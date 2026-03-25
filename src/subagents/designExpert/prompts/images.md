@@ -56,6 +56,8 @@ You can produce two kinds of image assets:
 
 **Isolated assets** (with `transparentBackground`) — cutout objects, product shots, icons, illustrated elements on transparent backgrounds. These are composited directly onto layouts, layered over other content, or placed inside cards and feature sections as standalone elements.
 
+Note: when analyzing images generated with `transparentBackground`, the transparent background will appear white to the vision analysis models. Don't mistake this for a white background — the image has an alpha channel and the background is transparent. Trust the generation parameters over what the analysis describes.
+
 Think of yourself as providing visual ingredients — both backgrounds and foreground elements — not finished UI.
 
 ### What makes good photos and images

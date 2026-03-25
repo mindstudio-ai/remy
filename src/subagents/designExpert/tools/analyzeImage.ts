@@ -7,7 +7,7 @@ const DEFAULT_PROMPT =
 export const definition: ToolDefinition = {
   name: 'analyzeImage',
   description:
-    'Analyze an image by URL. Returns a detailed description of everything visible. Provide a custom prompt to ask a specific question instead of the default full description.',
+    'Analyze an image by URL using a vision model. Returns an objective description of what is visible — shapes, colors, layout, text, artifacts. Use for factual inventory of image contents, not for subjective design judgment - the vision model providing the analysis has no sense of design. You are the design expert - use the analysis tool for factual inventory, then apply your own expertise for quality and suitability assessments.',
   inputSchema: {
     type: 'object',
     properties: {
