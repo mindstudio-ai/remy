@@ -81,9 +81,10 @@ export async function runSubAgent(
       .toISOString()
       .replace('T', ' ')
       .replace(/\.\d+Z$/, ' UTC')}`;
-    log.debug(`Sub-agent system prompt [${subAgentId || 'unknown'}]`, {
-      system: fullSystem,
-    });
+    try {
+      const { writeFileSync } = await import('node:fs');
+      writeFileSync(`.remy-prompt-${subAgentId || 'unknown'}.md`, fullSystem);
+    } catch {}
 
     try {
       for await (const event of streamChatWithRetry({
