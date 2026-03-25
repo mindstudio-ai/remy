@@ -182,11 +182,8 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       .join('\n\n');
     const message = `@@automated::background_results@@\n<background_results>\n${xmlParts}\n</background_results>`;
 
-    // Deliver as a hidden automated message
-    handleMessage(
-      { action: 'message', text: message, hidden: true } as any,
-      undefined,
-    );
+    // Deliver as an automated message — frontend identifies it by the @@automated:: prefix
+    handleMessage({ action: 'message', text: message } as any, undefined);
   }
 
   function onBackgroundComplete(
