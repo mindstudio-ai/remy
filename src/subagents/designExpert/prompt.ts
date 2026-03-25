@@ -63,5 +63,9 @@ export function getDesignExpertPrompt(): string {
     prompt += `\n\n${specContext}`;
   }
 
+  try {
+    fs.writeFileSync(`.design-prompt.md`, prompt);
+  } catch {}
+
   return prompt;
 }
