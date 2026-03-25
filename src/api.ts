@@ -346,10 +346,6 @@ export async function generateBackgroundAck(params: {
 }): Promise<string> {
   const url = `${params.apiConfig.baseUrl}/_internal/v2/agent/remy/generate-ack`;
   try {
-    log.debug('Generating background ack', {
-      url,
-      agentName: params.agentName,
-    });
     const res = await fetch(url, {
       method: 'POST',
       headers: {
@@ -363,16 +359,11 @@ export async function generateBackgroundAck(params: {
       signal: AbortSignal.timeout(20000),
     });
     if (!res.ok) {
-      log.debug('Background ack endpoint returned non-ok', {
-        status: res.status,
-      });
       return FALLBACK_ACK;
     }
     const data = (await res.json()) as { message?: string };
-    log.debug('Background ack response', { message: data.message });
     return data.message || FALLBACK_ACK;
   } catch (err: any) {
-    log.debug('Background ack failed', { error: err?.message, url });
     return FALLBACK_ACK;
   }
 }
