@@ -28,7 +28,7 @@ export const DESIGN_EXPERT_TOOLS: ToolDefinition[] = [
   {
     name: 'searchGoogle',
     description:
-      'Search Google for web results. Use for finding design inspiration, font recommendations, UI patterns, real products in a domain, and reference material.',
+      'Search Google for web results. Reserch modern design trends in industries or verticals, "best [domain] apps 2026", ui patterns, etc. Prioritize authoritative sources like Figma and other design leaders, avoid random blog spam. Pick one or more URLs from the results and then use `fetchUrl` to get their text content.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -43,7 +43,7 @@ export const DESIGN_EXPERT_TOOLS: ToolDefinition[] = [
   {
     name: 'fetchUrl',
     description:
-      'Fetch the content of a web page as markdown. Optionally capture a screenshot to see the visual design. Use to analyze reference sites, read font specimen pages, or extract design details.',
+      'Fetch the content of a web page as markdown. Optionally capture a screenshot to see the visual design. Use when reading sites from search results or specific things the user wants to incorporate.',
     inputSchema: {
       type: 'object',
       properties: {
