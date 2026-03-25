@@ -84,11 +84,7 @@ export function runSubAgent(config: SubAgentConfig): Promise<SubAgentResult> {
     onEvent({ ...e, parentToolId } as AgentEvent);
   };
 
-  // Background split state
-  let splitDone = false;
-  let earlyResolve: ((result: SubAgentResult) => void) | null = null;
-
-  // The core loop — runs to completion in foreground, or detached in background
+  // The core loop
   const run = async (): Promise<SubAgentResult> => {
     const messages: Message[] = [{ role: 'user', content: task }];
 
@@ -105,8 +101,8 @@ export function runSubAgent(config: SubAgentConfig): Promise<SubAgentResult> {
         const partial = getPartialText(blocks);
         return {
           text: partial
-            ? `[INTERRUPTED]\n\n${partial}`
-            : '[INTERRUPTED] Sub-agent was interrupted before producing output.',
+            ? `[INTERRUPTED - PARTIAL OUTPUT RETRIEVED] Note that partial output may include thinking text or other unfinalized decisions. It is NOT an authoritative response from this agent.\n\n${partial}`
+            : '[INTERRUPTED] Agent was interrupted before producing output.',
           messages,
         };
       }
@@ -248,21 +244,7 @@ export function runSubAgent(config: SubAgentConfig): Promise<SubAgentResult> {
       if (stopReason !== 'tool_use' || toolCalls.length === 0) {
         statusWatcher.stop();
         const text = getPartialText(contentBlocks);
-        if (splitDone) {
-          // Background mode: this is the final completion
-          onBackgroundComplete?.({ text, messages });
-          return { text, messages }; // Only reached if running detached
-        }
         return { text, messages };
-      }
-
-      // Background split: return initial response, continue working in background
-      if (background && !splitDone) {
-        const text = getPartialText(contentBlocks);
-        if (text && earlyResolve) {
-          splitDone = true;
-          earlyResolve({ text, messages: [...messages], backgrounded: true });
-        }
       }
 
       // Execute tool calls
@@ -394,32 +376,16 @@ export function runSubAgent(config: SubAgentConfig): Promise<SubAgentResult> {
     return run();
   }
 
-  // Background: return a promise that resolves early when the sub-agent
-  // produces its first text response. The loop continues detached.
-  return new Promise<SubAgentResult>((resolve) => {
-    earlyResolve = resolve;
+  // Background: resolve immediately with ack, run the loop detached.
+  const ack =
+    '[Message sent to agent. Agent is working in the background and will report back with its results when finished.]';
 
-    // Run detached — don't await. Errors are caught inside run().
-    run()
-      .then((finalResult) => {
-        if (!splitDone) {
-          // Never split — the sub-agent finished before producing text + tool calls.
-          // Return normally (not backgrounded).
-          resolve(finalResult);
-        } else {
-          // Background completion — deliver via callback
-          onBackgroundComplete?.(finalResult);
-        }
-      })
-      .catch((err) => {
-        if (!splitDone) {
-          resolve({ text: `Error: ${err.message}`, messages: [] });
-        } else {
-          onBackgroundComplete?.({
-            text: `Error: ${err.message}`,
-            messages: [],
-          });
-        }
-      });
-  });
+  // Run detached — deliver result via callback when done.
+  run()
+    .then((finalResult) => onBackgroundComplete?.(finalResult))
+    .catch((err) =>
+      onBackgroundComplete?.({ text: `Error: ${err.message}`, messages: [] }),
+    );
+
+  return Promise.resolve({ text: ack, messages: [], backgrounded: true });
 }

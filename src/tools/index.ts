@@ -89,7 +89,7 @@ import { confirmDestructiveActionTool } from './common/confirmDestructiveAction.
 import { askMindStudioSdkTool } from '../subagents/sdkConsultant/index.js';
 import { fetchUrlTool } from './common/fetchUrl.js';
 import { searchGoogleTool } from './common/searchGoogle.js';
-import { setProjectNameTool } from './common/setProjectName.js';
+import { setProjectMetadataTool } from './common/setProjectName.js';
 
 // Code tools
 import { readFileTool } from './code/readFile.js';
@@ -147,7 +147,7 @@ function getCommonTools(): Tool[] {
     askMindStudioSdkTool,
     fetchUrlTool,
     searchGoogleTool,
-    setProjectNameTool,
+    setProjectMetadataTool,
     designExpertTool,
     productVisionTool,
     codeSanityCheckTool,

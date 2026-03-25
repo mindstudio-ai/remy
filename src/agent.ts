@@ -66,7 +66,7 @@ const EXTERNAL_TOOLS = new Set([
   'runScenario',
   'runMethod',
   'browserCommand',
-  'setProjectName',
+  'setProjectMetadata',
 ]);
 
 export type { AgentEvent, AgentState, ExternalToolResolver } from './types.js';
@@ -153,7 +153,7 @@ export async function runTurn(params: {
   // Internal tools that are invisible to the user — exclude from status labels
   const STATUS_EXCLUDED_TOOLS = new Set([
     'setProjectOnboardingState',
-    'setProjectName',
+    'setProjectMetadata',
     'clearSyncStatus',
     'editsFinished',
   ]);
