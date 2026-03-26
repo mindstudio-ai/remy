@@ -141,6 +141,7 @@ export async function runSubAgent(
           assistantText: getPartialText(contentBlocks),
           lastToolName: currentToolNames || undefined,
           lastToolResult: lastToolResult || undefined,
+          userMessage: task,
         }),
         onStatus: (label) => emit({ type: 'status', message: label }),
         signal,

@@ -36,10 +36,11 @@ export async function enhanceImagePrompt(
     );
   }
 
-  const message = `<context>\n${contextParts.join('\n')}\n</context>\n\n<brief>\n${brief}\n</brief>`;
+  const context = `<context>\n${contextParts.join('\n')}\n</context>`;
+  const message = `${SYSTEM_PROMPT}\n\n${context}\n\n<brief>\n${brief}\n</brief>`;
 
   const enhanced = await runCli(
-    `mindstudio generate-text --prompt ${JSON.stringify(SYSTEM_PROMPT)} --message ${JSON.stringify(message)} --output-key enhanced --no-meta`,
+    `mindstudio generate-text --message ${JSON.stringify(message)} --output-key content --no-meta`,
     { timeout: 60_000, onLog },
   );
 

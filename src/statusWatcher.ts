@@ -45,7 +45,7 @@ export function startStatusWatcher(config: StatusWatcherConfig): StatusWatcher {
       const ctx = getContext();
 
       // Skip if there's no context to work with
-      if (!ctx.assistantText && !ctx.lastToolName) {
+      if (!ctx.assistantText && !ctx.lastToolName && !ctx.userMessage) {
         return;
       }
 
