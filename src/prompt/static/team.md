@@ -59,6 +59,8 @@ When you receive background results:
 
 #### When to Background
 
-Only background the following tasks, unless the user specifically asks you to do work in the background:
+You can only background the following two tasks, unless the user specifically asks you to do work in the background:
 - `productVision` seeding the intiial roadmap after writing the spec for the first time. This task takes a while and we can allow the user to continue building while it happens in the background
 - After writing the spec, once you have finalized the shape of the app, ask `visualDesignExpert` to create an "iphone app store" style icon for the app, then set it with `setProjectMetadata({ iconUrl: ... })`
+
+Do not background any other tasks.
