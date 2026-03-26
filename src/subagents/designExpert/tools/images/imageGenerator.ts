@@ -6,6 +6,7 @@
  */
 
 import { runCli } from '../../../common/runCli.js';
+import { analyzeImage } from '../../../common/analyzeImage.js';
 import { enhanceImagePrompt } from './enhancePrompt.js';
 
 const ANALYZE_PROMPT =
@@ -123,10 +124,11 @@ export async function generateImageAssets(
           error: url,
         };
       }
-      const analysis = await runCli(
-        `mindstudio analyze-image --prompt ${JSON.stringify(ANALYZE_PROMPT)} --image-url ${JSON.stringify(url)} --output-key analysis --no-meta`,
-        { timeout: 200_000, onLog },
-      );
+      const analysis = await analyzeImage({
+        prompt: ANALYZE_PROMPT,
+        imageUrl: url,
+        onLog,
+      });
       return {
         url,
         prompt: prompts[i],

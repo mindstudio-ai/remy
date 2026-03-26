@@ -1,5 +1,6 @@
 import type { ToolDefinition } from '../../../api.js';
 import { runCli } from '../../common/runCli.js';
+import { analyzeImage } from '../../common/analyzeImage.js';
 
 const DESIGN_REFERENCE_PROMPT = `
 You are analyzing a screenshot of a real website or app for a designer's personal technique/inspiration reference notes.
@@ -70,10 +71,11 @@ export async function execute(
     imageUrl = ssUrl;
   }
 
-  const analysis = await runCli(
-    `mindstudio analyze-image --prompt ${JSON.stringify(analysisPrompt)} --image-url ${JSON.stringify(imageUrl)} --output-key analysis --no-meta`,
-    { timeout: 200_000, onLog },
-  );
+  const analysis = await analyzeImage({
+    prompt: analysisPrompt,
+    imageUrl,
+    onLog,
+  });
 
   return JSON.stringify({ url: imageUrl, analysis });
 }

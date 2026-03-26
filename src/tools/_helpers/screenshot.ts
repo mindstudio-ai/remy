@@ -5,7 +5,7 @@
  */
 
 import { sidecarRequest } from './sidecar.js';
-import { runCli } from '../../subagents/common/runCli.js';
+import { analyzeImage } from '../../subagents/common/analyzeImage.js';
 
 export const SCREENSHOT_ANALYSIS_PROMPT =
   'Describe everything visible on screen from top to bottom — every element, its position, its size relative to the viewport, its colors, its content. Be comprehensive, thorough, and spatial. After the inventory, note anything that looks visually broken (overlapping elements, clipped text, misaligned components). Respond only with your analysis as Markdown and absolutely no other text. Do not use emojis - use unicode if you need symbols.';
@@ -48,9 +48,10 @@ export async function captureAndAnalyzeScreenshot(
   }
 
   const analysisPrompt = prompt || SCREENSHOT_ANALYSIS_PROMPT;
-  const analysis = await runCli(
-    `mindstudio analyze-image --prompt ${JSON.stringify(analysisPrompt)} --image-url ${JSON.stringify(url)} --output-key analysis --no-meta`,
-    { timeout: 200_000, onLog },
-  );
+  const analysis = await analyzeImage({
+    prompt: analysisPrompt,
+    imageUrl: url,
+    onLog,
+  });
   return JSON.stringify({ url, analysis });
 }
