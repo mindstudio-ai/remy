@@ -11,6 +11,7 @@ import { readAsset } from '../../assets.js';
 import { loadSpecContext } from '../common/context.js';
 import { getFontLibrarySample } from './data/getFontLibrarySample.js';
 import { getDesignReferencesSample } from './data/getDesignReferencesSample.js';
+import { getUiInspirationSample } from './data/getUiInspirationSample.js';
 
 const SUBAGENT = 'subagents/designExpert';
 
@@ -18,7 +19,11 @@ const SUBAGENT = 'subagents/designExpert';
 // Template assembly (runs once at module init)
 // ---------------------------------------------------------------------------
 
-const RUNTIME_PLACEHOLDERS = new Set(['font_library', 'design_references']);
+const RUNTIME_PLACEHOLDERS = new Set([
+  'font_library',
+  'design_references',
+  'ui_patterns',
+]);
 
 const PROMPT_TEMPLATE = readAsset(SUBAGENT, 'prompt.md')
   .replace(/\{\{([^}]+)\}\}/g, (match, key) => {
@@ -41,7 +46,9 @@ export function getDesignExpertPrompt(): string {
   let prompt = PROMPT_TEMPLATE.replace(
     '{{font_library}}',
     getFontLibrarySample(),
-  ).replace('{{design_references}}', getDesignReferencesSample());
+  )
+    .replace('{{design_references}}', getDesignReferencesSample())
+    .replace('{{ui_patterns}}', getUiInspirationSample());
 
   if (specContext) {
     prompt += `\n\n${specContext}`;
