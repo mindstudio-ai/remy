@@ -22,6 +22,8 @@ These are things we already know about and have decided to accept:
   - swr
   - framer-motion
   - styled-components
+- Preferences:
+  - use [wouter](https://github.com/molefrog/wouter) for React routing instead of reaching for react-router
 
 ### Common pitfalls (always flag these)
 
