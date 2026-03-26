@@ -557,7 +557,11 @@ export async function runTurn(params: {
 
         // Await result (transparent to stop/restart)
         const r = await resultPromise;
-        toolRegistry?.unregister(tc.id);
+        // Background tools stay registered — the sub-agent runner manages
+        // their lifecycle and unregisters on completion.
+        if (!tc.input.background) {
+          toolRegistry?.unregister(tc.id);
+        }
 
         log.info('Tool completed', {
           requestId,

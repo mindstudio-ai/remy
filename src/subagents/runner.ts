@@ -416,6 +416,20 @@ export async function runSubAgent(
 
   log.info('Sub-agent backgrounded', { requestId, parentToolId, agentName });
 
+  // Register the background agent in the tool registry so it can be stopped.
+  // Uses the parentToolId (the tool call ID visible to the user) and the
+  // background-specific AbortController so stop_tool actually cancels the work.
+  toolRegistry?.register({
+    id: parentToolId,
+    name: agentName,
+    input: { task },
+    abortController: bgAbort!,
+    startedAt: Date.now(),
+    settle: () => {},
+    rerun: () => {},
+    getPartialResult: () => '',
+  });
+
   // Background: generate a friendly ack, run the loop detached.
   const ack = await generateBackgroundAck({
     apiConfig,
@@ -425,10 +439,14 @@ export async function runSubAgent(
 
   // Run detached — deliver result via callback when done.
   wrapRun()
-    .then((finalResult) => onBackgroundComplete?.(finalResult))
-    .catch((err) =>
-      onBackgroundComplete?.({ text: `Error: ${err.message}`, messages: [] }),
-    );
+    .then((finalResult) => {
+      toolRegistry?.unregister(parentToolId);
+      onBackgroundComplete?.(finalResult);
+    })
+    .catch((err) => {
+      toolRegistry?.unregister(parentToolId);
+      onBackgroundComplete?.({ text: `Error: ${err.message}`, messages: [] });
+    });
 
   return { text: ack, messages: [], backgrounded: true };
 }
