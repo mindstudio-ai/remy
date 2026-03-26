@@ -47,6 +47,16 @@ export const Users = db.defineTable<User>('users', {
 | `object` / `array` / JSON types | TEXT | Stored as JSON string, parsed on read |
 | `User` (branded type) | TEXT | User ID with `@@user@@` prefix (transparent — your code works with clean UUIDs) |
 
+### When to Use JSON Columns vs Separate Tables
+
+Every table operation is a network round-trip — not a local SQLite query. There are no JOINs. Fetching related data across tables means multiple sequential or batched HTTP calls. Design your schema around how data is accessed, not traditional normalization rules. Remember that databases in these apps are usually quite small - often single or a handful of users - we need to optimize for speed, not normalization.
+
+**Use a JSON column** when the data is always read and written with its parent. A product with a list of variant options, a form submission with its answers etc — these are single units that load together and save together. One row, one round-trip.
+
+**Use a separate table** when you need to query the child data independently, when the child set could grow unbounded, or when children are updated individually without touching the parent.
+
+Most 1:1 and 1:few relationships belong in JSON columns. Separate tables are for genuinely independent entities that happen to reference each other.
+
 ### System Columns
 
 Every table automatically has these columns. The SDK adds them to the TypeScript return type automatically — you can access them on any row returned from `get()`, `filter()`, `push()`, etc. without declaring them in your interface. They're also stripped from write inputs, so you never pass them to `push()` or `update()`.

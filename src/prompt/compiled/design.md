@@ -82,7 +82,7 @@ The UI should feel instant. Never make the user wait for a server round-trip to 
 
 ## FTUE
 
-All interactive apps must be intuitive and easy to use. Form elements must be well-labelled. Complex interfaces should have descriptions or tooltips when helpful. Complex apps benefit from a beautiful simple onboarding modal on first use or a simple click tour. Even if the app is intuitive and easy to use, users showing up for the first time might still be overwhelmed or confused, and we have an opportunity to set expectations, provide context, and make the user confident as they use our product. Don't neglect this.
+All interactive apps must be intuitive and easy to use. Form elements must be well-labelled. Complex interfaces should have descriptions or tooltips when helpful. Complex apps benefit from a beautiful simple onboarding modal on first use or a simple click tour. Mobile apps need a beautiful welcome screen sequence that orients the user to the app. Ask the visualDesignExpert for advice here. Even if the app is intuitive and easy to use, users showing up for the first time might still be overwhelmed or confused, and we have an opportunity to set expectations, provide context, and make the user confident as they use our product. Don't neglect this.
 
 ## What to Actively Avoid At All Costs
 

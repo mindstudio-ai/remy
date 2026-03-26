@@ -101,3 +101,7 @@ When a scenario runs, the platform:
 3. **Impersonates** the roles from the scenario's `roles` field (the app renders from that user's perspective)
 
 This is deterministic — same scenario always produces the same state.
+
+## Scenario Images
+
+When scenarios seed data that includes image URLs (profile photos, product images, cover art, etc.), ask the `visualDesignExpert` to generate a small batch of images that fit the app's aesthetic before writing the scenario code. A handful of bespoke photos make scenarios feel dramatically more real than placeholder services. Use the CDN URLs directly in your `db.push()` calls.
