@@ -9,6 +9,12 @@
 import { runCli } from '../../../common/runCli.js';
 import { readAsset } from '../../../../assets.js';
 
+const ENHANCE_MODEL = 'gemini-3-flash';
+const MODEL_OVERRIDE = JSON.stringify({
+  model: ENHANCE_MODEL,
+  config: { thinkingBudget: 'off' },
+});
+
 const SYSTEM_PROMPT = readAsset(
   'subagents/designExpert/tools/images/enhance-image-prompt.md',
 );
@@ -40,7 +46,7 @@ export async function enhanceImagePrompt(
   const message = `${SYSTEM_PROMPT}\n\n${context}\n\n<brief>\n${brief}\n</brief>`;
 
   const enhanced = await runCli(
-    `mindstudio generate-text --message ${JSON.stringify(message)} --output-key content --no-meta`,
+    `mindstudio generate-text --message ${JSON.stringify(message)} --model-override ${JSON.stringify(MODEL_OVERRIDE)} --output-key content --no-meta`,
     { timeout: 60_000, onLog },
   );
 

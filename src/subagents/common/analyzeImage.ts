@@ -9,7 +9,10 @@ import { runCli } from './runCli.js';
 
 const VISION_MODEL = 'gemini-3-flash';
 
-const VISION_MODEL_OVERRIDE = JSON.stringify({ model: VISION_MODEL });
+const VISION_MODEL_OVERRIDE = JSON.stringify({
+  model: VISION_MODEL,
+  config: { thinkingBudget: 'off' },
+});
 
 /**
  * Analyze an image URL with a vision model.
