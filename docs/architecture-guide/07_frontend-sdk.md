@@ -105,33 +105,31 @@ try {
 
 ## `platform`
 
-File operations:
+### `platform.uploadFile(file, options?)`
 
-### `platform.requestFile(options?)`
-
-Opens the MindStudio asset library / file picker:
+Upload a file to the MindStudio CDN. Returns a public CDN URL.
 
 ```typescript
 import { platform } from '@mindstudio-ai/interface';
 
-const { url } = await platform.requestFile({ type: 'image' });
+// Simple upload
+const url = await platform.uploadFile(file);
+
+// With progress tracking
+const url = await platform.uploadFile(file, {
+  onProgress: (fraction) => setProgress(fraction), // 0 to 1
+});
+
+// With abort support
+const controller = new AbortController();
+const url = await platform.uploadFile(file, {
+  signal: controller.signal,
+  onProgress: (f) => setProgress(f),
+});
+controller.abort(); // cancels both presign and upload
 ```
 
-Uses a postMessage callback pattern: the SDK posts a request to the parent frame, the parent opens a modal, the user picks a file, and the result comes back via postMessage.
-
-Options: `{ type?: 'image' | 'video' | 'audio' | 'document' }`
-
-Throws `file_picker_cancelled` if the user cancels.
-
-### `platform.uploadFile(file)`
-
-Direct file upload:
-
-```typescript
-const url = await platform.uploadFile(fileInput.files[0]);
-```
-
-`POST {apiBaseUrl}/_internal/v2/apps/{appId}/upload` with FormData. Returns a CDN URL.
+Uses a presigned S3 upload. When `onProgress` is provided, uses XHR for the upload step (only way to get upload progress in browsers). Without it, uses fetch. `signal` is wired through to both the presign call and the upload. Throws `AbortError` on cancellation.
 
 ---
 

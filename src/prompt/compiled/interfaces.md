@@ -54,9 +54,21 @@ const api = createClient<{
 const { vendorId } = await api.submitVendorRequest({ name: 'Acme' });
 const { vendors } = await api.listVendors();
 
-// File operations
-const { url } = await platform.requestFile({ type: 'image' });
-const cdnUrl = await platform.uploadFile(file);
+// File upload (returns CDN URL)
+const url = await platform.uploadFile(file);
+
+// With progress tracking
+const url = await platform.uploadFile(file, {
+  onProgress: (fraction) => setProgress(fraction), // 0 to 1
+});
+
+// With abort support
+const controller = new AbortController();
+const url = await platform.uploadFile(file, {
+  signal: controller.signal,
+  onProgress: (f) => setProgress(f),
+});
+controller.abort(); // cancels the upload
 
 // Current user (display only)
 auth.userId;

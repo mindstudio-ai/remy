@@ -132,12 +132,12 @@ export async function* streamChat(params: {
   const { baseUrl, apiKey, signal, requestId, ...body } = params;
   const url = `${baseUrl}/_internal/v2/agent/remy/chat`;
   const startTime = Date.now();
+  // subAgentId is in body (sent to API) — extract for logging
+  const subAgentId = body.subAgentId;
 
-  const messagesWithAttachments = body.messages.filter(
-    (m) => m.attachments && m.attachments.length > 0,
-  );
   log.info('API request', {
     requestId,
+    ...(subAgentId && { subAgentId }),
     model: body.model,
     messageCount: body.messages.length,
     toolCount: body.tools.length,
@@ -156,16 +156,28 @@ export async function* streamChat(params: {
     });
   } catch (err: any) {
     if (signal?.aborted) {
-      log.warn('Request aborted', { requestId });
+      log.warn('Request aborted', {
+        requestId,
+        ...(subAgentId && { subAgentId }),
+      });
       throw err;
     }
-    log.error('Network error', { requestId, error: err.message });
+    log.error('Network error', {
+      requestId,
+      ...(subAgentId && { subAgentId }),
+      error: err.message,
+    });
     yield { type: 'error', error: `Network error: ${err.message}` };
     return;
   }
 
   const ttfb = Date.now() - startTime;
-  log.info('API response', { requestId, status: res.status, ttfbMs: ttfb });
+  log.info('API response', {
+    requestId,
+    ...(subAgentId && { subAgentId }),
+    status: res.status,
+    ttfbMs: ttfb,
+  });
 
   if (!res.ok) {
     let errorMessage = `HTTP ${res.status}`;
@@ -180,6 +192,7 @@ export async function* streamChat(params: {
     } catch {}
     log.error('API error', {
       requestId,
+      ...(subAgentId && { subAgentId }),
       status: res.status,
       error: errorMessage,
     });
@@ -212,6 +225,7 @@ export async function* streamChat(params: {
       await reader.cancel();
       log.error('Stream stalled', {
         requestId,
+        ...(subAgentId && { subAgentId }),
         durationMs: Date.now() - startTime,
       });
       yield {
@@ -240,6 +254,7 @@ export async function* streamChat(params: {
           const elapsed = Date.now() - startTime;
           log.info('Stream complete', {
             requestId,
+            ...(subAgentId && { subAgentId }),
             durationMs: elapsed,
             stopReason: event.stopReason,
             inputTokens: event.usage.inputTokens,

@@ -16,11 +16,14 @@ After editing code, check your work with `lspDiagnostics` or by reading the file
 Aim for confidence that the core happy paths work. If the 80% case is solid, the remaining edge cases are likely fine and the user can surface them in chat. Don't screenshot every page, test every permutation, or verify every secondary flow. One or two runtime checks that confirm the app loads and data flows through is enough.
 
 ### Process Logs
-Process logs are available at `.logs/` for debugging:
-  - `.logs/tunnel.log`: method execution, schema sync, session lifecycle, platform connection
-  - `.logs/devServer.log`: frontend build errors, HMR, module resolution failures
-  - `.logs/requests.ndjson`: structured NDJSON log of every method and scenario execution with full input, output, errors (including stack traces), console output, and duration. Use `tail -5 .logs/requests.ndjson | jq .` or `grep '"success":false' .logs/requests.ndjson | jq .` to inspect.
-  - `.logs/browser.ndjson`: browser-side events captured from the web preview. Includes console output, uncaught JS errors with stack traces, failed network requests, and user interactions (clicks). Use `grep '"type":"error"' .logs/browser.ndjson | jq .` to find frontend errors.
+
+Process logs are available at .logs/ in NDJSON format (one JSON object per line) for debugging. Each line has at minimum ts (unix millis) and msg fields, plus structured context like level, module, requestId, toolCallId where available. You can use `jq` to examine logs and debug failures. Tools like run method or run scenario execute synchronously, so log data will be available by the time those tools return their results to you, there is no need to `sleep` before querying logfiles.
+  - `.logs/tunnel.ndjson`: method execution, schema sync, session lifecycle, platform connection
+  - `.logs/devServer.ndjson`: frontend build errors, HMR, module resolution failures
+  - `.logs/system.ndjson`: sandbox server logs — agent lifecycle, tool dispatch, file watching, process management
+  - `.logs/agent.ndjson`: coding agent protocol events and errors
+  - `.logs/requests.ndjson`: structured log of every method and scenario execution with full input, output, errors (including stack traces), console output, and duration
+  - `.logs/browser.ndjson`: browser-side events from the web preview — console output, uncaught JS errors with stack traces, failed network requests, user interactions
 
 ### MindStudio SDK
 For any work involving AI models, external actions (web scraping, email, SMS), or third-party API/OAuth connections, prefer the `@mindstudio-ai/agent` SDK. It removes the need to research API methods, configure keys and tokens, or require the user to set up developer accounts.

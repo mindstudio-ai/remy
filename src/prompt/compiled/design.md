@@ -55,6 +55,7 @@ Forms should feel like interactions, not paperwork.
 - Inline validation — show errors as the user types, not after submit. Validation must never introduce layout shift.
 - Loading states after submission. Always indicate that something is happening.
 - Disabled states should be visually distinct but not jarring.
+- Media uploads should optimistically load in a local preview of an image or video and show upload progress
 - Even data entry can be beautiful. Pay attention to alignment, padding, and spacing. Consistency is key.
 
 #### Form Elements

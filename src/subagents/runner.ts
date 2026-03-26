@@ -345,11 +345,20 @@ export async function runSubAgent(
           };
           toolRegistry?.register(entry);
 
+          const toolStart = Date.now();
           run(tc.input);
 
           const r = await resultPromise;
           toolRegistry?.unregister(tc.id);
 
+          log.info('Tool completed', {
+            requestId,
+            parentToolId,
+            toolCallId: tc.id,
+            name: tc.name,
+            durationMs: Date.now() - toolStart,
+            isError: r.isError,
+          });
           emit({
             type: 'tool_done',
             id: tc.id,
