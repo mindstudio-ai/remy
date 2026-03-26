@@ -41,7 +41,6 @@ result.$billingCost;         // cost in credits (if applicable)
 | `generateMusic` | Music from text description | `prompt` | `audioUrl` |
 | `generateLipsync` | Animate face to match audio | `imageUrl`, `audioUrl` | `videoUrl` |
 | `generateAsset` | HTML/PDF/PNG/video output | `prompt` | `assetUrl` |
-| `generateChart` | Chart from data | `data`, `chartType` | `imageUrl` |
 
 ### AI Analysis
 
@@ -133,6 +132,8 @@ const { content } = await agent.generateText({
 });
 ```
 
+Make sure to prioritize new, popular models. MindStudio has a ton of models available - most of them are historical/legacy. Always choose latest generation models from leading providers - Anthropic Claude 4 family, Google Gemini 3, OpenAI GPT 5 to start - the user can adjust later.
+
 ### Batch Execution
 
 Run up to 50 actions in parallel:
@@ -144,3 +145,15 @@ const result = await agent.executeStepBatch([
 ]);
 // result.results[0].output, result.results[1].output
 ```
+
+### AI Generation
+
+MindStudio SDK allows us to build all kinds of amazing AI experiences in apps, including:
+  - Text generation
+  - Image generation (including images with text - AI has gotten good at that now)
+  - Image "remixing" (e.g., user uploads an image, use it as the source image to an image generation model to remix it, or add multiple to generate a collage, etc)
+  - Video generation (including generating video from reference images, start frame images, with audio including voice, etc)
+  - TTS/audio generation
+  - Detailed image and video analysis
+
+Consider the ways in which AI can be incorporated into backend methods to solve problems and be creative.
