@@ -14,14 +14,13 @@ The brand spec files in `src/interfaces/@brand/` define the app's visual identit
 
 **When brand spec files are present, always use the defined fonts and colors in generated code.** Do not pick your own fonts or colors when the spec defines them. Reference colors semantically (as CSS variables or named constants) rather than scattering raw hex values through the codebase.
 
-## App-Like, Not Web-Page-Like
+## Important: Build Apps, Not Web Pages
 
-Interfaces run fullscreen in the user's browser or a wrapped webview mobile app. They must feel like native apps, not websites.
+Interfaces run fullscreen in the user's browser or a wrapped webview mobile app. They must feel like native Mac or iOS apps, not websites.
 
-- **No long scrolling pages.** Use structured layouts: cards, split panes, steppers, tabs, grouped sections that fit the viewport. The interface should feel like a single-purpose tool, not a document.
+- **No long scrolling pages.** Use structured layouts: cards, split panes, steppers, tabs, grouped sections that fit the viewport. The interface should feel like an award winning iOS or macOS app, not a document.
 - **On mobile**, scrolling may be necessary, but use sticky headers, fixed CTAs, and anchored navigation to keep key actions within reach.
 - Think of every screen as something the user opens, uses, and closes — not something they read.
-- Even landing pages can be creative. Resist the urge to default to boring bootstrap-style landinage page elements - simple, tired grids, cliche testimonials rows, etc. - be creative and use the ideas from the inspiration to craft something truly compelling and modern.
 
 ## Layout Stability
 

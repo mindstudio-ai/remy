@@ -12,7 +12,7 @@ Even though these fonts look nice, they are unfortunately so overused that they 
 
 ### Typography block format
 
-A `` ```typography `` fenced block in a `type: design/typography` spec file declares fonts (with source URLs) and one or two anchor styles (typically Display and Body). Derive additional styles (labels, buttons, captions, overlines) from these anchors:
+A `` ```typography `` fenced block in a `type: design/typography` spec file declares fonts (with source URLs) and one or two anchor styles (typically Display and Body). Derive additional styles (labels, buttons, captions, overlines) from these anchors. When returning type systems to the user, always ue the typography block format so it displays nicely:
 
 ```
 fonts:

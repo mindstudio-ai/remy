@@ -242,6 +242,8 @@ const [_, newOrder, pending] = await db.batch(
 
 **Always batch instead of sequential awaits.** A loop with `await Table.update()` inside makes N separate HTTP calls. Mapping to mutations and passing them to `db.batch()` makes one.
 
+**Note:** `Table.get(id)` is a direct async method that returns `Promise<T | null>` — it does not return a `Query` and cannot be passed to `db.batch()`. To batch a get-by-id, use `Table.filter(row => row.id === someId).first()` instead, which returns a batchable `Query`.
+
 ## Migrations
 
 No migration files. Migrations are automatic:

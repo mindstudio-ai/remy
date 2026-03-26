@@ -35,7 +35,7 @@ Remember, always specify gradients using `oklch` color space for vibrant, smooth
 
 ### Colors block format
 
-A `` ```colors `` fenced block in a `type: design/color` spec file declares 3-5 brand colors with evocative names, hex values, and descriptions. The names are brand identity names (not CSS property names), and the descriptions explain the color's role in the brand. Be creative with naming colors - you are building a brand book, not a paint swatch:
+A `` ```colors `` fenced block in a `type: design/color` spec file declares 3-5 brand colors with evocative names, hex values, and descriptions. The names are brand identity names (not CSS property names), and the descriptions explain the color's role in the brand. Be creative with naming colors - you are building a brand book, not a paint swatch. When returning color palettes to the user, always ue the color block format so they display nicely:
 
 ```
 Color Name:
