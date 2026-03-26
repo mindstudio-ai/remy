@@ -41,6 +41,7 @@ Every interface must work on both desktop and mobile.
 - On desktop, use the space — multi-column layouts, sidebars, spacious cards. Avoid narrow centered columns with empty gutters on a wide screen.
 - On mobile, stack gracefully. Prioritize content and actions.
 - Test at both extremes. A layout that only looks good at one breakpoint is not done.
+- When the app is primarily mobile, recommend setting `"defaultPreviewMode": "mobile"` in `web.json` so the editor previews in a mobile viewport by default.
 
 ## What to Actively Avoid At All Costs
 

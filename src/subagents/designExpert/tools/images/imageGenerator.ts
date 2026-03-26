@@ -1,5 +1,8 @@
 /**
- * Shared Seedream generation logic used by both generateImages and editImages.
+ * Shared image generation logic used by both generateImages and editImages.
+ *
+ * Handles prompt enhancement, generation, background removal, and analysis.
+ * The underlying model is configured via the MindStudio CLI.
  */
 
 import { runCli } from '../../../common/runCli.js';
@@ -8,27 +11,36 @@ import { enhanceImagePrompt } from './enhancePrompt.js';
 const ANALYZE_PROMPT =
   'You are reviewing this image for a visual designer sourcing assets for a project. Describe: what the image depicts, the mood and color palette, how the lighting and composition work, any text present in the image, whether there are any issues (artifacts, distortions), and how it could be used in a layout for an app or website. Be concise and practical. Respond only with your analysis as Markdown and absolutely no other text. Do not use emojis - use unicode if you need symbols.';
 
-export interface SeedreamOptions {
+export type AspectRatio =
+  | '1:1'
+  | '16:9'
+  | '9:16'
+  | '3:4'
+  | '4:3'
+  | '2:3'
+  | '3:2';
+
+export interface ImageGeneratorOptions {
   prompts: string[];
-  width?: number;
-  height?: number;
+  aspectRatio?: AspectRatio;
   /** Source/reference image URLs for image-to-image editing. */
   sourceImages?: string[];
   transparentBackground?: boolean;
   onLog?: (line: string) => void;
 }
 
-export async function seedreamGenerate(opts: SeedreamOptions): Promise<string> {
+export async function generateImageAssets(
+  opts: ImageGeneratorOptions,
+): Promise<string> {
   const { prompts, sourceImages, transparentBackground, onLog } = opts;
-  const width = opts.width || 2048;
-  const height = opts.height || 2048;
+  const aspectRatio = opts.aspectRatio || '1:1';
 
-  const config: Record<string, any> = { width, height };
-  if (sourceImages?.length) {
-    config.images = sourceImages;
-  }
+  const config: Record<string, any> = {
+    aspect_ratio: aspectRatio,
+    ...(sourceImages?.length && { source_images: sourceImages }),
+  };
 
-  // Enhance prompts via LLM before sending to Seedream (generate only, not edits)
+  // Enhance prompts via LLM before generation (generate only, not edits)
   const isEdit = !!sourceImages?.length;
   const enhancedPrompts = isEdit
     ? prompts
@@ -36,8 +48,7 @@ export async function seedreamGenerate(opts: SeedreamOptions): Promise<string> {
         prompts.map((brief) =>
           enhanceImagePrompt({
             brief,
-            width,
-            height,
+            aspectRatio,
             transparentBackground,
             onLog,
           }),
@@ -50,7 +61,7 @@ export async function seedreamGenerate(opts: SeedreamOptions): Promise<string> {
     const step = JSON.stringify({
       prompt: enhancedPrompts[0],
       imageModelOverride: {
-        model: 'seedream-4.5',
+        model: 'gemini-3.1-flash-image',
         config,
       },
     });
@@ -65,7 +76,7 @@ export async function seedreamGenerate(opts: SeedreamOptions): Promise<string> {
       step: {
         prompt,
         imageModelOverride: {
-          model: 'seedream-4.5',
+          model: 'gemini-3.1-flash-image',
           config,
         },
       },
@@ -121,8 +132,7 @@ export async function seedreamGenerate(opts: SeedreamOptions): Promise<string> {
         prompt: prompts[i],
         ...(!isEdit && { enhancedPrompt: enhancedPrompts[i] }),
         analysis,
-        width,
-        height,
+        aspectRatio,
       };
     }),
   );

@@ -27,7 +27,8 @@ dist/interfaces/web/
 ```json
 {
   "devPort": 5173,
-  "devCommand": "npm run dev"
+  "devCommand": "npm run dev",
+  "defaultPreviewMode": "desktop"
 }
 ```
 
@@ -35,6 +36,7 @@ dist/interfaces/web/
 |-------|------|---------|-------------|
 | `devPort` | `number` | `5173` | Port for the dev server |
 | `devCommand` | `string` | `"npm run dev"` | Command to start the dev server |
+| `defaultPreviewMode` | `"desktop"` \| `"mobile"` | `"desktop"` | Default preview viewport in the editor. Set to `"mobile"` for mobile-first apps. |
 
 ### Frontend SDK
 
