@@ -15,7 +15,8 @@ const SYSTEM_PROMPT = readAsset(
 
 export interface EnhancePromptParams {
   brief: string;
-  aspectRatio: string;
+  width: number;
+  height: number;
   transparentBackground?: boolean;
   onLog?: (line: string) => void;
 }
@@ -23,17 +24,11 @@ export interface EnhancePromptParams {
 export async function enhanceImagePrompt(
   params: EnhancePromptParams,
 ): Promise<string> {
-  const { brief, aspectRatio, transparentBackground, onLog } = params;
+  const { brief, width, height, transparentBackground, onLog } = params;
 
   // Build context block so the enhancer knows the generation parameters
-  const orientation =
-    aspectRatio === '1:1'
-      ? 'square'
-      : ['16:9', '4:3', '3:2'].includes(aspectRatio)
-        ? 'landscape'
-        : 'portrait';
   const contextParts: string[] = [
-    `Aspect ratio: ${aspectRatio} (${orientation})`,
+    `Dimensions: ${width}x${height}${width > height ? ' (landscape)' : width < height ? ' (portrait)' : ' (square)'}`,
   ];
   if (transparentBackground) {
     contextParts.push(

@@ -24,10 +24,13 @@ export const definition: ToolDefinition = {
         description:
           'One or more source/reference image URLs. These are used as the basis for the edit — the AI will use them as reference for style, subject, or composition.',
       },
-      aspectRatio: {
-        type: 'string',
-        enum: ['1:1', '16:9', '9:16', '3:4', '4:3', '2:3', '3:2'],
-        description: 'Output aspect ratio. Default 1:1.',
+      width: {
+        type: 'number',
+        description: 'Output width in pixels. Default 2048. Range: 2048-4096.',
+      },
+      height: {
+        type: 'number',
+        description: 'Output height in pixels. Default 2048. Range: 2048-4096.',
       },
       transparentBackground: {
         type: 'boolean',
@@ -46,9 +49,8 @@ export async function execute(
   return generateImageAssets({
     prompts: input.prompts as string[],
     sourceImages: input.sourceImages as string[],
-    aspectRatio: input.aspectRatio as
-      | import('./imageGenerator.js').AspectRatio
-      | undefined,
+    width: input.width as number | undefined,
+    height: input.height as number | undefined,
     transparentBackground: input.transparentBackground as boolean | undefined,
     onLog,
   });

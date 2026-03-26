@@ -16,10 +16,13 @@ export const definition: ToolDefinition = {
         description:
           'One or more image briefs describing what you want. Focus on subject, mood, style, and intended use — the tool optimizes your brief into a model-ready prompt automatically. Multiple briefs run in parallel.',
       },
-      aspectRatio: {
-        type: 'string',
-        enum: ['1:1', '16:9', '9:16', '3:4', '4:3', '2:3', '3:2'],
-        description: 'Aspect ratio. Default 1:1.',
+      width: {
+        type: 'number',
+        description: 'Image width in pixels. Default 2048. Range: 2048-4096.',
+      },
+      height: {
+        type: 'number',
+        description: 'Image height in pixels. Default 2048. Range: 2048-4096.',
       },
       transparentBackground: {
         type: 'boolean',
@@ -37,9 +40,8 @@ export async function execute(
 ): Promise<string> {
   return generateImageAssets({
     prompts: input.prompts as string[],
-    aspectRatio: input.aspectRatio as
-      | import('./imageGenerator.js').AspectRatio
-      | undefined,
+    width: input.width as number | undefined,
+    height: input.height as number | undefined,
     transparentBackground: input.transparentBackground as boolean | undefined,
     onLog,
   });

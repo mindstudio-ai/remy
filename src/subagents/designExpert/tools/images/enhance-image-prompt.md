@@ -32,7 +32,7 @@ These are non-negotiable. Violating them produces bad output.
 
 You'll receive context about the generation parameters. Use them:
 
-- **Aspect ratio**: If the image is landscape (16:9, 4:3, 3:2), compose horizontally. If portrait (9:16, 3:4, 2:3), compose vertically. If square (1:1), center the subject.
+- **Dimensions**: If the image is wide (landscape), compose horizontally. If tall (portrait), compose vertically. If square, center the subject.
 - **Transparent background**: The background will be removed after generation. Don't describe elaborate backgrounds — focus on the subject. Describe it as an isolated element.
 
 ## Photography prompts

@@ -12,18 +12,10 @@ import { enhanceImagePrompt } from './enhancePrompt.js';
 const ANALYZE_PROMPT =
   'You are reviewing this image for a visual designer sourcing assets for a project. Describe: what the image depicts, the mood and color palette, how the lighting and composition work, any text present in the image, whether there are any issues (artifacts, distortions), and how it could be used in a layout for an app or website. Be concise and practical. Respond only with your analysis as Markdown and absolutely no other text. Do not use emojis - use unicode if you need symbols.';
 
-export type AspectRatio =
-  | '1:1'
-  | '16:9'
-  | '9:16'
-  | '3:4'
-  | '4:3'
-  | '2:3'
-  | '3:2';
-
 export interface ImageGeneratorOptions {
   prompts: string[];
-  aspectRatio?: AspectRatio;
+  width?: number;
+  height?: number;
   /** Source/reference image URLs for image-to-image editing. */
   sourceImages?: string[];
   transparentBackground?: boolean;
@@ -34,12 +26,13 @@ export async function generateImageAssets(
   opts: ImageGeneratorOptions,
 ): Promise<string> {
   const { prompts, sourceImages, transparentBackground, onLog } = opts;
-  const aspectRatio = opts.aspectRatio || '1:1';
+  const width = opts.width || 2048;
+  const height = opts.height || 2048;
 
-  const config: Record<string, any> = {
-    aspect_ratio: aspectRatio,
-    ...(sourceImages?.length && { source_images: sourceImages }),
-  };
+  const config: Record<string, any> = { width, height };
+  if (sourceImages?.length) {
+    config.images = sourceImages;
+  }
 
   // Enhance prompts via LLM before generation (generate only, not edits)
   const isEdit = !!sourceImages?.length;
@@ -49,7 +42,8 @@ export async function generateImageAssets(
         prompts.map((brief) =>
           enhanceImagePrompt({
             brief,
-            aspectRatio,
+            width,
+            height,
             transparentBackground,
             onLog,
           }),
@@ -62,7 +56,7 @@ export async function generateImageAssets(
     const step = JSON.stringify({
       prompt: enhancedPrompts[0],
       imageModelOverride: {
-        model: 'gemini-3.1-flash-image',
+        model: 'seedream-4.5',
         config,
       },
     });
@@ -77,7 +71,7 @@ export async function generateImageAssets(
       step: {
         prompt,
         imageModelOverride: {
-          model: 'gemini-3.1-flash-image',
+          model: 'seedream-4.5',
           config,
         },
       },
@@ -134,7 +128,8 @@ export async function generateImageAssets(
         prompt: prompts[i],
         ...(!isEdit && { enhancedPrompt: enhancedPrompts[i] }),
         analysis,
-        aspectRatio,
+        width,
+        height,
       };
     }),
   );
