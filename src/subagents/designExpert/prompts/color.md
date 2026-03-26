@@ -16,7 +16,7 @@ For programmatic color derivation, recommend `color-mix()` and relative color sy
 - `color-mix(in oklch, #3b82f6 70%, white)` — tint generation
 - `oklch(from var(--brand) calc(l * 1.25) c h)` — lightness adjustment from a token
 
-Derive palettes from real products in the same domain when possible. "Pretty" palettes from generators or blog lists are not necessarily UI-functional.
+Derive palettes from real products in the same domain when possible. "Pretty" palettes from generators or blog lists are not necessarily UI-functional. Use <visual_design_references> and <ui_case_studies> for inspiration, ideas, and direct reference. There is no issue using the same base colors as something else - good design is always built on the shoulders of giants.
 
 ## Gradient Techniques
 - Mesh / aurora gradients — multiple layered `radial-gradient()`s with `filter: blur()` over dark backgrounds. The Stripe/Linear/Vercel aesthetic.

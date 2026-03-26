@@ -41,13 +41,7 @@ Lead with the visual style, then describe the content. This order helps the mode
 
 **For photorealistic images:** Specify the photography style (editorial, portrait, product, aerial), lighting (natural, studio, golden hour, direct flash), and camera characteristics (close-up, wide angle, shallow depth of field, slightly grainy texture).
 
-**Avoid:**
-- Hex codes in prompts — the model renders them as visible text. Describe colors by name instead.
-- Describing positions of arms, legs, or specific limb arrangements.
-- Conflicting style instructions ("photorealistic cartoon").
-- Describing what you don't want — say "empty street" not "street with no cars."
-- Framing prompts as physical objects or UI elements ("artwork", "painting", "canvas", "print", "square digital artwork", "app icon"). The model renders what it sees in its training data — a photo of a canvas on a wall, or an iOS icon with rounded corners and a drop shadow. Describe the visual content directly and let the developer handle framing, masking, and presentation.
-- It is critical to remember that image models have a high risk of rendering text. Any word or phrase in your prompt that could be interpreted as a title, label, or caption risks appearing as literal text in the image. Triggers like "magazine cover" also risk making it render a literal mockup of a magazine masthread, even if all you wanted was a certain photography stype. Common triggers: "poster", "editorial", "magazine", "cover", "sign", or brand names, industry jargon, etc. Be thoughtful, careful, and intentional with your prompt - especially when describing abtract visualizations - and describe the visual qualities you want instead of referencing formats or concepts as shorthand.
+Be thoughtful, careful, and intentional with your prompt - especially when describing abtract visualizations - and describe the visual qualities you want instead of referencing formats or concepts as shorthand.
 
 ### How images work in the UI
 
@@ -55,7 +49,7 @@ You can produce two kinds of image assets:
 
 **Full-frame images** (the default) — photographs, textures, backgrounds, illustrations. These are full rectangular frames. The developer controls how they're used: cropping, blending, overlaying, masking with CSS. Generate a dramatic texture and the developer uses it as a card background with a blend mode. Generate an editorial photo and the developer overlays text on it for a hero section.
 
-**Isolated assets** (with `transparentBackground`) — cutout objects, product shots, icons, illustrated elements on transparent backgrounds. These are composited directly onto layouts, layered over other content, or placed inside cards and feature sections as standalone elements.
+**Isolated assets** (with `transparentBackground`) — cutout objects, product shots, app icons or interface icons, illustrated elements on transparent backgrounds. These are composited directly onto layouts, layered over other content, or placed inside cards and feature sections as standalone elements.
 
 Note: when analyzing images generated with `transparentBackground`, the transparent background will appear white to the vision analysis models. Don't mistake this for a white background — the image has an alpha channel and the background is transparent. Trust the generation parameters over what the analysis describes.
 

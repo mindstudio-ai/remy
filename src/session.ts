@@ -9,6 +9,9 @@
 import fs from 'node:fs';
 import type { Message, ContentBlock } from './api.js';
 import type { AgentState } from './agent.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('session');
 
 const SESSION_FILE = '.remy-session.json';
 
@@ -18,6 +21,7 @@ export function loadSession(state: AgentState): boolean {
     const data = JSON.parse(raw);
     if (Array.isArray(data.messages) && data.messages.length > 0) {
       state.messages = sanitizeMessages(data.messages as Message[]);
+      log.info('Session loaded', { messageCount: state.messages.length });
       return true;
     }
   } catch {
@@ -87,8 +91,9 @@ export function saveSession(state: AgentState): void {
       JSON.stringify({ messages: state.messages }, null, 2),
       'utf-8',
     );
-  } catch {
-    // Best-effort — don't crash if we can't write
+    log.info('Session saved', { messageCount: state.messages.length });
+  } catch (err: any) {
+    log.warn('Session save failed', { error: err.message });
   }
 }
 

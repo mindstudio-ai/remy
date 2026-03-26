@@ -6,13 +6,15 @@
  * and provides a typed request helper.
  */
 
-import { log } from '../../logger.js';
+import { createLogger } from '../../logger.js';
+
+const log = createLogger('sidecar');
 
 let baseUrl: string | null = null;
 
 export function setSidecarBaseUrl(url: string): void {
   baseUrl = url;
-  log.info('Sidecar configured', { url });
+  log.info('Configured', { url });
 }
 
 export function isSidecarConfigured(): boolean {
@@ -36,7 +38,6 @@ export async function sidecarRequest(
     throw new Error('Sidecar not available');
   }
   const url = `${baseUrl}${endpoint}`;
-  log.debug('Sidecar request', { endpoint, body });
   try {
     const res = await fetch(url, {
       method: 'POST',

@@ -16,7 +16,9 @@ import {
   type ContentBlock,
   type ToolDefinition,
 } from '../api.js';
-import { log } from '../logger.js';
+import { createLogger } from '../logger.js';
+
+const log = createLogger('sub-agent');
 import type { AgentEvent, ExternalToolResolver } from '../types.js';
 import type { ToolRegistry } from '../toolRegistry.js';
 import { startStatusWatcher } from '../statusWatcher.js';
@@ -38,6 +40,8 @@ export interface SubAgentConfig {
   subAgentId?: string;
   signal?: AbortSignal;
   parentToolId: string;
+  /** Correlation ID from the headless protocol — threaded for structured logging. */
+  requestId?: string;
   onEvent: (event: AgentEvent) => void;
   resolveExternalTool?: ExternalToolResolver;
   toolRegistry?: ToolRegistry;
@@ -71,6 +75,7 @@ export async function runSubAgent(
     onEvent,
     resolveExternalTool,
     toolRegistry,
+    requestId,
     background,
     onBackgroundComplete,
   } = config;
@@ -82,12 +87,17 @@ export async function runSubAgent(
     ? bgAbort!.signal
     : parentSignal;
 
+  const agentName = subAgentId || 'sub-agent';
+  const runStart = Date.now();
+  log.info('Sub-agent started', { requestId, parentToolId, agentName });
+
   // Tag all events with the parent tool ID
   const emit = (e: AgentEvent) => {
     onEvent({ ...e, parentToolId } as AgentEvent);
   };
 
   // The core loop
+  let turns = 0;
   const run = async (): Promise<SubAgentResult> => {
     const messages: Message[] = [{ role: 'user', content: task }];
 
@@ -115,6 +125,7 @@ export async function runSubAgent(
     let lastToolResult = '';
 
     while (true) {
+      turns++;
       if (signal?.aborted) {
         return abortResult([]);
       }
@@ -145,6 +156,7 @@ export async function runSubAgent(
           {
             ...apiConfig,
             model,
+            requestId,
             subAgentId,
             system: fullSystem,
             messages: cleanMessagesForApi(messages),
@@ -251,7 +263,8 @@ export async function runSubAgent(
       }
 
       // Execute tool calls
-      log.info('Sub-agent executing tools', {
+      log.info('Tools executing', {
+        requestId,
         parentToolId,
         count: toolCalls.length,
         tools: toolCalls.map((tc) => tc.name),
@@ -374,10 +387,34 @@ export async function runSubAgent(
     }
   };
 
+  const wrapRun = async (): Promise<SubAgentResult> => {
+    try {
+      const result = await run();
+      log.info('Sub-agent complete', {
+        requestId,
+        parentToolId,
+        agentName,
+        durationMs: Date.now() - runStart,
+        turns,
+      });
+      return result;
+    } catch (err: any) {
+      log.warn('Sub-agent error', {
+        requestId,
+        parentToolId,
+        agentName,
+        error: err.message,
+      });
+      throw err;
+    }
+  };
+
   // Foreground: just run and return
   if (!background) {
-    return run();
+    return wrapRun();
   }
+
+  log.info('Sub-agent backgrounded', { requestId, parentToolId, agentName });
 
   // Background: generate a friendly ack, run the loop detached.
   const ack = await generateBackgroundAck({
@@ -387,7 +424,7 @@ export async function runSubAgent(
   });
 
   // Run detached — deliver result via callback when done.
-  run()
+  wrapRun()
     .then((finalResult) => onBackgroundComplete?.(finalResult))
     .catch((err) =>
       onBackgroundComplete?.({ text: `Error: ${err.message}`, messages: [] }),

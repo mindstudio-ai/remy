@@ -15,6 +15,7 @@ import path from 'node:path';
 import { App } from './tui/App.js';
 import { resolveConfig } from './config.js';
 import {
+  createLogger,
   initLoggerHeadless,
   initLoggerInteractive,
   type LogLevel,
@@ -40,6 +41,8 @@ for (let i = 0; i < args.length; i++) {
   }
 }
 
+const startupLog = createLogger('startup');
+
 function printDebugInfo(config: { apiKey: string; baseUrl: string }) {
   const pkg = JSON.parse(
     fs.readFileSync(
@@ -51,23 +54,22 @@ function printDebugInfo(config: { apiKey: string; baseUrl: string }) {
     ? `${config.apiKey.slice(0, 8)}...${config.apiKey.slice(-4)}`
     : '(none)';
 
-  console.log('');
-  console.log('remy debug info');
-  console.log('─'.repeat(40));
-  console.log(`  version:    ${pkg.version}`);
-  console.log(`  node:       ${process.version}`);
-  console.log(`  platform:   ${os.platform()} ${os.arch()}`);
-  console.log(`  os:         ${os.type()} ${os.release()}`);
-  console.log(`  cwd:        ${process.cwd()}`);
-  console.log(`  bin:        ${process.argv[1]}`);
-  console.log(`  model:      ${flags.model || '(default)'}`);
-  console.log(`  base url:   ${config.baseUrl}`);
-  console.log(`  api key:    ${keyPreview}`);
-  console.log(
-    `  key source: ${flags.apiKey ? 'cli flag' : process.env.MINDSTUDIO_API_KEY ? 'env var' : 'config file'}`,
-  );
-  console.log('─'.repeat(40));
-  console.log('');
+  startupLog.info('Startup', {
+    version: pkg.version,
+    node: process.version,
+    platform: `${os.platform()} ${os.arch()}`,
+    os: `${os.type()} ${os.release()}`,
+    cwd: process.cwd(),
+    bin: process.argv[1],
+    model: flags.model || '(default)',
+    baseUrl: config.baseUrl,
+    apiKey: keyPreview,
+    keySource: flags.apiKey
+      ? 'cli flag'
+      : process.env.MINDSTUDIO_API_KEY
+        ? 'env var'
+        : 'config file',
+  });
 }
 
 const logLevel = (flags.logLevel as LogLevel) || undefined;

@@ -16,6 +16,9 @@
 
 import { createInterface } from 'node:readline';
 import { readAsset } from './assets.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('headless');
 import { resolveConfig } from './config.js';
 import { buildSystemPrompt } from './prompt/index.js';
 import { setLspBaseUrl } from './tools/_helpers/lsp.js';
@@ -207,6 +210,12 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
         }
       }
     }
+
+    log.info('Background complete', {
+      toolCallId,
+      name,
+      requestId: currentRequestId,
+    });
 
     // Emit event so frontend can update immediately
     onEvent({
@@ -437,6 +446,7 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     currentRequestId = requestId;
     currentAbort = new AbortController();
     completedEmitted = false;
+    const turnStart = Date.now();
 
     const attachments = parsed.attachments as
       | Array<{ url: string; extractedTextUrl?: string }>
@@ -476,6 +486,7 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
         system,
         model: opts.model,
         onboardingState,
+        requestId,
         signal: currentAbort.signal,
         onEvent,
         resolveExternalTool,
@@ -493,11 +504,20 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
           requestId,
         );
       }
+      log.info('Turn complete', {
+        requestId,
+        durationMs: Date.now() - turnStart,
+      });
     } catch (err: any) {
       if (!completedEmitted) {
         emit('error', { error: err.message }, requestId);
         emit('completed', { success: false, error: err.message }, requestId);
       }
+      log.warn('Command failed', {
+        action: 'message',
+        requestId,
+        error: err.message,
+      });
     }
 
     currentAbort = null;
@@ -521,6 +541,7 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     }
 
     const { action, requestId } = parsed;
+    log.info('Command received', { action, requestId });
 
     // tool_result: fire-and-forget, resolves a pending external tool promise
     if (action === 'tool_result' && parsed.id) {

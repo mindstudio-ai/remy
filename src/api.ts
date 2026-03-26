@@ -10,7 +10,9 @@
  * provider's API (Anthropic, OpenAI, Gemini, etc.).
  */
 
-import { log } from './logger.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('api');
 
 // Normalized message format — matches the platform's ChatMessage type.
 // The platform translates to/from provider-specific formats.
@@ -124,27 +126,21 @@ export async function* streamChat(params: {
   temperature?: number;
   config?: Record<string, any>;
   subAgentId?: string;
+  requestId?: string;
   signal?: AbortSignal;
 }): AsyncGenerator<StreamEvent> {
-  const { baseUrl, apiKey, signal, ...body } = params;
+  const { baseUrl, apiKey, signal, requestId, ...body } = params;
   const url = `${baseUrl}/_internal/v2/agent/remy/chat`;
   const startTime = Date.now();
 
   const messagesWithAttachments = body.messages.filter(
     (m) => m.attachments && m.attachments.length > 0,
   );
-  log.info('POST agent/chat', {
-    url,
+  log.info('API request', {
+    requestId,
     model: body.model,
     messageCount: body.messages.length,
     toolCount: body.tools.length,
-    ...(messagesWithAttachments.length > 0 && {
-      attachments: messagesWithAttachments.map((m) => ({
-        role: m.role,
-        attachmentCount: m.attachments!.length,
-        urls: m.attachments!.map((a) => a.url),
-      })),
-    }),
   });
 
   let res: Response;
@@ -160,16 +156,16 @@ export async function* streamChat(params: {
     });
   } catch (err: any) {
     if (signal?.aborted) {
-      log.info('Request aborted by signal');
+      log.warn('Request aborted', { requestId });
       throw err;
     }
-    log.error('Network error', { error: err.message });
+    log.error('Network error', { requestId, error: err.message });
     yield { type: 'error', error: `Network error: ${err.message}` };
     return;
   }
 
   const ttfb = Date.now() - startTime;
-  log.info(`Response ${res.status}`, { ttfb: `${ttfb}ms` });
+  log.info('API response', { requestId, status: res.status, ttfbMs: ttfb });
 
   if (!res.ok) {
     let errorMessage = `HTTP ${res.status}`;
@@ -182,7 +178,11 @@ export async function* streamChat(params: {
         errorMessage = body.errorMessage;
       }
     } catch {}
-    log.error('API error', { status: res.status, error: errorMessage });
+    log.error('API error', {
+      requestId,
+      status: res.status,
+      error: errorMessage,
+    });
     yield { type: 'error', error: errorMessage };
     return;
   }
@@ -210,7 +210,10 @@ export async function* streamChat(params: {
     } catch {
       clearTimeout(stallTimer!);
       await reader.cancel();
-      log.error('Stream stalled', { elapsed: `${Date.now() - startTime}ms` });
+      log.error('Stream stalled', {
+        requestId,
+        durationMs: Date.now() - startTime,
+      });
       yield {
         type: 'error' as const,
         error: 'Stream stalled — no data received for 5 minutes',
@@ -236,7 +239,8 @@ export async function* streamChat(params: {
         if (event.type === 'done') {
           const elapsed = Date.now() - startTime;
           log.info('Stream complete', {
-            elapsed: `${elapsed}ms`,
+            requestId,
+            durationMs: elapsed,
             stopReason: event.stopReason,
             inputTokens: event.usage.inputTokens,
             outputTokens: event.usage.outputTokens,
@@ -295,11 +299,6 @@ export async function* streamChatWithRetry(
     for await (const event of streamChat(params)) {
       if (event.type === 'error') {
         if (isRetryableError(event.error) && attempt < MAX_RETRIES - 1) {
-          log.warn('Retryable error, will retry', {
-            attempt: attempt + 1,
-            maxRetries: MAX_RETRIES,
-            error: event.error,
-          });
           options?.onRetry?.(attempt, event.error);
           retryableFailure = true;
           break;
@@ -317,7 +316,12 @@ export async function* streamChatWithRetry(
         return;
       }
       const backoff = INITIAL_BACKOFF_MS * 2 ** attempt;
-      log.info('Retrying after backoff', { backoffMs: backoff });
+      log.warn('Retrying', {
+        requestId: params.requestId,
+        attempt: attempt + 1,
+        maxRetries: MAX_RETRIES,
+        backoffMs: backoff,
+      });
       await sleep(backoff);
       continue;
     }

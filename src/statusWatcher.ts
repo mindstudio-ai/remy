@@ -9,8 +9,6 @@
  * Fails silently on errors. Deduplicates consecutive identical labels.
  */
 
-import { log } from './logger.js';
-
 export interface StatusWatcherConfig {
   apiConfig: { baseUrl: string; apiKey: string };
   getContext: () => {
@@ -48,14 +46,8 @@ export function startStatusWatcher(config: StatusWatcherConfig): StatusWatcher {
 
       // Skip if there's no context to work with
       if (!ctx.assistantText && !ctx.lastToolName) {
-        log.debug('Status watcher: no context, skipping');
         return;
       }
-
-      log.debug('Status watcher: requesting label', {
-        textLength: ctx.assistantText.length,
-        lastToolName: ctx.lastToolName,
-      });
 
       const res = await fetch(url, {
         method: 'POST',
@@ -74,34 +66,20 @@ export function startStatusWatcher(config: StatusWatcherConfig): StatusWatcher {
       });
 
       if (!res.ok) {
-        log.debug('Status watcher: endpoint returned non-ok', {
-          status: res.status,
-        });
         return;
       }
 
       const data = (await res.json()) as { label?: string };
-      if (!data.label) {
-        log.debug('Status watcher: no label in response');
+      if (!data.label || data.label === lastLabel) {
         return;
       }
 
-      // Deduplicate
-      if (data.label === lastLabel) {
-        log.debug('Status watcher: duplicate label, skipping', {
-          label: data.label,
-        });
-        return;
-      }
       lastLabel = data.label;
-
       if (stopped) {
         return;
       }
-      log.debug('Status watcher: emitting', { label: data.label });
       onStatus(data.label);
-    } catch (err: any) {
-      log.debug('Status watcher: error', { error: err?.message ?? 'unknown' });
+    } catch {
     } finally {
       inflight = false;
     }
@@ -112,13 +90,10 @@ export function startStatusWatcher(config: StatusWatcherConfig): StatusWatcher {
   // Fire once immediately
   tick().catch(() => {});
 
-  log.debug('Status watcher started', { interval });
-
   return {
     stop() {
       stopped = true;
       clearInterval(timer);
-      log.debug('Status watcher stopped');
     },
   };
 }

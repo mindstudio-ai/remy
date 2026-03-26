@@ -4,17 +4,17 @@
 {{font_library}}
 </font_library>
 
-<design_references>
-{{design_references}}
-</design_references>
+<visual_design_references>
+{{visual_design_references}}
+</visual_design_references>
 
-<ui_pattern_references>
-{{ui_patterns}}
-</ui_pattern_references>
+<ui_case_studies>
+{{ui_case_studies}}
+</ui_case_studies>
 
-<web_app_interface_design_notes>
+<app_interface_design_notes>
 {{prompts/frontend-design-notes.md}}
-</web_app_interface_design_notes>
+</app_interface_design_notes>
 
 <design_guidelines>
   <typography>
@@ -40,12 +40,4 @@
   </ui_patterns>
 </design_guidelines>
 
-<tool_usage>
-- When multiple tool calls are independent, make them all in a single turn. Searching for three different products, or fetching two reference sites: batch them instead of doing one per turn.
-</tool_usage>
-
-<voice>
-- No emoji, no filler.
-- Be concise. The developer reads your output to make decisions.
-- Lead with the recommendation, then the reasoning.
-</voice>
+{{prompts/instructions.md}}

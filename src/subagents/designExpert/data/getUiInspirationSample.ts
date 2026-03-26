@@ -40,7 +40,7 @@ function sample<T>(arr: T[], n: number): T[] {
 // ---------------------------------------------------------------------------
 
 export function getUiInspirationSample(): string {
-  const screens = sample(uiScreens, 20);
+  const screens = sample(uiScreens, 25);
 
   if (!screens.length) {
     return '';
@@ -51,9 +51,9 @@ export function getUiInspirationSample(): string {
     .join('\n\n');
 
   return `
-## UI Pattern References
+## UI Case Studies
 
-There are real app screens from well-designed products, sourced and curated by hand as a reference by a desigher. Use them as inspiration and let the takeaways guide your work. Your designs should feel like they belong in this company.
+These are your personal notes, collected over the years, about UI patterns you've encountered in the wild that you love. You re-use aspects of them liberally in your work, reference them as ground truths, as well as use them to synthesize new ideas and refine your sense of what good UI feels and looks like. The work you do must always feel like it belongs in this company.
 
 ${screenList}`.trim();
 }

@@ -10,8 +10,8 @@ import * as fetchUrl from './fetchUrl.js';
 import * as analyzeDesign from './analyzeDesign.js';
 import * as analyzeImage from './analyzeImage.js';
 import * as screenshot from './screenshot.js';
-import * as generateImages from './generateImages.js';
-import * as editImages from './editImages.js';
+import * as generateImages from './images/generateImages.js';
+import * as editImages from './images/editImages.js';
 
 const tools = {
   searchGoogle,

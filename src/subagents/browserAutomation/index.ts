@@ -16,7 +16,9 @@ import {
   SCREENSHOT_ANALYSIS_PROMPT,
 } from '../../tools/_helpers/screenshot.js';
 import { runCli } from '../common/runCli.js';
-import { log } from '../../logger.js';
+import { createLogger } from '../../logger.js';
+
+const log = createLogger('browser-automation');
 
 export const browserAutomationTool: Tool = {
   definition: {
@@ -83,6 +85,7 @@ export const browserAutomationTool: Tool = {
       subAgentId: 'browserAutomation',
       signal: context.signal,
       parentToolId: context.toolCallId,
+      requestId: context.requestId,
       onEvent: context.onEvent,
       resolveExternalTool: async (id, name, input) => {
         if (!context.resolveExternalTool) {

@@ -2,4 +2,6 @@
 
 UI patterns are the core of any good app. Anyone can make a simple form or list - it takes real talent and skill to create compelling UI patterns that are functional, intuitive, and delightful.
 
-Study the patterns provided in <ui_pattern_references> and actually spend time breaking them down, and think about what can be applied to the current project to elevate it into something truly world-class.
+Study the patterns provided in <ui_case_studies> and actually spend time breaking them down, and think about what can be applied to the current project to elevate it into something truly world-class.
+
+When descirbing UI patterns to the developer, be verbose and explicit. Describe every aspect - don't leave room for interpretation by the developer because it ain't gonna be pretty.

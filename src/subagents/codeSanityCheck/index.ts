@@ -56,6 +56,7 @@ export const codeSanityCheckTool: Tool = {
       subAgentId: 'codeSanityCheck',
       signal: context.signal,
       parentToolId: context.toolCallId,
+      requestId: context.requestId,
       onEvent: context.onEvent,
       resolveExternalTool: context.resolveExternalTool,
       toolRegistry: context.toolRegistry,

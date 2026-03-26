@@ -26,6 +26,8 @@ export interface ToolExecutionContext {
   onEvent: (event: AgentEvent) => void;
   resolveExternalTool?: ExternalToolResolver;
   toolCallId: string;
+  /** Correlation ID from the headless protocol — threaded for structured logging. */
+  requestId?: string;
   /** Sub-agent tools stash their message history here, keyed by toolCallId. */
   subAgentMessages?: Map<string, Message[]>;
   /** Called for each log line emitted during tool execution (e.g., CLI stderr). */

@@ -17,6 +17,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const dataDir = join(__dirname, '..');
 const fontsPath = join(dataDir, 'fonts.json');
 const inspirationPath = join(dataDir, 'inspiration.json');
+const uiInspirationPath = join(dataDir, 'ui_inspiration_compiled.json');
 
 // ---------------------------------------------------------------------------
 // JSON helpers
@@ -220,6 +221,50 @@ const server = createServer(async (req, res) => {
       data.images = deduped;
       writeJson(inspirationPath, data);
       return json(res, { ok: true, removed, count: deduped.length });
+    }
+
+    // --- UI Inspiration API ---
+
+    if (path === '/api/ui-inspiration' && method === 'GET') {
+      return json(res, readJson(uiInspirationPath));
+    }
+
+    if (path === '/api/ui-inspiration' && method === 'POST') {
+      const entry = await parseBody(req);
+      const data = readJson(uiInspirationPath);
+      data.screens.push(entry);
+      writeJson(uiInspirationPath, data);
+      return json(res, { ok: true, count: data.screens.length }, 201);
+    }
+
+    const uiInspirationDeleteMatch = path.match(/^\/api\/ui-inspiration\/(\d+)$/);
+    if (uiInspirationDeleteMatch && method === 'DELETE') {
+      const index = parseInt(uiInspirationDeleteMatch[1], 10);
+      const data = readJson(uiInspirationPath);
+      if (index < 0 || index >= data.screens.length) {
+        return error(res, 'Screen index out of range', 404);
+      }
+      data.screens.splice(index, 1);
+      writeJson(uiInspirationPath, data);
+      return json(res, { ok: true, count: data.screens.length });
+    }
+
+    if (path === '/api/ui-inspiration/analyze' && method === 'POST') {
+      const { url } = await parseBody(req);
+      if (!url) return error(res, 'url is required');
+
+      const promptFile = join(dataDir, 'prompts', 'ui-analysis.md');
+      const prompt = readFileSync(promptFile, 'utf-8').trim();
+
+      try {
+        const result = execSync(
+          `mindstudio analyze-image --prompt ${JSON.stringify(prompt)} --image-url ${JSON.stringify(url)} --output-key analysis --no-meta`,
+          { encoding: 'utf-8', timeout: 120000 },
+        ).trim();
+        return json(res, { url, analysis: result });
+      } catch (err) {
+        return error(res, `Analysis failed: ${err.message}`, 500);
+      }
     }
 
     notFound(res);

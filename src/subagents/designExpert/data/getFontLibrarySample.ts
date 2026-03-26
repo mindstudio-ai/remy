@@ -75,6 +75,7 @@ export function getFontLibrarySample(): string {
     })
     .join('\n');
 
+  // Temp removed
   const pairingList = pairings
     .map(
       (p) =>
@@ -85,13 +86,9 @@ export function getFontLibrarySample(): string {
   return `
 ## Font Library
 
-A random sample from a curated font library. Use these as starting points for font selection.
+This is your personal library of fonts you love. Use it as a starting point when thinking about anything related to typography.
 
 ### Fonts
 
-${fontList}
-
-### Pairings
-
-${pairingList}`.trim();
+${fontList}`.trim();
 }

@@ -1,8 +1,11 @@
 /**
- * Structured logger with configurable level and output target.
+ * Structured NDJSON logger with configurable level and output target.
  *
- * - Headless mode: writes to stderr (sandbox captures it)
- * - Interactive mode: writes to .remy-debug.log in cwd (won't interfere with Ink TUI)
+ * Each log line is a self-contained JSON object:
+ *   {"ts":1711234567890,"level":"info","module":"agent","msg":"Turn started","requestId":"ac-4"}
+ *
+ * - Headless mode: writes to stderr (stdout reserved for wire protocol)
+ * - Interactive mode: writes to .logs/agent.ndjson
  *
  * Levels: error > warn > info > debug
  */
@@ -21,9 +24,9 @@ const LEVELS: Record<LogLevel, number> = {
 let currentLevel: number = LEVELS.error;
 let writeFn: (line: string) => void = () => {};
 
-function timestamp(): string {
-  return new Date().toISOString();
-}
+// ---------------------------------------------------------------------------
+// Value truncation (keeps payloads readable)
+// ---------------------------------------------------------------------------
 
 const MAX_VALUE_LENGTH = 200;
 
@@ -42,33 +45,60 @@ function truncateValues(obj: Record<string, unknown>): Record<string, unknown> {
   return result;
 }
 
-function write(level: LogLevel, msg: string, data?: Record<string, unknown>) {
+// ---------------------------------------------------------------------------
+// Core write
+// ---------------------------------------------------------------------------
+
+function write(
+  level: LogLevel,
+  module: string,
+  msg: string,
+  data?: Record<string, unknown>,
+) {
   if (LEVELS[level] > currentLevel) {
     return;
   }
-  const parts = [`[${timestamp()}]`, level.toUpperCase().padEnd(5), msg];
+
+  const entry: Record<string, unknown> = {
+    ts: Date.now(),
+    level,
+    module,
+    msg,
+  };
+
   if (data) {
-    parts.push(JSON.stringify(truncateValues(data)));
+    Object.assign(entry, truncateValues(data));
   }
-  writeFn(parts.join(' '));
+
+  writeFn(JSON.stringify(entry));
 }
 
-export const log = {
-  error(msg: string, data?: Record<string, unknown>) {
-    write('error', msg, data);
-  },
-  warn(msg: string, data?: Record<string, unknown>) {
-    write('warn', msg, data);
-  },
-  info(msg: string, data?: Record<string, unknown>) {
-    write('info', msg, data);
-  },
-  debug(msg: string, data?: Record<string, unknown>) {
-    write('debug', msg, data);
-  },
-};
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
 
-/** Configure logger for headless mode — writes to stderr. */
+export interface Logger {
+  error(msg: string, data?: Record<string, unknown>): void;
+  warn(msg: string, data?: Record<string, unknown>): void;
+  info(msg: string, data?: Record<string, unknown>): void;
+  debug(msg: string, data?: Record<string, unknown>): void;
+}
+
+/** Create a module-scoped logger. */
+export function createLogger(module: string): Logger {
+  return {
+    error: (msg, data) => write('error', module, msg, data),
+    warn: (msg, data) => write('warn', module, msg, data),
+    info: (msg, data) => write('info', module, msg, data),
+    debug: (msg, data) => write('debug', module, msg, data),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Init
+// ---------------------------------------------------------------------------
+
+/** Configure logger for headless mode — NDJSON to stderr. */
 export function initLoggerHeadless(level: LogLevel = 'info'): void {
   currentLevel = LEVELS[level];
   writeFn = (line) => {
@@ -76,14 +106,15 @@ export function initLoggerHeadless(level: LogLevel = 'info'): void {
   };
 }
 
-/** Configure logger for interactive mode — writes to .remy-debug.log. */
+/** Configure logger for interactive mode — NDJSON to .logs/agent.ndjson. */
 export function initLoggerInteractive(level: LogLevel = 'error'): void {
   currentLevel = LEVELS[level];
   let fd: number | null = null;
   writeFn = (line) => {
     try {
       if (fd === null) {
-        fd = fs.openSync('.remy-debug.log', 'a');
+        fs.mkdirSync('.logs', { recursive: true });
+        fd = fs.openSync('.logs/agent.ndjson', 'a');
       }
       fs.writeSync(fd, line + '\n');
     } catch {

@@ -40,7 +40,7 @@ function sample<T>(arr: T[], n: number): T[] {
 // ---------------------------------------------------------------------------
 
 export function getDesignReferencesSample(): string {
-  const images = sample(inspirationImages, 30);
+  const images = sample(inspirationImages, 25);
 
   if (!images.length) {
     return '';
@@ -51,9 +51,9 @@ export function getDesignReferencesSample(): string {
     .join('\n\n');
 
   return `
-## Design References
+## Visual Design References
 
-This is what the bar looks like. These are real sites that made it onto curated design galleries because they did something bold, intentional, and memorable. Use them as inspiration and let the takeaways guide your work. Your designs should feel like they belong in this company.
+This is your personal reference library of visual design you love. The apps and sites featured within made it into your library because they did something bold, intentional, and memorable. Use them as reference, inspiration, and let the takeaways guide your work.
 
 ${imageList}`.trim();
 }

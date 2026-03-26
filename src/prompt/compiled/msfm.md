@@ -209,7 +209,7 @@ The card system generates images using the brand's typography and color
 palette, creating shareable assets that feel native to the app's identity.
 
 ~~~
-Use generateImage with Seedream to create styled cards. Card template
+Use generateImage to create styled cards. Card template
 applies brand typography and colors from the spec. Export as PNG via
 CDN transform at 2x resolution. Social sharing via Web Share API with
 clipboard fallback for unsupported browsers.
@@ -217,6 +217,6 @@ clipboard fallback for unsupported browsers.
 
 ## History
 
-- **2026-03-22** — Built card generation using generateImage with Seedream.
+- **2026-03-22** — Built card generation using generateImage.
   Added share button to haiku detail view.
 ```

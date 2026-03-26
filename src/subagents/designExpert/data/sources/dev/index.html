@@ -534,6 +534,43 @@ function useInspiration() {
   return { data, loading, error, addImage, deleteImage, analyze, dedup, reload };
 }
 
+function useUiInspiration() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const reload = useCallback(async () => {
+    try {
+      setLoading(true);
+      const d = await api('/api/ui-inspiration');
+      setData(d);
+      setError(null);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { reload(); }, [reload]);
+
+  const addScreen = useCallback(async (entry) => {
+    await api('/api/ui-inspiration', { method: 'POST', body: entry });
+    await reload();
+  }, [reload]);
+
+  const deleteScreen = useCallback(async (index) => {
+    await api('/api/ui-inspiration/' + index, { method: 'DELETE' });
+    await reload();
+  }, [reload]);
+
+  const analyze = useCallback(async (url) => {
+    return api('/api/ui-inspiration/analyze', { method: 'POST', body: { url } });
+  }, []);
+
+  return { data, loading, error, addScreen, deleteScreen, analyze, reload };
+}
+
 // ---------------------------------------------------------------------------
 // Toast
 // ---------------------------------------------------------------------------
@@ -862,6 +899,71 @@ function InspirationTab({ inspiration }) {
   `;
 }
 
+function UiInspirationDetail({ screen, index, onDelete }) {
+  if (!screen) return html`<div class="inspiration-empty">Select a screen</div>`;
+
+  return html`
+    <div class="inspiration-detail">
+      <img class="inspiration-detail-img" src=${screen.url} alt="UI reference" />
+      <div class="inspiration-detail-body">
+        <div class="inspiration-detail-header">
+          <span>#${index}</span>
+          <button class="btn-danger" onClick=${() => onDelete(index)} title="Delete">✕</button>
+        </div>
+        <div class="inspiration-analysis"
+          dangerouslySetInnerHTML=${{ __html: renderAnalysis(screen.analysis) }}
+        />
+      </div>
+    </div>
+  `;
+}
+
+function UiInspirationTab({ uiInspiration }) {
+  const [selected, setSelected] = useState(0);
+  const sidebarRef = { current: null };
+
+  if (uiInspiration.loading) return html`<div class="loading"><span class="spinner"></span></div>`;
+  if (uiInspiration.error) return html`<div class="loading" style="color:#e00">Error: ${uiInspiration.error}</div>`;
+  if (!uiInspiration.data) return null;
+
+  const screens = uiInspiration.data.screens;
+  const current = screens[selected] || null;
+
+  const select = (i) => {
+    const clamped = Math.max(0, Math.min(i, screens.length - 1));
+    setSelected(clamped);
+    sidebarRef.current?.children[clamped]?.scrollIntoView({ block: 'center' });
+  };
+
+  const onKey = (e) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); select(selected + 1); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); select(selected - 1); }
+  };
+
+  const handleDelete = async (index) => {
+    const nextIndex = index >= screens.length - 1 ? Math.max(0, index - 1) : index;
+    setSelected(nextIndex);
+    await uiInspiration.deleteScreen(index);
+  };
+
+  return html`
+    <div class="inspiration-layout">
+      <div class="inspiration-sidebar" ref=${el => sidebarRef.current = el} tabindex="0" onKeyDown=${onKey}>
+        ${screens.map((s, i) => html`
+          <img
+            key=${i}
+            class="inspiration-thumb ${i === selected ? 'active' : ''}"
+            src=${s.url}
+            loading="lazy"
+            onClick=${() => select(i)}
+          />
+        `)}
+      </div>
+      <${UiInspirationDetail} screen=${current} index=${selected} onDelete=${handleDelete} />
+    </div>
+  `;
+}
+
 // ---------------------------------------------------------------------------
 // App
 // ---------------------------------------------------------------------------
@@ -870,6 +972,7 @@ function App() {
   const [tab, setTab] = useState('fonts');
   const fonts = useFonts();
   const inspiration = useInspiration();
+  const uiInspiration = useUiInspiration();
   const toast = useToast();
 
   return html`
@@ -878,6 +981,7 @@ function App() {
         <button class="tab ${tab === 'fonts' ? 'active' : ''}" onClick=${() => setTab('fonts')}>Fonts${fonts.data ? ` (${fonts.data.fonts.length})` : ''}</button>
         <button class="tab ${tab === 'pairings' ? 'active' : ''}" onClick=${() => setTab('pairings')}>Pairings${fonts.data ? ` (${fonts.data.pairings.length})` : ''}</button>
         <button class="tab ${tab === 'inspiration' ? 'active' : ''}" onClick=${() => setTab('inspiration')}>Inspiration${inspiration.data ? ` (${inspiration.data.images.length})` : ''}</button>
+        <button class="tab ${tab === 'ui' ? 'active' : ''}" onClick=${() => setTab('ui')}>UI Patterns${uiInspiration.data ? ` (${uiInspiration.data.screens.length})` : ''}</button>
       </div>
       ${tab === 'inspiration' ? html`
         <div style="margin-left: auto;">
@@ -888,6 +992,7 @@ function App() {
     <div class="content">
       ${tab === 'fonts' ? html`<${FontsTab} fonts=${fonts} />`
         : tab === 'pairings' ? html`<${PairingsTab} fonts=${fonts} />`
+        : tab === 'ui' ? html`<${UiInspirationTab} uiInspiration=${uiInspiration} />`
         : html`<${InspirationTab} inspiration=${inspiration} />`
       }
     </div>

@@ -1,10 +1,10 @@
-import type { ToolDefinition } from '../../../api.js';
+import type { ToolDefinition } from '../../../../api.js';
 import { seedreamGenerate } from './_seedream.js';
 
 export const definition: ToolDefinition = {
   name: 'generateImages',
   description:
-    'Generate images using AI. Returns CDN URLs with a quality analysis for each image. Produces high-quality results for everything from photorealistic images and abstract/creative visuals. Pass multiple prompts to generate in parallel. No need to analyze images separately after generating — the analysis is included.',
+    'Generate images. Returns CDN URLs with a quality analysis for each image. Produces high-quality results for everything from photorealistic images and abstract/creative visuals. Pass multiple prompts to generate in parallel. No need to analyze images separately after generating — the analysis is included.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -14,7 +14,7 @@ export const definition: ToolDefinition = {
           type: 'string',
         },
         description:
-          'One or more image generation prompts. Be detailed: describe style, mood, composition, colors. Multiple prompts run in parallel.',
+          'One or more image briefs describing what you want. Focus on subject, mood, style, and intended use — the tool optimizes your brief into a model-ready prompt automatically. Multiple briefs run in parallel.',
       },
       width: {
         type: 'number',

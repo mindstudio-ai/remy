@@ -31,7 +31,9 @@ import {
   getToolDefinitions,
 } from './tools/index.js';
 import { saveSession } from './session.js';
-import { log } from './logger.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('agent');
 import { parsePartialJson } from './parsePartialJson.js';
 import { startStatusWatcher } from './statusWatcher.js';
 import { friendlyError } from './errors.js';
@@ -93,6 +95,8 @@ export async function runTurn(params: {
   onEvent: (event: AgentEvent) => void;
   resolveExternalTool?: ExternalToolResolver;
   hidden?: boolean;
+  /** Correlation ID from the headless protocol — threaded for structured logging. */
+  requestId?: string;
   toolRegistry?: import('./toolRegistry.js').ToolRegistry;
   onBackgroundComplete?: (
     toolCallId: string,
@@ -113,19 +117,19 @@ export async function runTurn(params: {
     onEvent,
     resolveExternalTool,
     hidden,
+    requestId,
     toolRegistry,
     onBackgroundComplete,
   } = params;
   const tools = getToolDefinitions(onboardingState);
 
   log.info('Turn started', {
-    messageLength: userMessage.length,
+    requestId,
+    model,
     toolCount: tools.length,
-    tools: tools.map((t) => t.name),
     ...(attachments &&
       attachments.length > 0 && {
         attachmentCount: attachments.length,
-        attachmentUrls: attachments.map((a) => a.url),
       }),
   });
 
@@ -140,10 +144,6 @@ export async function runTurn(params: {
   }
   if (attachments && attachments.length > 0) {
     userMsg.attachments = attachments;
-    log.debug('Attachments added to user message', {
-      count: attachments.length,
-      urls: attachments.map((a) => a.url),
-    });
   }
   state.messages.push(userMsg);
 
@@ -238,11 +238,6 @@ export async function runTurn(params: {
         }
         acc.lastEmittedCount = result.emittedCount;
         acc.started = true;
-        log.debug('Streaming partial tool_start', {
-          id,
-          name,
-          emittedCount: result.emittedCount,
-        });
         onEvent({
           type: 'tool_start',
           id,
@@ -261,10 +256,6 @@ export async function runTurn(params: {
 
       if (!acc.started) {
         acc.started = true;
-        log.debug('Streaming content tool: emitting early tool_start', {
-          id,
-          name,
-        });
         onEvent({ type: 'tool_start', id, name, input: partial });
       }
 
@@ -273,18 +264,8 @@ export async function runTurn(params: {
         if (result === null) {
           return;
         }
-        log.debug('Streaming content tool: emitting tool_input_delta', {
-          id,
-          name,
-          resultLength: result.length,
-        });
         onEvent({ type: 'tool_input_delta', id, name, result });
       } else {
-        log.debug('Streaming content tool: emitting tool_input_delta', {
-          id,
-          name,
-          contentLength: content.length,
-        });
         onEvent({ type: 'tool_input_delta', id, name, result: content });
       }
     }
@@ -295,6 +276,7 @@ export async function runTurn(params: {
         {
           ...apiConfig,
           model,
+          requestId,
           system,
           messages: cleanMessagesForApi(state.messages),
           tools,
@@ -352,13 +334,6 @@ export async function runTurn(params: {
             // Anthropic: raw JSON string fragments
             const acc = getOrCreateAccumulator(event.id, event.name);
             acc.json += event.delta;
-            log.debug('Received tool_input_delta', {
-              id: event.id,
-              name: event.name,
-              deltaLength: event.delta.length,
-              accumulatedLength: acc.json.length,
-            });
-
             try {
               const partial = parsePartialJson(acc.json);
               await handlePartialInput(acc, event.id, event.name, partial);
@@ -371,12 +346,6 @@ export async function runTurn(params: {
           case 'tool_input_args': {
             // Gemini: accumulated partial object snapshot
             const acc = getOrCreateAccumulator(event.id, event.name);
-            log.debug('Received tool_input_args', {
-              id: event.id,
-              name: event.name,
-              keys: Object.keys(event.args),
-            });
-
             await handlePartialInput(acc, event.id, event.name, event.args);
             break;
           }
@@ -394,11 +363,10 @@ export async function runTurn(params: {
             const tool = getToolByName(event.name);
             const wasStreamed = acc?.started ?? false;
             const isInputStreaming = !!tool?.streaming?.partialInput;
-            log.info('Tool call received', {
-              id: event.id,
+            log.info('Tool received', {
+              requestId,
+              toolCallId: event.id,
               name: event.name,
-              wasStreamed,
-              isInputStreaming,
             });
             // Emit tool_start if: not streamed yet, OR input-streaming
             // tool that needs a final non-partial emission.
@@ -465,7 +433,8 @@ export async function runTurn(params: {
     }
 
     // Execute all tool calls in parallel (skip if cancelled)
-    log.info('Executing tools', {
+    log.info('Tools executing', {
+      requestId,
       count: toolCalls.length,
       tools: toolCalls.map((tc) => tc.name),
     });
@@ -529,8 +498,9 @@ export async function runTurn(params: {
             if (EXTERNAL_TOOLS.has(tc.name) && resolveExternalTool) {
               saveSession(state);
               log.info('Waiting for external tool result', {
+                requestId,
+                toolCallId: tc.id,
                 name: tc.name,
-                id: tc.id,
               });
               result = await resolveExternalTool(tc.id, tc.name, input);
             } else {
@@ -541,6 +511,7 @@ export async function runTurn(params: {
                 onEvent: wrappedOnEvent,
                 resolveExternalTool,
                 toolCallId: tc.id,
+                requestId,
                 subAgentMessages,
                 toolRegistry,
                 onBackgroundComplete,
@@ -589,10 +560,11 @@ export async function runTurn(params: {
         toolRegistry?.unregister(tc.id);
 
         log.info('Tool completed', {
+          requestId,
+          toolCallId: tc.id,
           name: tc.name,
-          elapsed: `${Date.now() - toolStart}ms`,
+          durationMs: Date.now() - toolStart,
           isError: r.isError,
-          resultLength: r.result.length,
         });
         onEvent({
           type: 'tool_done',

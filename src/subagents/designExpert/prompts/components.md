@@ -19,13 +19,6 @@ For example: `https://cdn.jsdelivr.net/npm/@tabler/icons@latest/icons/outline/se
 - Keep icons monochrome using `currentColor` so they inherit the text color. Colored icons look dated.
 - Never use emojis as substitutes for icons. If you need an icon and can't find the right one in Tabler, describe what icon is needed and the developer will find it.
 
-#### Common icon names
-
-Navigation: `home`, `search`, `menu-2`, `arrow-left`, `arrow-right`, `chevron-down`
-Actions: `plus`, `edit`, `trash`, `download`, `upload`, `share`
-Status: `check`, `x`, `alert-circle`, `info-circle`, `loader`
-UI: `settings`, `user`, `bell`, `heart`, `bookmark`, `filter`, `sort-ascending`
-
 #### Loading states
 
 Buttons should use a small animated spinner during loading, not text labels like "Loading..." or "Submitting...". The `loader-2` tabler icon with a CSS spin animation is a common pattern. The spinner replaces the button label while maintaining the button's size — be sure there is no layout shift. Recommend the developer implement this as a reusable pattern early.

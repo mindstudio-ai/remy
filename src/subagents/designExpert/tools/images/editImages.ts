@@ -1,10 +1,10 @@
-import type { ToolDefinition } from '../../../api.js';
+import type { ToolDefinition } from '../../../../api.js';
 import { seedreamGenerate } from './_seedream.js';
 
 export const definition: ToolDefinition = {
   name: 'editImages',
   description:
-    'Edit or transform existing images using AI. Provide one or more source image URLs as reference and a prompt describing the desired edit. Use for compositing, style transfer, subject transformation, blending multiple references, or incorporating one or more ferences into something new. Returns CDN URLs with analysis.',
+    'Edit or transform existing images. Provide one or more source image URLs as reference and a prompt describing the desired edit. Use for compositing, style transfer, subject transformation, blending multiple references, or incorporating one or more references into something new. Returns CDN URLs with analysis.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -14,7 +14,7 @@ export const definition: ToolDefinition = {
           type: 'string',
         },
         description:
-          'One or more edit prompts describing how to transform the source images. Multiple prompts run in parallel, each using the same source images.',
+          'One or more edit briefs describing the desired transformation. Focus on what to change relative to the source material. Multiple briefs run in parallel, each using the same source images.',
       },
       sourceImages: {
         type: 'array',

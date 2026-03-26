@@ -21,8 +21,8 @@ const SUBAGENT = 'subagents/designExpert';
 
 const RUNTIME_PLACEHOLDERS = new Set([
   'font_library',
-  'design_references',
-  'ui_patterns',
+  'visual_design_references',
+  'ui_case_studies',
 ]);
 
 const PROMPT_TEMPLATE = readAsset(SUBAGENT, 'prompt.md')
@@ -47,8 +47,8 @@ export function getDesignExpertPrompt(): string {
     '{{font_library}}',
     getFontLibrarySample(),
   )
-    .replace('{{design_references}}', getDesignReferencesSample())
-    .replace('{{ui_patterns}}', getUiInspirationSample());
+    .replace('{{visual_design_references}}', getDesignReferencesSample())
+    .replace('{{ui_case_studies}}', getUiInspirationSample());
 
   if (specContext) {
     prompt += `\n\n${specContext}`;

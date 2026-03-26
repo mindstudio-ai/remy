@@ -11,6 +11,9 @@
  */
 
 import type { AgentEvent } from './types.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('tool-registry');
 
 export interface ToolRegistryEntry {
   id: string;
@@ -57,6 +60,7 @@ export class ToolRegistry {
       return false;
     }
 
+    log.info('Tool stopped', { toolCallId: id, name: entry.name, mode });
     entry.abortController.abort(mode);
 
     if (mode === 'graceful') {
@@ -93,6 +97,8 @@ export class ToolRegistry {
     if (!entry) {
       return false;
     }
+
+    log.info('Tool restarted', { toolCallId: id, name: entry.name });
 
     // Abort current execution
     entry.abortController.abort('restart');
