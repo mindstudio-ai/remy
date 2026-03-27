@@ -1,3 +1,7 @@
+---
+  trigger: sync
+---
+
 This is an automated action triggered by the user pressing "Sync" in the editor.
 
 The user has manually edited files since the last sync. The `refs/sync-point` git ref marks the last known-good sync state. It's created using a temporary git index that captures the full working tree (including unstaged changes) as a tree object — so it represents exactly what the files looked like at sync time, not just what was committed.

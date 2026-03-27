@@ -1,3 +1,7 @@
+---
+  trigger: publish
+---
+
 This is an automated action triggered by the user pressing "Publish" in the editor.
 
 The user wants to deploy their app. Pushing to the `main` branch triggers a production deploy.

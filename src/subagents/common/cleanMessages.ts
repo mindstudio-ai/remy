@@ -18,7 +18,7 @@ export function cleanMessagesForApi(messages: Message[]): Message[] {
     ) {
       return {
         ...msg,
-        content: msg.content.replace(/^@@automated::[^@]*@@\n?/, ''),
+        content: msg.content.replace(/^@@automated::[^@]*@@[^\n]*\n?/, ''),
       };
     }
 

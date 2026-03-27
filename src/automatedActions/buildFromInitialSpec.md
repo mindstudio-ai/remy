@@ -1,3 +1,7 @@
+---
+  trigger: buildFromInitialSpec
+---
+
 This is an automated action triggered by the user pressing "Build" in the editor after reviewing the spec.
 
 The user has reviewed the spec and is ready to build. 

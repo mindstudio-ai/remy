@@ -15,7 +15,6 @@
  */
 
 import { createInterface } from 'node:readline';
-import { readAsset } from './assets.js';
 import { createLogger } from './logger.js';
 
 const log = createLogger('headless');
@@ -39,9 +38,7 @@ export interface HeadlessOptions {
   lspUrl?: string;
 }
 
-function loadActionPrompt(name: string): string {
-  return readAsset('prompt', 'actions', `${name}.md`);
-}
+import { resolveAction } from './automatedActions/resolve.js';
 
 // ---------------------------------------------------------------------------
 // Wire protocol emit
@@ -458,17 +455,13 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       );
     }
 
-    // Resolve the user message — runCommand may substitute a built-in prompt
+    // Resolve @@automated:: actions — loads prompt, interpolates params
     let userMessage = (parsed.text as string) ?? '';
-    const isCommand = !!parsed.runCommand;
-    const isHidden = isCommand || !!(parsed.hidden as boolean);
-    if (parsed.runCommand === 'sync') {
-      userMessage = loadActionPrompt('sync');
-    } else if (parsed.runCommand === 'publish') {
-      userMessage = loadActionPrompt('publish');
-    } else if (parsed.runCommand === 'buildFromInitialSpec') {
-      userMessage = loadActionPrompt('buildFromInitialSpec');
+    const resolved = resolveAction(userMessage);
+    if (resolved !== null) {
+      userMessage = resolved;
     }
+    const isHidden = resolved !== null || !!(parsed.hidden as boolean);
 
     const onboardingState =
       (parsed.onboardingState as string) ?? 'onboardingFinished';
