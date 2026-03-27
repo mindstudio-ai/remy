@@ -457,7 +457,17 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
 
     // Resolve @@automated:: actions — loads prompt, interpolates params
     let userMessage = (parsed.text as string) ?? '';
-    const resolved = resolveAction(userMessage);
+    let resolved: string | null = null;
+    try {
+      resolved = resolveAction(userMessage);
+    } catch (err: any) {
+      emit(
+        'completed',
+        { success: false, error: err.message || 'Failed to resolve action' },
+        requestId,
+      );
+      return;
+    }
     if (resolved !== null) {
       userMessage = resolved;
     }

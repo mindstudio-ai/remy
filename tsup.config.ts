@@ -10,6 +10,7 @@ function copyAssets() {
   const pairs: Array<[string, string]> = [
     ['src/prompt', 'dist/prompt'],
     ['src/subagents', 'dist/subagents'],
+    ['src/automatedActions', 'dist/automatedActions'],
   ];
   for (const [src, dest] of pairs) {
     try {
