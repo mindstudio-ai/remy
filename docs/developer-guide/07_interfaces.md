@@ -274,6 +274,84 @@ Each listed method becomes an MCP tool. Method names and descriptions from the m
 
 ---
 
+## Agent (Conversational Interface)
+
+A conversational interface where an LLM has access to the app's methods as tools. Unlike MCP (which exposes methods for external agents to call), the agent interface IS the agent — it has its own personality, system prompt, and model config, and orchestrates tool calls against the app's methods internally.
+
+The developer authors the agent's character and behavior in MSFM (`src/interfaces/agent.md`), and the build agent compiles that into a system prompt and tool descriptions (`dist/interfaces/agent/`).
+
+### Spec File: `src/interfaces/agent.md`
+
+The human-readable spec. Frontmatter contains structured fields (rendered with dedicated UI in the editor); the prose body is the behavioral spec — voice, personality, capabilities, rules.
+
+```yaml
+---
+name: Todo Assistant
+model: {"model": "claude-4-5-haiku", "temperature": 0.5, "maxResponseTokens": 15000}
+description: Conversational agent that helps users manage their to-do list.
+---
+```
+
+| Field | Description |
+|-------|-------------|
+| `name` | Agent display name |
+| `model` | JSON string — `model` (MindStudio model ID), `temperature`, `maxResponseTokens`, and optional `config` (model-specific settings like `reasoning`, `tools`, etc.). Query the MindStudio SDK for available model IDs and config options. |
+| `description` | One-liner for agent card/listing |
+
+The body uses standard MSFM. Typical sections: Voice & Personality, Capabilities, Behavior — whatever structure serves the agent's character.
+
+### Compiled Output: `dist/interfaces/agent/`
+
+The build agent compiles the MSFM spec into:
+
+```
+dist/interfaces/agent/
+├── agent.json          ← config the platform compiler reads
+├── system.md           ← compiled system prompt
+└── tools/
+    ├── createTodo.md   ← rich tool description per method
+    ├── listTodos.md
+    └── ...
+```
+
+- **`system.md`** — the full system prompt, compiled from the MSFM spec. Contains personality, behavioral rules, formatting preferences.
+- **`tools/*.md`** — one per tool. Contains parameter docs, usage guidance, examples, edge cases. Richer than a JSON schema description string.
+
+### Config (`agent.json`)
+
+```json
+{
+  "agent": {
+    "model": "claude-4-5-haiku",
+    "temperature": 0.5,
+    "maxTokens": 15000,
+    "systemPrompt": "system.md",
+    "tools": [
+      { "method": "create-todo", "description": "tools/createTodo.md" },
+      { "method": "list-todos", "description": "tools/listTodos.md" }
+    ],
+    "webInterfacePath": "/chat"
+  }
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `model` | MindStudio model ID (e.g. `claude-4-5-haiku`, `claude-4-6-sonnet`) |
+| `temperature` | Model temperature |
+| `maxTokens` | Max response tokens |
+| `systemPrompt` | Relative path to the compiled system prompt markdown file |
+| `tools` | Array of tool entries. `method` references a method `id` from `mindstudio.json`. `description` is a relative path to a markdown file with rich tool docs. |
+| `webInterfacePath` | Optional. If the app has a web interface with a chat page, this path tells the IDE where to show the agent preview. |
+
+### Manifest
+
+```json
+{ "type": "agent", "path": "dist/interfaces/agent/agent.json" }
+```
+
+---
+
 ## Interface Configs in the Manifest
 
 Each interface is declared in `mindstudio.json`:
@@ -288,7 +366,8 @@ Each interface is declared in `mindstudio.json`:
     { "type": "telegram", "path": "dist/interfaces/telegram/interface.json" },
     { "type": "webhook", "path": "dist/interfaces/webhook/interface.json" },
     { "type": "email", "path": "dist/interfaces/email/interface.json" },
-    { "type": "mcp", "path": "dist/interfaces/mcp/interface.json" }
+    { "type": "mcp", "path": "dist/interfaces/mcp/interface.json" },
+    { "type": "agent", "path": "dist/interfaces/agent/agent.json" }
   ]
 }
 ```

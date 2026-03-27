@@ -76,6 +76,8 @@ auth.name;
 auth.email;
 ```
 
+For apps with an agent interface, the SDK also provides `createAgentChatClient()` for thread management and streaming chat. See the "Building Agent Interfaces" section for usage details.
+
 The project uses `"jsx": "react-jsx"` (automatic JSX transform) — do not `import React from 'react'`. Only import the specific hooks and types you need (e.g., `import { useState, useEffect } from 'react'`).
 
 On deploy, the platform runs `npm install && npm run build` in the web directory and hosts the output on CDN.
@@ -230,6 +232,74 @@ Expose methods as AI tools.
 
 Each listed method becomes an MCP tool. Method names and descriptions from the manifest are used as tool names and descriptions.
 
+## Agent (Conversational Interface)
+
+A conversational interface where an LLM has access to the app's methods as tools. Unlike MCP (which exposes methods for external agents), the agent interface IS the agent — it has its own personality, system prompt, and model config, and orchestrates tool calls against the app's methods internally.
+
+### Spec: `src/interfaces/agent.md`
+
+The human-readable spec. Frontmatter contains structured fields; the prose body is the behavioral spec — voice, personality, capabilities, rules — written in MSFM.
+
+```yaml
+---
+name: Todo Assistant
+model: {"model": "claude-4-5-haiku", "temperature": 0.5, "maxResponseTokens": 15000}
+description: Conversational agent that helps users manage their to-do list.
+---
+```
+
+Frontmatter fields:
+- `name` — agent display name
+- `model` — JSON string with `model` (MindStudio model ID), `temperature`, `maxResponseTokens`, and optional `config` (model-specific settings like `reasoning`, `tools`, etc.). Use `askMindStudioSdk` to look up available model IDs and their config options when setting the model ID. The user's UI will have a nice visual picker to allow them to change it later, so only validate model when you're setting - otherwise assume this value to be correct if it changes.
+- `description` — one-liner for agent card/listing
+
+The prose body contains sections like Voice & Personality, Capabilities, Behavior — whatever structure serves the agent's character. This is compiled into the system prompt and tool descriptions.
+
+### Compiled Output: `dist/interfaces/agent/`
+
+```
+dist/interfaces/agent/
+├── agent.json          ← config the platform reads
+├── system.md           ← compiled system prompt
+└── tools/
+    ├── createTodo.md   ← rich tool description per method
+    ├── listTodos.md
+    └── ...
+```
+
+### Config (`agent.json`)
+
+```json
+{
+  "agent": {
+    "model": "claude-4-5-haiku",
+    "temperature": 0.5,
+    "maxTokens": 15000,
+    "systemPrompt": "system.md",
+    "tools": [
+      { "method": "create-todo", "description": "tools/createTodo.md" },
+      { "method": "list-todos", "description": "tools/listTodos.md" }
+    ],
+    "webInterfacePath": "/chat"
+  }
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `model` | MindStudio model ID (e.g. `claude-4-5-haiku`, `claude-4-6-sonnet`) |
+| `temperature` | Model temperature |
+| `maxTokens` | Max response tokens |
+| `systemPrompt` | Relative path to the compiled system prompt markdown file |
+| `tools` | Array of tool entries — `method` references a method `id` from the manifest, `description` is a relative path to a markdown file with rich tool docs (when to use, examples, edge cases, parameter guidance) |
+| `webInterfacePath` | Optional. If the app has a web interface with a chat page, this path tells the IDE where to show the preview. Otherwise the agent is accessed via API. |
+
+### Manifest Declaration
+
+```json
+{ "type": "agent", "path": "dist/interfaces/agent/agent.json" }
+```
+
 ## Manifest Declaration
 
 Each interface is declared in `mindstudio.json`:
@@ -244,7 +314,8 @@ Each interface is declared in `mindstudio.json`:
     { "type": "telegram", "path": "dist/interfaces/telegram/interface.json" },
     { "type": "webhook", "path": "dist/interfaces/webhook/interface.json" },
     { "type": "email", "path": "dist/interfaces/email/interface.json" },
-    { "type": "mcp", "path": "dist/interfaces/mcp/interface.json" }
+    { "type": "mcp", "path": "dist/interfaces/mcp/interface.json" },
+    { "type": "agent", "path": "dist/interfaces/agent/agent.json" }
   ]
 }
 ```

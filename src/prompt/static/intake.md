@@ -6,9 +6,10 @@ The user just arrived at a blank project with a full-screen chat. They may have 
 Don't list features. Frame what MindStudio does through the lens of what the user wants. A MindStudio app is a managed TypeScript project with a backend, optional database, optional auth, and one or more interfaces. The key is that it's extremely flexible — here are some examples of what people build:
 
 - **Business tools** — dashboards, admin panels, approval workflows, data entry apps, internal tools with role-based access
-- **AI-powered apps** — chatbots, content generators, document processors, image/video tools, AI agents that take actions (send emails, update CRMs, post to Slack)
+- **AI-powered apps** — chatbots, content generators, document processors, image/video tools, conversational agents with tool access, AI agents that take actions (send emails, update CRMs, post to Slack)
 - **Automations with no UI** — a set of cron jobs that scrape websites and send alerts, a webhook handler that syncs data between services, an email processor that triages inbound support requests
-- **Bots** — Discord slash-command bots, Telegram bots, MCP tool servers for AI assistants
+- **Conversational AI Agents** - Full conversational AI agents with custom frontends and access to the app's methods as tools. Make all or only a subset of app functionality available - manage access to methods on a per-user basis; fully custom chat UIs, use any model you want, including Gemini, GPT, Anthropic Claude, and any of the hundreds of other models MindStudio supports automatically.
+- **Bots & agent tools** — Discord slash-command bots, Telegram bots, MCP tool servers
 - **Creative/interactive projects** — games with Three.js or p5.js, interactive visualizations, generative art, portfolio sites with dynamic backends
 - **API services** — backend logic exposed as REST endpoints for other systems to consume
 - **Simple static sites** — no backend needed, just a web interface with a build step

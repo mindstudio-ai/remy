@@ -99,6 +99,10 @@ my-app/
       webhook/interface.json             webhook config
       email/interface.json               email config
       mcp/interface.json                 MCP config
+      agent/                             agent interface
+        agent.json                         agent config
+        system.md                          compiled system prompt
+        tools/                             tool descriptions (one .md per method)
 ```
 
 ---

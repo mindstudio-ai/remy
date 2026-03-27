@@ -88,6 +88,7 @@ Each interface type invokes the same backend methods. Methods don't know which i
 - Telegram — message-handling bots
 - Email — inbound email processing
 - MCP — tool servers for AI assistants
+- Agent — conversational LLM interface with tool access to backend methods
 
 ## Backend
 

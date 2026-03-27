@@ -152,7 +152,7 @@ Declares how users interact with the app. Each entry:
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `type` | `string` | Yes | One of: `web`, `api`, `discord`, `telegram`, `cron`, `webhook`, `email`, `mcp` |
+| `type` | `string` | Yes | One of: `web`, `api`, `discord`, `telegram`, `cron`, `webhook`, `email`, `mcp`, `agent` |
 | `path` | `string` | No | Path to the interface config file |
 | `config` | `object` | No | Inline config (alternative to a file) |
 | `enabled` | `boolean` | No | Default `true`. Set `false` to skip during build. |

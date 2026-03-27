@@ -92,6 +92,10 @@ Current date/time: ${now}
   {{compiled/design.md}}
   </design>
 
+  <building_agent_interfaces>
+  {{compiled/agent-interfaces.md}}
+  </building_agent_interfaces>
+
   <media_cdn>
   {{compiled/media-cdn.md}}
   </media_cdn>

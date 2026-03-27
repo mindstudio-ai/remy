@@ -22,6 +22,7 @@ my-app/
         assets/                          logos, icons
       web.md                           web UI spec
       api.md                           API conventions
+      agent.md                         agent personality and behavior spec
       cron.md                          scheduled job descriptions
     roadmap/                           feature roadmap (one file per item, type: roadmap)
 
@@ -46,6 +47,10 @@ my-app/
       webhook/interface.json             webhook config
       email/interface.json               email config
       mcp/interface.json                 MCP config
+      agent/                             agent interface
+        agent.json                         agent config
+        system.md                          compiled system prompt
+        tools/                             tool descriptions (one .md per method)
 ```
 
 ## What Goes Where
