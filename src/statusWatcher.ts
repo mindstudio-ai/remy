@@ -11,13 +11,7 @@
 
 export interface StatusWatcherConfig {
   apiConfig: { baseUrl: string; apiKey: string };
-  getContext: () => {
-    assistantText: string;
-    lastToolName?: string;
-    lastToolResult?: string;
-    onboardingState?: string;
-    userMessage?: string;
-  };
+  getContext: () => string;
   onStatus: (label: string) => void;
   interval?: number;
   signal?: AbortSignal;
@@ -42,10 +36,8 @@ export function startStatusWatcher(config: StatusWatcherConfig): StatusWatcher {
     inflight = true;
 
     try {
-      const ctx = getContext();
-
-      // Skip if there's no context to work with
-      if (!ctx.assistantText && !ctx.lastToolName && !ctx.userMessage) {
+      const context = getContext();
+      if (!context) {
         return;
       }
 
@@ -55,13 +47,7 @@ export function startStatusWatcher(config: StatusWatcherConfig): StatusWatcher {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${apiConfig.apiKey}`,
         },
-        body: JSON.stringify({
-          assistantText: ctx.assistantText.slice(-500),
-          lastToolName: ctx.lastToolName,
-          lastToolResult: ctx.lastToolResult?.slice(-200),
-          onboardingState: ctx.onboardingState,
-          userMessage: ctx.userMessage?.slice(-200),
-        }),
+        body: JSON.stringify({ context }),
         signal,
       });
 

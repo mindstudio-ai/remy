@@ -137,12 +137,23 @@ export async function runSubAgent(
 
       const statusWatcher = startStatusWatcher({
         apiConfig,
-        getContext: () => ({
-          assistantText: getPartialText(contentBlocks),
-          lastToolName: currentToolNames || undefined,
-          lastToolResult: lastToolResult || undefined,
-          userMessage: task,
-        }),
+        getContext: () => {
+          const parts: string[] = [];
+          if (task) {
+            parts.push(`Task: ${task.slice(-200)}`);
+          }
+          const text = getPartialText(contentBlocks);
+          if (text) {
+            parts.push(`Assistant text: ${text.slice(-500)}`);
+          }
+          if (currentToolNames) {
+            parts.push(`Tool: ${currentToolNames}`);
+          }
+          if (lastToolResult) {
+            parts.push(`Tool result: ${lastToolResult.slice(-200)}`);
+          }
+          return parts.join('\n');
+        },
         onStatus: (label) => emit({ type: 'status', message: label }),
         signal,
       });

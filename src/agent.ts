@@ -159,6 +159,7 @@ export async function runTurn(params: {
   // Track last tool context across loop iterations so the status watcher
   // has something to report while waiting for the model's first token.
   let lastCompletedTools = '';
+  let lastCompletedInput = '';
   let lastCompletedResult = '';
 
   while (true) {
@@ -179,20 +180,35 @@ export async function runTurn(params: {
 
     const statusWatcher = startStatusWatcher({
       apiConfig,
-      getContext: () => ({
-        assistantText:
-          subAgentText || getTextContent(contentBlocks).slice(-500),
-        lastToolName:
+      getContext: () => {
+        const parts: string[] = [];
+        if (userMessage) {
+          parts.push(`User message: ${userMessage.slice(-200)}`);
+        }
+        if (onboardingState) {
+          parts.push(`Build phase: ${onboardingState}`);
+        }
+        const text = subAgentText || getTextContent(contentBlocks).slice(-500);
+        if (text) {
+          parts.push(`Assistant text: ${text}`);
+        }
+        const toolName =
           currentToolNames ||
           getToolCalls(contentBlocks)
             .filter((tc) => !STATUS_EXCLUDED_TOOLS.has(tc.name))
             .at(-1)?.name ||
-          lastCompletedTools ||
-          undefined,
-        lastToolResult: lastCompletedResult || undefined,
-        onboardingState,
-        userMessage,
-      }),
+          lastCompletedTools;
+        if (toolName) {
+          parts.push(`Tool: ${toolName}`);
+        }
+        if (lastCompletedInput) {
+          parts.push(`Tool input: ${lastCompletedInput.slice(-300)}`);
+        }
+        if (lastCompletedResult) {
+          parts.push(`Tool result: ${lastCompletedResult.slice(-200)}`);
+        }
+        return parts.join('\n');
+      },
       onStatus: (label) => onEvent({ type: 'status', message: label }),
       signal,
     });
@@ -601,10 +617,11 @@ export async function runTurn(params: {
 
     // Remember what tools just ran so the streaming watcher has context
     // while waiting for the model's first token in the next iteration.
-    lastCompletedTools = toolCalls
-      .filter((tc) => !STATUS_EXCLUDED_TOOLS.has(tc.name))
-      .map((tc) => tc.name)
-      .join(', ');
+    const lastNonExcluded = toolCalls.filter(
+      (tc) => !STATUS_EXCLUDED_TOOLS.has(tc.name),
+    );
+    lastCompletedTools = lastNonExcluded.map((tc) => tc.name).join(', ');
+    lastCompletedInput = JSON.stringify(lastNonExcluded.at(-1)?.input ?? {});
     lastCompletedResult = results.at(-1)?.result ?? '';
 
     // Append tool results as user messages (with toolCallId to link them).
