@@ -13,7 +13,7 @@ export const askMindStudioSdkTool: Tool = {
   definition: {
     name: 'askMindStudioSdk',
     description:
-      'MindStudio SDK expert. Knows every action, model, connector, and configuration option. Returns architectural guidance and working code. Describe what you want to build, not just what API method you need. Batch related questions into a single query.',
+      '@mindstudio-ai/agent SDK expert. Knows every action, model, connector, and configuration option. Returns architectural guidance and working code. Describe what you want to build, not just what API method you need. Batch related questions into a single query.',
     inputSchema: {
       type: 'object',
       properties: {
