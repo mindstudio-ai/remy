@@ -18,7 +18,7 @@ export const presentPlanTool: Tool = {
   definition: {
     name: 'presentPlan',
     description:
-      "Present an implementation plan for user approval before making changes. Use this only for large, multi-step changes or when the user explicitly asks to see a plan. Most work should be done autonomously without a plan. Write a clear markdown summary of what you intend to do in plain language — describe the changes from the user's perspective, not as a list of files and code paths. If the user rejects with feedback, revise and present again.",
+      "Present an implementation plan for user approval before making changes. Use this only for large, multi-step changes like new features, new interface types, or when the user explicitly asks to see a plan. Most work should be done autonomously without a plan. Write a clear markdown summary of what you intend to do in plain language — describe the changes from the user's perspective, not as a list of files and code paths. If the user rejects with feedback, revise and present again.",
     inputSchema: {
       type: 'object',
       properties: {

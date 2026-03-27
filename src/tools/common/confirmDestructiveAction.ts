@@ -27,7 +27,7 @@ export const confirmDestructiveActionTool: Tool = {
         message: {
           type: 'string',
           description:
-            'Explanation of what is about to happen and why confirmation is needed.',
+            'Explanation of what is about to happen and why confirmation is needed in natural language - avoid technical terms or mentions of variables, bash commands, or other system-level concepts..',
         },
         confirmLabel: {
           type: 'string',

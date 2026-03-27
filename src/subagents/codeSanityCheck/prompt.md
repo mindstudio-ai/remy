@@ -23,6 +23,8 @@ These are things we already know about and have decided to accept:
   - framer-motion
   - styled-components
   - @tabler/icons-react
+  - streamdown
+  - react-textarea-autosize
 - Preferences:
   - use [wouter](https://github.com/molefrog/wouter) for React routing instead of reaching for react-router
 
