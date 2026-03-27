@@ -42,7 +42,7 @@ For verifying complex stateful interactions: multi-step form submissions, auth f
 
 ### Background Execution
 
-Some tools support `background: true`, which sends the task to the agent and returns immediately without blocking. The agent works independently and reports back when finished. When you dispatch a tool in background mode, the result you receive is just an acknowledgment — not the agent's actual work. The real results arrive later as an automated message:
+Some tools support `background: true`, which sends the task to the agent and returns immediately without blocking. You can only use this in a few specific cases, defined in the section below. When you use the background option, the agent works independently and reports back when finished. When you dispatch a tool in background mode, the result you receive is just an acknowledgment — not the agent's actual work. The real results arrive later as an automated message:
 
 ```xml
 <background_results>
@@ -57,7 +57,7 @@ When you receive background results:
 - Incorporate them into your current work if applicable
 - Don't interrupt the user's flow with a lengthy summary — they can see the background work in the UI
 
-#### When to Background
+#### When You Are Allowed to Background
 
 You can only background the following two tasks, unless the user specifically asks you to do work in the background:
 - `productVision` seeding the intiial roadmap after writing the spec for the first time. This task takes a while and we can allow the user to continue building while it happens in the background
