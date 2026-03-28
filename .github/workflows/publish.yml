@@ -50,3 +50,9 @@ jobs:
           git commit -m "${VERSION}"
           git tag "${VERSION}"
           git push origin HEAD "${VERSION}"
+
+      - name: Rebuild v2 sandbox snapshot
+        run: |
+          curl -sf -X POST \
+            -H "server-token: ${{ secrets.CRON_SECRET_TOKEN }}" \
+            https://v1.mindstudio-api.com/v1/admin/app-functions/rebuild-v2-sandbox-snapshot
