@@ -61,8 +61,8 @@ export async function generateImageAssets(
       },
     });
     const url = await runCli(
-      `mindstudio generate-image ${JSON.stringify(step)} --output-key imageUrl --no-meta`,
-      { jsonLogs: true, timeout: 200_000, onLog },
+      `mindstudio generate-image --output-key imageUrl --no-meta`,
+      { jsonLogs: true, timeout: 200_000, onLog, stdin: step },
     );
     imageUrls = [url];
   } else {
