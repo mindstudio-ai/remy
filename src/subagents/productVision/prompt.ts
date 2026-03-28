@@ -17,6 +17,7 @@ export function getProductVisionPrompt(): string {
   const roadmapContext = loadRoadmapContext();
 
   const parts = [BASE_PROMPT, loadPlatformBrief()];
+  parts.push('<!-- cache_breakpoint -->');
   if (specContext) {
     parts.push(specContext);
   }

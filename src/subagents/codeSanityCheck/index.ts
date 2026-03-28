@@ -40,6 +40,7 @@ export const codeSanityCheckTool: Tool = {
 
     const specContext = loadSpecContext();
     const parts = [BASE_PROMPT, loadPlatformBrief()];
+    parts.push('<!-- cache_breakpoint -->');
     if (specContext) {
       parts.push(specContext);
     }

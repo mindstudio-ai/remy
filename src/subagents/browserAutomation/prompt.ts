@@ -13,7 +13,7 @@ export function getBrowserAutomationPrompt(): string {
   // Inject app.md so the test agent understands what the app is about
   try {
     const appSpec = fs.readFileSync('src/app.md', 'utf-8').trim();
-    return `${BASE_PROMPT}\n\n<app_context>\n${appSpec}\n</app_context>`;
+    return `${BASE_PROMPT}\n\n<!-- cache_breakpoint -->\n\n<app_context>\n${appSpec}\n</app_context>`;
   } catch {
     return BASE_PROMPT;
   }

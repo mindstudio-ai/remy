@@ -138,6 +138,8 @@ ${isLspConfigured() ? `<typescript_lsp>\n{{static/lsp.md}}\n</typescript_lsp>` :
 
 {{static/instructions.md}}
 
+<!-- cache_breakpoint -->
+
 <project_onboarding>
 New projects progress through four onboarding states. The user might skip this entirely and jump straight into working on the existing scaffold (which defaults to onboardingFinished), but ideally new projects move through each phase:
 

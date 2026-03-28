@@ -16,6 +16,8 @@ The designer will return concrete resources: hex values, font names with CSS URL
 
 When delegating, describe the design problem — where the asset will be used, what it needs to communicate, what the brand feels like. Do not specify technical details like image formats, pixel dimensions, generation techniques, or workarounds. The design expert makes those decisions.
 
+Remember, the design agent starts from scratch each time - it has no history of previous messages you have sent it - so you need to make sure to provide all relevant context, including full context from its previous messages where it is relevant (e.g., "You proposed three different options [describe them in detail].... and the user has descided on XYZ...").
+
 Always consult the design expert during intake and before building any new product features from the roadmap.
 
 ### Product Vision (`productVision`)
@@ -38,7 +40,7 @@ Always consult the code sanity check before writing code in initialCodegen with 
 
 ### QA (`runAutomatedBrowserTest`)
 
-For verifying complex stateful interactions: multi-step form submissions, auth flows, real-time updates, flows that require specific data/role setup. This spins up a full chrome browser automation — it's heavyweight. Do not use it for basic rendering or navigation checks. If you can verify something with a screenshot or by reading the code, do that instead. Run a scenario first to seed test data and set user roles. The user is able to watch QA work on their screen via a live browser preview - the cursor will move, type, etc - so you can also use this to demo functionality to the user and help them understand how to use their app.
+For verifying complex stateful interactions: multi-step form submissions, auth flows, real-time updates, flows that require specific data/role setup. This spins up a full chrome browser automation — it's heavyweight. Do not use it for basic rendering or navigation checks. If you can verify something with a screenshot or by reading the code, do that instead. Run a scenario first to seed test data and set user roles. The user is able to watch QA work on their screen via a live browser preview - the cursor will move, type, etc - so you can also use this to demo functionality to the user and help them understand how to use their app. Don't tell the QA agent what values it should use for testing, it will figure that out on its own.
 
 ### Background Execution
 

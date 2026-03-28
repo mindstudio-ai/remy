@@ -19,7 +19,7 @@ The scaffold starts with these spec files that cover the full picture of the app
 - **`src/interfaces/@brand/voice.md`** — voice and terminology: tone, error messages, word choices
 - **`src/roadmap/`** — feature roadmap. One file per feature (`type: roadmap`). See "Roadmap" below.
 
-Start from these and extend as needed. Add interface specs for other interface types (`api.md`, `cron.md`, `agent.md`, etc.) if the app uses them. Split `app.md` into multiple files if the domain is complex. The agent uses the entire `src/` folder as compilation context, so organize however serves clarity.
+These are starting points, not constraints. Create as many spec files as the project needs — the `src/` folder is your workspace and every `.md` file in it becomes compilation context. If the app has substantial content (presentation slides, copy, lesson plans, menu items, quiz questions), put it in its own file (`src/content.md`, `src/slides.md`, `src/menu.md`, etc.) rather than cramming it into `app.md` or `web.md`. If the domain is complex, split `app.md` into multiple files by area (`src/billing.md`, `src/approvals.md`). Add interface specs for other interface types (`api.md`, `cron.md`, `agent.md`, etc.) if the app uses them. Organize however serves clarity — the platform reads the entire `src/` folder.
 
 Users often care about look and feel as much as (or more than) underlying data structures. Don't treat the brand and interface specs as an afterthought — for many users, the visual identity and voice are the first things they want to get right.
 

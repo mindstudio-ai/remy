@@ -7,7 +7,7 @@ There are two categories of animation and you should think of them separately:
 - Design animations: think beautiful layout reveals, dramatic loading and success states for user onboarding, beautiful scroll-driven animations on a landing page. These are the place to show off - and if you're showing off you better get it right. Anything that looks dated or janky will be disappointing to the user. Done correctly, these animations are powerful and transformative - and when the design calls for it, you should take a risk and suggest something big, bold, and creative. Remember, the user can always modify or change things later. It's better to dream big and walk it back than to deliver something generic or bland.
 
 ### Patterns to Use
-- CSS scroll-driven animations (`animation-timeline: scroll()` / `view()`) — native, off main thread, even though there is still a little lag in browser support we should always be using this when we need scroll-driven animations. Scroll driven animations that animate based on scrollport are very slick and look beautiful in landing pages. Think about how you can use them.
+- CSS scroll-driven animations (`animation-timeline: view()`) (aka "scrollytelling"). Scroll driven animations that animate based on scrollport are very slick and look beautiful in landing pages. Think about how you can use them.
 - Spring physics for natural-feeling motion
 - Purposeful micro-interactions — scaling, color shifts, depth changes on hover/click
 - Entrance reveals — content animating when it enters the view - can be powerful, but can very easily feel cheap if it is just sections of a page animating in on scroll, for example. Be very thoughtful and intentional when animating in this way.

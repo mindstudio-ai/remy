@@ -50,6 +50,7 @@ export function getDesignExpertPrompt(): string {
     .replace('{{visual_design_references}}', getDesignReferencesSample())
     .replace('{{ui_case_studies}}', getUiInspirationSample());
 
+  prompt += '\n\n<!-- cache_breakpoint -->';
   if (specContext) {
     prompt += `\n\n${specContext}`;
   }
