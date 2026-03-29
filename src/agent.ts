@@ -162,6 +162,13 @@ export async function runTurn(params: {
   let lastCompletedInput = '';
   let lastCompletedResult = '';
 
+  // Token usage accumulators across loop iterations
+  let turnInputTokens = 0;
+  let turnOutputTokens = 0;
+  let turnCacheCreation = 0;
+  let turnCacheRead = 0;
+  let turnLlmCalls = 0;
+
   while (true) {
     if (signal?.aborted) {
       onEvent({ type: 'turn_cancelled' });
@@ -399,6 +406,11 @@ export async function runTurn(params: {
 
           case 'done':
             stopReason = event.stopReason;
+            turnLlmCalls++;
+            turnInputTokens += event.usage.inputTokens;
+            turnOutputTokens += event.usage.outputTokens;
+            turnCacheCreation += event.usage.cacheCreationTokens ?? 0;
+            turnCacheRead += event.usage.cacheReadTokens ?? 0;
             break;
 
           case 'error':
@@ -444,7 +456,16 @@ export async function runTurn(params: {
     if (stopReason !== 'tool_use' || toolCalls.length === 0) {
       statusWatcher.stop();
       saveSession(state);
-      onEvent({ type: 'turn_done' });
+      onEvent({
+        type: 'turn_done',
+        stats: {
+          inputTokens: turnInputTokens,
+          outputTokens: turnOutputTokens,
+          cacheCreationTokens: turnCacheCreation || undefined,
+          cacheReadTokens: turnCacheRead || undefined,
+          llmCalls: turnLlmCalls,
+        },
+      });
       return;
     }
 

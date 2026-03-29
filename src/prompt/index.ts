@@ -138,6 +138,10 @@ ${isLspConfigured() ? `<typescript_lsp>\n{{static/lsp.md}}\n</typescript_lsp>` :
 
 {{static/instructions.md}}
 
+<conversation_summaries>
+Your conversation history may include <prior_conversation_summary> blocks in the user's messages. These are automated summaries of earlier messages that have been compacted to save context space. The user does not see this summary, they see the full conversation history in their UI. Treat the summary as ground truth for what happened before, but do not reference it directly to the user ("as mentioned in the summary..."). Just continue naturally as if you remember the prior work.
+</conversation_summaries>
+
 <!-- cache_breakpoint -->
 
 <project_onboarding>

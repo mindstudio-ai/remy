@@ -15,11 +15,13 @@
  */
 
 import { createInterface } from 'node:readline';
+import { writeFileSync } from 'node:fs';
 import { createLogger } from './logger.js';
 
 const log = createLogger('headless');
 import { resolveConfig } from './config.js';
 import { buildSystemPrompt } from './prompt/index.js';
+import { compactConversation } from './compaction/index.js';
 import { setLspBaseUrl } from './tools/_helpers/lsp.js';
 import {
   createAgentState,
@@ -27,7 +29,7 @@ import {
   type AgentState,
   type AgentEvent,
 } from './agent.js';
-import { loadSession, clearSession } from './session.js';
+import { loadSession, clearSession, saveSession } from './session.js';
 import type { StdinCommand } from './types.js';
 import { ToolRegistry } from './toolRegistry.js';
 
@@ -161,6 +163,19 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
   const toolRegistry = new ToolRegistry();
 
   // Background agent result queue — flushed after each turn or immediately if idle
+  // Session-level stats — accumulated across turns, written to .remy-stats.json
+  const sessionStats = {
+    messageCount: 0,
+    turns: 0,
+    totalInputTokens: 0,
+    totalOutputTokens: 0,
+    totalCacheCreationTokens: 0,
+    totalCacheReadTokens: 0,
+    lastContextSize: 0,
+    compactionInProgress: false,
+    updatedAt: 0,
+  };
+
   const backgroundQueue: Array<{
     toolCallId: string;
     name: string;
@@ -186,27 +201,45 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     handleMessage({ action: 'message', text: message } as any, undefined);
   }
 
+  /** Pending tool block updates from background completions — applied when idle. */
+  const pendingBlockUpdates: Array<{
+    toolCallId: string;
+    result: string;
+    subAgentMessages?: import('./api.js').Message[];
+  }> = [];
+
+  /** Apply queued tool block updates to state.messages. Safe to call only when idle. */
+  function applyPendingBlockUpdates(): void {
+    if (pendingBlockUpdates.length === 0) {
+      return;
+    }
+    const updates = pendingBlockUpdates.splice(0);
+    for (const update of updates) {
+      for (const msg of state.messages) {
+        if (!Array.isArray(msg.content)) {
+          continue;
+        }
+        for (const block of msg.content) {
+          if (block.type === 'tool' && block.id === update.toolCallId) {
+            block.backgroundResult = update.result;
+            block.completedAt = Date.now();
+            if (update.subAgentMessages) {
+              block.subAgentMessages = update.subAgentMessages;
+            }
+          }
+        }
+      }
+    }
+  }
+
   function onBackgroundComplete(
     toolCallId: string,
     name: string,
     result: string,
     subAgentMessages?: import('./api.js').Message[],
   ): void {
-    // Update the tool block in history with the real result and sub-agent messages
-    for (const msg of state.messages) {
-      if (!Array.isArray(msg.content)) {
-        continue;
-      }
-      for (const block of msg.content) {
-        if (block.type === 'tool' && block.id === toolCallId) {
-          block.backgroundResult = result;
-          block.completedAt = Date.now();
-          if (subAgentMessages) {
-            block.subAgentMessages = subAgentMessages;
-          }
-        }
-      }
-    }
+    // Queue the tool block update — don't mutate state.messages mid-turn
+    pendingBlockUpdates.push({ toolCallId, result, subAgentMessages });
 
     log.info('Background complete', {
       toolCallId,
@@ -230,8 +263,10 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       completedAt: Date.now(),
     });
 
-    // If idle, deliver immediately. Otherwise queued for after turn_done.
+    // If idle, apply updates and deliver immediately.
+    // Otherwise queued for after turn_done.
     if (!running) {
+      applyPendingBlockUpdates();
       flushBackgroundQueue();
     }
   }
@@ -292,10 +327,28 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       // Terminal events — translate to `completed`
       case 'turn_done':
         completedEmitted = true;
+        // Accumulate session stats
+        if (e.stats) {
+          sessionStats.turns++;
+          sessionStats.totalInputTokens += e.stats.inputTokens;
+          sessionStats.totalOutputTokens += e.stats.outputTokens;
+          sessionStats.totalCacheCreationTokens +=
+            e.stats.cacheCreationTokens ?? 0;
+          sessionStats.totalCacheReadTokens += e.stats.cacheReadTokens ?? 0;
+          sessionStats.lastContextSize = e.stats.inputTokens;
+        }
+        sessionStats.messageCount = state.messages.length;
+        sessionStats.updatedAt = Date.now();
+        try {
+          writeFileSync('.remy-stats.json', JSON.stringify(sessionStats));
+        } catch {}
         emit('completed', { success: true }, rid);
-        // Flush any background results that arrived during this turn
+        // Apply queued background mutations and flush results
         // (deferred to next tick so `running` is cleared first)
-        setTimeout(() => flushBackgroundQueue(), 0);
+        setTimeout(() => {
+          applyPendingBlockUpdates();
+          flushBackgroundQueue();
+        }, 0);
         return;
       case 'turn_cancelled':
         completedEmitted = true;
@@ -606,6 +659,39 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
           { success: false, error: 'Tool not found' },
           requestId,
         );
+      }
+      return;
+    }
+
+    if (action === 'compact') {
+      sessionStats.compactionInProgress = true;
+      sessionStats.updatedAt = Date.now();
+      try {
+        writeFileSync('.remy-stats.json', JSON.stringify(sessionStats));
+      } catch {}
+      try {
+        await compactConversation(state, config);
+        saveSession(state);
+        emit('compaction_complete', {}, requestId);
+        emit('completed', { success: true }, requestId);
+      } catch (err: any) {
+        emit(
+          'compaction_complete',
+          { error: err.message || 'Compaction failed' },
+          requestId,
+        );
+        emit(
+          'completed',
+          { success: false, error: err.message || 'Compaction failed' },
+          requestId,
+        );
+      } finally {
+        sessionStats.compactionInProgress = false;
+        sessionStats.messageCount = state.messages.length;
+        sessionStats.updatedAt = Date.now();
+        try {
+          writeFileSync('.remy-stats.json', JSON.stringify(sessionStats));
+        } catch {}
       }
       return;
     }

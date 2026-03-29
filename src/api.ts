@@ -46,6 +46,13 @@ export type ContentBlock =
       background?: boolean;
       /** Final result from a backgrounded sub-agent (set when background work completes). */
       backgroundResult?: string;
+    }
+  | {
+      type: 'summary';
+      /** What this summary covers: 'conversation' or a subagent name (e.g. 'visualDesignExpert'). */
+      name: string;
+      text: string;
+      startedAt: number;
     };
 
 export interface Message {
@@ -103,7 +110,12 @@ export type StreamEvent =
   | {
       type: 'done';
       stopReason: string;
-      usage: { inputTokens: number; outputTokens: number };
+      usage: {
+        inputTokens: number;
+        outputTokens: number;
+        cacheCreationTokens?: number;
+        cacheReadTokens?: number;
+      };
       ts: number;
     }
   | { type: 'error'; error: string };

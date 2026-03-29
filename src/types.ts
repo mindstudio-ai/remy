@@ -57,7 +57,16 @@ export type AgentEvent =
       parentToolId?: string;
     }
   | { type: 'turn_started' }
-  | { type: 'turn_done' }
+  | {
+      type: 'turn_done';
+      stats?: {
+        inputTokens: number;
+        outputTokens: number;
+        cacheCreationTokens?: number;
+        cacheReadTokens?: number;
+        llmCalls: number;
+      };
+    }
   | { type: 'turn_cancelled' }
   | { type: 'status'; message: string; parentToolId?: string }
   | { type: 'error'; error: string };

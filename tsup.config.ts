@@ -11,6 +11,7 @@ function copyAssets() {
     ['src/prompt', 'dist/prompt'],
     ['src/subagents', 'dist/subagents'],
     ['src/automatedActions', 'dist/automatedActions'],
+    ['src/compaction', 'dist/compaction'],
   ];
   for (const [src, dest] of pairs) {
     try {
