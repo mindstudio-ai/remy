@@ -92,7 +92,7 @@ import { setProjectOnboardingStateTool } from './common/setProjectOnboardingStat
 import { promptUserTool } from './common/promptUser.js';
 import { confirmDestructiveActionTool } from './common/confirmDestructiveAction.js';
 import { askMindStudioSdkTool } from '../subagents/sdkConsultant/index.js';
-import { scrapeWebUrlTool } from './common/scrapeWebUrl.js';
+
 import { searchGoogleTool } from './common/searchGoogle.js';
 import { setProjectMetadataTool } from './common/setProjectMetadata.js';
 
@@ -115,6 +115,7 @@ import { browserAutomationTool } from '../subagents/browserAutomation/index.js';
 import { designExpertTool } from '../subagents/designExpert/index.js';
 import { productVisionTool } from '../subagents/productVision/index.js';
 import { codeSanityCheckTool } from '../subagents/codeSanityCheck/index.js';
+import { scrapeWebUrlTool } from './common/scrapeWebUrl.js';
 
 function getSpecTools(): Tool[] {
   return [readSpecTool, writeSpecTool, editSpecTool, listSpecFilesTool];
