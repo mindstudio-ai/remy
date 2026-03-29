@@ -37,8 +37,10 @@ export async function compactConversation(
   state: AgentState,
   apiConfig: { baseUrl: string; apiKey: string },
 ): Promise<void> {
-  // Snapshot the insertion point — summaries cover everything up to here
-  const insertionIndex = state.messages.length;
+  // Snapshot the insertion point — summaries cover everything up to here.
+  // Must land on a safe message boundary: never between an assistant message
+  // with tool_use blocks and its corresponding tool_result messages.
+  const insertionIndex = findSafeInsertionPoint(state.messages);
 
   const summaries: Array<{ name: string; text: string }> = [];
   const tasks: Promise<void>[] = [];
@@ -113,6 +115,42 @@ export async function compactConversation(
     messagesAfter:
       state.messages.length - insertionIndex - checkpointMessages.length,
   });
+}
+
+/**
+ * Find a safe insertion point at or before the end of the messages array.
+ * Walks backward from the end to find a boundary that isn't between an
+ * assistant message with tool_use blocks and its tool_result messages.
+ */
+function findSafeInsertionPoint(messages: Message[]): number {
+  let idx = messages.length;
+
+  // Walk backward past any trailing tool_result messages
+  while (idx > 0) {
+    const msg = messages[idx - 1];
+    if (msg.role === 'user' && msg.toolCallId) {
+      // This is a tool_result — keep walking back
+      idx--;
+    } else {
+      break;
+    }
+  }
+
+  // If we walked back past tool_results, also skip the assistant message
+  // that contains the matching tool_use blocks
+  if (idx < messages.length && idx > 0) {
+    const msg = messages[idx - 1];
+    if (msg.role === 'assistant' && Array.isArray(msg.content)) {
+      const hasToolUse = (msg.content as ContentBlock[]).some(
+        (b) => b.type === 'tool',
+      );
+      if (hasToolUse) {
+        idx--;
+      }
+    }
+  }
+
+  return idx;
 }
 
 /**
