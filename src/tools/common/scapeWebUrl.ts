@@ -8,9 +8,9 @@
 import type { Tool } from '../index.js';
 import { runCli } from '../../subagents/common/runCli.js';
 
-export const scapeWebUrlTool: Tool = {
+export const scrapeWebUrlTool: Tool = {
   definition: {
-    name: 'scapeWebUrl',
+    name: 'scrapeWebUrl',
     description:
       'Scrape the content of a web page. Returns the HTML of the page as markdown text. Optionally capture a screenshot if you need see the visual design. Use this when you need to fetch or analyze content from a website',
     inputSchema: {
