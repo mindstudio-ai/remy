@@ -669,30 +669,34 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       try {
         writeFileSync('.remy-stats.json', JSON.stringify(sessionStats));
       } catch {}
-      try {
-        await compactConversation(state, config);
-        saveSession(state);
-        emit('compaction_complete', {}, requestId);
-        emit('completed', { success: true }, requestId);
-      } catch (err: any) {
-        emit(
-          'compaction_complete',
-          { error: err.message || 'Compaction failed' },
-          requestId,
-        );
-        emit(
-          'completed',
-          { success: false, error: err.message || 'Compaction failed' },
-          requestId,
-        );
-      } finally {
-        sessionStats.compactionInProgress = false;
-        sessionStats.messageCount = state.messages.length;
-        sessionStats.updatedAt = Date.now();
-        try {
-          writeFileSync('.remy-stats.json', JSON.stringify(sessionStats));
-        } catch {}
-      }
+      // Run in background — does not block the conversation. Snapshots the
+      // current message index and inserts checkpoints there when done.
+      compactConversation(state, config)
+        .then(() => {
+          saveSession(state);
+          emit('compaction_complete', {}, requestId);
+          emit('completed', { success: true }, requestId);
+        })
+        .catch((err: any) => {
+          emit(
+            'compaction_complete',
+            { error: err.message || 'Compaction failed' },
+            requestId,
+          );
+          emit(
+            'completed',
+            { success: false, error: err.message || 'Compaction failed' },
+            requestId,
+          );
+        })
+        .finally(() => {
+          sessionStats.compactionInProgress = false;
+          sessionStats.messageCount = state.messages.length;
+          sessionStats.updatedAt = Date.now();
+          try {
+            writeFileSync('.remy-stats.json', JSON.stringify(sessionStats));
+          } catch {}
+        });
       return;
     }
 

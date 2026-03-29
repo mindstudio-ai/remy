@@ -7,6 +7,10 @@
  *
  * Generates separate summaries for the main conversation and each
  * subagent that has accumulated history.
+ *
+ * Designed to run in the background — snapshots the insertion point
+ * upfront and inserts at that index when done, so new messages that
+ * arrive during generation are unaffected.
  */
 
 import { streamChat, type Message, type ContentBlock } from '../api.js';
@@ -25,57 +29,103 @@ const SUMMARIZABLE_SUBAGENTS = ['visualDesignExpert', 'productVision'];
 /**
  * Compact the conversation by generating summary checkpoints.
  *
- * Inserts summary checkpoint messages into state.messages. The
- * cleanMessagesForApi and getSubAgentHistory functions respect these
- * checkpoints and prune older messages from API calls.
+ * Snapshots the current message count as the insertion point. Summaries
+ * are generated in parallel, then inserted at the snapshot index. Messages
+ * appended after the snapshot (from ongoing turns) are not affected.
  */
 export async function compactConversation(
   state: AgentState,
   apiConfig: { baseUrl: string; apiKey: string },
 ): Promise<void> {
+  // Snapshot the insertion point — summaries cover everything up to here
+  const insertionIndex = state.messages.length;
+
+  const summaries: Array<{ name: string; text: string }> = [];
   const tasks: Promise<void>[] = [];
 
   // Main conversation summary
-  tasks.push(
-    generateAndInsertSummary(
-      state,
-      apiConfig,
-      'conversation',
-      CONVERSATION_SUMMARY_PROMPT,
-      getConversationMessagesForSummary(state.messages),
-    ),
+  const conversationMessages = getConversationMessagesForSummary(
+    state.messages,
+    insertionIndex,
   );
+  if (conversationMessages.length > 0) {
+    tasks.push(
+      generateSummary(
+        apiConfig,
+        'conversation',
+        CONVERSATION_SUMMARY_PROMPT,
+        conversationMessages,
+      ).then((text) => {
+        if (text) {
+          summaries.push({ name: 'conversation', text });
+        }
+      }),
+    );
+  }
 
   // Subagent summaries
   for (const name of SUMMARIZABLE_SUBAGENTS) {
     const subagentMessages = getSubAgentMessagesForSummary(
       state.messages,
       name,
+      insertionIndex,
     );
     if (subagentMessages.length > 0) {
       tasks.push(
-        generateAndInsertSummary(
-          state,
+        generateSummary(
           apiConfig,
           name,
           SUBAGENT_SUMMARY_PROMPT,
           subagentMessages,
-        ),
+        ).then((text) => {
+          if (text) {
+            summaries.push({ name, text });
+          }
+        }),
       );
     }
   }
 
   await Promise.all(tasks);
-  log.info('Compaction complete', { summaries: tasks.length });
+
+  // Insert checkpoints at the snapshot point — anything appended after
+  // insertionIndex during generation stays after the checkpoints.
+  const checkpointMessages: Message[] = summaries.map((s) => ({
+    role: 'user' as const,
+    hidden: true,
+    content: [
+      {
+        type: 'summary' as const,
+        name: s.name,
+        text: s.text,
+        startedAt: Date.now(),
+      },
+    ],
+  }));
+
+  if (checkpointMessages.length > 0) {
+    state.messages.splice(insertionIndex, 0, ...checkpointMessages);
+  }
+
+  log.info('Compaction complete', {
+    summaries: summaries.length,
+    insertionIndex,
+    messagesAfter:
+      state.messages.length - insertionIndex - checkpointMessages.length,
+  });
 }
 
 /**
- * Collect main conversation messages since the last conversation checkpoint.
+ * Collect main conversation messages since the last conversation checkpoint,
+ * up to the given end index.
  */
-function getConversationMessagesForSummary(messages: Message[]): Message[] {
+function getConversationMessagesForSummary(
+  messages: Message[],
+  endIndex: number,
+): Message[] {
   let startIdx = 0;
 
-  for (let i = messages.length - 1; i >= 0; i--) {
+  for (let i = endIndex - 1; i >= 0; i--) {
     const msg = messages[i];
     if (!Array.isArray(msg.content)) {
       continue;
@@ -91,19 +141,21 @@ function getConversationMessagesForSummary(messages: Message[]): Message[] {
     }
   }
 
-  return messages.slice(startIdx);
+  return messages.slice(startIdx, endIndex);
 }
 
 /**
- * Collect subagent messages since the last checkpoint for that subagent.
+ * Collect subagent messages since the last checkpoint for that subagent,
+ * up to the given end index.
  */
 function getSubAgentMessagesForSummary(
   messages: Message[],
   subAgentName: string,
+  endIndex: number,
 ): Message[] {
   let checkpointIdx = -1;
 
-  for (let i = messages.length - 1; i >= 0; i--) {
+  for (let i = endIndex - 1; i >= 0; i--) {
     const msg = messages[i];
     if (!Array.isArray(msg.content)) {
       continue;
@@ -122,7 +174,7 @@ function getSubAgentMessagesForSummary(
   const startIdx = checkpointIdx !== -1 ? checkpointIdx + 1 : 0;
   const collected: Message[] = [];
 
-  for (let i = startIdx; i < messages.length; i++) {
+  for (let i = startIdx; i < endIndex; i++) {
     const msg = messages[i];
     if (msg.role !== 'assistant' || !Array.isArray(msg.content)) {
       continue;
@@ -172,22 +224,17 @@ function serializeForSummary(messages: Message[]): string {
 }
 
 /**
- * Generate a summary via LLM and insert it as a checkpoint in state.messages.
+ * Generate a summary via LLM. Returns the summary text, or null on failure.
  */
-async function generateAndInsertSummary(
-  state: AgentState,
+async function generateSummary(
   apiConfig: { baseUrl: string; apiKey: string },
   name: string,
   systemPrompt: string,
   messagesToSummarize: Message[],
-): Promise<void> {
-  if (messagesToSummarize.length === 0) {
-    return;
-  }
-
+): Promise<string | null> {
   const serialized = serializeForSummary(messagesToSummarize);
   if (!serialized.trim()) {
-    return;
+    return null;
   }
 
   log.info('Generating summary', {
@@ -195,7 +242,6 @@ async function generateAndInsertSummary(
     messageCount: messagesToSummarize.length,
   });
 
-  // Collect streaming text
   let summaryText = '';
 
   for await (const event of streamChat({
@@ -209,31 +255,15 @@ async function generateAndInsertSummary(
       summaryText += event.text;
     } else if (event.type === 'error') {
       log.error('Summary generation failed', { name, error: event.error });
-      return;
+      return null;
     }
   }
 
   if (!summaryText.trim()) {
     log.warn('Empty summary generated', { name });
-    return;
+    return null;
   }
 
-  // Insert checkpoint as a hidden user message
-  state.messages.push({
-    role: 'user',
-    hidden: true,
-    content: [
-      {
-        type: 'summary',
-        name,
-        text: summaryText.trim(),
-        startedAt: Date.now(),
-      },
-    ],
-  } as Message);
-
-  log.info('Summary checkpoint inserted', {
-    name,
-    summaryLength: summaryText.length,
-  });
+  log.info('Summary generated', { name, summaryLength: summaryText.length });
+  return summaryText.trim();
 }
