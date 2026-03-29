@@ -43,7 +43,8 @@ export function resolveAction(text: string): string | null {
 
   // Interpolate {{key}} placeholders
   for (const [key, value] of Object.entries(params)) {
-    body = body.replaceAll(`{{${key}}}`, String(value));
+    const str = typeof value === 'string' ? value : JSON.stringify(value);
+    body = body.replaceAll(`{{${key}}}`, str);
   }
 
   return `@@automated::${triggerName}@@\n${body}`;
