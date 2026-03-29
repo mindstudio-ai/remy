@@ -6,7 +6,7 @@ import type { ToolDefinition } from '../../../api.js';
 import type { ToolExecutionContext } from '../../../tools/index.js';
 
 import * as searchGoogle from './searchGoogle.js';
-import * as fetchUrl from './fetchUrl.js';
+import * as scrapeWebUrl from './scrapeWebUrl.js';
 import * as analyzeDesign from './analyzeDesign.js';
 import * as analyzeImage from './analyzeImage.js';
 import * as screenshot from './screenshot.js';
@@ -15,7 +15,7 @@ import * as editImages from './images/editImages.js';
 
 const tools = {
   searchGoogle,
-  fetchUrl,
+  scrapeWebUrl,
   analyzeDesign,
   analyzeImage,
   screenshot,

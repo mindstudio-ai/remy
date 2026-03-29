@@ -92,7 +92,7 @@ import { setProjectOnboardingStateTool } from './common/setProjectOnboardingStat
 import { promptUserTool } from './common/promptUser.js';
 import { confirmDestructiveActionTool } from './common/confirmDestructiveAction.js';
 import { askMindStudioSdkTool } from '../subagents/sdkConsultant/index.js';
-import { fetchUrlTool } from './common/fetchUrl.js';
+import { scapeWebUrlTool } from './common/scapeWebUrl.js';
 import { searchGoogleTool } from './common/searchGoogle.js';
 import { setProjectMetadataTool } from './common/setProjectMetadata.js';
 
@@ -150,7 +150,7 @@ function getCommonTools(): Tool[] {
     promptUserTool,
     confirmDestructiveActionTool,
     askMindStudioSdkTool,
-    fetchUrlTool,
+    scapeWebUrlTool,
     searchGoogleTool,
     setProjectMetadataTool,
     designExpertTool,

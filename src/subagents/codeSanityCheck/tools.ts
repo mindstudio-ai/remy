@@ -62,7 +62,7 @@ export const SANITY_CHECK_TOOLS: ToolDefinition[] = [
     },
   },
   {
-    name: 'fetchUrl',
+    name: 'scapeWebUrl',
     description:
       'Fetch a web page as markdown. Use to read package docs, changelogs, npm pages.',
     inputSchema: {

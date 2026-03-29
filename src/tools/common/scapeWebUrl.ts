@@ -8,7 +8,7 @@
 import type { Tool } from '../index.js';
 import { runCli } from '../../subagents/common/runCli.js';
 
-export const fetchUrlTool: Tool = {
+export const scapeWebUrlTool: Tool = {
   definition: {
     name: 'scapeWebUrl',
     description:

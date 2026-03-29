@@ -1,7 +1,7 @@
 /**
  * Shared CLI helper — shells out to the mindstudio CLI and returns
  * the stdout output. Used by design expert tools, SDK consultant,
- * and common tools (fetchUrl, searchGoogle).
+ * and common tools (scapeWebUrl, searchGoogle).
  *
  * Passes --json-logs so the CLI emits structured progress events on
  * stderr. When an `onLog` callback is provided, log lines are streamed
