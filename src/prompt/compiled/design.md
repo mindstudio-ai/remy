@@ -64,7 +64,7 @@ Forms should feel like interactions, not paperwork.
 
 ### Placeholders
 
-- Always use icon placeholders for things like empty user profile pictures and other empty images.
+- Always use icon placeholders for things like empty user profile pictures and other empty images. Especially when creating scenarios that include mock user data, be sure to leave profile pictures and other images empty so they fall back to these default states.
 - Create beautiful empty states by using icons alongside labels. Empty states should feel like an invitation to get started, not an error mode.
 
 #### Loading states

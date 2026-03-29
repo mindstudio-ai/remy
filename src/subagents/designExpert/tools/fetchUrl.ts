@@ -2,7 +2,7 @@ import type { ToolDefinition } from '../../../api.js';
 import { runCli } from '../../common/runCli.js';
 
 export const definition: ToolDefinition = {
-  name: 'fetchUrl',
+  name: 'scapeWebUrl',
   description:
     'Fetch the content of a web page as markdown. Use when reading sites from search results or specific things the user wants to incorporate.',
   inputSchema: {

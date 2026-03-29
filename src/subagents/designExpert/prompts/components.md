@@ -41,3 +41,7 @@ Forms should feel like interactions, not paperwork.
 
 - Always use icon placeholders for things like empty user profile pictures and other empty images.
 - Create beautiful empty states by using icons alongside labels. Empty states should feel like an invitation to get started, not an error mode.
+
+### Outdated Component Patterns to Avoid
+
+- Avoid rounded cards with a single side colored border (e.g., border-radius + a blue border-left for a draggable card) as it looks dated and generic. Consider different ways to make cards appear stateful - like icons, shadows, and colors.

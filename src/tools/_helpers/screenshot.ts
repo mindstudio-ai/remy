@@ -13,34 +13,44 @@ export const SCREENSHOT_ANALYSIS_PROMPT =
 export interface ScreenshotOptions {
   /** Analysis prompt. Pass `false` to skip analysis and return just the URL. */
   prompt?: string | false;
+  /** Existing image URL to analyze instead of capturing a new screenshot. */
+  imageUrl?: string;
   /** Called for each log line emitted during CLI execution. */
   onLog?: (line: string) => void;
 }
 
 /**
  * Capture a screenshot via sidecar and optionally analyze it.
+ * If imageUrl is provided, skip capture and analyze that image directly.
  */
 export async function captureAndAnalyzeScreenshot(
   promptOrOptions?: string | false | ScreenshotOptions,
 ): Promise<string> {
   let prompt: string | false | undefined;
+  let existingUrl: string | undefined;
   let onLog: ((line: string) => void) | undefined;
 
   if (typeof promptOrOptions === 'object' && promptOrOptions !== null) {
     prompt = promptOrOptions.prompt;
+    existingUrl = promptOrOptions.imageUrl;
     onLog = promptOrOptions.onLog;
   } else {
     prompt = promptOrOptions;
   }
 
-  const ssResult = await sidecarRequest('/screenshot-full-page', undefined, {
-    timeout: 120000,
-  });
-  const url = ssResult?.url || ssResult?.screenshotUrl;
-  if (!url) {
-    throw new Error(
-      `No URL in sidecar response. The browser may not be ready yet. Response: ${JSON.stringify(ssResult)}`,
-    );
+  let url: string;
+  if (existingUrl) {
+    url = existingUrl;
+  } else {
+    const ssResult = await sidecarRequest('/screenshot-full-page', undefined, {
+      timeout: 120000,
+    });
+    url = ssResult?.url || ssResult?.screenshotUrl;
+    if (!url) {
+      throw new Error(
+        `No URL in sidecar response. The browser may not be ready yet. Response: ${JSON.stringify(ssResult)}`,
+      );
+    }
   }
 
   if (prompt === false) {

@@ -9,7 +9,7 @@ export const screenshotTool: Tool = {
   definition: {
     name: 'screenshot',
     description:
-      "Capture a full-height screenshot of the app preview and get a description of what's on screen. Optionally provide a specific question about what you're looking for..",
+      "Capture a full-height screenshot of the app preview and get a description of what's on screen. Provides static image analysis only, will not capture animations or video. Optionally provide specific questions about what you're looking for. Use a bulleted list to ask many questions at once. To ask additional questions about a screenshot you have already captured, pass its URL as imageUrl to skip recapture.",
     inputSchema: {
       type: 'object',
       properties: {
@@ -18,12 +18,24 @@ export const screenshotTool: Tool = {
           description:
             "Optional question about the screenshot. If omitted, returns a general description of what's visible.",
         },
+        imageUrl: {
+          type: 'string',
+          description:
+            'URL of an existing screenshot to analyze instead of capturing a new one. Use this for additional questions about a previous screenshot.',
+        },
       },
     },
   },
 
   async execute(input, context) {
     try {
+      if (input.imageUrl) {
+        return await captureAndAnalyzeScreenshot({
+          prompt: input.prompt as string,
+          imageUrl: input.imageUrl as string,
+          onLog: context?.onLog,
+        });
+      }
       return await captureAndAnalyzeScreenshot({
         prompt: input.prompt as string,
         onLog: context?.onLog,
