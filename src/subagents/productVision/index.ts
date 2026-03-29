@@ -14,6 +14,7 @@ import { runSubAgent } from '../runner.js';
 import { VISION_TOOLS } from './tools.js';
 import { executeVisionTool } from './executor.js';
 import { getProductVisionPrompt } from './prompt.js';
+import { getSubAgentHistory } from '../common/history.js';
 
 export const productVisionTool: Tool = {
   definition: {
@@ -43,9 +44,14 @@ export const productVisionTool: Tool = {
       return 'Error: product vision requires execution context';
     }
 
+    const history = context.conversationMessages
+      ? getSubAgentHistory(context.conversationMessages, 'productVision')
+      : [];
+
     const result = await runSubAgent({
       system: getProductVisionPrompt(),
       task: input.task,
+      history: history.length > 0 ? history : undefined,
       tools: VISION_TOOLS,
       externalTools: new Set<string>(),
       executeTool: executeVisionTool,

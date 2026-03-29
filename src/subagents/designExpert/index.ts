@@ -9,6 +9,7 @@ import type { Tool, ToolExecutionContext } from '../../tools/index.js';
 import { runSubAgent } from '../runner.js';
 import { DESIGN_EXPERT_TOOLS, executeDesignExpertTool } from './tools/index.js';
 import { getDesignExpertPrompt } from './prompt.js';
+import { getSubAgentHistory } from '../common/history.js';
 
 const DESCRIPTION = `
 Visual design expert. Describe the situation and what you need — the agent decides what to deliver. It reads the spec files automatically. Include relevant user requirements and context it can't get from the spec, but do not list specific deliverables or tell it how to do its job. Do not suggest implementation details or ideas - only relay what is needed.
@@ -41,9 +42,14 @@ export const designExpertTool: Tool = {
       return 'Error: visual design expert requires execution context';
     }
 
+    const history = context.conversationMessages
+      ? getSubAgentHistory(context.conversationMessages, 'visualDesignExpert')
+      : [];
+
     const result = await runSubAgent({
       system: getDesignExpertPrompt(),
       task: input.task,
+      history: history.length > 0 ? history : undefined,
       tools: DESIGN_EXPERT_TOOLS,
       externalTools: new Set<string>(),
       executeTool: (name, input, toolCallId, onLog) =>

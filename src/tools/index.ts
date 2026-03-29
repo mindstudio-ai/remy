@@ -30,6 +30,8 @@ export interface ToolExecutionContext {
   requestId?: string;
   /** Sub-agent tools stash their message history here, keyed by toolCallId. */
   subAgentMessages?: Map<string, Message[]>;
+  /** Remy's full conversation history — used by subagents to build persistent threads. */
+  conversationMessages?: Message[];
   /** Called for each log line emitted during tool execution (e.g., CLI stderr). */
   onLog?: (line: string) => void;
   /** Shared registry for tool lifecycle management (stop/restart). */

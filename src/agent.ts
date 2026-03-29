@@ -529,6 +529,7 @@ export async function runTurn(params: {
                 toolCallId: tc.id,
                 requestId,
                 subAgentMessages,
+                conversationMessages: state.messages,
                 toolRegistry,
                 onBackgroundComplete,
                 onLog: (line) =>

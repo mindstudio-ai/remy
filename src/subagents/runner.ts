@@ -45,6 +45,8 @@ export interface SubAgentConfig {
   onEvent: (event: AgentEvent) => void;
   resolveExternalTool?: ExternalToolResolver;
   toolRegistry?: ToolRegistry;
+  /** Prior conversation history for this subagent — prepended to messages for continuity. */
+  history?: Message[];
   /** Run in background — return initial response immediately, continue working. */
   background?: boolean;
   /** Called when a backgrounded sub-agent finishes all its work. */
@@ -76,6 +78,7 @@ export async function runSubAgent(
     resolveExternalTool,
     toolRegistry,
     requestId,
+    history,
     background,
     onBackgroundComplete,
   } = config;
@@ -99,7 +102,10 @@ export async function runSubAgent(
   // The core loop
   let turns = 0;
   const run = async (): Promise<SubAgentResult> => {
-    const messages: Message[] = [{ role: 'user', content: task }];
+    const messages: Message[] = [
+      ...(history ?? []),
+      { role: 'user', content: task },
+    ];
 
     /** Collect accumulated text from content blocks for graceful interruption. */
     function getPartialText(blocks: ContentBlock[]): string {
