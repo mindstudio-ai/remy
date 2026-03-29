@@ -499,7 +499,7 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     const turnStart = Date.now();
 
     const attachments = parsed.attachments as
-      | Array<{ url: string; extractedTextUrl?: string }>
+      | import('./api.js').Attachment[]
       | undefined;
     if (attachments?.length) {
       console.warn(

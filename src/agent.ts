@@ -514,8 +514,6 @@ export async function runTurn(params: {
 
         // Per-tool abort — cascades from parent turn signal
         let toolAbort = new AbortController();
-        const cascadeAbort = () => toolAbort.abort();
-        signal?.addEventListener('abort', cascadeAbort, { once: true });
 
         // Whether this slot has already been settled (prevent double-settle)
         let settled = false;
@@ -527,6 +525,13 @@ export async function runTurn(params: {
           signal?.removeEventListener('abort', cascadeAbort);
           settle(result, isError);
         };
+
+        const cascadeAbort = () => {
+          toolAbort.abort();
+          // Force-settle the tool so Promise.all doesn't hang
+          safeSettle('Error: cancelled', true);
+        };
+        signal?.addEventListener('abort', cascadeAbort, { once: true });
 
         // The execution function — can be called multiple times for restart
         const run = async (input: Record<string, any>) => {

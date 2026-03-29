@@ -19,6 +19,12 @@ const log = createLogger('api');
 export interface Attachment {
   url: string;
   extractedTextUrl?: string;
+  /** Voice message transcript (speech-to-text output). */
+  transcript?: string;
+  /** Voice message duration in milliseconds. */
+  durationMs?: number;
+  /** Whether this attachment is a voice message. */
+  isVoice?: boolean;
 }
 
 // Typed content blocks for assistant messages — preserves ordering of
