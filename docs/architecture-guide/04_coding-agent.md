@@ -1,6 +1,6 @@
 # Coding Agent (`remy`)
 
-AI coding assistant powered by Claude. Runs a tool-use loop: receives a message, calls the LLM with tools, executes tool calls locally, sends results back, repeats until done.
+AI coding assistant. Runs a tool-use loop: receives a message, calls the LLM with tools, executes tool calls locally, sends results back, repeats until done.
 
 In the three-layer hierarchy, the agent is the compiler: it reads the spec (`src/`) and produces the contract (`dist/`). This is the core of the "spec is the application" thesis. The agent's awareness of `mindstudio.json` and MSFM is what makes the hierarchy work in practice.
 
@@ -51,8 +51,6 @@ The full conversation history is sent to the LLM on every turn. Context accumula
 | `symbols` | Get file outline (via LSP sidecar) |
 
 LSP tools are only available when `--lsp-url` is configured (always the case in the sandbox, where the C&C server runs the sidecar on port 4388).
-
-**Why the same tools as Claude Code:** Familiar patterns, proven tool design, low learning curve for the model. The tools are simple (read, write, edit, search, run); the intelligence is in how the LLM composes them.
 
 ---
 

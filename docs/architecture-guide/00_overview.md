@@ -79,7 +79,7 @@ Push to git, the platform compiles and deploys. Every release is a snapshot. Rol
 │                              proxies frontend with __MINDSTUDIO__ injection.     │
 │                              Works standalone or headless inside sandbox.        │
 │                                                                                  │
-│  remy                      — AI coding agent. Claude-powered tool-use loop.      │
+│  remy                      — AI coding agent.                                    │
 │  (coding agent)              Reads specs, writes code, runs commands.            │
 │                              Works as standalone CLI or headless in sandbox.     │
 │                                                                                  │
@@ -123,7 +123,7 @@ The browser connects directly to the C&C server's WebSocket; the platform API is
 
 ### Coding Agent (`remy`)
 
-AI coding assistant powered by Claude. Runs a tool-use loop: receives a message, calls Claude with tools (readFile, writeFile, editFile, bash, grep, glob, listDir, LSP queries), executes tool calls locally, sends results back, repeats until done.
+AI coding assistant. Runs a tool-use loop: receives a message, calls LLMs with tools (readFile, writeFile, editFile, bash, grep, glob, listDir, LSP queries), executes tool calls locally, sends results back, repeats until done.
 
 Works as a standalone CLI (interactive terminal UI) or in headless mode (JSON protocol over stdin/stdout, driven by the C&C server). Uses the platform's `/_internal/v2/agent/remy/chat` endpoint for LLM access, so the platform handles model routing and billing.
 
