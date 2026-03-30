@@ -57,6 +57,19 @@ export function cleanMessagesForApi(messages: Message[]): Message[] {
 
   const messagesToProcess = messages.slice(startIdx);
 
+  // Collect all tool_use IDs present in the post-checkpoint messages
+  // so we can detect orphaned tool_results whose tool_use was pruned.
+  const toolUseIds = new Set<string>();
+  for (const msg of messagesToProcess) {
+    if (msg.role === 'assistant' && Array.isArray(msg.content)) {
+      for (const block of msg.content as ContentBlock[]) {
+        if (block.type === 'tool') {
+          toolUseIds.add(block.id);
+        }
+      }
+    }
+  }
+
   const cleaned = messagesToProcess
     .filter((msg) => {
       // Skip summary checkpoint messages — they've been handled above
@@ -65,6 +78,14 @@ export function cleanMessagesForApi(messages: Message[]): Message[] {
         if (blocks.some((b) => b.type === 'summary')) {
           return false;
         }
+      }
+      // Drop orphaned tool_results whose tool_use was pruned by compaction
+      if (
+        msg.role === 'user' &&
+        msg.toolCallId &&
+        !toolUseIds.has(msg.toolCallId)
+      ) {
+        return false;
       }
       return true;
     })
