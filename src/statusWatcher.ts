@@ -25,6 +25,7 @@ export function startStatusWatcher(config: StatusWatcherConfig): StatusWatcher {
   const { apiConfig, getContext, onStatus, interval = 3000, signal } = config;
 
   let lastLabel = '';
+  let lastContext = '';
   let inflight = false;
   let stopped = false;
   const url = `${apiConfig.baseUrl}/_internal/v2/agent/remy/generate-status`;
@@ -37,9 +38,10 @@ export function startStatusWatcher(config: StatusWatcherConfig): StatusWatcher {
 
     try {
       const context = getContext();
-      if (!context) {
+      if (!context || context === lastContext) {
         return;
       }
+      lastContext = context;
 
       const res = await fetch(url, {
         method: 'POST',

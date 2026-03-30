@@ -26,11 +26,15 @@ dist/interfaces/web/
 
 ```json
 {
-  "devPort": 5173,
-  "devCommand": "npm run dev",
-  "defaultPreviewMode": "desktop"
+  "web": {
+    "devPort": 5173,
+    "devCommand": "npm run dev",
+    "defaultPreviewMode": "desktop"
+  }
 }
 ```
+
+All fields are nested under the `"web"` key.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
@@ -99,7 +103,7 @@ Omit the `methods` field (or the config entirely) to expose all methods.
 ### Usage
 
 ```bash
-curl -X POST https://api.mindstudio.ai/_internal/v2/apps/{appId}/methods/submit-vendor-request/invoke \
+curl -X POST https://{app-subdomain}.mindstudio.ai/_/methods/submit-vendor-request/invoke \
   -H "Authorization: Bearer sk..." \
   -H "Content-Type: application/json" \
   -d '{ "input": { "name": "Acme" } }'
@@ -200,7 +204,7 @@ Inbound HTTP endpoints that invoke methods.
 }
 ```
 
-Endpoint URL: `https://api.mindstudio.ai/_internal/v2/webhook/{appId}/{secret}`
+Endpoint URL: `https://{app-subdomain}.mindstudio.ai/_/webhook/{secret}`
 
 Accepts any HTTP method. The method receives `{ method, headers, query, body }` as input.
 

@@ -107,17 +107,15 @@ Sits between the browser and the upstream dev server (Vite, webpack, etc.). Purp
 ```json
 {
   "token": "ms_iface_...",
-  "appId": "...",
   "releaseId": "...",
-  "apiBaseUrl": "https://api.mindstudio.ai",
   "user": { "id", "name", "email", "profilePictureUrl" },
   "methods": { "submitVendor": "method-uuid", ... }
 }
 ```
 
-This is the exact same object that's injected in production (by the static hosting CDN) and in the sandbox (by the tunnel running inside the container). Zero divergence.
+This is the exact same object that's injected in production (by the static hosting CDN) and in the sandbox (by the tunnel running inside the container). Zero divergence. The SDK uses same-origin `/_/` paths for all API calls — the platform proxy resolves the app from the subdomain, so no `appId` or `apiBaseUrl` is needed.
 
-**Why proxy injection:** The frontend SDK (`@mindstudio-ai/interface`) reads `window.__MINDSTUDIO__` to know where the API is, which app it's serving, and how to map method names to IDs. By injecting this at the proxy level, the frontend code works identically in dev and production without any configuration.
+**Why proxy injection:** The frontend SDK (`@mindstudio-ai/interface`) reads `window.__MINDSTUDIO__` to know how to map method names to IDs. By injecting this at the proxy level, the frontend code works identically in dev and production without any configuration.
 
 ---
 

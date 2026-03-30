@@ -45,7 +45,7 @@ User clicks button in web interface
   ├─ Frontend SDK: api.submitVendor({ name: 'Acme' })
   │    └─ Looks up 'submitVendor' in __MINDSTUDIO__.methods → methodId
   │
-  ├─ POST /_internal/v2/apps/{appId}/methods/{methodId}/invoke
+  ├─ POST /_/methods/{methodId}/invoke  (same-origin proxy → platform API)
   │    Authorization: Bearer ms_iface_{token}
   │    Body: { input: { name: 'Acme' } }
   │
@@ -95,7 +95,7 @@ User clicks button in web interface (served via tunnel proxy)
   ├─ Frontend SDK: api.submitVendor({ name: 'Acme' })
   │    └─ Same as live — __MINDSTUDIO__ was injected by tunnel proxy
   │
-  ├─ POST /_internal/v2/apps/{appId}/methods/{methodId}/invoke
+  ├─ POST /_/methods/{methodId}/invoke  (same-origin proxy → platform API)
   │    Authorization: Bearer ms_iface_{token}
   │    (token has devSessionId + devVersionId set)
   │

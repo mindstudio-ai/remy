@@ -17,9 +17,9 @@ The bootstrap global that configures the SDK. Injected into HTML by:
 ```typescript
 interface MindStudioConfig {
   token: string;           // ms_iface_ session token
-  appId: string;           // app UUID
   releaseId: string;       // current release ID
-  apiBaseUrl: string;      // e.g., "https://api.mindstudio.ai"
+  appId?: string;          // app UUID (optional — not needed for API calls)
+  apiBaseUrl?: string;     // optional — SDK uses same-origin /_/ paths
   user: {
     id: string;
     name: string;
@@ -30,7 +30,7 @@ interface MindStudioConfig {
 }
 ```
 
-The `methods` map is embedded at page load from the release manifest. This is how the SDK maps `api.submitVendor(...)` to `POST /methods/{methodId}/invoke`. The method ID is resolved at build time, not at call time.
+The `methods` map is embedded at page load from the release manifest. This is how the SDK maps `api.submitVendor(...)` to `POST /_/methods/{methodId}/invoke`. The method ID is resolved at build time, not at call time.
 
 **Why a global instead of a constructor:** Zero configuration for the developer. The frontend code just imports the SDK and calls methods. The platform handles injection in both dev and production. The same code works everywhere without environment-specific setup.
 
@@ -59,7 +59,7 @@ The generic parameter `T` maps method names to their input/output types. Without
 The client is a Proxy. When you call `api.submitVendor(input)`:
 
 1. Look up `submitVendor` in `config.methods` → get method UUID
-2. `POST {apiBaseUrl}/_internal/v2/apps/{appId}/methods/{methodId}/invoke`
+2. `POST /_/methods/{methodId}/invoke`
 3. Headers: `Authorization: Bearer {token}`
 4. Body: `{ input }`
 5. Return `response.output`

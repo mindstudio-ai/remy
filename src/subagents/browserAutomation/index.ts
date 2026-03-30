@@ -65,7 +65,10 @@ export const browserAutomationTool: Tool = {
       executeTool: async (name, _input, _toolCallId, onLog) => {
         if (name === 'screenshotFullPage') {
           try {
-            return await captureAndAnalyzeScreenshot({ onLog });
+            return await captureAndAnalyzeScreenshot({
+              path: _input.path as string | undefined,
+              onLog,
+            });
           } catch (err: any) {
             return `Error taking screenshot: ${err.message}`;
           }

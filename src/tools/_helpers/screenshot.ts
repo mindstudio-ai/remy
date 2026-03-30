@@ -15,6 +15,8 @@ export interface ScreenshotOptions {
   prompt?: string | false;
   /** Existing image URL to analyze instead of capturing a new screenshot. */
   imageUrl?: string;
+  /** Navigate to this path before capturing (e.g. "/settings"). */
+  path?: string;
   /** Called for each log line emitted during CLI execution. */
   onLog?: (line: string) => void;
 }
@@ -30,9 +32,12 @@ export async function captureAndAnalyzeScreenshot(
   let existingUrl: string | undefined;
   let onLog: ((line: string) => void) | undefined;
 
+  let path: string | undefined;
+
   if (typeof promptOrOptions === 'object' && promptOrOptions !== null) {
     prompt = promptOrOptions.prompt;
     existingUrl = promptOrOptions.imageUrl;
+    path = promptOrOptions.path;
     onLog = promptOrOptions.onLog;
   } else {
     prompt = promptOrOptions;
@@ -42,9 +47,11 @@ export async function captureAndAnalyzeScreenshot(
   if (existingUrl) {
     url = existingUrl;
   } else {
-    const ssResult = await sidecarRequest('/screenshot-full-page', undefined, {
-      timeout: 120000,
-    });
+    const ssResult = await sidecarRequest(
+      '/screenshot-full-page',
+      path ? { path } : undefined,
+      { timeout: 120000 },
+    );
     url = ssResult?.url || ssResult?.screenshotUrl;
     if (!url) {
       throw new Error(

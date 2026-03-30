@@ -23,6 +23,11 @@ export const screenshotTool: Tool = {
           description:
             'URL of an existing screenshot to analyze instead of capturing a new one. Use this for additional questions about a previous screenshot.',
         },
+        path: {
+          type: 'string',
+          description:
+            'Navigate to this path before capturing (e.g. "/settings", "/dashboard"). If omitted, screenshots the current page.',
+        },
       },
     },
   },
@@ -38,6 +43,7 @@ export const screenshotTool: Tool = {
       }
       return await captureAndAnalyzeScreenshot({
         prompt: input.prompt as string,
+        path: input.path as string | undefined,
         onLog: context?.onLog,
       });
     } catch (err: any) {

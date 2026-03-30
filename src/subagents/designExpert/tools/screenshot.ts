@@ -12,6 +12,11 @@ export const definition: ToolDefinition = {
         type: 'string',
         description: 'Optional specific question about the screenshot.',
       },
+      path: {
+        type: 'string',
+        description:
+          'Navigate to this path before capturing (e.g. "/settings"). If omitted, screenshots the current page.',
+      },
     },
   },
 };
@@ -23,6 +28,7 @@ export async function execute(
   try {
     return await captureAndAnalyzeScreenshot({
       prompt: input.prompt as string,
+      path: input.path as string | undefined,
       onLog,
     });
   } catch (err: any) {

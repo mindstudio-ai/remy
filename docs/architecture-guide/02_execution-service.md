@@ -23,7 +23,7 @@ POST /sandbox/build-snapshot — build the pre-baked base image
 
 ```
 POST /sandbox/start
-Body: { gitRepoUrl, apiKey, userId, apiBaseUrl?, snapshotId? }
+Body: { gitRepoUrl, apiKey, userId, snapshotId? }
 Returns: { sandboxId, sandboxToken, cncDomain, timeoutTimestampMs }
 ```
 

@@ -100,7 +100,13 @@ export const BROWSER_TOOLS: ToolDefinition[] = [
       'Capture a full-height screenshot of the current page. Returns a CDN URL with full text analysis and description.',
     inputSchema: {
       type: 'object',
-      properties: {},
+      properties: {
+        path: {
+          type: 'string',
+          description:
+            'Navigate to this path before capturing (e.g. "/settings"). If omitted, screenshots the current page.',
+        },
+      },
     },
   },
   {
