@@ -99,6 +99,15 @@ export async function runSubAgent(
     onEvent({ ...e, parentToolId } as AgentEvent);
   };
 
+  // Compute date once per subagent invocation (not per loop iteration)
+  // to avoid busting prompt cache with changing timestamps.
+  const dateStr = new Date().toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const fullSystem = `${system}\n\nCurrent date: ${dateStr}`;
+
   // The core loop
   let turns = 0;
   const run = async (): Promise<SubAgentResult> => {
@@ -163,11 +172,6 @@ export async function runSubAgent(
         onStatus: (label) => emit({ type: 'status', message: label }),
         signal,
       });
-
-      const fullSystem = `${system}\n\nCurrent date/time: ${new Date()
-        .toISOString()
-        .replace('T', ' ')
-        .replace(/\.\d+Z$/, ' UTC')}`;
 
       try {
         for await (const event of streamChatWithRetry(
