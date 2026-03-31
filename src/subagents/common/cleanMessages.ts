@@ -30,6 +30,46 @@ function findLastSummaryCheckpoint(messages: Message[], name: string): number {
   return -1;
 }
 
+/**
+ * Fix orphaned tool_use blocks — if an assistant message has tool calls
+ * but subsequent messages don't include matching tool_results (e.g., due
+ * to a crash or cancellation mid-turn), inject synthetic error results
+ * so the API doesn't reject the conversation.
+ */
+function fixOrphanedToolCalls(messages: Message[]): Message[] {
+  const toolResultIds = new Set<string>();
+  for (const msg of messages) {
+    if (msg.role === 'user' && msg.toolCallId) {
+      toolResultIds.add(msg.toolCallId);
+    }
+  }
+
+  const result = [...messages];
+  for (let i = result.length - 1; i >= 0; i--) {
+    const msg = result[i];
+    if (msg.role !== 'assistant' || !Array.isArray(msg.content)) {
+      continue;
+    }
+    const toolBlocks = (msg.content as ContentBlock[]).filter(
+      (b): b is ContentBlock & { type: 'tool' } => b.type === 'tool',
+    );
+    const orphans = toolBlocks.filter((tc) => !toolResultIds.has(tc.id));
+    if (orphans.length === 0) {
+      continue;
+    }
+    const synthetics: Message[] = orphans.map((tc) => ({
+      role: 'user' as const,
+      content: 'Error: tool result lost (session recovered)',
+      toolCallId: tc.id,
+      isToolError: true,
+    }));
+    result.splice(i + 1, 0, ...synthetics);
+    break; // Only the last assistant message should have orphans
+  }
+
+  return result;
+}
+
 export function cleanMessagesForApi(messages: Message[]): Message[] {
   // Find the last conversation summary checkpoint
   const checkpointIdx = findLastSummaryCheckpoint(messages, 'conversation');
@@ -55,7 +95,8 @@ export function cleanMessagesForApi(messages: Message[]): Message[] {
     startIdx = checkpointIdx + 1;
   }
 
-  const messagesToProcess = messages.slice(startIdx);
+  // Fix orphaned tool_use blocks before processing
+  const messagesToProcess = fixOrphanedToolCalls(messages.slice(startIdx));
 
   // Collect all tool_use IDs present in the post-checkpoint messages
   // so we can detect orphaned tool_results whose tool_use was pruned.
