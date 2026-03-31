@@ -30,7 +30,7 @@ export const designExpertTool: Tool = {
         background: {
           type: 'boolean',
           description:
-            "Run in background — returns immediately and doesn't block while continuing to do work in the background. Reports results when finished working.",
+            "Run in background — returns immediately and doesn't block while continuing to do work in the background. Reports results when finished working. Only use for generating app icons.",
         },
       },
       required: ['task'],
