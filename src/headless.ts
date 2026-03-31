@@ -335,7 +335,8 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
           sessionStats.totalCacheCreationTokens +=
             e.stats.cacheCreationTokens ?? 0;
           sessionStats.totalCacheReadTokens += e.stats.cacheReadTokens ?? 0;
-          sessionStats.lastContextSize = e.stats.inputTokens;
+          sessionStats.lastContextSize =
+            e.stats.lastCallInputTokens ?? e.stats.inputTokens;
         }
         sessionStats.messageCount = state.messages.length;
         sessionStats.updatedAt = Date.now();

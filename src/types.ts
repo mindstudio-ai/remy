@@ -65,6 +65,9 @@ export type AgentEvent =
         cacheCreationTokens?: number;
         cacheReadTokens?: number;
         llmCalls: number;
+        lastCallInputTokens?: number;
+        lastCallCacheCreation?: number;
+        lastCallCacheRead?: number;
       };
     }
   | { type: 'turn_cancelled' }

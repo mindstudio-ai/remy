@@ -173,6 +173,10 @@ export async function runTurn(params: {
   let turnCacheCreation = 0;
   let turnCacheRead = 0;
   let turnLlmCalls = 0;
+  // Last individual LLM call's usage (not accumulated) — used for context size
+  let lastCallInputTokens = 0;
+  let lastCallCacheCreation = 0;
+  let lastCallCacheRead = 0;
 
   while (true) {
     if (signal?.aborted) {
@@ -415,10 +419,13 @@ export async function runTurn(params: {
           case 'done':
             stopReason = event.stopReason;
             turnLlmCalls++;
-            turnInputTokens += event.usage.inputTokens;
+            lastCallInputTokens = event.usage.inputTokens;
+            lastCallCacheCreation = event.usage.cacheCreationTokens ?? 0;
+            lastCallCacheRead = event.usage.cacheReadTokens ?? 0;
+            turnInputTokens += lastCallInputTokens;
             turnOutputTokens += event.usage.outputTokens;
-            turnCacheCreation += event.usage.cacheCreationTokens ?? 0;
-            turnCacheRead += event.usage.cacheReadTokens ?? 0;
+            turnCacheCreation += lastCallCacheCreation;
+            turnCacheRead += lastCallCacheRead;
             break;
 
           case 'error':
@@ -472,6 +479,9 @@ export async function runTurn(params: {
           cacheCreationTokens: turnCacheCreation || undefined,
           cacheReadTokens: turnCacheRead || undefined,
           llmCalls: turnLlmCalls,
+          lastCallInputTokens,
+          lastCallCacheCreation: lastCallCacheCreation || undefined,
+          lastCallCacheRead: lastCallCacheRead || undefined,
         },
       });
       return;
