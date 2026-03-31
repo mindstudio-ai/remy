@@ -21,6 +21,7 @@ These are non-negotiable. Violating them produces bad output.
 - **No text triggers.** Words like "poster", "magazine cover", "editorial spread", "sign", or brand names risk rendering literal text, mastheads, or mockup layouts. If you want an editorial photography *style*, describe the photographic qualities (lighting, lens, mood) — not the format.
 - **Describe what you want, not what you don't want.** Negation doesn't work — "street with no cars" activates "cars." Say "empty street" instead.
 - **No body part positioning.** Don't describe specific arrangements of arms, legs, or limbs.
+- **No brand names** Things like "Apple style" or "Nintendo style" will generate literal Apple or nintendo logos in the output.
 
 ## Composition
 
