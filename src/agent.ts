@@ -147,6 +147,11 @@ export async function runTurn(params: {
   }
   state.messages.push(userMsg);
 
+  // Skip status labels on the very first message — too little context to
+  // generate anything useful and the results come out awkward.
+  const isFirstMessage =
+    state.messages.filter((m) => m.role === 'user').length === 1;
+
   // Tool-call loop: keep going until the model stops requesting tools
   // Internal tools that are invisible to the user — exclude from status labels
   const STATUS_EXCLUDED_TOOLS = new Set([
@@ -185,40 +190,43 @@ export async function runTurn(params: {
     let subAgentText = '';
     let currentToolNames = '';
 
-    const statusWatcher = startStatusWatcher({
-      apiConfig,
-      getContext: () => {
-        const parts: string[] = [];
-        if (userMessage) {
-          parts.push(`User message: ${userMessage.slice(-200)}`);
-        }
-        if (onboardingState) {
-          parts.push(`Build phase: ${onboardingState}`);
-        }
-        const text = subAgentText || getTextContent(contentBlocks).slice(-500);
-        if (text) {
-          parts.push(`Assistant text: ${text}`);
-        }
-        const toolName =
-          currentToolNames ||
-          getToolCalls(contentBlocks)
-            .filter((tc) => !STATUS_EXCLUDED_TOOLS.has(tc.name))
-            .at(-1)?.name ||
-          lastCompletedTools;
-        if (toolName) {
-          parts.push(`Tool: ${toolName}`);
-        }
-        if (lastCompletedInput) {
-          parts.push(`Tool input: ${lastCompletedInput.slice(-300)}`);
-        }
-        if (lastCompletedResult) {
-          parts.push(`Tool result: ${lastCompletedResult.slice(-200)}`);
-        }
-        return parts.join('\n');
-      },
-      onStatus: (label) => onEvent({ type: 'status', message: label }),
-      signal,
-    });
+    const statusWatcher = isFirstMessage
+      ? { stop() {} }
+      : startStatusWatcher({
+          apiConfig,
+          getContext: () => {
+            const parts: string[] = [];
+            if (userMessage) {
+              parts.push(`User message: ${userMessage.slice(-200)}`);
+            }
+            if (onboardingState) {
+              parts.push(`Build phase: ${onboardingState}`);
+            }
+            const text =
+              subAgentText || getTextContent(contentBlocks).slice(-500);
+            if (text) {
+              parts.push(`Assistant text: ${text}`);
+            }
+            const toolName =
+              currentToolNames ||
+              getToolCalls(contentBlocks)
+                .filter((tc) => !STATUS_EXCLUDED_TOOLS.has(tc.name))
+                .at(-1)?.name ||
+              lastCompletedTools;
+            if (toolName) {
+              parts.push(`Tool: ${toolName}`);
+            }
+            if (lastCompletedInput) {
+              parts.push(`Tool input: ${lastCompletedInput.slice(-300)}`);
+            }
+            if (lastCompletedResult) {
+              parts.push(`Tool result: ${lastCompletedResult.slice(-200)}`);
+            }
+            return parts.join('\n');
+          },
+          onStatus: (label) => onEvent({ type: 'status', message: label }),
+          signal,
+        });
 
     type ToolInputAcc = {
       name: string;
