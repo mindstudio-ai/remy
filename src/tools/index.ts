@@ -105,7 +105,6 @@ import { grepTool } from './code/grep.js';
 import { globTool } from './code/glob.js';
 import { listDirTool } from './code/listDir.js';
 import { editsFinishedTool } from './code/editsFinished.js';
-import { isLspConfigured } from './_helpers/lsp.js';
 import { lspDiagnosticsTool } from './code/lspDiagnostics.js';
 import { restartProcessTool } from './code/restartProcess.js';
 import { runScenarioTool } from './code/runScenario.js';
@@ -117,96 +116,63 @@ import { productVisionTool } from '../subagents/productVision/index.js';
 import { codeSanityCheckTool } from '../subagents/codeSanityCheck/index.js';
 import { scrapeWebUrlTool } from './common/scrapeWebUrl.js';
 
-function getSpecTools(): Tool[] {
-  return [readSpecTool, writeSpecTool, editSpecTool, listSpecFilesTool];
-}
+/** All tools — static set sent to every request regardless of onboarding state.
+ * Keeping the tool set identical across all sessions enables prompt cache
+ * sharing across users (tools are the first cache prefix segment). */
+const ALL_TOOLS: Tool[] = [
+  // Common
+  setProjectOnboardingStateTool,
+  promptUserTool,
+  confirmDestructiveActionTool,
+  askMindStudioSdkTool,
+  scrapeWebUrlTool,
+  searchGoogleTool,
+  setProjectMetadataTool,
+  designExpertTool,
+  productVisionTool,
+  codeSanityCheckTool,
+  // Post-onboarding
+  clearSyncStatusTool,
+  presentSyncPlanTool,
+  presentPublishPlanTool,
+  presentPlanTool,
+  // Spec
+  readSpecTool,
+  writeSpecTool,
+  editSpecTool,
+  listSpecFilesTool,
+  // Code
+  readFileTool,
+  writeFileTool,
+  editFileTool,
+  bashTool,
+  grepTool,
+  globTool,
+  listDirTool,
+  editsFinishedTool,
+  runScenarioTool,
+  runMethodTool,
+  screenshotTool,
+  browserAutomationTool,
+  // LSP
+  lspDiagnosticsTool,
+  restartProcessTool,
+];
 
-function getCodeTools(): Tool[] {
-  const tools = [
-    readFileTool,
-    writeFileTool,
-    editFileTool,
-    bashTool,
-    grepTool,
-    globTool,
-    listDirTool,
-    editsFinishedTool,
-    runScenarioTool,
-    runMethodTool,
-    screenshotTool,
-    browserAutomationTool,
-  ];
-
-  if (isLspConfigured()) {
-    tools.push(lspDiagnosticsTool, restartProcessTool);
-  }
-
-  return tools;
-}
-
-/** Always-available tools (all onboarding states). */
-function getCommonTools(): Tool[] {
-  return [
-    setProjectOnboardingStateTool,
-    promptUserTool,
-    confirmDestructiveActionTool,
-    askMindStudioSdkTool,
-    scrapeWebUrlTool,
-    searchGoogleTool,
-    setProjectMetadataTool,
-    designExpertTool,
-    productVisionTool,
-    codeSanityCheckTool,
-  ];
-}
-
-/** Tools only available after onboarding is complete (onboardingFinished). */
-function getPostOnboardingTools(): Tool[] {
-  return [
-    clearSyncStatusTool,
-    presentSyncPlanTool,
-    presentPublishPlanTool,
-    presentPlanTool,
-  ];
-}
-
-/**
- * Get the tool set based on onboarding state.
- *
- * - intake / initialSpecAuthoring: spec tools + common tools (authoring)
- * - initialCodegen: spec tools + code tools + common tools (building)
- * - onboardingFinished: everything (full development)
- */
-export function getTools(onboardingState: string): Tool[] {
-  switch (onboardingState) {
-    case 'onboardingFinished':
-      return [
-        ...getCommonTools(),
-        ...getPostOnboardingTools(),
-        ...getSpecTools(),
-        ...getCodeTools(),
-      ];
-    case 'initialCodegen':
-      return [...getCommonTools(), ...getSpecTools(), ...getCodeTools()];
-    default: // intake, initialSpecAuthoring
-      return [...getCommonTools(), ...getSpecTools()];
-  }
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function getTools(_onboardingState: string): Tool[] {
+  return ALL_TOOLS;
 }
 
 /** Tool definitions array — sent to the LLM in each request. */
-export function getToolDefinitions(onboardingState: string): ToolDefinition[] {
-  return getTools(onboardingState).map((t) => t.definition);
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function getToolDefinitions(_onboardingState: string): ToolDefinition[] {
+  return ALL_TOOLS.map((t) => t.definition);
 }
 
-/** Look up a tool by name from ALL known tools. */
+/** Look up a tool by name. */
 export function getToolByName(name: string): Tool | undefined {
-  const allTools = [
-    ...getCommonTools(),
-    ...getPostOnboardingTools(),
-    ...getSpecTools(),
-    ...getCodeTools(),
-  ];
-  return allTools.find((t) => t.definition.name === name);
+  return ALL_TOOLS.find((t) => t.definition.name === name);
 }
 
 /**
