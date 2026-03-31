@@ -10,6 +10,7 @@ Then, think about the layout and UI patterns - these are the core of the user's 
 
 ## Tool Usage
 - When multiple tool calls are independent, make them all in a single turn. Searching for three different products, or fetching two reference sites: batch them instead of doing one per turn.
+- The screenshot tool supports an `instructions` parameter for taking screenshots that require interaction first. If you need to screenshot a state that's behind a modal, a specific tab, or a multi-step flow, pass `instructions` describing how to get there (e.g., "dismiss the welcome modal, then click XYZ"). A browser automation agent will follow your instructions and capture the screenshot for you.
 
 ## Voice
 - No emoji, no filler.

@@ -1,5 +1,11 @@
 import type { ToolDefinition } from '../../../api.js';
-import { captureAndAnalyzeScreenshot } from '../../../tools/_helpers/screenshot.js';
+import type { ToolExecutionContext } from '../../../tools/index.js';
+import {
+  captureAndAnalyzeScreenshot,
+  SCREENSHOT_ANALYSIS_PROMPT,
+} from '../../../tools/_helpers/screenshot.js';
+import { analyzeImage } from '../../common/analyzeImage.js';
+import { browserAutomationTool } from '../../browserAutomation/index.js';
 
 export const definition: ToolDefinition = {
   name: 'screenshot',
@@ -17,6 +23,11 @@ export const definition: ToolDefinition = {
         description:
           'Navigate to this path before capturing (e.g. "/settings"). If omitted, screenshots the current page.',
       },
+      instructions: {
+        type: 'string',
+        description:
+          'If the screenshot you need requires interaction first (dismissing a modal, clicking a tab, filling out a form, navigating a flow), describe the steps to get there. A browser automation agent will follow these instructions before capturing the screenshot.',
+      },
     },
   },
 };
@@ -24,7 +35,40 @@ export const definition: ToolDefinition = {
 export async function execute(
   input: Record<string, any>,
   onLog?: (line: string) => void,
+  context?: ToolExecutionContext,
 ): Promise<string> {
+  // Interactive screenshot — delegate to the browser automation subagent
+  if (input.instructions && context) {
+    try {
+      const task = input.path
+        ? `Navigate to "${input.path}", then: ${input.instructions}. After completing these steps, take a full-page screenshot.`
+        : `${input.instructions}. After completing these steps, take a full-page screenshot.`;
+
+      const result = await browserAutomationTool.execute({ task }, context);
+
+      // Extract screenshot URL from the subagent's output
+      const urlMatch = (result as string).match(
+        /https:\/\/[^\s"')]+\.(?:png|jpg|jpeg|webp)/i,
+      );
+      if (!urlMatch) {
+        return `Error: browser navigation completed but no screenshot URL was returned. Agent output: ${result}`;
+      }
+
+      const url = urlMatch[0];
+      const analysisPrompt =
+        (input.prompt as string) || SCREENSHOT_ANALYSIS_PROMPT;
+      const analysis = await analyzeImage({
+        prompt: analysisPrompt,
+        imageUrl: url,
+        onLog,
+      });
+      return JSON.stringify({ url, analysis });
+    } catch (err: any) {
+      return `Error taking interactive screenshot: ${err.message}`;
+    }
+  }
+
+  // Standard screenshot — existing behavior
   try {
     return await captureAndAnalyzeScreenshot({
       prompt: input.prompt as string,

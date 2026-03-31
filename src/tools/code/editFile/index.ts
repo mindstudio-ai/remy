@@ -19,7 +19,7 @@ export const editFileTool: Tool = {
   definition: {
     name: 'editFile',
     description:
-      'Replace a string in a file. old_string must appear exactly once (minor indentation differences are handled automatically). Set replace_all to true to replace every occurrence at once. For bulk mechanical substitutions (renaming a variable, swapping colors), prefer replace_all. Always read the file first so you know the exact text to match.',
+      'Replace a string in a file. old_string must appear exactly once (minor indentation differences are handled automatically). Set replace_all to true to replace every occurrence at once. For bulk mechanical substitutions (renaming a variable, swapping colors), prefer replace_all. Always read the file first so you know the exact text to match. When editing nested structures (objects, function bodies, arrays, template literals), always include the full enclosing structure in old_string rather than just an inner fragment. Replacing a partial slice from the middle of nested code is the most common source of syntax errors.',
     inputSchema: {
       type: 'object',
       properties: {

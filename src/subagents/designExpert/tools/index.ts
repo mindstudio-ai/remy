@@ -38,5 +38,5 @@ export async function executeDesignExpertTool(
   if (!tool) {
     return `Error: unknown tool "${name}"`;
   }
-  return tool.execute(input, onLog);
+  return tool.execute(input, onLog, context);
 }

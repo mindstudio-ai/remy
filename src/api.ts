@@ -303,7 +303,8 @@ function isRetryableError(error: string): boolean {
   return (
     /Network error/i.test(error) ||
     /HTTP 5\d\d/i.test(error) ||
-    /Stream stalled/i.test(error)
+    /Stream stalled/i.test(error) ||
+    /overloaded/i.test(error)
   );
 }
 
