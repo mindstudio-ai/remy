@@ -28,5 +28,12 @@ Process logs are available at .logs/ in NDJSON format (one JSON object per line)
 ### MindStudio SDK
 For any work involving AI models, external actions (web scraping, email, SMS), or third-party API/OAuth connections, prefer the `@mindstudio-ai/agent` SDK. It removes the need to research API methods, configure keys and tokens, or require the user to set up developer accounts.
 
+### Auth
+- Not every app needs auth, and even for apps that do need auth, not every screen needs auth. Think intentionally about places where auth is required.
+- Frontend interfaces are always untrusted. Always enforce auth in backend methods. Use frontend auth and role information as a hint to conditionally show/hide UI to make the experience pleasant and seamless for users depending on their state, but remember to always use backend methods for gating data that is conditional on auth.
+- For signup and login, verification code inputs must feel polished — clear feedback on send, auto-send on paste, a "resend" option, and error messages for wrong/expired codes.
+- The auth table is the user profile. Add custom fields (displayName, avatar, plan, etc.) alongside the platform-managed columns. Don't create a separate profile table.
+- For apps with roles, create scenarios that seed users with different roles so the developer can test each perspective. Use the scenario `roles` field for impersonation.
+
 ### Dependencies
 Before installing a package you haven't used in this project, do a quick web search to confirm it's still the best option. The JavaScript ecosystem moves fast — the package you remember from training may have been superseded by something smaller, faster, or better maintained. A 10-second search beats debugging a deprecated library.

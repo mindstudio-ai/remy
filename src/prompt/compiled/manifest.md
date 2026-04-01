@@ -9,6 +9,15 @@
   "appId": "e452fcf2-06c5-49e8-b4f1-6353563f24b0",
   "name": "Procure-to-Pay",
 
+  "auth": {
+    "enabled": true,
+    "methods": ["email-code"],
+    "table": {
+      "name": "users",
+      "columns": { "email": "email", "roles": "roles" }
+    }
+  },
+
   "roles": [
     { "id": "requester", "name": "Requester", "description": "Can submit vendor requests and purchase orders." },
     { "id": "approver", "name": "Approver", "description": "Reviews and approves purchase orders." },
@@ -55,6 +64,18 @@
 
 ### `name` (required)
 `string`. Display name shown in the editor and workspace.
+
+### `auth`
+`Object`. Optional. Enables app-managed authentication. Omit for anonymous guest sessions.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enabled` | `boolean` | Yes | `true` to enable auth |
+| `methods` | `string[]` | Yes | Auth methods: `"email-code"`, `"sms-code"`. At least one required. |
+| `table.name` | `string` | Yes | Name of the `defineTable` table holding user records |
+| `table.columns.email` | `string` | If email-code | Column name for email (platform-managed, read-only from code) |
+| `table.columns.phone` | `string` | If sms-code | Column name for phone (platform-managed, read-only from code) |
+| `table.columns.roles` | `string` | No | Column name for roles array (bidirectional sync) |
 
 ### `roles`
 `Array<{ id, name?, description? }>`. Defaults to `[]`.

@@ -21,7 +21,7 @@ The scaffold starts with these spec files that cover the full picture of the app
 
 These are starting points, not constraints. Create as many spec files as the project needs — the `src/` folder is your workspace and every `.md` file in it becomes compilation context. If the app has substantial content (presentation slides, copy, lesson plans, menu items, quiz questions), put it in its own file (`src/content.md`, `src/slides.md`, `src/menu.md`, etc.) rather than cramming it into `app.md` or `web.md`. If the domain is complex, split `app.md` into multiple files by area (`src/billing.md`, `src/approvals.md`). Add interface specs for other interface types (`api.md`, `cron.md`, `agent.md`, etc.) if the app uses them. Organize however serves clarity — the platform reads the entire `src/` folder.
 
-Users often care about look and feel as much as (or more than) underlying data structures. Don't treat the brand and interface specs as an afterthought — for many users, the visual identity and voice are the first things they want to get right.
+Remember: users care about look and feel as much as (and often more than) underlying data structures. Don't treat the brand and interface specs as an afterthought — for many users, the visual identity and voice are the first things they want to get right.
 
 Write specs in natural, human language. Describe what the app does the way you'd explain it to a colleague. The spec renders with annotations hidden is a human-forward document that anyone can read. The spec with annotations visible is the agent-forward document that drives code generation. Keep the prose clean and readable — the user should never see raw CSS, code, or technical values in the prose. Write "square corners on all cards" not `border-radius: 0`. Write "no shadows" not `box-shadow: none`. Technical specifics belong in annotations.
 
@@ -46,6 +46,13 @@ a background with the headline overlaid where there's negative space.
 ![Editorial portrait, warm golden hour lighting, person looking out over a
 city skyline, shallow depth of field, shot on 85mm](https://i.mscdn.ai/...)
 ```
+
+If the app needs users and auth, the spec should capture the user model and access boundaries clearly. Think about who uses the app and what they can see or do at each point:
+  - Which screens or content are public (anyone can see) vs. protected (requires login)?
+  - What does a brand new user see vs. a returning authenticated user? What's the signup path?
+  - If there are roles, which actions require which roles? Be specific — "admins can delete" is better than "some actions are restricted."
+  - What user profile data does the app need beyond email/phone? This shapes the auth table.
+  - Don't over-engineer auth upfront. Many MVPs work fine without any auth - it's more important to nail down the core concepts that drive the app before bringing in auth/multi-user. Many MVPs work fine with just email verification and no roles. Roles can be added later without changing the core auth flow.
 
 **Finalizing the first draft:**
 When you are finished with the first draft and are ready to present it to the user, call `setProjectOnboardingState({ state: "initialSpecReview" })`. This will update the interface so the user can see your work. If you do not call this, the user will not be able to see the spec in the UI.

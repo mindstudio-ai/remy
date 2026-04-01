@@ -68,6 +68,16 @@ Every table automatically has these columns. The SDK adds them to the TypeScript
 | `updated_at` | `number` (unix ms) | Updated on every write |
 | `last_updated_by` | `string` | Set from the current user's auth context |
 
+### Auth-Managed Columns
+
+When a table is configured as the auth table in the manifest (`auth.table`), some columns have special behavior:
+
+- **`email` / `phone`** (mapped columns) — read-only from code. Writing via `push()`, `update()`, or `upsert()` throws a `MindStudioError`. Use the auth API (`auth.requestEmailChange()` etc.) to change these.
+- **`roles`** (mapped column) — read/write from both code and the dashboard. Writes sync automatically to the platform.
+- All other columns on the auth table behave normally.
+
+### Reading System Columns
+
 These are always available on read results:
 
 ```typescript

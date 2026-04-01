@@ -1,130 +1,287 @@
-# Roles & Auth
+# Auth & Roles
 
-MindStudio apps use role-based access control. Roles are defined in the manifest, assigned to users in the editor, and enforced in methods.
+MindStudio apps can have and manage their own users. Auth is opt-in: configure it in the manifest, define a user table, and build your own login UI. The platform handles verification codes (email/SMS), cookie-based sessions, and role enforcement.
 
-The backend is the authority. Methods enforce access control via `auth.requireRole()`. The frontend can read roles for conditional rendering, but enforcement always happens server-side.
+Apps without auth config use anonymous guest sessions. Auth is optional — only add it when the app needs to identify users or restrict access.
 
 ---
 
-## Defining Roles
-
-In `mindstudio.json`:
+## Manifest Config
 
 ```json
 {
+  "auth": {
+    "enabled": true,
+    "methods": ["email-code", "sms-code"],
+    "table": {
+      "name": "users",
+      "columns": {
+        "email": "email",
+        "phone": "phone",
+        "roles": "roles"
+      }
+    }
+  },
   "roles": [
-    { "id": "requester", "name": "Requester", "description": "Can submit vendor requests and purchase orders." },
-    { "id": "approver", "name": "Approver", "description": "Reviews and approves purchase orders." },
-    { "id": "admin", "name": "Administrator", "description": "Full access to all app functions." },
-    { "id": "ap", "name": "Accounts Payable", "description": "Processes invoices and payments." }
+    { "id": "vendor", "name": "Vendor" },
+    { "id": "buyer", "name": "Buyer" },
+    { "id": "admin", "name": "Admin" }
   ]
 }
 ```
 
-- `id`: kebab-case, used in code (`auth.requireRole('admin')`)
-- `name`: display name shown in the editor
-- `description`: what this role can do (useful for the AI agent and for users in the role assignment UI)
+### Auth Fields
 
-Roles are synced to the platform on deploy. Adding or removing roles in the manifest creates or deletes them on the next push.
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `auth.enabled` | `boolean` | Yes | `true` to enable auth |
+| `auth.methods` | `string[]` | Yes | `"email-code"` and/or `"sms-code"`. At least one. |
+| `auth.table.name` | `string` | Yes | Name of the `defineTable` table for user records |
+| `auth.table.columns.email` | `string` | If email-code | Column name for email (read-only from code) |
+| `auth.table.columns.phone` | `string` | If sms-code | Column name for phone (read-only from code) |
+| `auth.table.columns.roles` | `string` | No | Column name for roles array (bidirectional sync) |
+
+### Roles
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | Yes | Kebab-case identifier (used in code: `auth.requireRole('admin')`) |
+| `name` | `string` | No | Display name |
+| `description` | `string` | No | What this role can do |
 
 ---
 
-## Role Assignments
+## Auth Table
 
-Users are assigned to roles in the MindStudio editor. One user can have multiple roles. Role assignments are managed via the platform API:
+The user table is defined with `defineTable` like any other table. The platform manages the auth-mapped columns; everything else is yours.
 
+```typescript
+import { db } from '@mindstudio-ai/agent';
+
+export const Users = db.defineTable<{
+  // Mapped to auth — platform keeps these in sync
+  email: string;
+  phone?: string;
+  roles: string[];
+  // Developer's own fields
+  displayName: string;
+  companyName?: string;
+  plan: 'free' | 'pro';
+  avatarUrl?: string;
+  onboardedAt?: number;
+}>('users');
 ```
-GET  /roles/list                        list all roles
-GET  /roles/assignments                 list all user-role mappings
-POST /roles/set-user-roles { userId, roleNames[] }
-POST /roles/get-users-by-role { roleName }
+
+### Platform-Managed Column Behavior
+
+- **`email` / `phone`** — read-only from code. Writing via `push()`, `update()`, or `upsert()` throws a `MindStudioError` ("Cannot write to email — this column is managed by auth. Use the auth API to change a user's email/phone."). The platform syncs these on auth events.
+- **`roles`** — read/write from both code and the dashboard. `Users.update(userId, { roles: ['admin'] })` works and the platform syncs the change automatically. Dashboard role changes sync back to the table.
+- All other columns are fully the developer's domain. Read, write, query as normal.
+
+---
+
+## Frontend Auth (Interface SDK)
+
+The developer builds their own login/signup UI. The SDK provides methods that handle verification and session management. All auth state changes (verify, logout) update the SDK's internal config immediately — no page refresh needed.
+
+```typescript
+import { auth } from '@mindstudio-ai/interface';
+```
+
+### User Shape
+
+```typescript
+interface AppUser {
+  id: string;
+  email: string | null;
+  phone: string | null;
+  roles: string[];
+  createdAt: string;
+}
+```
+
+### State (sync — reads from cached config)
+
+```typescript
+auth.getCurrentUser()    // AppUser | null (null = unauthenticated)
+auth.isAuthenticated()   // boolean
+```
+
+### Email Code Flow
+
+```typescript
+const { verificationId } = await auth.sendEmailCode('user@example.com');
+// Platform sends a 6-digit code to the email
+// User enters the code in your UI
+const user = await auth.verifyEmailCode(verificationId, '123456');
+// Session is set — auth.getCurrentUser() now returns the AppUser
+```
+
+### SMS Code Flow
+
+```typescript
+const { verificationId } = await auth.sendSmsCode('+15551234567');
+// Phone must be E.164 format
+const user = await auth.verifySmsCode(verificationId, '123456');
+```
+
+### Email/Phone Changes (must be authenticated)
+
+```typescript
+await auth.requestEmailChange('newemail@example.com');   // sends code to NEW email
+const user = await auth.confirmEmailChange('newemail@example.com', '123456');
+
+await auth.requestPhoneChange('+15559876543');
+const user = await auth.confirmPhoneChange('+15559876543', '123456');
+```
+
+### Logout
+
+```typescript
+await auth.logout();  // clears cookie and session
+```
+
+### Phone Helpers (`auth.phone`)
+
+Helpers for building phone input UIs with country code pickers:
+
+```typescript
+auth.phone.countries          // ~180 countries: { code, dialCode, name, flag }
+auth.phone.detectCountry()    // guess from timezone, e.g. 'US'
+auth.phone.toE164('5551234567', 'US')  // '+15551234567'
+auth.phone.format('+15551234567')      // '+1 (555) 123-4567'
+auth.phone.isValid('+15551234567')     // true (E.164 format check)
+```
+
+### Email Helpers (`auth.email`)
+
+```typescript
+auth.email.isValid('user@example.com')  // true (basic format check)
 ```
 
 ---
 
-## Using Roles in Methods
+## Backend Auth (Agent SDK)
 
 ```typescript
 import { auth } from '@mindstudio-ai/agent';
-
-export async function approveVendor(input: { vendorId: string }) {
-  // Require the user to have the 'admin' role (throws 403 if not)
-  auth.requireRole('admin');
-
-  // ...
-}
-
-export async function reviewPurchaseOrder(input: { poId: string }) {
-  // Require ANY of the listed roles
-  auth.requireRole('admin', 'approver');
-
-  // ...
-}
-
-export async function getDashboard() {
-  // Check without throwing
-  const isAdmin = auth.hasRole('admin');
-
-  // Current user's ID
-  const userId = auth.userId;
-
-  // Current user's roles
-  const roles = auth.roles;  // ['admin', 'approver']
-
-  // Get all users with a specific role
-  const admins = await auth.getUsersByRole('admin');
-
-  // ...
-}
 ```
 
 ### `auth.requireRole(...roles)`
 
-Throws a 403 error if the current user doesn't have **any** of the specified roles. Use this at the top of methods to gate access.
+Throws a 403 error if the current user doesn't have **any** of the specified roles. Use at the top of methods to gate access.
+
+```typescript
+auth.requireRole('admin');                // single role
+auth.requireRole('admin', 'approver');    // any of these
+```
 
 ### `auth.hasRole(...roles)`
 
-Returns `boolean`. Same logic as `requireRole` but doesn't throw. Use for conditional behavior within a method.
+Returns `boolean`. Same logic as `requireRole` but doesn't throw. Use for conditional behavior.
 
 ### `auth.userId`
 
-The current user's UUID. Always available.
+The current user's ID (the row ID in the auth table). Always available when auth is enabled.
 
 ### `auth.roles`
 
-Array of role names assigned to the current user.
+Array of role IDs assigned to the current user.
 
 ### `auth.getUsersByRole(role)`
 
-Returns an array of user IDs that have the specified role. Useful for things like "notify all admins."
+Returns an array of user IDs with the specified role. Useful for "notify all admins."
 
 ---
 
-## Using Roles in the Frontend
+## Login Page Example
 
-```typescript
+```tsx
+import { useState } from 'react';
 import { auth } from '@mindstudio-ai/interface';
 
-// Read-only user identity
-auth.userId;            // current user's ID
-auth.name;              // display name
-auth.email;             // email address
-auth.profilePictureUrl; // URL or null
+function LoginPage() {
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [verificationId, setVerificationId] = useState('');
+  const [codeSent, setCodeSent] = useState(false);
+
+  const handleSendCode = async () => {
+    const { verificationId } = await auth.sendEmailCode(email);
+    setVerificationId(verificationId);
+    setCodeSent(true);
+  };
+
+  const handleVerify = async () => {
+    await auth.verifyEmailCode(verificationId, code);
+    window.location.href = '/dashboard';
+  };
+
+  if (!codeSent) {
+    return (
+      <div>
+        <h1>Sign in</h1>
+        <input
+          placeholder="Email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+        />
+        <button onClick={handleSendCode}>Send code</button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <p>Enter the code we sent to {email}</p>
+      <input
+        placeholder="123456"
+        value={code}
+        onChange={e => setCode(e.target.value)}
+      />
+      <button onClick={handleVerify}>Verify</button>
+    </div>
+  );
+}
 ```
 
-The frontend SDK provides display-only auth context. Role checking for UI purposes (showing/hiding elements) is done by reading role data from the backend:
+---
+
+## Backend Method Example
 
 ```typescript
-const api = createClient<AppMethods>();
+import { auth } from '@mindstudio-ai/agent';
+import { Users } from './tables/users';
 
-// Fetch role info from a method
-const { isAdmin, pendingCount } = await api.getDashboard();
+export async function getDashboard() {
+  const user = await Users.get(auth.userId);
 
-// Conditionally render
-{isAdmin && <AdminPanel />}
+  if (auth.hasRole('admin')) {
+    const allUsers = await Users.toArray();
+    return { user, allUsers, isAdmin: true };
+  }
+
+  return { user, isAdmin: false };
+}
+
+export async function promoteToAdmin(input: { userId: string }) {
+  auth.requireRole('admin');
+  await Users.update(input.userId, { roles: ['admin'] });
+  // SDK detects roles column write and syncs to platform automatically
+}
 ```
 
-The frontend is untrusted. Anyone can modify JavaScript in the browser. The frontend shows or hides UI elements based on role data from the backend, but the backend is always the authority.
+---
+
+## Roles
+
+Roles are a platform-managed concept stored on the developer's user table.
+
+- **Declared in manifest** — `roles` array with `id` and `name`
+- **Stored as array** — the mapped `roles` column holds `["vendor", "admin"]`
+- **Writable from code** — `Users.update(userId, { roles: ['admin'] })` syncs automatically
+- **Writable from dashboard** — MindStudio dashboard shows app users and their roles
+- **Backend enforcement** — `auth.requireRole('admin')` reads from the platform's role cache
 
 ---
 
@@ -137,9 +294,7 @@ POST /dev/manage/impersonate
 Body: { "roles": ["ap"] }
 ```
 
-This sets a role override on the dev session. Subsequent method executions use the overridden roles instead of the user's actual assignments. The frontend reloads to show the app from the new perspective.
-
-Clear impersonation:
+This sets a role override on the dev session. Subsequent method executions use the overridden roles. Clear impersonation:
 
 ```
 POST /dev/manage/impersonate
@@ -150,29 +305,46 @@ Scenarios set impersonation automatically. Each scenario declares which roles to
 
 ---
 
+## Apps Without Auth
+
+Apps without `auth` in the manifest use anonymous guest sessions. No login, no user identity, no roles. This is the default and works fine for single-user apps, internal tools, and simple utilities.
+
+---
+
 ## End-to-End Example
 
-1. **Define roles** in `mindstudio.json`:
+1. **Add auth config** to `mindstudio.json`:
    ```json
-   { "id": "admin", "name": "Admin" }
+   {
+     "auth": {
+       "enabled": true,
+       "methods": ["email-code"],
+       "table": { "name": "users", "columns": { "email": "email", "roles": "roles" } }
+     },
+     "roles": [{ "id": "admin", "name": "Admin" }]
+   }
    ```
 
-2. **Assign users** in the editor (or via API)
+2. **Define the user table** (`src/tables/users.ts`):
+   ```typescript
+   export const Users = db.defineTable<{
+     email: string;
+     roles: string[];
+     displayName: string;
+   }>('users');
+   ```
 
-3. **Enforce in a method:**
+3. **Build a login page** using `auth.sendEmailCode()` and `auth.verifyEmailCode()`
+
+4. **Enforce roles in methods:**
    ```typescript
    auth.requireRole('admin');
    ```
 
-4. **Conditional render in frontend:**
+5. **Conditional render in frontend:**
    ```typescript
    const { isAdmin } = await api.getUserContext();
    {isAdmin && <DeleteButton />}
    ```
 
-5. **Test in dev** via impersonation:
-   ```
-   POST /dev/manage/impersonate { "roles": ["admin"] }
-   ```
-
-6. **Or via a scenario** that seeds data and impersonates automatically
+6. **Test in dev** via impersonation or scenarios

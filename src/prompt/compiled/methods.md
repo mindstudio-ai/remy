@@ -100,10 +100,8 @@ const { markdown } = await agent.scrapeUrl({
   url: 'https://example.com',
 });
 
-// Resolve user display info
-const { displayName, email } = await agent.resolveUser({
-  userId,
-});
+// Look up a user from your auth table
+const user = await Users.get(auth.userId);
 ```
 
 No separate API keys needed — the platform routes to the correct provider (OpenAI, Anthropic, Google, etc.) automatically.

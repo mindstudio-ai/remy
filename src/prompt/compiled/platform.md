@@ -92,7 +92,7 @@ const { vendor } = await api.approveVendor({ vendorId: '...' });
 ## What the Platform Provides
 
 - **Managed databases.** SQLite with typed schemas. Push a schema change and the platform diffs, migrates, and promotes atomically.
-- **Built-in auth.** Define roles in the manifest, call `auth.requireRole('admin')` in methods. Platform handles sessions, tokens, user resolution.
+- **Built-in auth.** Opt-in via manifest. Developer builds login UI, platform handles verification codes (email/SMS), cookie sessions, and role enforcement. Backend methods use `auth.requireRole('admin')` for access control.
 - **Multiple interfaces, one codebase.** Web, API, Discord, Telegram, Cron, Webhook, Email, MCP — all invoke the same methods. Methods don't know which interface called them.
 - **Sandboxed execution.** Methods run in isolated sandboxes with npm packages pre-installed.
 - **Git-native deployment.** Push to default branch to deploy. Push to feature branch for preview. Rollback is a git revert.
