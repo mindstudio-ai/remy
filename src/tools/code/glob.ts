@@ -6,6 +6,7 @@ import type { Tool } from '../index.js';
 const DEFAULT_MAX = 200;
 
 export const globTool: Tool = {
+  clearable: true,
   definition: {
     name: 'glob',
     description:

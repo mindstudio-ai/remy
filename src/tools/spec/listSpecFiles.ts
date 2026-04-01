@@ -5,6 +5,7 @@ import path from 'node:path';
 import type { Tool } from '../index.js';
 
 export const listSpecFilesTool: Tool = {
+  clearable: false,
   definition: {
     name: 'listSpecFiles',
     description:

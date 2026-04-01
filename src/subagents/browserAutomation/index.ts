@@ -21,6 +21,7 @@ import { createLogger } from '../../logger.js';
 const log = createLogger('browser-automation');
 
 export const browserAutomationTool: Tool = {
+  clearable: true,
   definition: {
     name: 'runAutomatedBrowserTest',
     description:

@@ -15,6 +15,7 @@ function formatResults(stdout: string, max: number): string {
 }
 
 export const grepTool: Tool = {
+  clearable: true,
   definition: {
     name: 'grep',
     description:

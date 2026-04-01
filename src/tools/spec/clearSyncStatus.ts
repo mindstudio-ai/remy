@@ -9,6 +9,7 @@
 import type { Tool } from '../index.js';
 
 export const clearSyncStatusTool: Tool = {
+  clearable: false,
   definition: {
     name: 'clearSyncStatus',
     description:

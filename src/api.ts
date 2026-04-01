@@ -79,6 +79,8 @@ export interface ToolDefinition {
   name: string;
   description: string;
   inputSchema: Record<string, any>;
+  /** Whether results from this tool can be cleared from old turns to save context. */
+  clearable?: boolean;
 }
 
 // Events yielded by the SSE stream. All events include an optional `ts`

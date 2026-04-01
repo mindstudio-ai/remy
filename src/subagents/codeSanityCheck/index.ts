@@ -16,6 +16,7 @@ import { SANITY_CHECK_TOOLS } from './tools.js';
 const BASE_PROMPT = readAsset('subagents/codeSanityCheck', 'prompt.md');
 
 export const codeSanityCheckTool: Tool = {
+  clearable: false,
   definition: {
     name: 'codeSanityCheck',
     description:

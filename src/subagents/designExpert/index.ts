@@ -16,6 +16,7 @@ Visual design expert. Describe the situation and what you need — the agent dec
 `.trim();
 
 export const designExpertTool: Tool = {
+  clearable: false,
   definition: {
     name: 'visualDesignExpert',
     description: DESCRIPTION,

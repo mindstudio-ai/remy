@@ -11,9 +11,18 @@
  * Designed to run in the background — snapshots the insertion point
  * upfront and inserts at that index when done, so new messages that
  * arrive during generation are unaffected.
+ *
+ * The summarization call reuses the main conversation's system prompt
+ * and tools so the API request hits the same prompt cache — avoiding
+ * a full cache miss from a different system prompt.
  */
 
-import { streamChat, type Message, type ContentBlock } from '../api.js';
+import {
+  streamChat,
+  type Message,
+  type ContentBlock,
+  type ToolDefinition,
+} from '../api.js';
 import { readAsset } from '../assets.js';
 import { createLogger } from '../logger.js';
 import type { AgentState } from '../types.js';
@@ -32,10 +41,15 @@ const SUMMARIZABLE_SUBAGENTS = ['visualDesignExpert', 'productVision'];
  * Snapshots the current message count as the insertion point. Summaries
  * are generated in parallel, then inserted at the snapshot index. Messages
  * appended after the snapshot (from ongoing turns) are not affected.
+ *
+ * @param system - The main conversation's system prompt (reused for cache hits)
+ * @param tools - The main conversation's tool definitions (reused for cache hits)
  */
 export async function compactConversation(
   state: AgentState,
   apiConfig: { baseUrl: string; apiKey: string },
+  system?: string,
+  tools?: ToolDefinition[],
 ): Promise<void> {
   // Snapshot the insertion point — summaries cover everything up to here.
   // Must land on a safe message boundary: never between an assistant message
@@ -57,6 +71,8 @@ export async function compactConversation(
         'conversation',
         CONVERSATION_SUMMARY_PROMPT,
         conversationMessages,
+        system,
+        tools,
       ).then((text) => {
         if (text) {
           summaries.push({ name: 'conversation', text });
@@ -65,7 +81,13 @@ export async function compactConversation(
     );
   }
 
-  // Subagent summaries
+  // Subagent summaries — these reuse the main conversation's system prompt
+  // and tools for cache hits, NOT the subagent's own prompt/tools. This is
+  // intentional: the main cache is most likely warm at compaction time, while
+  // the subagent's cache may have expired between invocations. The subagent
+  // summary instruction in the user message is sufficient context. If summary
+  // quality degrades for subagent-specific content, consider passing each
+  // subagent's own system prompt and tools here instead.
   for (const name of SUMMARIZABLE_SUBAGENTS) {
     const subagentMessages = getSubAgentMessagesForSummary(
       state.messages,
@@ -79,6 +101,8 @@ export async function compactConversation(
           name,
           SUBAGENT_SUMMARY_PROMPT,
           subagentMessages,
+          system,
+          tools,
         ).then((text) => {
           if (text) {
             summaries.push({ name, text });
@@ -263,12 +287,19 @@ function serializeForSummary(messages: Message[]): string {
 
 /**
  * Generate a summary via LLM. Returns the summary text, or null on failure.
+ *
+ * When the main conversation's system prompt and tools are provided, the
+ * summarization call reuses them so the request hits the same prompt cache.
+ * The compaction instruction is sent as a user message instead of as the
+ * system prompt.
  */
 async function generateSummary(
   apiConfig: { baseUrl: string; apiKey: string },
   name: string,
-  systemPrompt: string,
+  compactionPrompt: string,
   messagesToSummarize: Message[],
+  mainSystem?: string,
+  mainTools?: ToolDefinition[],
 ): Promise<string | null> {
   const serialized = serializeForSummary(messagesToSummarize);
   if (!serialized.trim()) {
@@ -278,16 +309,27 @@ async function generateSummary(
   log.info('Generating summary', {
     name,
     messageCount: messagesToSummarize.length,
+    cacheReuse: !!mainSystem,
   });
 
   let summaryText = '';
 
+  // When the main system prompt is available, reuse it so the API call
+  // hits the same prompt cache as the conversation. The compaction
+  // instruction goes into the user message instead.
+  const useMainCache = !!mainSystem;
+  const system = useMainCache ? mainSystem : compactionPrompt;
+  const tools = useMainCache ? (mainTools ?? []) : [];
+  const userContent = useMainCache
+    ? `${compactionPrompt}\n\n---\n\nConversation to summarize:\n\n${serialized}`
+    : serialized;
+
   for await (const event of streamChat({
     ...apiConfig,
     subAgentId: 'conversationSummarizer',
-    system: systemPrompt,
-    messages: [{ role: 'user', content: serialized }],
-    tools: [],
+    system,
+    messages: [{ role: 'user', content: userContent }],
+    tools,
   })) {
     if (event.type === 'text') {
       summaryText += event.text;

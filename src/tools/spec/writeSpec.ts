@@ -7,6 +7,7 @@ import { validateSpecPath } from './_helpers.js';
 import { unifiedDiff } from '../_helpers/diff.js';
 
 export const writeSpecTool: Tool = {
+  clearable: true,
   definition: {
     name: 'writeSpec',
     description:

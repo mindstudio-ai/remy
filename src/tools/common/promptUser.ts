@@ -13,6 +13,7 @@
 import type { Tool } from '../index.js';
 
 export const promptUserTool: Tool = {
+  clearable: false,
   definition: {
     name: 'promptUser',
     description:

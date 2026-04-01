@@ -17,6 +17,7 @@ import { getProductVisionPrompt } from './prompt.js';
 import { getSubAgentHistory } from '../common/history.js';
 
 export const productVisionTool: Tool = {
+  clearable: false,
   definition: {
     name: 'productVision',
     description:

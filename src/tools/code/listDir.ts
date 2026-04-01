@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import type { Tool } from '../index.js';
 
 export const listDirTool: Tool = {
+  clearable: true,
   definition: {
     name: 'listDir',
     description:

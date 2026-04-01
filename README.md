@@ -49,7 +49,7 @@ Tool availability depends on the project's onboarding state, sent by the sandbox
 
 | Tool | Description |
 |------|-------------|
-| `setProjectOnboardingState` | Advance the onboarding flow (intake → initialSpecAuthoring → initialCodegen → onboardingFinished) |
+| `setProjectOnboardingState` | Advance the onboarding flow (intake → initialSpecReview → initialCodegen → onboardingFinished) |
 | `setProjectName` | Set the project name |
 | `promptUser` | Ask the user structured questions (form or inline display) |
 | `confirmDestructiveAction` | Confirm a destructive or irreversible action with the user |

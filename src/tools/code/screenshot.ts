@@ -6,6 +6,7 @@ import type { Tool } from '../index.js';
 import { captureAndAnalyzeScreenshot } from '../_helpers/screenshot.js';
 
 export const screenshotTool: Tool = {
+  clearable: true,
   definition: {
     name: 'screenshot',
     description:

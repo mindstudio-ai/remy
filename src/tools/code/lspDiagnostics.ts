@@ -20,6 +20,7 @@ interface CodeAction {
 }
 
 export const lspDiagnosticsTool: Tool = {
+  clearable: true,
   definition: {
     name: 'lspDiagnostics',
     description:

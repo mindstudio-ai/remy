@@ -9,6 +9,7 @@ import type { Tool } from '../index.js';
 import { runCli } from '../../subagents/common/runCli.js';
 
 export const scrapeWebUrlTool: Tool = {
+  clearable: false,
   definition: {
     name: 'scrapeWebUrl',
     description:

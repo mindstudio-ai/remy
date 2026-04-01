@@ -12,6 +12,7 @@
 import type { Tool } from '../index.js';
 
 export const presentSyncPlanTool: Tool = {
+  clearable: false,
   definition: {
     name: 'presentSyncPlan',
     description:

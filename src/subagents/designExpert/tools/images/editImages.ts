@@ -2,6 +2,7 @@ import type { ToolDefinition } from '../../../../api.js';
 import { generateImageAssets } from './imageGenerator.js';
 
 export const definition: ToolDefinition = {
+  clearable: false,
   name: 'editImages',
   description:
     'Edit or transform existing images. Provide one or more source image URLs as reference and a prompt describing the desired edit. Use for compositing, style transfer, subject transformation, blending multiple references, or incorporating one or more references into something new. Returns CDN URLs with analysis.',

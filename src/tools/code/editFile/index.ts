@@ -16,6 +16,7 @@ import {
 } from './_helpers.js';
 
 export const editFileTool: Tool = {
+  clearable: true,
   definition: {
     name: 'editFile',
     description:

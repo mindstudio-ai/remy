@@ -2,6 +2,7 @@ import type { ToolDefinition } from '../../../api.js';
 import { runCli } from '../../common/runCli.js';
 
 export const definition: ToolDefinition = {
+  clearable: false,
   name: 'searchGoogle',
   description:
     'Search Google for web results. Reserch modern design trends in industries or verticals, "best [domain] apps 2026", ui patterns, or find something specific if the the user has an explicit reference. Searching for and reading case studies is a great way to get information and context about a project\'s domain. Prioritize authoritative sources like Figma and other design leaders, avoid random blog spam. Pick one or more URLs from the results and then use `scrapeWebUrl` to get their text content.',

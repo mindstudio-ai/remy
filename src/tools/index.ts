@@ -47,6 +47,10 @@ export interface ToolExecutionContext {
 
 export interface Tool {
   definition: ToolDefinition;
+  /** Whether results from this tool can be cleared from old turns to save context.
+   * true = results are ephemeral (file contents, diffs, search results, terminal output).
+   * false = results contain decisions, guidance, or user input that should persist. */
+  clearable: boolean;
   execute: (
     input: Record<string, any>,
     context?: ToolExecutionContext,
@@ -158,6 +162,11 @@ const ALL_TOOLS: Tool[] = [
   lspDiagnosticsTool,
   restartProcessTool,
 ];
+
+/** Set of tool names whose results can be cleared from old turns. */
+export const CLEARABLE_TOOLS = new Set(
+  ALL_TOOLS.filter((t) => t.clearable).map((t) => t.definition.name),
+);
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function getTools(_onboardingState: string): Tool[] {

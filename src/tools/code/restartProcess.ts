@@ -4,6 +4,7 @@ import type { Tool } from '../index.js';
 import { lspRequest } from '../_helpers/lsp.js';
 
 export const restartProcessTool: Tool = {
+  clearable: false,
   definition: {
     name: 'restartProcess',
     description:

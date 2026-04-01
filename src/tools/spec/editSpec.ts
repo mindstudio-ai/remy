@@ -10,6 +10,7 @@ import {
 import { unifiedDiff } from '../_helpers/diff.js';
 
 export const editSpecTool: Tool = {
+  clearable: true,
   definition: {
     name: 'editSpec',
     description:

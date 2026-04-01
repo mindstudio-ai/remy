@@ -39,6 +39,7 @@ import { startStatusWatcher } from './statusWatcher.js';
 import { friendlyError } from './errors.js';
 
 import { cleanMessagesForApi } from './subagents/common/cleanMessages.js';
+import { CLEARABLE_TOOLS } from './tools/index.js';
 
 // Content block helpers
 function getTextContent(blocks: ContentBlock[]): string {
@@ -313,7 +314,7 @@ export async function runTurn(params: {
           model,
           requestId,
           system,
-          messages: cleanMessagesForApi(state.messages),
+          messages: cleanMessagesForApi(state.messages, CLEARABLE_TOOLS),
           tools,
           signal,
         },

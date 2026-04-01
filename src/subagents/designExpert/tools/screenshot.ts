@@ -8,6 +8,7 @@ import { analyzeImage } from '../../common/analyzeImage.js';
 import { browserAutomationTool } from '../../browserAutomation/index.js';
 
 export const definition: ToolDefinition = {
+  clearable: true,
   name: 'screenshot',
   description:
     'Capture a full-height screenshot of the current app preview. Returns a CDN URL along with visual analysis. Use to review the current state of the UI being built. Remember, the screenshot analysis is not overly precise - for example, it cannot reliably identify specific fonts by name — it can only describe what letterforms look like.',

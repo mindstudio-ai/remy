@@ -9,6 +9,7 @@
 import type { Tool } from '../index.js';
 
 export const editsFinishedTool: Tool = {
+  clearable: false,
   definition: {
     name: 'editsFinished',
     description:

@@ -70,7 +70,88 @@ function fixOrphanedToolCalls(messages: Message[]): Message[] {
   return result;
 }
 
-export function cleanMessagesForApi(messages: Message[]): Message[] {
+/**
+ * Build a map from tool_use id → tool name by scanning assistant messages.
+ */
+function buildToolNameMap(messages: Message[]): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const msg of messages) {
+    if (msg.role === 'assistant' && Array.isArray(msg.content)) {
+      for (const block of msg.content as ContentBlock[]) {
+        if (block.type === 'tool') {
+          map.set(block.id, block.name);
+        }
+      }
+    }
+  }
+  return map;
+}
+
+/**
+ * Clear old tool results from previous turns to save context space.
+ *
+ * Only clears results from tools marked as clearable. Uses a 2-turn buffer:
+ * the current turn and the previous turn are preserved, everything older
+ * gets cleared.
+ *
+ * Turn boundaries are identified by non-tool-result user messages (i.e.,
+ * messages where the user actually typed something or an automated message
+ * came in, not tool_result messages).
+ */
+function clearOldToolResults(
+  messages: Message[],
+  clearableTools: Set<string>,
+): Message[] {
+  if (clearableTools.size === 0) {
+    return messages;
+  }
+
+  // Find turn boundaries — indices of non-tool-result user messages
+  const turnStarts: number[] = [];
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i];
+    if (msg.role === 'user' && !msg.toolCallId) {
+      turnStarts.push(i);
+    }
+  }
+
+  // Need at least 3 turns to clear anything (2-turn buffer)
+  if (turnStarts.length < 3) {
+    return messages;
+  }
+
+  // Everything before the start of turn N-1 is eligible for clearing
+  const clearBefore = turnStarts[turnStarts.length - 2];
+
+  // Build tool name lookup
+  const toolNames = buildToolNameMap(messages);
+
+  // Clear eligible tool results
+  const result = messages.map((msg, i) => {
+    if (
+      i >= clearBefore ||
+      msg.role !== 'user' ||
+      !msg.toolCallId ||
+      typeof msg.content !== 'string'
+    ) {
+      return msg;
+    }
+
+    const toolName = toolNames.get(msg.toolCallId);
+    if (!toolName || !clearableTools.has(toolName)) {
+      return msg;
+    }
+
+    return { ...msg, content: '[Cleared]' };
+  });
+
+  return result;
+}
+
+export function cleanMessagesForApi(
+  messages: Message[],
+  clearableTools?: Set<string>,
+): Message[] {
   // Find the last conversation summary checkpoint
   const checkpointIdx = findLastSummaryCheckpoint(messages, 'conversation');
 
@@ -95,8 +176,11 @@ export function cleanMessagesForApi(messages: Message[]): Message[] {
     startIdx = checkpointIdx + 1;
   }
 
-  // Fix orphaned tool_use blocks before processing
-  const messagesToProcess = fixOrphanedToolCalls(messages.slice(startIdx));
+  // Fix orphaned tool_use blocks, then clear old tool results
+  let messagesToProcess = fixOrphanedToolCalls(messages.slice(startIdx));
+  if (clearableTools) {
+    messagesToProcess = clearOldToolResults(messagesToProcess, clearableTools);
+  }
 
   // Collect all tool_use IDs present in the post-checkpoint messages
   // so we can detect orphaned tool_results whose tool_use was pruned.

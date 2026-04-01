@@ -9,20 +9,17 @@
 import type { Tool } from '../index.js';
 
 export const setProjectOnboardingStateTool: Tool = {
+  clearable: false,
   definition: {
     name: 'setProjectOnboardingState',
     description:
-      'Advance the project onboarding state. Call at natural transition points: before writing the first spec (initialSpecAuthoring), before starting the first code generation (initialCodegen), after the first build succeeds (onboardingFinished). Forward-only progression.',
+      'Advance the project onboarding state. Call at natural transition points: after writing the first draft of the spec (initialSpecReview), before starting the first code generation (initialCodegen), after the first build succeeds (onboardingFinished). Forward-only progression.',
     inputSchema: {
       type: 'object',
       properties: {
         state: {
           type: 'string',
-          enum: [
-            'initialSpecAuthoring',
-            'initialCodegen',
-            'onboardingFinished',
-          ],
+          enum: ['initialSpecReview', 'initialCodegen', 'onboardingFinished'],
           description: 'The onboarding state to advance to.',
         },
       },

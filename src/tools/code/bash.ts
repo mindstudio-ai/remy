@@ -7,6 +7,7 @@ const DEFAULT_TIMEOUT_MS = 120_000;
 const DEFAULT_MAX_LINES = 500;
 
 export const bashTool: Tool = {
+  clearable: true,
   definition: {
     name: 'bash',
     description:

@@ -2,6 +2,7 @@ import type { ToolDefinition } from '../../../../api.js';
 import { generateImageAssets } from './imageGenerator.js';
 
 export const definition: ToolDefinition = {
+  clearable: false,
   name: 'generateImages',
   description:
     'Generate images. Returns CDN URLs with a quality analysis for each image. Produces high-quality results for everything from photorealistic images and abstract/creative visuals. Pass multiple prompts to generate in parallel. No need to analyze images separately after generating — the analysis is included.',

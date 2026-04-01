@@ -22,6 +22,7 @@ const log = createLogger('headless');
 import { resolveConfig } from './config.js';
 import { buildSystemPrompt } from './prompt/index.js';
 import { compactConversation } from './compaction/index.js';
+import { getToolDefinitions } from './tools/index.js';
 import { setLspBaseUrl } from './tools/_helpers/lsp.js';
 import {
   createAgentState,
@@ -672,7 +673,11 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       } catch {}
       // Run in background — does not block the conversation. Snapshots the
       // current message index and inserts checkpoints there when done.
-      compactConversation(state, config)
+      // Pass the main system prompt and tools so the summarization call
+      // reuses the same prompt cache instead of triggering a full cache miss.
+      const compactSystem = buildSystemPrompt('onboardingFinished');
+      const compactTools = getToolDefinitions('onboardingFinished');
+      compactConversation(state, config, compactSystem, compactTools)
         .then(() => {
           saveSession(state);
           emit('compaction_complete', {}, requestId);

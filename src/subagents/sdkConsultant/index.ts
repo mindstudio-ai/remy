@@ -10,6 +10,7 @@ import type { Tool } from '../../tools/index.js';
 import { runCli } from '../common/runCli.js';
 
 export const askMindStudioSdkTool: Tool = {
+  clearable: false,
   definition: {
     name: 'askMindStudioSdk',
     description:

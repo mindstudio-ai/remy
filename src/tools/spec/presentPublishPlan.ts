@@ -12,6 +12,7 @@
 import type { Tool } from '../index.js';
 
 export const presentPublishPlanTool: Tool = {
+  clearable: false,
   definition: {
     name: 'presentPublishPlan',
     description:

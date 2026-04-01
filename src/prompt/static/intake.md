@@ -42,4 +42,4 @@ Keep chat brief. Your goal is to understand the general idea, not to nail every 
 - Do not try to collect everything through chat. Use forms for structured details — they're less taxing for the user and produce better answers.
 
 **When intake is done:**
-Once you have a clear enough picture (the core data model, the key workflows, who uses it, and which interfaces matter) let them know you're ready to start writing the spec. First, call `setProjectOnboardingState({ state: "initialSpecAuthoring" })` so the editor opens. Then start writing the real spec with `writeSpec`. The user will see it stream in live.
+Once you have a clear enough picture (the core data model, the key workflows, who uses it, which interfaces matter, and how they will be designed/laid out), let the user know you are about to write the spec, and then follow the instructions in <spec_authoring_instructions> to begin writing the spec.

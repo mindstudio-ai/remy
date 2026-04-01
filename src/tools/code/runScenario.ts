@@ -11,6 +11,7 @@
 import type { Tool } from '../index.js';
 
 export const runScenarioTool: Tool = {
+  clearable: true,
   definition: {
     name: 'runScenario',
     description:

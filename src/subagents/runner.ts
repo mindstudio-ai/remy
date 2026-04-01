@@ -108,6 +108,11 @@ export async function runSubAgent(
   });
   const fullSystem = `${system}\n\nCurrent date: ${dateStr}`;
 
+  // Build clearable tool set from subagent's tool definitions
+  const clearableTools = new Set(
+    tools.filter((t) => t.clearable).map((t) => t.name),
+  );
+
   // The core loop
   let turns = 0;
   const run = async (): Promise<SubAgentResult> => {
@@ -181,7 +186,7 @@ export async function runSubAgent(
             requestId,
             subAgentId,
             system: fullSystem,
-            messages: cleanMessagesForApi(messages),
+            messages: cleanMessagesForApi(messages, clearableTools),
             tools,
             signal,
           },

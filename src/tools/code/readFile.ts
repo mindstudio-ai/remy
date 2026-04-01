@@ -20,6 +20,7 @@ function isBinary(buffer: Buffer): boolean {
 }
 
 export const readFileTool: Tool = {
+  clearable: true,
   definition: {
     name: 'readFile',
     description:

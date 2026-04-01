@@ -8,6 +8,7 @@
 import type { Tool } from '../index.js';
 
 export const setProjectMetadataTool: Tool = {
+  clearable: false,
   definition: {
     name: 'setProjectMetadata',
     description:

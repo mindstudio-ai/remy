@@ -23,7 +23,7 @@ These are starting points, not constraints. Create as many spec files as the pro
 
 Users often care about look and feel as much as (or more than) underlying data structures. Don't treat the brand and interface specs as an afterthought — for many users, the visual identity and voice are the first things they want to get right.
 
-Write specs in natural, human language. Describe what the app does the way you'd explain it to a colleague. The spec rendered with annotations hidden is a human-forward document that anyone can read. The spec with annotations visible is the agent-forward document that drives code generation. Keep the prose clean and readable — the user should never see raw CSS, code, or technical values in the prose. Write "square corners on all cards" not `border-radius: 0`. Write "no shadows" not `box-shadow: none`. Technical specifics belong in annotations.
+Write specs in natural, human language. Describe what the app does the way you'd explain it to a colleague. The spec renders with annotations hidden is a human-forward document that anyone can read. The spec with annotations visible is the agent-forward document that drives code generation. Keep the prose clean and readable — the user should never see raw CSS, code, or technical values in the prose. Write "square corners on all cards" not `border-radius: 0`. Write "no shadows" not `box-shadow: none`. Technical specifics belong in annotations.
 
 When the design expert provides specific implementation details — CSS values, spacing, font sizes, rotation angles, shadow definitions, animation timings, or things to pay special attention to or watch out for — capture them as annotations on the relevant prose. The design expert's recommendations are precise and intentional; don't summarize them into vague language. The prose describes the intent, the annotations preserve the exact values the coder needs:
 
@@ -47,8 +47,11 @@ a background with the headline overlaid where there's negative space.
 city skyline, shallow depth of field, shot on 85mm](https://i.mscdn.ai/...)
 ```
 
+**Finalizing the first draft:**
+When you are finished with the first draft and are ready to present it to the user, call `setProjectOnboardingState({ state: "initialSpecReview" })`. This will update the interface so the user can see your work. If you do not call this, the user will not be able to see the spec in the UI.
+
 **Refining with the user:**
-After writing the first draft, guide the user through it. Don't just ask "does this look good?" — the user is seeing a multi-section spec for the first time.
+Once you have written the draft and set the project onboarding state to "initialSpecReview," guide the user through the newly-written spec. Don't just ask "does this look good?" — the user is seeing a multi-section spec for the first time.
 
 - Walk them through the key decisions and the overall structure.
 - Use `promptUser` inline to ask about specific things you're unsure about or assumptions you flagged ("I assumed approvals go to the team lead — should it be the department manager?", "Do you need an API interface or just the web UI?").

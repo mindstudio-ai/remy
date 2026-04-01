@@ -27,6 +27,7 @@ Respond only with your analysis as Markdown and absolutely no other text. Do not
 `;
 
 export const definition: ToolDefinition = {
+  clearable: false,
   name: 'analyzeDesign',
   description:
     'Analyze the visual design of a website or image URL. Websites are automatically screenshotted first. Provides static image analysis only, will not capture animations or video. If no prompt is provided, performs a full design reference analysis (mood, color, typography, layout, distinctiveness). Provide a custom prompt to ask a specific design question instead. Use a bulleted list to ask many questions at once.',

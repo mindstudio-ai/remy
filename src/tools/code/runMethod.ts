@@ -9,6 +9,7 @@
 import type { Tool } from '../index.js';
 
 export const runMethodTool: Tool = {
+  clearable: true,
   definition: {
     name: 'runMethod',
     description:

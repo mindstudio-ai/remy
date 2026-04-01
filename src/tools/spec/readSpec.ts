@@ -7,6 +7,7 @@ import { validateSpecPath } from './_helpers.js';
 const DEFAULT_MAX_LINES = 500;
 
 export const readSpecTool: Tool = {
+  clearable: true,
   definition: {
     name: 'readSpec',
     description:

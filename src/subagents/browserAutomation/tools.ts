@@ -8,6 +8,7 @@ import type { ToolDefinition } from '../../api.js';
 
 export const BROWSER_TOOLS: ToolDefinition[] = [
   {
+    clearable: true,
     name: 'browserCommand',
     description:
       "Interact with the app's live preview by sending browser commands. Commands execute sequentially with an animated cursor. Always start with a snapshot to see the current state and get ref identifiers. The result includes a snapshot field with the final page state after all steps complete. On error, the failing step has an error field and execution stops. Timeout: 120s.",
@@ -96,6 +97,7 @@ export const BROWSER_TOOLS: ToolDefinition[] = [
     },
   },
   {
+    clearable: true,
     name: 'screenshotFullPage',
     description:
       'Capture a full-height screenshot of the current page. Returns a CDN URL with full text analysis and description.',
@@ -111,6 +113,7 @@ export const BROWSER_TOOLS: ToolDefinition[] = [
     },
   },
   {
+    clearable: false,
     name: 'resetBrowser',
     description:
       'Reset the browser to a clean state. Call this once after all tests are complete to restore the preview for the user. Fire and forget — does not wait for the reload to finish.',

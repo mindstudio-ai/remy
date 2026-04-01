@@ -17,6 +17,7 @@
 import type { Tool } from '../index.js';
 
 export const confirmDestructiveActionTool: Tool = {
+  clearable: false,
   definition: {
     name: 'confirmDestructiveAction',
     description:

@@ -9,6 +9,7 @@ import type { Tool } from '../index.js';
 import { runCli } from '../../subagents/common/runCli.js';
 
 export const searchGoogleTool: Tool = {
+  clearable: false,
   definition: {
     name: 'searchGoogle',
     description:

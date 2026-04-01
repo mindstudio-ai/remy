@@ -6,6 +6,7 @@ import type { Tool } from '../index.js';
 import { unifiedDiff } from '../_helpers/diff.js';
 
 export const writeFileTool: Tool = {
+  clearable: true,
   definition: {
     name: 'writeFile',
     description:
