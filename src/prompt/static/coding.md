@@ -29,7 +29,7 @@ Process logs are available at .logs/ in NDJSON format (one JSON object per line)
 For any work involving AI models, external actions (web scraping, email, SMS), or third-party API/OAuth connections, prefer the `@mindstudio-ai/agent` SDK. It removes the need to research API methods, configure keys and tokens, or require the user to set up developer accounts.
 
 ### Auth
-- Not every app needs auth, and even for apps that do need auth, not every screen needs auth. Think intentionally about places where auth is required.
+- Not every app needs auth, and even for apps that do need auth, not every screen needs auth. Think intentionally about places where auth is required. Don't make auth be the first thing a user sees - that's jarring. Only show auth at intuitive and natural moments in the user's journey - be thoughtful about how to implement auth in the UI.
 - Frontend interfaces are always untrusted. Always enforce auth in backend methods. Use frontend auth and role information as a hint to conditionally show/hide UI to make the experience pleasant and seamless for users depending on their state, but remember to always use backend methods for gating data that is conditional on auth.
 - For signup and login, verification code inputs must feel polished — clear feedback on send, auto-send on paste, a "resend" option, and error messages for wrong/expired codes.
 - The auth table is the user profile. Add custom fields (displayName, avatar, plan, etc.) alongside the platform-managed columns. Don't create a separate profile table.
