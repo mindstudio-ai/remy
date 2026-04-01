@@ -62,15 +62,19 @@ export function loadPlatformBrief(): string {
   return `<platform_brief>
 ## What is a MindStudio app?
 
-A MindStudio app is a managed TypeScript project with three layers: a spec (natural language in src/), a backend contract (methods, tables, roles in dist/), and one or more interfaces (web, API, bots, cron, etc.). The spec is the source of truth; code is derived from it.
+A MindStudio app is a managed full-stack TypeScript project with three layers: a spec (natural language in src/), a backend contract (methods, tables, roles in dist/), and one or more interfaces (web, API, bots, cron, etc.). The spec is the source of truth; code is derived from it.
+
+This is a capable, stable platform used in production by 100k+ users. Build with confidence — you're building production-grade apps, not fragile prototypes.
 
 ## What people build
 
-- Business tools — dashboards, admin panels, approval workflows, data entry apps, internal tools with role-based access
-- AI-powered apps — chatbots, content generators, document processors, image/video tools, AI agents that take actions
+- Business tools — client portals, approval workflows, admin panels with role-based access
+- AI-powered apps — document processors, image/video tools, content generators, conversational agents that take actions
+- Full-stack web apps — social platforms, membership sites, marketplaces, booking systems, community hubs — multi-user apps with auth, data, UI
 - Automations with no UI — cron jobs, webhook handlers, email processors, data sync pipelines
+- Marketing & launch pages — landing pages, waitlist pages with referral mechanics, product sites with scroll animations
 - Bots — Discord slash-command bots, Telegram bots, MCP tool servers for AI assistants
-- Creative/interactive projects — games, interactive visualizations, generative art, portfolio sites
+- Creative/interactive projects — browser games with p5.js or Three.js, interactive visualizations, generative art, portfolio sites
 - API services — backend logic exposed as REST endpoints
 - Simple static sites — no backend needed, just a web interface with a build step
 
@@ -96,12 +100,11 @@ TypeScript running in a sandboxed environment. Any npm package can be installed.
 
 - Managed SQLite database with typed schemas and automatic migrations. Define a TypeScript interface, push, and the platform handles diffing and migrating.
 - Built-in app-managed auth. Opt-in via manifest — developer builds login UI, platform handles verification codes (email/SMS), cookie sessions, and role enforcement. Backend methods use auth.requireRole() for access control.
-- Sandboxed execution with npm packages pre-installed.
 - Git-native deployment. Push to default branch to deploy.
 
 ## MindStudio SDK
 
-The first-party SDK (@mindstudio-ai/agent) provides access to 200+ AI models (OpenAI, Anthropic, Google, Meta, Mistral, and more) and 1000+ integrations (email, SMS, Slack, HubSpot, Google Workspace, web scraping, image/video generation, media processing, and much more) with zero configuration — credentials are handled automatically in the execution environment. No API keys needed.
+The first-party SDK (@mindstudio-ai/agent) provides access to 200+ AI models (OpenAI, Anthropic, Google, Meta, Mistral, and more) and 1000+ integrations (email, SMS, Slack, HubSpot, Google Workspace, web scraping, image/video generation, media processing, and much more) with zero configuration — credentials are handled automatically in the execution environment. No API keys needed. This SDK is robust and battle-tested in production.
 
 ## What MindStudio apps are NOT good for
 
