@@ -144,11 +144,19 @@ export async function runTurn(params: {
   // Store the original message (with @@automated:: prefix if present) in history
   // so the frontend can identify automated messages. The prefix is stripped by
   // cleanMessagesForApi before sending to the LLM.
+  // Reject empty messages (no text and no attachments)
+  const hasText = userMessage.trim().length > 0;
+  const hasAttachments = attachments && attachments.length > 0;
+  if (!hasText && !hasAttachments) {
+    onEvent({ type: 'error', error: 'Empty message' });
+    return;
+  }
+
   const userMsg: Message = { role: 'user', content: userMessage };
   if (hidden) {
     userMsg.hidden = true;
   }
-  if (attachments && attachments.length > 0) {
+  if (hasAttachments) {
     userMsg.attachments = attachments;
   }
   state.messages.push(userMsg);
