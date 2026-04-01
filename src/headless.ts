@@ -321,8 +321,8 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     const rid = currentRequestId;
 
     switch (e.type) {
-      // Suppressed — caller already knows the request started
       case 'turn_started':
+        emit('turn_started', {}, rid);
         return;
 
       // Terminal events — translate to `completed`
