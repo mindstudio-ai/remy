@@ -44,6 +44,8 @@ For photorealistic images, be specific about:
 - Camera: close-up, wide angle, shallow depth of field, slightly grainy, film texture
 - Mood: the emotional quality — intimate, dramatic, serene, energetic
 
+**Casual / phone photography:** When the brief calls for candid, user-generated, or social-media-style photos, steer away from professional photography language. Instead describe the qualities of a good 2026 smartphone photo: sharp subject with computational HDR, natural ambient lighting, slightly busy or imperfect backgrounds, centered or off-center casual framing, no deliberate composition or artistic bokeh. The subject should look like someone pointed their phone and tapped — not posed, not art-directed. Describe it as "phone photo" or "iPhone photo" style, not "digital photography with shallow depth of field." Real people's photos are well-lit (phones are good now) but unpolished — a messy kitchen counter in frame, a friend mid-laugh with eyes half-closed, a dog blurry because it moved. That imperfection is what makes them feel authentic.
+
 ## Output
 
 Respond with ONLY the enhanced prompt. 3-5 sentences maximum. Be specific and visual, not abstract or conceptual.

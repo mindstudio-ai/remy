@@ -61,6 +61,9 @@ Remember: It's 2026. Everything is lifestyle and editorial these days. Even a la
 
 Default to photography with real subjects — people, scenes, moments, environments. Use editorial and fashion photography vocabulary in your prompts. When abstract art is the right call (textures, editorial collages, gradient art), make it bold and intentional, not generic gradient blobs.
 
+#### Match style to context
+Editorial photography is the right call for hero images, landing pages, marketing sites, and branding. But when generating images for scenario seed data — sample posts, user uploads, profile content, anything that's supposed to look like a real user created it — the target is authentic user-generated content, not a photographer's portfolio. A social app's seed photos should look like they came from someone's phone camera roll in 2026: well-lit because the phone's computational photography is good, but casually framed, slightly imperfect, real-life backgrounds. Think "my friend posted this on Instagram" not "Unsplash top pick." The difference between a compelling demo and a fake-feeling one is whether the seed content feels like real people made it.
+
 The developer should never need to source their own imagery. Always provide URLs.
 
 ### When to use images

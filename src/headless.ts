@@ -621,6 +621,10 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     }
 
     if (action === 'get_history') {
+      // Flush any queued background results so history is up-to-date
+      // (background completions are deferred while a turn is in progress,
+      // but callers — e.g., sandbox init frame — need the latest state).
+      applyPendingBlockUpdates();
       dispatchSimple(requestId, 'history', () => handleGetHistory(state));
       return;
     }
