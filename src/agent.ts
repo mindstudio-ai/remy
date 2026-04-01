@@ -124,6 +124,11 @@ export async function runTurn(params: {
   } = params;
   const tools = getToolDefinitions(onboardingState);
 
+  // Tools whose results should NOT be cleared by server-side context management
+  const excludeToolsFromClearing = tools
+    .filter((t) => !CLEARABLE_TOOLS.has(t.name))
+    .map((t) => t.name);
+
   log.info('Turn started', {
     requestId,
     model,
@@ -314,8 +319,9 @@ export async function runTurn(params: {
           model,
           requestId,
           system,
-          messages: cleanMessagesForApi(state.messages, CLEARABLE_TOOLS),
+          messages: cleanMessagesForApi(state.messages),
           tools,
+          excludeToolsFromClearing,
           signal,
         },
         {

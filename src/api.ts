@@ -145,6 +145,8 @@ export async function* streamChat(params: {
   maxTokens?: number;
   temperature?: number;
   config?: Record<string, any>;
+  /** Tool names whose results should NOT be cleared by server-side context management. */
+  excludeToolsFromClearing?: string[];
   subAgentId?: string;
   requestId?: string;
   signal?: AbortSignal;

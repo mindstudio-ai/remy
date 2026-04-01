@@ -108,10 +108,10 @@ export async function runSubAgent(
   });
   const fullSystem = `${system}\n\nCurrent date: ${dateStr}`;
 
-  // Build clearable tool set from subagent's tool definitions
-  const clearableTools = new Set(
-    tools.filter((t) => t.clearable).map((t) => t.name),
-  );
+  // Tools whose results should NOT be cleared by server-side context management
+  const excludeToolsFromClearing = tools
+    .filter((t) => t.clearable === false)
+    .map((t) => t.name);
 
   // The core loop
   let turns = 0;
@@ -186,8 +186,9 @@ export async function runSubAgent(
             requestId,
             subAgentId,
             system: fullSystem,
-            messages: cleanMessagesForApi(messages, clearableTools),
+            messages: cleanMessagesForApi(messages),
             tools,
+            excludeToolsFromClearing,
             signal,
           },
           {
