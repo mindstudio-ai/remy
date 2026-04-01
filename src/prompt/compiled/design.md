@@ -73,12 +73,26 @@ Buttons should use a small animated spinner during loading, not text labels like
 
 ## Data Fetching and Updates
 
-The UI should feel instant. Never make the user wait for a server round-trip to see the result of their own action.
+The UI should feel instant. Never make the user wait for a server round-trip to see the result of their own action. Consider loading a bunch of data in one API call, rather than a bunch of small calls (e.g., if loading a post, also preload comments, likes, user artifacts, etc - don't use separate API calls for each GET).
 
 - **Optimistic updates.** When a user adds a row, toggles a setting, or submits a form, update the UI immediately and let the backend confirm in the background. If the backend fails, revert and show an error.
 - **Use SWR for data fetching** (`useSWR` from the `swr` package). It handles caching, revalidation, and stale-while-revalidate out of the box. Prefer SWR over manual `useEffect` + `useState` fetch patterns.
 - **Mutate after actions.** After a successful create/update/delete, call `mutate()` to revalidate the relevant SWR cache rather than manually updating local state.
 - **Skeleton loading.** Show skeletons that mirror the layout on initial load. Never show a blank page or centered spinner while data is loading.
+
+## Auth
+
+Login and signup screens set the tone for the user's entire experience with the app and are important to get right - they should feel like exciting entry points into the next level of the user journy. A janky login form with misaligned inputs and no feedback dminishes excitement and undermines trust before the user even gets in.
+
+Authentication moments must feel natural and intuitive - they should not feel jarring or surprising. Take care to integrate them into the entire experience when building. MindStudio apps support SMS code verification, email verification, or both, depending on how the app is configured.
+
+**Verification code input:** The 6-digit code entry is the critical moment. Prefer to design it as individual digit boxes (not a single text input), with auto-advance between digits, auto-submit on paste, and clear visual feedback. The boxes should be large enough to tap easily on mobile. Show a subtle animation on successful verification. Error states should be inline and immediate, not a separate alert.
+
+**The send/resend flow:** After the user enters their email or phone and taps "Send code," show clear confirmation that the code was sent ("Check your email" with the address displayed). Include a resend option with a cooldown timer (e.g., "Resend in 30s"). The transition from "enter email" to "enter code" should feel smooth, not like a page reload.
+
+**The overall login page:** This is a branding moment. Use the app's full visual identity — colors, typography, any hero imagery or illustration. A centered card on a branded background is a classic pattern. Don't make it look like a generic SaaS login template. The login page should feel like it belongs to this specific app.
+
+**Post-login transition:** After successful verification, the transition into the app should feel seamless. Avoid a blank loading screen — if data needs to load, show the app shell with skeleton states.
 
 ## FTUE
 
