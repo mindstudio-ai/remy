@@ -146,6 +146,7 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
   // Guard: runTurn may or may not emit turn_done/turn_cancelled. We track
   // whether a terminal `completed` was already sent so we emit exactly one.
   let completedEmitted = false;
+  let turnStart = 0;
 
   // ---------------------------------------------------------------------------
   // External tool results — keyed by tool call id.
@@ -344,7 +345,11 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
         try {
           writeFileSync('.remy-stats.json', JSON.stringify(sessionStats));
         } catch {}
-        emit('completed', { success: true }, rid);
+        emit(
+          'completed',
+          { success: true, durationMs: Date.now() - turnStart },
+          rid,
+        );
         // Apply queued background mutations and flush results
         // (deferred to next tick so `running` is cleared first)
         setTimeout(() => {
@@ -498,7 +503,7 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     currentRequestId = requestId;
     currentAbort = new AbortController();
     completedEmitted = false;
-    const turnStart = Date.now();
+    turnStart = Date.now();
 
     const attachments = parsed.attachments as
       | import('./api.js').Attachment[]
