@@ -27,6 +27,7 @@ These are things we already know about and have decided to accept:
   - react-textarea-autosize
 - Preferences:
   - use [wouter](https://github.com/molefrog/wouter) for React routing instead of reaching for react-router
+  - uploading user files should mostly always happen via @mindstudio-ai/interface's platform.uploadFile() - it does the whole signed S3 upload dance and returns a permanent CDN url, including query-string-resizable images, videos + auto-thumbnails, etc.
 
 ### Common pitfalls (always flag these)
 

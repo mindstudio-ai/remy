@@ -142,6 +142,7 @@ You can use the `screenshotFullPage` tool to take a full-height screenshot of th
   - The snapshot in the response is always the most current page state. Even if a wait times out, check the snapshot field; the content you were waiting for may have appeared by then.
   - Execution stops on first error. If step 2 of 5 fails, steps 3-5 don't run. The response will contain results for steps 0-2 (with step 2 having an error field) plus the current snapshot. Adjust and retry from the failed step.
   - Always call `resetBrowser` as your final action after all tests are complete. This restores the preview to a clean state for the user.
+  - If something fails, bail early. Do not attempt to diagnose why; do not do things like attempt different inputs to try to work around an error - just report the failure and early return.
 </rules>
 
 <voice>
