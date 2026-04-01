@@ -14,7 +14,7 @@ export const askMindStudioSdkTool: Tool = {
   definition: {
     name: 'askMindStudioSdk',
     description:
-      '@mindstudio-ai/agent SDK expert. Knows every action, model, connector, and configuration option. Returns architectural guidance and working code. Describe what you want to build, not just what API method you need. Batch related questions into a single query.',
+      '@mindstudio-ai/agent backend SDK expert. Knows every backend action, AI model, connector, and configuration option. Returns architectural guidance and working code. Only covers the backend SDK (@mindstudio-ai/agent) — do NOT use for frontend/interface SDK questions (@mindstudio-ai/interface) like file uploads, auth, or client-side APIs. Describe what you want to build, not just what API method you need. Batch related questions into a single query.',
     inputSchema: {
       type: 'object',
       properties: {

@@ -95,7 +95,7 @@ Each interface type invokes the same backend methods. Methods don't know which i
 TypeScript running in a sandboxed environment. Any npm package can be installed. Key capabilities:
 
 - Managed SQLite database with typed schemas and automatic migrations. Define a TypeScript interface, push, and the platform handles diffing and migrating.
-- Built-in role-based auth. Define roles in the manifest, gate methods with auth.requireRole(). Platform handles sessions, tokens, user resolution.
+- Built-in app-managed auth. Opt-in via manifest — developer builds login UI, platform handles verification codes (email/SMS), cookie sessions, and role enforcement. Backend methods use auth.requireRole() for access control.
 - Sandboxed execution with npm packages pre-installed.
 - Git-native deployment. Push to default branch to deploy.
 

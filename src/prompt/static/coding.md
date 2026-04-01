@@ -35,5 +35,8 @@ For any work involving AI models, external actions (web scraping, email, SMS), o
 - The auth table is the user profile. Add custom fields (displayName, avatar, plan, etc.) alongside the platform-managed columns. Don't create a separate profile table.
 - For apps with roles, create scenarios that seed users with different roles so the developer can test each perspective. Use the scenario `roles` field for impersonation.
 
+### Build Notes
+For complex builds that span many files — especially an initial buildout from a spec — write a `.remy-notes.md` scratchpad in the project root. Use it to record decisions, keep a checklist of tasks, and reference data you'll need across multiple tool calls: design tokens, color values, typography specs, image URLs, what's been built so far, what's left. Read it back instead of restating everything in your messages. Delete it when the build is done. Don't use this for small changes or single-file edits.
+
 ### Dependencies
 Before installing a package you haven't used in this project, do a quick web search to confirm it's still the best option. The JavaScript ecosystem moves fast — the package you remember from training may have been superseded by something smaller, faster, or better maintained. A 10-second search beats debugging a deprecated library.
