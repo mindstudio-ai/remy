@@ -1,4 +1,5 @@
 import { readJsonAsset } from '../../../assets.js';
+import { pickByIndices } from './sampleCache.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -13,34 +14,17 @@ interface InspirationEntry {
 // Data (loaded once at module init)
 // ---------------------------------------------------------------------------
 
-const inspirationImages = readJsonAsset(
+export const inspirationImages = readJsonAsset(
   { images: [] as InspirationEntry[] },
   'subagents/designExpert/data/sources/inspiration.json',
 ).images;
 
 // ---------------------------------------------------------------------------
-// Sampling
-// ---------------------------------------------------------------------------
-
-/** Pick n random items from an array (Fisher-Yates). */
-function sample<T>(arr: T[], n: number): T[] {
-  if (arr.length <= n) {
-    return [...arr];
-  }
-  const copy = [...arr];
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy.slice(0, n);
-}
-
-// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
-export function getDesignReferencesSample(): string {
-  const images = sample(inspirationImages, 25);
+export function getDesignReferencesSample(indices: number[]): string {
+  const images = pickByIndices(inspirationImages, indices);
 
   if (!images.length) {
     return '';

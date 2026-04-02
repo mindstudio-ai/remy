@@ -2,16 +2,25 @@
  * System prompt for the design expert sub-agent.
  *
  * Assembles the prompt from markdown templates (prompts/) and injects
- * fresh random samples of fonts and inspiration images on each call.
- * Also injects current spec files so the agent has project context.
+ * session-stable samples of fonts and inspiration images. Samples are
+ * generated once per session and persisted to .remy-design-sample.json
+ * so the design expert has a consistent aesthetic frame of reference
+ * across calls (and prompt caching stays effective).
  */
 
 import fs from 'node:fs';
 import { readAsset } from '../../assets.js';
 import { loadSpecContext } from '../common/context.js';
-import { getFontLibrarySample } from './data/getFontLibrarySample.js';
-import { getDesignReferencesSample } from './data/getDesignReferencesSample.js';
-import { getUiInspirationSample } from './data/getUiInspirationSample.js';
+import { getSampleIndices } from './data/sampleCache.js';
+import { getFontLibrarySample, fontData } from './data/getFontLibrarySample.js';
+import {
+  getDesignReferencesSample,
+  inspirationImages,
+} from './data/getDesignReferencesSample.js';
+import {
+  getUiInspirationSample,
+  uiScreens,
+} from './data/getUiInspirationSample.js';
 
 const SUBAGENT = 'subagents/designExpert';
 
@@ -37,18 +46,38 @@ const PROMPT_TEMPLATE = readAsset(SUBAGENT, 'prompt.md')
 // ---------------------------------------------------------------------------
 
 /**
- * Build the design research prompt with fresh random samples.
- * Call per invocation, not once at init.
+ * Build the design research prompt with session-stable samples.
+ * Call per invocation — samples are stable across calls within a session.
  */
 export function getDesignExpertPrompt(): string {
   const specContext = loadSpecContext();
 
+  // Get or create stable sample indices for this session
+  const indices = getSampleIndices(
+    {
+      uiInspiration: uiScreens.length,
+      designReferences: inspirationImages.length,
+      fonts: fontData.fonts.length,
+    },
+    {
+      uiInspiration: 50,
+      designReferences: 50,
+      fonts: 50,
+    },
+  );
+
   let prompt = PROMPT_TEMPLATE.replace(
     '{{font_library}}',
-    getFontLibrarySample(),
+    getFontLibrarySample(indices.fonts),
   )
-    .replace('{{visual_design_references}}', getDesignReferencesSample())
-    .replace('{{ui_case_studies}}', getUiInspirationSample());
+    .replace(
+      '{{visual_design_references}}',
+      getDesignReferencesSample(indices.designReferences),
+    )
+    .replace(
+      '{{ui_case_studies}}',
+      getUiInspirationSample(indices.uiInspiration),
+    );
 
   prompt += '\n\n<!-- cache_breakpoint -->';
   if (specContext) {

@@ -1,4 +1,5 @@
 import { readJsonAsset } from '../../../assets.js';
+import { pickByIndices } from './sampleCache.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -13,34 +14,17 @@ interface UiScreenEntry {
 // Data (loaded once at module init)
 // ---------------------------------------------------------------------------
 
-const uiScreens = readJsonAsset(
+export const uiScreens = readJsonAsset(
   { screens: [] as UiScreenEntry[] },
   'subagents/designExpert/data/sources/ui_inspiration_compiled.json',
 ).screens;
 
 // ---------------------------------------------------------------------------
-// Sampling
-// ---------------------------------------------------------------------------
-
-/** Pick n random items from an array (Fisher-Yates). */
-function sample<T>(arr: T[], n: number): T[] {
-  if (arr.length <= n) {
-    return [...arr];
-  }
-  const copy = [...arr];
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy.slice(0, n);
-}
-
-// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
-export function getUiInspirationSample(): string {
-  const screens = sample(uiScreens, 25);
+export function getUiInspirationSample(indices: number[]): string {
+  const screens = pickByIndices(uiScreens, indices);
 
   if (!screens.length) {
     return '';

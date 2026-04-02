@@ -51,11 +51,12 @@ For photorealistic images, be specific about:
 For app icons and logos, the goal is something that reads clearly at small sizes and feels polished enough to sit on a home screen or in an app header.
 
 - Frame as "A 3D icon against a white background:" followed by the subject. Do NOT use the phrase "app icon" — it triggers mockup framing (the model renders an icon inset on a phone screen or mounted on a wall). "3D icon" works.
-- Describe smooth, rounded, simplified 3D objects — think current macOS/iOS app icon design language. Clean surfaces, soft lighting, gentle shadows. Not flat illustration, not photorealistic, not clay/matte.
-- Subjects should be chunky, toy-like, and immediately recognizable. Prefer one clear object or symbol, not a scene. Simplify aggressively — detail that looks good at 1024px becomes mud at 64px.
+- Think current macOS/iOS app icon design language. Polished surfaces, crisp geometry, specular highlights, tight controlled gradients. The dimensionality comes from lighting and material quality.
+- One clear object or symbol, not a scene. Simplify aggressively — detail that looks good at 1024px becomes mud at 64px.
 - Specify "reads well at small sizes" as an explicit constraint.
 - Keep color intentional and limited — two or three accent colors plus the object's base tone. Colors should complement the app's brand if known.
-- Always use transparent background for icons and logos.
+- **App icons** should be full-bleed squares with a solid background — no transparency, no baked-in rounded corners. The OS applies its own mask (squircle, rounded rect, circle) so the asset must fill the entire frame edge-to-edge.
+- **Logos and icons used inside the product** (headers, splash screens, favicons) should use transparent backgrounds so they composite onto any layout.
 
 ## Output
 
