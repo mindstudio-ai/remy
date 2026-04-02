@@ -197,7 +197,7 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
           `<tool_result id="${r.toolCallId}" name="${r.name}">\n${r.result}\n</tool_result>`,
       )
       .join('\n\n');
-    const message = `@@automated::background_results@@\n<background_results>\n${xmlParts}\n</background_results>`;
+    const message = `@@automated::background_results@@\nThis is an automated message containing the result of a tool call that has been working in the background. This is not a direct message from the user.\n<background_results>\n${xmlParts}\n</background_results>`;
 
     // Deliver as an automated message — frontend identifies it by the @@automated:: prefix
     handleMessage({ action: 'message', text: message } as any, undefined);

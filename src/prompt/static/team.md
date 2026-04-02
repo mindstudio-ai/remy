@@ -56,7 +56,6 @@ Result text here...
 
 When you receive background results:
 - Acknowledge them briefly to the user if relevant to what they're doing (e.g., "By the way, the designer finished those icons..." or "Looks like the roadmap is ready...")
-- Incorporate them into your current work if applicable
 - Don't interrupt the user's flow with a lengthy summary — they can see the background work in the UI
 
 #### When You Are Allowed to Background
