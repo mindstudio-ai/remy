@@ -58,6 +58,13 @@ export const browserAutomationTool: Tool = {
       return 'Error: could not check browser status. The dev environment may not be running.';
     }
 
+    // Reset browser to clean state before the test
+    try {
+      await sidecarRequest('/reset-browser', {}, { timeout: 5000 });
+    } catch {
+      // Non-fatal — proceed with the test
+    }
+
     const result = await runSubAgent({
       system: getBrowserAutomationPrompt(),
       task: input.task,
@@ -72,14 +79,6 @@ export const browserAutomationTool: Tool = {
             });
           } catch (err: any) {
             return `Error taking screenshot: ${err.message}`;
-          }
-        }
-        if (name === 'resetBrowser') {
-          try {
-            await sidecarRequest('/reset-browser', {}, { timeout: 5000 });
-            return 'Browser reset triggered.';
-          } catch {
-            return 'Error: could not reset browser.';
           }
         }
         return `Error: unknown local tool "${name}"`;
@@ -147,6 +146,14 @@ export const browserAutomationTool: Tool = {
       },
       toolRegistry: context.toolRegistry,
     });
+
+    // Reset browser after the test so the next session starts clean
+    try {
+      await sidecarRequest('/reset-browser', {}, { timeout: 5000 });
+    } catch {
+      // Non-fatal
+    }
+
     context.subAgentMessages?.set(context.toolCallId, result.messages);
     return result.text;
   },

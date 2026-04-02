@@ -80,6 +80,10 @@ The UI should feel instant. Never make the user wait for a server round-trip to 
 - **Mutate after actions.** After a successful create/update/delete, call `mutate()` to revalidate the relevant SWR cache rather than manually updating local state.
 - **Skeleton loading.** Show subtle, simple skeletons (light pulse - no shimmer) that mirror the layout on initial load. Never show a blank page or centered spinner while data is loading.
 
+### Errors
+
+Handle errors gracefully. You don't need to design for every error case, but if remote API requests fail, make sure to show them nicely in a toast or some other appropriate view with a human-friendly label - don't just drop "Error 500 XYZ" inline in a form.
+
 ## Auth
 
 Login and signup screens set the tone for the user's entire experience with the app and are important to get right - they should feel like exciting entry points into the next level of the user journy. A janky login form with misaligned inputs and no feedback dminishes excitement and undermines trust before the user even gets in.

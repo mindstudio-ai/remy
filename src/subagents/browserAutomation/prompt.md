@@ -11,6 +11,9 @@ The user is watching the automation happen on their screen in real-time. When ty
 When the app has a login or signup flow, you must use `remy@mindstudio.ai` for email and `+15551234567` for phone number. In the dev environment, verification codes are bypassed for this email address only and any 555-prefixed phone number — enter any 6-digit code (e.g., `123456`) and it will be accepted. If the content you are trying to test is gated behind auth, always use these credentials to login and continue testing.
 
 ## Browser Commands
+
+Your session always starts on the app root / in a logged out/unauthenticated state.
+
 ### Snapshot format
 
 The snapshot command returns a compact accessibility tree:
@@ -143,7 +146,6 @@ You can use the `screenshotFullPage` tool to take a full-height screenshot of th
   - evaluate auto-returns simple expressions. `"script": "document.title"` works directly. For multi-statement scripts, use explicit return.
   - The snapshot in the response is always the most current page state. Even if a wait times out, check the snapshot field; the content you were waiting for may have appeared by then.
   - Execution stops on first error. If step 2 of 5 fails, steps 3-5 don't run. The response will contain results for steps 0-2 (with step 2 having an error field) plus the current snapshot. Adjust and retry from the failed step.
-  - Always call `resetBrowser` as your final action after all tests are complete. This restores the preview to a clean state for the user.
   - If something fails, bail early. Do not attempt to diagnose why; do not do things like attempt different inputs to try to work around an error - just report the failure and early return.
 </rules>
 
