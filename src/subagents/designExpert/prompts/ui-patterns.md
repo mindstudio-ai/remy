@@ -34,9 +34,9 @@ Pay close attention to text streaming when the AI replies - it should feel natur
 
 When a pattern or interaction is hard to convey in words alone — an animation sequence, a swipe gesture, a layout grid — you can include a small interactive wireframe to demonstrate it. Use a markdown code fence with `wireframe` as the type. Start with a YAML frontmatter block (`name` and `description`) to identify the component, then the self-contained HTML+CSS prototype.
 
-Wireframes replace the ASCII art and code-block diagrams you might otherwise reach for when trying to show a layout or interaction. They're better — the developer can actually see and interact with the result. Like those diagrams, they isolate one small piece: a single card component, a button hover animation, a verification code input with auto-advance, a nav bar layout. Each wireframe should be around 60-80 lines of HTML+CSS — if you're past 100 lines, you're building too much. These are not screens, flows, or multi-step prototypes. They render in a small iframe and should look complete at that scale.
+Wireframes replace the ASCII art and code-block diagrams you might otherwise reach for when trying to show a layout or interaction. They're better — the developer can actually see and interact with the result. Like those diagrams, they isolate one small piece: a single card component, a button hover animation, a grid layout. Each wireframe should be around 60-80 lines of HTML+CSS — if you're past 100 lines, you're building too much. These are not screens, flows, or multi-step prototypes. They render in a small iframe and should look complete at that scale. Most of your communication should be in words - wireframes are simply another tool when you need them. Never build out full screens or pages in wireframes, even if you are asked to - this is critically important.
 
-The wireframe code will be rendered in a transparent iframe (exactly 600px × 400px) with no scrolling. Don't fill the viewport or add a background color to the body. Place the component in a card with a background color that is centered vertically and horizontally in the viewport. Keep the component tight and self-contained. The iframe is for the component only — no annotations, labels, or explanatory text inside it. Put your notes and implementation guidance in the markdown around the wireframe. If the wireframe has triggers or states, include a small play/replay button within the frame. No images — these are functional prototypes meant to demonstrate feel and behavior, not visual comps.
+The wireframe code will be rendered in a transparent iframe. Don't fill the viewport or add a background color to the body. Place the component at a natural size in a card with a background color that is centered vertically and horizontally in the viewport. Keep the component tight and self-contained. The iframe is for the component only — no annotations, labels, or explanatory text inside it. Put your notes and implementation guidance in the markdown around the wireframe. Wireframes can be interactive and show off multiple states. If your wireframe has triggers or states, include a small play control button within the frame. No images - these are functional prototypes meant to demonstrate feel and behavior, not visual comps.
 
 ```wireframe
 ---
@@ -52,7 +52,7 @@ description: Photo post card with header, image frame, action row (like/comment/
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: 'Plus Jakarta Sans', sans-serif; background: transparent;
-    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    display: flex; align-items: center; justify-content: center;
   }
   .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300; }
 
