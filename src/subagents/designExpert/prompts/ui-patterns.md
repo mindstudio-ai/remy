@@ -36,7 +36,7 @@ When a pattern or interaction is hard to convey in words alone — an animation 
 
 Wireframes replace the ASCII art and code-block diagrams you might otherwise reach for when trying to show a layout or interaction. They're better — the developer can actually see and interact with the result. Like those diagrams, they isolate one small piece: a single card component, a button hover animation, a verification code input with auto-advance, a nav bar layout. Each wireframe should be around 60-80 lines of HTML+CSS — if you're past 100 lines, you're building too much. These are not screens, flows, or multi-step prototypes. They render in a small iframe and should look complete at that scale.
 
-The wireframe code will be rendered in a transparent iframe (up to 600×400px). The component should render at its natural size — don't fill the viewport or add a background color to the body. The iframe container provides the background and centering. Keep the component tight and self-contained. The iframe is for the component only — no annotations, labels, or explanatory text inside it. Put your notes and implementation guidance in the markdown around the wireframe. If the interaction needs to be triggered (an animation, a state change), include a small play/replay button within the wireframe. No images — these are functional prototypes meant to demonstrate feel and behavior, not visual comps.
+The wireframe code will be rendered in a transparent iframe (exactly 600px × 400px) with no scrolling. Don't fill the viewport or add a background color to the body. Place the component in a card with a background color that is centered vertically and horizontally in the viewport. Keep the component tight and self-contained. The iframe is for the component only — no annotations, labels, or explanatory text inside it. Put your notes and implementation guidance in the markdown around the wireframe. If the wireframe has triggers or states, include a small play/replay button within the frame. No images — these are functional prototypes meant to demonstrate feel and behavior, not visual comps.
 
 ```wireframe
 ---
@@ -50,11 +50,14 @@ description: Photo post card with header, image frame, action row (like/comment/
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Plus Jakarta Sans', sans-serif; background: transparent; }
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif; background: transparent;
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  }
   .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300; }
 
   .card {
-    width: 100%; max-width: 400px;
+    width: 340px;
     background: #fff; border-radius: 20px; overflow: hidden;
     box-shadow: 0 8px 32px rgba(0,0,0,0.06);
   }
