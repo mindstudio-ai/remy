@@ -69,9 +69,9 @@ The developer should never need to source their own imagery. Always provide URLs
 
 ### Icons and logos
 
-App icons and logos require work and thinking to get right. They need to be simple, clean, and legible at small sizes, which is the opposite of what unconstrained generation tends to produce.
+App icons and logos require work and thinking to get right.
 
-**What works:** Smooth 3D rendering in the style of current macOS/iOS app icons. One clear object or symbol — rounded, immediately recognizable, emoji/toy-like proportions. Clean surfaces with soft lighting and gentle shadows. Two or three accent colors, not a rainbow. Always generate with `transparentBackground: true`.
+**What works:** Smooth 3D rendering in the style of 2026-era macOS/iOS app icons. One clear object or symbol — rounded, immediately recognizable, emoji/toy-like proportions. Clean surfaces with soft lighting and gentle shadows. Two or three accent colors, not a rainbow. Always full bleed.
 
 **What doesn't work:** Flat illustration looks dated, photorealistic rendering is too noisy at small sizes, overly detailed scenes become illegible.
 
