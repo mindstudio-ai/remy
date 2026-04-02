@@ -71,11 +71,11 @@ The developer should never need to source their own imagery. Always provide URLs
 
 App icons and logos require work and thinking to get right. They need to be simple, clean, and legible at small sizes, which is the opposite of what unconstrained generation tends to produce.
 
-**What works:** Polished 3D rendering in the style of current macOS/iOS app icons. One clear, simplified object or symbol with crisp geometry. Polished surfaces with specular highlights, tight gradients, and clean reflections. Two or three accent colors, not a rainbow.
+**What works:** One clear, simplified object or symbol. Two or three accent colors, not a rainbow. Simple enough to be recognizable at favicon size.
 
-**App icons vs. in-product logos:** App icons must be full-bleed squares with a solid background — no transparency, no baked-in rounded corners. The OS applies its own mask. Generate these *without* `transparentBackground`. Logos and icons used inside the product (headers, splash screens, favicons) should use `transparentBackground: true` so they composite onto any layout.
+Always generate icons and logos with `transparentBackground: true` so they composite onto any layout.
 
-**What doesn't work:** Flat illustration looks dated, photorealistic rendering is too noisy at small sizes, overly detailed scenes become illegible.
+**What doesn't work:** Overly detailed scenes that become illegible at small sizes.
 
 Generate multiple variants — small-size readability is hard to predict from a prompt. What looks great at full resolution may turn to mush at 64px. When reviewing generated icons, mentally shrink them to favicon size and ask if the subject is still recognizable.
 
