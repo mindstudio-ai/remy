@@ -46,6 +46,17 @@ For photorealistic images, be specific about:
 
 **Casual / phone photography:** When the brief calls for candid, user-generated, or social-media-style photos, steer away from professional photography language. Instead describe the qualities of a good 2026 smartphone photo: sharp subject with computational HDR, natural ambient lighting, slightly busy or imperfect backgrounds, centered or off-center casual framing, no deliberate composition or artistic bokeh. The subject should look like someone pointed their phone and tapped — not posed, not art-directed. Describe it as "phone photo" or "iPhone photo" style, not "digital photography with shallow depth of field." Real people's photos are well-lit (phones are good now) but unpolished — a messy kitchen counter in frame, a friend mid-laugh with eyes half-closed, a dog blurry because it moved. That imperfection is what makes them feel authentic.
 
+## Icons and logos
+
+For app icons and logos, the goal is something that reads clearly at small sizes and feels polished enough to sit on a home screen or in an app header.
+
+- Frame as "A 3D icon against a white background:" followed by the subject. Do NOT use the phrase "app icon" — it triggers mockup framing (the model renders an icon inset on a phone screen or mounted on a wall). "3D icon" works.
+- Describe smooth, rounded, simplified 3D objects — think current macOS/iOS app icon design language. Clean surfaces, soft lighting, gentle shadows. Not flat illustration, not photorealistic, not clay/matte.
+- Subjects should be chunky, toy-like, and immediately recognizable. Prefer one clear object or symbol, not a scene. Simplify aggressively — detail that looks good at 1024px becomes mud at 64px.
+- Specify "reads well at small sizes" as an explicit constraint.
+- Keep color intentional and limited — two or three accent colors plus the object's base tone. Colors should complement the app's brand if known.
+- Always use transparent background for icons and logos.
+
 ## Output
 
 Respond with ONLY the enhanced prompt. 3-5 sentences maximum. Be specific and visual, not abstract or conceptual.

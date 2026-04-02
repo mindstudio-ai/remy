@@ -149,7 +149,7 @@ import { auth } from '@mindstudio-ai/agent';
 
 ### `auth.requireRole(...roles)`
 
-Throws 403 if the current user doesn't have **any** of the specified roles.
+Throws 401 (unauthenticated) if there is no current user. Throws 403 (forbidden) if the current user doesn't have **any** of the specified roles.
 
 ```typescript
 auth.requireRole('admin');
@@ -162,7 +162,7 @@ Returns `boolean`. Same logic as `requireRole` but doesn't throw.
 
 ### `auth.userId`
 
-The current user's ID (the row ID in the auth table). Always available when auth is enabled.
+The current user's ID (the row ID in the auth table), or `null` for unauthenticated requests. Check for null before using in database queries when the method might be called without auth.
 
 ### `auth.roles`
 
@@ -221,7 +221,7 @@ import { auth } from '@mindstudio-ai/agent';
 import { Users } from './tables/users';
 
 export async function getDashboard() {
-  const user = await Users.get(auth.userId);
+  const user = auth.userId ? await Users.get(auth.userId) : null;
 
   if (auth.hasRole('admin')) {
     const allUsers = await Users.toArray();

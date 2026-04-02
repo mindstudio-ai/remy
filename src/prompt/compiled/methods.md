@@ -100,8 +100,8 @@ const { markdown } = await agent.scrapeUrl({
   url: 'https://example.com',
 });
 
-// Look up a user from your auth table
-const user = await Users.get(auth.userId);
+// Look up a user from your auth table (auth.userId is null if unauthenticated)
+const user = auth.userId ? await Users.get(auth.userId) : null;
 ```
 
 No separate API keys needed — the platform routes to the correct provider (OpenAI, Anthropic, Google, etc.) automatically.
@@ -127,7 +127,7 @@ export async function approveVendor(input: { vendorId: string }) {
 }
 ```
 
-`auth.requireRole()` throws a 403 automatically if the user doesn't have the required role.
+`auth.requireRole()` throws 401 if unauthenticated, 403 if the user doesn't have the required role.
 
 ## Common Patterns
 
@@ -159,8 +159,8 @@ export async function deleteVendor(input: { vendorId: string }) {
   const vendor = await Vendors.get(input.vendorId);
   if (!vendor) throw new Error('Vendor not found.');
 
-  await Vendors.remove(input.vendorId);
-  return { success: true };
+  const { deleted } = await Vendors.remove(input.vendorId);
+  return { deleted };
 }
 ```
 

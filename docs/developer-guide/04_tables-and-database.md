@@ -117,9 +117,14 @@ The conflict key must match a declared `unique` constraint on the table. Throws 
 
 ### Reading Records
 
+All read methods return lazy `Query` objects — nothing executes until `await`. Every read method (including `get()`, `findOne()`, `count()`, etc.) is batchable via `db.batch()`.
+
 ```typescript
 // By ID
 const vendor = await Vendors.get('uuid-here');  // Vendor | null
+
+// All rows
+const allVendors = await Vendors.toArray();
 
 // Find one matching a predicate
 const first = await Vendors.findOne(v => v.status === 'approved');
@@ -134,13 +139,15 @@ const results = await Vendors
   .skip(10)
   .take(5);
 
-// Aggregates
+// Aggregates — all return Query objects (batchable)
 const count = await Vendors.count();
 const any = await Vendors.some(v => v.status === 'pending');
-const all = await Vendors.every(v => v.status !== 'rejected');
-const empty = await Vendors.isEmpty();
 const cheapest = await Vendors.min(v => v.totalCents);
 const grouped = await Vendors.groupBy(v => v.status);
+
+// These two return Promises directly (not batchable)
+const all = await Vendors.every(v => v.status !== 'rejected');
+const empty = await Vendors.isEmpty();
 ```
 
 ### Updating Records
@@ -156,14 +163,14 @@ const updated = await Vendors.update(vendor.id, {
 ### Deleting Records
 
 ```typescript
-// Delete by ID
-await Vendors.remove(vendor.id);
+// Delete by ID — returns { deleted: boolean }
+const { deleted } = await Vendors.remove(vendor.id);
 
 // Delete all matching a predicate — returns count
 const count = await Vendors.removeAll(v => v.status === 'rejected');
 
-// Delete everything
-await Vendors.clear();
+// Delete everything — returns count of deleted rows
+const cleared = await Vendors.clear();
 ```
 
 ### Filter Predicates
@@ -229,14 +236,20 @@ const user = await Users.upsert('email', data).catch(err => {
 });
 ```
 
+Write methods throw `MindStudioError` with specific codes:
+- `push()` → `'insert_failed'` (500) if the insert returns no row
+- `update()` → `'row_not_found'` (404) if the ID doesn't exist
+- `upsert()` → `'missing_conflict_key'` (400) if the conflict column is missing from the data, `'no_unique_constraint'` (400) if no matching unique constraint is declared
+
 ### Batch Queries
 
-Execute multiple queries in a single HTTP round-trip. All query and mutation types work in batches, including `upsert()`:
+`db.batch()` combines multiple operations into a single HTTP round-trip. Almost all read methods return batchable `Query` objects — including `get()`, `findOne()`, `count()`, `some()`, `min()`, `max()`, and `groupBy()`. The exceptions are `every()` and `isEmpty()`, which return Promises directly and cannot be batched. All write mutations are also batchable.
 
 ```typescript
-const [vendors, orders] = await db.batch(
-  Vendors.filter(v => v.status === 'approved'),
+const [vendor, orders, pendingCount] = await db.batch(
+  Vendors.get(vendorId),
   PurchaseOrders.filter(po => po.vendorId === vendorId),
+  PurchaseOrders.count(po => po.status === 'pending'),
 );
 ```
 

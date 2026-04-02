@@ -113,6 +113,7 @@ import { lspDiagnosticsTool } from './code/lspDiagnostics.js';
 import { restartProcessTool } from './code/restartProcess.js';
 import { runScenarioTool } from './code/runScenario.js';
 import { runMethodTool } from './code/runMethod.js';
+import { queryDatabaseTool } from './code/queryDatabase.js';
 import { screenshotTool } from './code/screenshot.js';
 import { browserAutomationTool } from '../subagents/browserAutomation/index.js';
 import { designExpertTool } from '../subagents/designExpert/index.js';
@@ -156,6 +157,7 @@ const ALL_TOOLS: Tool[] = [
   editsFinishedTool,
   runScenarioTool,
   runMethodTool,
+  queryDatabaseTool,
   screenshotTool,
   browserAutomationTool,
   // LSP

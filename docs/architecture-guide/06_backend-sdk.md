@@ -120,11 +120,11 @@ const vendor = await Vendors.push({ name: 'Acme', status: 'pending' });
 const updated = await Vendors.update(vendor.id, { status: 'approved' });
 // updated.updated_at is bumped
 
-await Vendors.remove(vendor.id);
+const { deleted } = await Vendors.remove(vendor.id); // { deleted: boolean }
 
-const count = await Vendors.removeAll(v => v.status === 'rejected');
+const count = await Vendors.removeAll(v => v.status === 'rejected'); // number
 
-await Vendors.clear(); // delete all rows
+const cleared = await Vendors.clear(); // number (count deleted)
 ```
 
 Batch insert:
@@ -217,7 +217,7 @@ import { auth, Roles } from '@mindstudio-ai/agent';
 
 ### Properties
 
-- `auth.userId` — current user's ID
+- `auth.userId` — current user's ID (`string | null`)
 - `auth.roles` — array of role names for the current user
 
 ### Methods
@@ -226,7 +226,7 @@ import { auth, Roles } from '@mindstudio-ai/agent';
 auth.hasRole('admin')              // boolean — has ANY of the given roles
 auth.hasRole('admin', 'manager')   // true if user has admin OR manager
 
-auth.requireRole('admin')          // throws 403 if user lacks the role
+auth.requireRole('admin')          // throws 401 if unauthenticated, 403 if user lacks the role
 auth.requireRole('admin', 'ap')    // throws if user has NONE of the roles
 
 const userIds = await auth.getUsersByRole('admin')  // all users with this role

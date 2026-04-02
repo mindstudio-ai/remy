@@ -142,9 +142,14 @@ The conflict key must match a declared `unique` constraint on the table. Throws 
 
 ### Reading Records
 
+All read methods return lazy `Query` objects — nothing executes until `await`. Every read method (including `get()`, `findOne()`, `count()`, etc.) is batchable via `db.batch()`.
+
 ```typescript
 // By ID
 const vendor = await Vendors.get('uuid-here');  // Vendor | null
+
+// All rows
+const allVendors = await Vendors.toArray();
 
 // Find one matching a predicate
 const first = await Vendors.findOne(v => v.status === 'approved');
@@ -159,13 +164,15 @@ const results = await Vendors
   .skip(10)
   .take(5);
 
-// Aggregates
+// Aggregates — all return Query objects (batchable)
 const count = await Vendors.count();
 const any = await Vendors.some(v => v.status === 'pending');
-const all = await Vendors.every(v => v.status !== 'rejected');
-const empty = await Vendors.isEmpty();
 const cheapest = await Vendors.min(v => v.totalCents);
 const grouped = await Vendors.groupBy(v => v.status);
+
+// These two return Promises directly (not batchable)
+const all = await Vendors.every(v => v.status !== 'rejected');
+const empty = await Vendors.isEmpty();
 ```
 
 ### Updating Records
@@ -181,9 +188,9 @@ const updated = await Vendors.update(vendor.id, {
 ### Deleting Records
 
 ```typescript
-await Vendors.remove(vendor.id);                                    // by ID
-const count = await Vendors.removeAll(v => v.status === 'rejected'); // by predicate
-await Vendors.clear();                                               // delete all
+const { deleted } = await Vendors.remove(vendor.id);                 // { deleted: boolean }
+const count = await Vendors.removeAll(v => v.status === 'rejected'); // number (count removed)
+const cleared = await Vendors.clear();                               // number (count deleted)
 ```
 
 ### Filter Predicates
@@ -234,6 +241,11 @@ const user = await Users.upsert('email', data).catch(err => {
 });
 ```
 
+Write methods throw `MindStudioError` with specific codes:
+- `push()` → `'insert_failed'` (500) if the insert returns no row
+- `update()` → `'row_not_found'` (404) if the ID doesn't exist
+- `upsert()` → `'missing_conflict_key'` (400) if the conflict column is missing from the data, `'no_unique_constraint'` (400) if no matching unique constraint is declared
+
 ### Batching
 
 `db.batch()` combines multiple operations into a single HTTP round-trip. Every `await` on a table operation is a network call, so batching is critical for performance. Use it whenever you have multiple reads, writes, or a mix of both. `upsert()` works in batches just like `push()` and `update()`:
@@ -262,7 +274,7 @@ const [_, newOrder, pending] = await db.batch(
 
 **Always batch instead of sequential awaits.** A loop with `await Table.update()` inside makes N separate HTTP calls. Mapping to mutations and passing them to `db.batch()` makes one.
 
-**Note:** `Table.get(id)` is a direct async method that returns `Promise<T | null>` — it does not return a `Query` and cannot be passed to `db.batch()`. To batch a get-by-id, use `Table.filter(row => row.id === someId).first()` instead, which returns a batchable `Query`.
+**Note:** Almost all read methods return batchable `Query` objects — including `get()`, `findOne()`, `count()`, `some()`, `min()`, `max()`, and `groupBy()`. The exceptions are `every()` and `isEmpty()`, which return Promises directly and cannot be batched.
 
 ## Migrations
 

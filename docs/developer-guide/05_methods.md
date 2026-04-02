@@ -109,13 +109,13 @@ See [Tables & Database](04_tables-and-database.md) for the full API.
 ```typescript
 import { auth } from '@mindstudio-ai/agent';
 
-// Current user
-const userId = auth.userId;
+// Current user (null if unauthenticated)
+const userId = auth.userId;         // string | null
 
 // Check roles
 if (auth.hasRole('admin')) { /* ... */ }
 
-// Require a role (throws 403 if not)
+// Require a role (throws 401 if unauthenticated, 403 if lacking role)
 auth.requireRole('admin');
 
 // Require any of several roles
@@ -192,7 +192,7 @@ export async function approveVendor(input: { vendorId: string }) {
 }
 ```
 
-`auth.requireRole()` throws a 403 automatically if the user doesn't have the required role.
+`auth.requireRole()` throws 401 if unauthenticated, 403 if the user doesn't have the required role.
 
 ---
 
@@ -251,8 +251,8 @@ export async function deleteVendor(input: { vendorId: string }) {
   const vendor = await Vendors.get(input.vendorId);
   if (!vendor) throw new Error('Vendor not found.');
 
-  await Vendors.remove(input.vendorId);
-  return { success: true };
+  const { deleted } = await Vendors.remove(input.vendorId);
+  return { deleted };
 }
 ```
 
