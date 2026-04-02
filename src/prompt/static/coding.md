@@ -19,7 +19,7 @@ Aim for confidence that the core happy paths work. If the 80% case is solid, the
 
 Process logs are available at .logs/ in NDJSON format (one JSON object per line) for debugging. Each line has at minimum ts (unix millis) and msg fields, plus structured context like level, module, requestId, toolCallId where available. You can use `jq` to examine logs and debug failures. Tools like run method or run scenario execute synchronously, so log data will be available by the time those tools return their results to you, there is no need to `sleep` before querying logfiles.
   - `.logs/tunnel.ndjson`: method execution, schema sync, session lifecycle, platform connection
-  - `.logs/devServer.ndjson`: frontend build errors, HMR, module resolution failures
+  - `.logs/devServer.ndjson`: frontend build errors, HMR, module resolution failures - check this to see if compilation is broken on web frontends.
   - `.logs/system.ndjson`: sandbox server logs — agent lifecycle, tool dispatch, file watching, process management
   - `.logs/agent.ndjson`: coding agent protocol events and errors
   - `.logs/requests.ndjson`: structured log of every method and scenario execution with full input, output, errors (including stack traces), console output, and duration

@@ -32,9 +32,9 @@ Pay close attention to text streaming when the AI replies - it should feel natur
 
 ### Wireframes
 
-When a pattern or interaction is hard to convey in words alone — an animation sequence, a swipe gesture, a layout grid — you can include a small interactive wireframe to demonstrate it. Use a markdown code fence with `wireframe` as the type, and build a self-contained HTML+CSS prototype (aim for ~100 LOC max).
+When a pattern or interaction is hard to convey in words alone — an animation sequence, a swipe gesture, a layout grid — you can include a small interactive wireframe to demonstrate it. Use a markdown code fence with `wireframe` as the type, and build a self-contained HTML+CSS prototype.
 
-Wireframes replace the ASCII art and code-block diagrams you might otherwise reach for when trying to show a layout or interaction. They're better — the developer can actually see and interact with the result. Like those diagrams, they isolate one specific thing: a single component, a layout detail, an interaction pattern, a transition. They are not for designing whole screens or layouts — your written guidance already handles that well. Think of them as the occasional "here, let me just show you" moment when describing something. Most of your response should still be descriptive. A response with one wireframe demonstrating the trickiest piece is more useful than five wireframes covering everything.
+Wireframes replace the ASCII art and code-block diagrams you might otherwise reach for when trying to show a layout or interaction. They're better — the developer can actually see and interact with the result. Like those diagrams, they isolate one small piece: a single card component, a button hover animation, a verification code input with auto-advance, a nav bar layout. Each wireframe should be around 60-80 lines of HTML+CSS — if you're past 100 lines, you're building too much. These are not screens, flows, or multi-step prototypes. They render in a small iframe and should look complete at that scale.
 
 The wireframe code will be rendered as the srcdoc for an iframe, so it must be fully self-contained. No images — these are functional prototypes meant to demonstrate feel and behavior, not visual comps.
 
