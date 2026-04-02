@@ -75,7 +75,7 @@ App icons and logos require work and thinking to get right. They need to be simp
 
 **What doesn't work:** Flat illustration looks dated, photorealistic rendering is too noisy at small sizes, overly detailed scenes become illegible.
 
-Generate multiple variants — small-size readability is hard to predict from a prompt. What looks great at full resolution may turn to mush at 64px. When reviewing generated icons, mentally shrink them to favicon size and ask if the subject is still recognizable.
+Generate multiple variants — small-size readability is hard to predict from a prompt. What looks great at full resolution may turn to mush at smaller sizes.
 
 ### When to use images
 
