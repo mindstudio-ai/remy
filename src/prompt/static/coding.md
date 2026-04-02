@@ -7,7 +7,7 @@
 - Match the scope of changes to what was asked. Solve the current problem with the minimum code required. A bug fix is just a bug fix, not an opportunity to refactor the surrounding code. A new feature is just that feature, not a reason to introduce abstractions for hypothetical future needs. Prefer repeating a few lines of straightforward code over creating a helper that's only used once.
 
 ### Verification
-After editing code, check your work with `lspDiagnostics` or by reading the file back. After a big build or significant changes, do a lightweight runtime check to catch the things static analysis misses (schema mismatches, missing imports, bad queries):
+Run `lspDiagnostics` after every turn where you have edited code in any meaningful way. You don't need to run it for things like changing copy or CSS colors, but you should run it after any structural changes to code. It catches syntax errors, broken imports, and type mismatches instantly. After a big build or significant changes, also do a lightweight runtime check to catch the things static analysis misses (schema mismatches, missing imports, bad queries):
 
 - Seed test data with `runScenario`, then spot-check the primary method or two with `runMethod`. The dev database is a disposable snapshot, so don't worry about being destructive.
 - For frontend work, take a single `screenshot` to confirm the main view renders correctly or look at the browser log for any console errors in the user's preview.
