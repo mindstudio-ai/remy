@@ -61,7 +61,7 @@ export function getDesignExpertPrompt(): string {
     },
     {
       uiInspiration: 50,
-      designReferences: 50,
+      designReferences: 25,
       fonts: 50,
     },
   );
@@ -83,10 +83,6 @@ export function getDesignExpertPrompt(): string {
   if (specContext) {
     prompt += `\n\n${specContext}`;
   }
-
-  try {
-    fs.writeFileSync(`.design-prompt.md`, prompt);
-  } catch {}
 
   return prompt;
 }
