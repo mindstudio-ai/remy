@@ -19,7 +19,7 @@ The dev session gets its own database — a snapshot of the live database at ses
 - **Truncate** — keep the schema, delete all row data (used by scenarios for a clean canvas)
 - **Schema sync** — add a field to a table interface and it's immediately available in dev
 
-The dev database is disposable. Experiment freely — there's no risk of breaking anything.
+The dev database is disposable. Experiment freely — there's no risk of breaking anything. Just be considerate that the user may have created their own data (user rows or other data) while testing, and it might be frustrating for them to have it wiped.
 
 ### Debugging
 

@@ -20,6 +20,20 @@ import { createLogger } from '../../logger.js';
 
 const log = createLogger('browser-automation');
 
+// Session lock — only one browser automation session at a time.
+// The browser is a single physical resource; concurrent sessions corrupt each other.
+let lockQueue: Promise<void> = Promise.resolve();
+
+function acquireBrowserLock(): Promise<() => void> {
+  let release!: () => void;
+  const next = new Promise<void>((res) => {
+    release = res;
+  });
+  const wait = lockQueue;
+  lockQueue = next;
+  return wait.then(() => release);
+}
+
 export const browserAutomationTool: Tool = {
   clearable: true,
   definition: {
@@ -44,117 +58,122 @@ export const browserAutomationTool: Tool = {
       return 'Error: browser automation requires execution context (only available in headless mode)';
     }
 
-    // Check if the browser preview is connected before spinning up the sub-agent
+    const release = await acquireBrowserLock();
     try {
-      const status = await sidecarRequest(
-        '/browser-status',
-        {},
-        { timeout: 5000 },
-      );
-      if (!status.connected) {
-        return 'Error: the browser preview is not connected. The user needs to open the preview before browser tests can run.';
+      // Check if the browser preview is connected before spinning up the sub-agent
+      try {
+        const status = await sidecarRequest(
+          '/browser-status',
+          {},
+          { timeout: 5000 },
+        );
+        if (!status.connected) {
+          return 'Error: the browser preview is not connected. The user needs to open the preview before browser tests can run.';
+        }
+      } catch {
+        return 'Error: could not check browser status. The dev environment may not be running.';
       }
-    } catch {
-      return 'Error: could not check browser status. The dev environment may not be running.';
-    }
 
-    // Reset browser to clean state before the test
-    try {
-      await sidecarRequest('/reset-browser', {}, { timeout: 5000 });
-    } catch {
-      // Non-fatal — proceed with the test
-    }
+      // Reset browser to clean state before the test
+      try {
+        await sidecarRequest('/reset-browser', {}, { timeout: 5000 });
+      } catch {
+        // Non-fatal — proceed with the test
+      }
 
-    const result = await runSubAgent({
-      system: getBrowserAutomationPrompt(),
-      task: input.task,
-      tools: BROWSER_TOOLS,
-      externalTools: BROWSER_EXTERNAL_TOOLS,
-      executeTool: async (name, _input, _toolCallId, onLog) => {
-        if (name === 'screenshotFullPage') {
-          try {
-            return await captureAndAnalyzeScreenshot({
-              path: _input.path as string | undefined,
-              onLog,
-            });
-          } catch (err: any) {
-            return `Error taking screenshot: ${err.message}`;
-          }
-        }
-        return `Error: unknown local tool "${name}"`;
-      },
-      apiConfig: context.apiConfig,
-      model: context.model,
-      subAgentId: 'browserAutomation',
-      signal: context.signal,
-      parentToolId: context.toolCallId,
-      requestId: context.requestId,
-      onEvent: context.onEvent,
-      resolveExternalTool: async (id, name, input) => {
-        if (!context.resolveExternalTool) {
-          return 'Error: no external tool resolver';
-        }
-        const result = await context.resolveExternalTool(id, name, input);
-
-        // Auto-analyze screenshotViewport results in browserCommand results
-        if (name === 'browserCommand') {
-          try {
-            const parsed = JSON.parse(result);
-            const screenshotSteps = (parsed.steps || []).filter(
-              (s: any) => s.command === 'screenshotViewport' && s.result?.url,
-            );
-            if (screenshotSteps.length > 0) {
-              const batchInput = screenshotSteps.map((s: any) => ({
-                stepType: 'analyzeImage',
-                step: {
-                  imageUrl: s.result.url,
-                  prompt: SCREENSHOT_ANALYSIS_PROMPT,
-                },
-              }));
-              const batchResult = await runCli(
-                `mindstudio batch --no-meta ${JSON.stringify(JSON.stringify(batchInput))}`,
-                { timeout: 200_000 },
-              );
-              try {
-                const analyses = JSON.parse(batchResult);
-                let ai = 0;
-                for (const step of parsed.steps) {
-                  if (
-                    step.command === 'screenshotViewport' &&
-                    step.result?.url &&
-                    ai < analyses.length
-                  ) {
-                    step.result.analysis =
-                      analyses[ai]?.output?.analysis ||
-                      analyses[ai]?.output ||
-                      '';
-                    ai++;
-                  }
-                }
-              } catch {
-                log.debug('Failed to parse batch analysis result', {
-                  batchResult,
-                });
-              }
-              return JSON.stringify(parsed);
+      const result = await runSubAgent({
+        system: getBrowserAutomationPrompt(),
+        task: input.task,
+        tools: BROWSER_TOOLS,
+        externalTools: BROWSER_EXTERNAL_TOOLS,
+        executeTool: async (name, _input, _toolCallId, onLog) => {
+          if (name === 'screenshotFullPage') {
+            try {
+              return await captureAndAnalyzeScreenshot({
+                path: _input.path as string | undefined,
+                onLog,
+              });
+            } catch (err: any) {
+              return `Error taking screenshot: ${err.message}`;
             }
-          } catch {
-            // Not JSON or no screenshots — return as-is
           }
-        }
-        return result;
-      },
-      toolRegistry: context.toolRegistry,
-    });
+          return `Error: unknown local tool "${name}"`;
+        },
+        apiConfig: context.apiConfig,
+        model: context.model,
+        subAgentId: 'browserAutomation',
+        signal: context.signal,
+        parentToolId: context.toolCallId,
+        requestId: context.requestId,
+        onEvent: context.onEvent,
+        resolveExternalTool: async (id, name, input) => {
+          if (!context.resolveExternalTool) {
+            return 'Error: no external tool resolver';
+          }
+          const result = await context.resolveExternalTool(id, name, input);
 
-    // Reset browser after the test so the next session starts clean
-    try {
-      await sidecarRequest('/reset-browser', {}, { timeout: 5000 });
-    } catch {
-      // Non-fatal
+          // Auto-analyze screenshotViewport results in browserCommand results
+          if (name === 'browserCommand') {
+            try {
+              const parsed = JSON.parse(result);
+              const screenshotSteps = (parsed.steps || []).filter(
+                (s: any) => s.command === 'screenshotViewport' && s.result?.url,
+              );
+              if (screenshotSteps.length > 0) {
+                const batchInput = screenshotSteps.map((s: any) => ({
+                  stepType: 'analyzeImage',
+                  step: {
+                    imageUrl: s.result.url,
+                    prompt: SCREENSHOT_ANALYSIS_PROMPT,
+                  },
+                }));
+                const batchResult = await runCli(
+                  `mindstudio batch --no-meta ${JSON.stringify(JSON.stringify(batchInput))}`,
+                  { timeout: 200_000 },
+                );
+                try {
+                  const analyses = JSON.parse(batchResult);
+                  let ai = 0;
+                  for (const step of parsed.steps) {
+                    if (
+                      step.command === 'screenshotViewport' &&
+                      step.result?.url &&
+                      ai < analyses.length
+                    ) {
+                      step.result.analysis =
+                        analyses[ai]?.output?.analysis ||
+                        analyses[ai]?.output ||
+                        '';
+                      ai++;
+                    }
+                  }
+                } catch {
+                  log.debug('Failed to parse batch analysis result', {
+                    batchResult,
+                  });
+                }
+                return JSON.stringify(parsed);
+              }
+            } catch {
+              // Not JSON or no screenshots — return as-is
+            }
+          }
+          return result;
+        },
+        toolRegistry: context.toolRegistry,
+      });
+
+      // Reset browser after the test so the next session starts clean
+      try {
+        await sidecarRequest('/reset-browser', {}, { timeout: 5000 });
+      } catch {
+        // Non-fatal
+      }
+
+      context.subAgentMessages?.set(context.toolCallId, result.messages);
+      return result.text;
+    } finally {
+      release();
     }
-
-    context.subAgentMessages?.set(context.toolCallId, result.messages);
-    return result.text;
   },
 };

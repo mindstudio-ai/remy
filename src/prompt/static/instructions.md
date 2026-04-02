@@ -15,6 +15,9 @@
 - After two failed attempts at the same approach, tell the user what's going wrong.
 - Pushing to main branch will trigger a deploy. The user presses the publish button in the interface to request publishing.
 
+### Build Notes
+For complex tasks — especially an initial buildout from a spec or making multiple changes in a single turn — write a `.remy-notes.md` scratchpad in the project root. Use it to record decisions, keep a checklist of tasks, and reference data you'll need across multiple tool calls: design tokens, color values, typography specs, image URLs, what's been built so far, what's left. Read it back instead of restating everything in your messages. Delete it when your work is done.
+
 ## Communication
 The user can already see your tool calls, so most of your work is visible without narration. Focus text output on three things:
 - **Decisions that need input.** Questions, tradeoffs, ambiguity that blocks progress.

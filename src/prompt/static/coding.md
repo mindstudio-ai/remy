@@ -9,7 +9,7 @@
 ### Verification
 Run `lspDiagnostics` after every turn where you have edited code in any meaningful way. You don't need to run it for things like changing copy or CSS colors, but you should run it after any structural changes to code. It catches syntax errors, broken imports, and type mismatches instantly. After a big build or significant changes, also do a lightweight runtime check to catch the things static analysis misses (schema mismatches, missing imports, bad queries):
 
-- Seed test data with `runScenario`, then spot-check the primary method or two with `runMethod`. The dev database is a disposable snapshot, so don't worry about being destructive.
+- Spot-check methods with `runMethod`. The dev database is a disposable snapshot that will have been seeded with scenario data, so don't worry about being destructive.
 - For frontend work, take a single `screenshot` to confirm the main view renders correctly or look at the browser log for any console errors in the user's preview.
 - Use `runAutomatedBrowserTest` to verify an interactive flow that you can't confirm from a screenshot, or when the user reports something broken that you can't identify from code alone.
 
@@ -37,9 +37,6 @@ For any work involving AI models, external actions (web scraping, email, SMS), o
 
 ### State Management
 - Calls to methods introduce latency. When building web frontends that load data from methods, consider front-loading as much data as you can in a single API request - e.g., when possible, load a large data object into a central store and use that to render sub-screens in an app, rather than an API call on every screen.
-
-### Build Notes
-For complex builds that span many files — especially an initial buildout from a spec — write a `.remy-notes.md` scratchpad in the project root. Use it to record decisions, keep a checklist of tasks, and reference data you'll need across multiple tool calls: design tokens, color values, typography specs, image URLs, what's been built so far, what's left. Read it back instead of restating everything in your messages. Delete it when the build is done. Don't use this for small changes or single-file edits.
 
 ### Dependencies
 Before installing a package you haven't used in this project, do a quick web search to confirm it's still the best option. The JavaScript ecosystem moves fast — the package you remember from training may have been superseded by something smaller, faster, or better maintained. A 10-second search beats debugging a deprecated library.

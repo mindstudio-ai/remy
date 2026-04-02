@@ -96,11 +96,13 @@ Shared setup code can go in `dist/methods/.scenarios/_helpers/`.
 ## How Scenarios Run
 
 When a scenario runs, the platform:
-1. **Truncates** all tables (deletes all rows, preserves schema)
+1. **Truncates** all tables (deletes all rows, preserves schema - unless skipTruncate is true)
 2. **Executes** the seed function (your `db.push()` calls populate the clean database)
 3. **Impersonates** the roles from the scenario's `roles` field (the app renders from that user's perspective)
 
 This is deterministic — same scenario always produces the same state.
+
+Scenarios are useful for seeding initial app state after build for testing, as well as to give the user a first impression of an app that is already filled with data and looks and feels usable. The user can choose to run further scenarios after initial build by clicking the Scenarios tab and selecting a scenario to run.
 
 ## Scenario Data
 
