@@ -26,7 +26,7 @@ Interfaces run fullscreen in the user's browser or a wrapped webview mobile app.
 
 Layout shift is never acceptable. Elements jumping around as content loads or streams in makes an interface feel broken.
 
-- Reserve space for content that hasn't arrived yet. Use fixed/min-height containers, skeletons, or aspect-ratio boxes.
+- Reserve space for content that hasn't arrived yet. Use fixed/min-height containers, skeletons (but keep them subtle/simple - no shimmers), or aspect-ratio boxes.
 - Images must always have explicit dimensions so the browser reserves space before the image loads.
 - Loading-to-loaded transitions should swap content in-place without changing container size.
 - Buttons must not change size during loading states. Use a fixed width or `min-width`, and swap the label for a spinner or short text that fits the same space. "Submit" becoming "Submitting..." should not make the button wider and push adjacent elements around.
@@ -55,6 +55,6 @@ Every interface must work on both desktop and mobile.
 - **Avoid components from different visual languages.** Rounded buttons next to square inputs, shadows mixed with flat design. Instead: pick one system and apply it consistently.
 - **Avoid long scrolling forms with no visual grouping.** Instead: group fields into sections with clear headings, cards, or stepped flows.
 - **Avoid cramped layouts.** Text pressed against edges, no room to breathe. Instead: generous padding, comfortable margins, let the content float.
-- **Avoid loading states that are just a centered spinner on a blank page.** Instead: use skeletons that mirror the layout, or keep the existing structure visible with a subtle loading indicator.
+- **Avoid loading states that are just a centered spinner on a blank page.** Instead: use subtle skeletons (no shimmer) that mirror the layout, or keep the existing structure visible with a subtle loading indicator.
 
 Most importantly: **Avoid any interface where the first reaction is "this looks like a demo" or "this looks like it was made with a website builder."**

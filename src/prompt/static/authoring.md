@@ -61,7 +61,7 @@ When you are finished with the first draft and are ready to present it to the us
 Once you have written the draft and set the project onboarding state to "initialSpecReview," guide the user through the newly-written spec. Don't just ask "does this look good?" — the user is seeing a multi-section spec for the first time.
 
 - Walk them through the key decisions and the overall structure.
-- Use `promptUser` inline to ask about specific things you're unsure about or assumptions you flagged ("I assumed approvals go to the team lead — should it be the department manager?", "Do you need an API interface or just the web UI?").
+- Flag specific things you're unsure about or assumptions you flagged ("I assumed approvals go to the team lead — should it be the department manager?", "Do you need an API interface or just the web UI?").
 - When the user gives feedback, update the spec and briefly describe what you changed. Don't silently edit.
 - Look for gaps: is it clear what information the app stores? What happens in each step of the workflow? Who can do what? What happens when something goes wrong? How does the user actually interact with it?
 - Recommend annotations where things could be interpreted multiple ways.

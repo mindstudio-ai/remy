@@ -30,7 +30,7 @@ Interfaces run fullscreen in the user's browser or a wrapped webview mobile app.
 
 Layout shift is never acceptable. Elements jumping around as content loads or streams in makes an interface feel broken.
 
-- Reserve space for content that hasn't arrived yet. Use fixed/min-height containers, skeletons, or aspect-ratio boxes.
+- Reserve space for content that hasn't arrived yet. Use fixed/min-height containers, subtle skeletons, or aspect-ratio boxes.
 - Images must always have explicit dimensions so the browser reserves space before the image loads.
 - Loading-to-loaded transitions should swap content in-place without changing container size.
 - Buttons must not change size during loading states. Use a fixed width or `min-width`, and swap the label for a spinner or short text that fits the same space. "Submit" becoming "Submitting..." should not make the button wider and push adjacent elements around.
@@ -78,7 +78,7 @@ The UI should feel instant. Never make the user wait for a server round-trip to 
 - **Optimistic updates.** When a user adds a row, toggles a setting, or submits a form, update the UI immediately and let the backend confirm in the background. If the backend fails, revert and show an error.
 - **Use SWR for data fetching** (`useSWR` from the `swr` package). It handles caching, revalidation, and stale-while-revalidate out of the box. Prefer SWR over manual `useEffect` + `useState` fetch patterns.
 - **Mutate after actions.** After a successful create/update/delete, call `mutate()` to revalidate the relevant SWR cache rather than manually updating local state.
-- **Skeleton loading.** Show skeletons that mirror the layout on initial load. Never show a blank page or centered spinner while data is loading.
+- **Skeleton loading.** Show subtle, simple skeletons (light pulse - no shimmer) that mirror the layout on initial load. Never show a blank page or centered spinner while data is loading.
 
 ## Auth
 
