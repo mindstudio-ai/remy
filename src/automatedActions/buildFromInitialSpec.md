@@ -6,7 +6,9 @@ This is an automated action triggered by the user pressing "Build" in the editor
 
 The user has reviewed the spec and is ready to build. 
 
-Think about your approach and then get a quick sanity check from `codeSanityCheck` to make sure you aren't missing anything. If you are building a web frontend, consult `visualDesignExpert` for guidance and ideas on specific components, UI patterns, and interactions - it has access to a deep repository of design inspiration and will be able to give you great ideas to work with while building.
+Think about your approach and then get a quick sanity check from `codeSanityCheck` to make sure you aren't missing anything. 
+
+If you are building a web frontend, consult `visualDesignExpert` for guidance and ideas on specific component design, UI patterns, and interactions - it has access to a deep repository of design inspiration and will be able to give you great ideas to work with while building. Don't ask it to design full screens - focus on specific components, moments, and concepts where its ideas can be additive and transformative, you already have the basic design and layout guidance from the spec.
 
 Then, build everything in one turn: methods, tables, interfaces, manifest updates, and scenarios, using the spec as the master plan. Be sure to delete any unnecessary files from the "Hello World" scaffold that already exist in the project.
 

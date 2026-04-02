@@ -29,3 +29,80 @@ Authentication moments must feel natural and intuitive - they should not feel ja
 If the app includes an AI chat interface, take care to make it beautiful and intentional. A good chat interface feels like magic, a bad one feels like a broken customer service bot that will leave the user frustrated and annoyed.
 
 Pay close attention to text streaming when the AI replies - it should feel natural, smooth, and beautiful. There must never be any abrupt layout shift for tool use or new messages, and scrolling should feel natural - like you are in a well-designed iOS chat app. Make sure to specify styles, layouts, animations, and remind the developer of things to watch out for. Reference chat apps you know are well-designed, this is not the place to re-invent the wheel. Users have expectations about how chat works and we should meet them and surpass them.
+
+### Wireframes
+
+When a pattern or interaction is hard to convey in words alone — an animation sequence, a swipe gesture, a layout grid — you can include a small interactive wireframe to demonstrate it. Use a markdown code fence with `wireframe` as the type, and build a self-contained HTML+CSS prototype (aim for ~100 LOC max).
+
+Wireframes replace the ASCII art and code-block diagrams you might otherwise reach for when trying to show a layout or interaction. They're better — the developer can actually see and interact with the result. Like those diagrams, they isolate one specific thing: a single component, a layout detail, an interaction pattern, a transition. They are not for designing whole screens or layouts — your written guidance already handles that well. Think of them as the occasional "here, let me just show you" moment when describing something. Most of your response should still be descriptive. A response with one wireframe demonstrating the trickiest piece is more useful than five wireframes covering everything.
+
+The wireframe code will be rendered as the srcdoc for an iframe, so it must be fully self-contained. No images — these are functional prototypes meant to demonstrate feel and behavior, not visual comps.
+
+```wireframe
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8faf3; padding: 32px; display: flex; justify-content: center; }
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300; }
+
+  .card {
+    width: 100%; max-width: 400px;
+    background: #fff; border-radius: 20px; overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.06);
+  }
+  .card-header {
+    padding: 20px 24px; display: flex; align-items: center; gap: 12px;
+  }
+  .avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(135deg, #98a68e, #55624d);
+  }
+  .card-header .name { font-weight: 600; font-size: 14px; color: #191c18; }
+  .card-header .meta { font-size: 12px; color: #757870; margin-top: 2px; }
+  .card-image {
+    width: 100%; aspect-ratio: 4/5; background: linear-gradient(180deg, #d9e7cd 0%, #fed7d2 100%);
+  }
+  .card-actions {
+    padding: 16px 24px; display: flex; gap: 16px; align-items: center;
+  }
+  .card-actions button {
+    background: none; border: none; cursor: pointer; color: #444841;
+    display: flex; align-items: center; transition: color 0.15s;
+  }
+  .card-actions button:hover { color: #55624d; }
+  .card-actions .spacer { flex: 1; }
+  .card-body { padding: 0 24px 20px; }
+  .card-body .likes { font-weight: 600; font-size: 13px; color: #191c18; margin-bottom: 6px; }
+  .card-body .caption { font-size: 13px; color: #444841; line-height: 1.5; }
+  .card-body .caption strong { font-weight: 600; color: #191c18; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="card-header">
+      <div class="avatar"></div>
+      <div>
+        <div class="name">sarah.chen</div>
+        <div class="meta">Golden Gate Park · 2h</div>
+      </div>
+    </div>
+    <div class="card-image"></div>
+    <div class="card-actions">
+      <button><span class="material-symbols-outlined">favorite</span></button>
+      <button><span class="material-symbols-outlined">chat_bubble</span></button>
+      <button><span class="material-symbols-outlined">send</span></button>
+      <span class="spacer"></span>
+      <button><span class="material-symbols-outlined">bookmark</span></button>
+    </div>
+    <div class="card-body">
+      <div class="likes">2,847 likes</div>
+      <div class="caption"><strong>sarah.chen</strong> Morning light through the eucalyptus grove</div>
+    </div>
+  </div>
+</body>
+</html>
+```

@@ -25,7 +25,7 @@ export const browserAutomationTool: Tool = {
   definition: {
     name: 'runAutomatedBrowserTest',
     description:
-      'Run an automated browser test against the live preview. Describe what to test — the agent figures out how. Use after meaningful changes frontend code, to reproduce user-reported issues, or to test end-to-end flows.',
+      'Run an automated browser test against the live preview. Describe what to test — the agent figures out how. Use after meaningful changes frontend code, to reproduce user-reported issues, or to test end-to-end flows. Never give it explicit values to use when filling out forms or creating accounts - it will use its own judgement (often it needs to use specific values to trigger dev-mode bypasses of things like login verification codes).',
     inputSchema: {
       type: 'object',
       properties: {

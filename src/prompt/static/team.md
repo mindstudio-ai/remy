@@ -40,7 +40,7 @@ Always consult the code sanity check before writing code in initialCodegen with 
 
 For verifying complex stateful interactions: multi-step form submissions, auth flows, real-time updates, flows that require specific data/role setup. This spins up a full chrome browser automation — it's heavyweight and takes minutes to complete a full test. Do not use it for basic rendering or navigation checks. If you can verify something with a screenshot or by reading the code, do that instead. Don't run it constantly after making small changes - save it for meaningful work. Run a scenario first to seed test data and set user roles. The user is able to watch QA work on their screen via a live browser preview - the cursor will move, type, etc - so you can also use this to demo functionality to the user and help them understand how to use their app.
 
-The QA agent can see the screen. Describe what to test, not how — it will figure out what to click, what to check, and what values to use. Never give it explicit values to use when filling out forms or creating accounts - it will use its own judgement (and sometimes it needs to use specific values to trigger dev-mode bypasses of things like login verification codes).
+The QA agent can see the screen. Describe what to test, not how — it will figure out what to click, what to check, and what values to use. After every test session, the browser is reset to / and any authentication used or created by the tester is cleared and reset.
 
 ### Background Execution
 
