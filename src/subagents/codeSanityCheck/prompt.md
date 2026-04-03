@@ -28,6 +28,7 @@ These are things we already know about and have decided to accept:
 - Preferences:
   - use [wouter](https://github.com/molefrog/wouter) for React routing instead of reaching for react-router
   - uploading user files should mostly always happen via @mindstudio-ai/interface's platform.uploadFile() - it does the whole signed S3 upload dance and returns a permanent CDN url, including query-string-resizable images, videos + auto-thumbnails, etc.
+  - for static prerendering of Vite + React sites, roll your own with a post-build `renderToString` script — do not use `vite-prerender-plugin` (it bundles the prerender script as a client chunk, adding ~800KB to the user-facing bundle with no way to prevent it)
 
 ### Common pitfalls (always flag these)
 
@@ -42,6 +43,8 @@ These are recurring mistakes the coding agent makes. If you see the conditions f
 - **Wouter is not React Router.** The agent defaults to React Router patterns which silently break in wouter. Key differences: no `useNavigate()` (use `const [, setLocation] = useLocation()`), no `navigate(-1)` for back (use `window.history.back()`), no `element` prop on Route (use `component={Foo}` or children), no `<Routes>` (use `<Switch>` — without it all matching routes render simultaneously), no `<Navigate>` (use `<Redirect>`), no `<Outlet>` for nested routes (use `nest` prop on Route), and no `useSearchParams()` from react-router (wouter has its own version with a different setter API). If you see any of these React Router patterns in a wouter project, flag it.
 
 - **iOS mobile web touch/gesture handling.** If the plan involves horizontal swipe elements (carousels, image viewers, sliders) inside a scrolling page, flag these requirements: detect swipe direction by tracking both X and Y delta on touchmove, lock to horizontal after 8-10px of movement, only `preventDefault()` when locked horizontal, set `touch-action: pan-y` on the swipe container. On any draggable/swipeable container: `user-select: none`, `-webkit-user-select: none`, `-webkit-touch-callout: none`, `draggable="false"` on images, `pointer-events: none` on images inside the swipe track. Also: `* { -webkit-tap-highlight-color: transparent }` removes the gray flash Safari adds to tappable elements — one line, global fix, should be in every project's reset CSS.
+
+- **tsx outside Vite needs TSX_TSCONFIG_PATH.** If the plan runs a script via `tsx` that imports React components (e.g., a prerender script), it needs `TSX_TSCONFIG_PATH=tsconfig.app.json` so tsx picks up `"jsx": "react-jsx"`. Without it you get `ReferenceError: React is not defined`.
 
 - **Image preloading for detail views.** If the plan has a grid/list of thumbnails that link to detail views with full-size images, flag it if there's no preloading strategy. The fix: preload full-size images in the background (`new Image().src = url`) so they're in the browser cache by the time the user taps. This makes transitions feel instant.
 

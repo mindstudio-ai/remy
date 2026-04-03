@@ -1,7 +1,7 @@
-/** Run a shell command. 120s timeout by default. Returns stdout + stderr. */
+/** Run a shell command with streaming output. 120s timeout by default. Returns stdout + stderr. */
 
-import { exec } from 'node:child_process';
-import type { Tool } from '../index.js';
+import { spawn } from 'node:child_process';
+import type { Tool, ToolExecutionContext } from '../index.js';
 
 const DEFAULT_TIMEOUT_MS = 120_000;
 const DEFAULT_MAX_LINES = 500;
@@ -39,47 +39,62 @@ export const bashTool: Tool = {
     },
   },
 
-  async execute(input) {
+  async execute(input, context?: ToolExecutionContext) {
     const maxLines =
       input.maxLines === 0 ? Infinity : input.maxLines || DEFAULT_MAX_LINES;
     const timeoutMs = input.timeout ? input.timeout * 1000 : DEFAULT_TIMEOUT_MS;
 
     return new Promise<string>((resolve) => {
-      exec(
-        input.command,
-        {
-          timeout: timeoutMs,
-          maxBuffer: 2 * 1024 * 1024,
-          ...(input.cwd ? { cwd: input.cwd } : {}),
-          env: { ...process.env, FORCE_COLOR: '1' },
-        },
-        (err, stdout, stderr) => {
-          let result = '';
-          if (stdout) {
-            result += stdout;
-          }
-          if (stderr) {
-            result += (result ? '\n' : '') + stderr;
-          }
-          if (err && !stdout && !stderr) {
-            result = `Error: ${err.message}`;
-          }
-          if (!result) {
-            resolve('(no output)');
-            return;
-          }
+      const child = spawn('sh', ['-c', input.command], {
+        cwd: input.cwd || undefined,
+        env: { ...process.env, FORCE_COLOR: '1' },
+      });
 
-          const lines = result.split('\n');
-          if (lines.length > maxLines) {
-            resolve(
-              lines.slice(0, maxLines).join('\n') +
-                `\n\n(truncated at ${maxLines} lines of ${lines.length} total — increase maxLines to see more)`,
-            );
+      let output = '';
+
+      child.stdout.on('data', (chunk: Buffer) => {
+        const text = chunk.toString();
+        output += text;
+        context?.onLog?.(text);
+      });
+
+      child.stderr.on('data', (chunk: Buffer) => {
+        const text = chunk.toString();
+        output += text;
+        context?.onLog?.(text);
+      });
+
+      const timer = setTimeout(() => {
+        child.kill('SIGTERM');
+      }, timeoutMs);
+
+      child.on('close', (code) => {
+        clearTimeout(timer);
+
+        if (!output) {
+          if (code && code !== 0) {
+            resolve(`Error: process exited with code ${code}`);
           } else {
-            resolve(result);
+            resolve('(no output)');
           }
-        },
-      );
+          return;
+        }
+
+        const lines = output.split('\n');
+        if (lines.length > maxLines) {
+          resolve(
+            lines.slice(0, maxLines).join('\n') +
+              `\n\n(truncated at ${maxLines} lines of ${lines.length} total — increase maxLines to see more)`,
+          );
+        } else {
+          resolve(output);
+        }
+      });
+
+      child.on('error', (err) => {
+        clearTimeout(timer);
+        resolve(`Error: ${err.message}`);
+      });
     });
   },
 };

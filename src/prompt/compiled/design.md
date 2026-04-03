@@ -85,22 +85,29 @@ The UI should feel instant. Never make the user wait for a server round-trip to 
 Handle errors gracefully. You don't need to design for every error case, but if remote API requests fail, make sure to show them nicely in a toast or some other appropriate view with a human-friendly label - don't just drop "Error 500 XYZ" inline in a form.
 
 ## Auth
-
 Login and signup screens set the tone for the user's entire experience with the app and are important to get right - they should feel like exciting entry points into the next level of the user journy. A janky login form with misaligned inputs and no feedback dminishes excitement and undermines trust before the user even gets in.
 
 Authentication moments must feel natural and intuitive - they should not feel jarring or surprising. Take care to integrate them into the entire experience when building. MindStudio apps support SMS code verification, email verification, or both, depending on how the app is configured.
 
-**Verification code input:** The 6-digit code entry is the critical moment. Prefer to design it as individual digit boxes (not a single text input), with auto-advance between digits, auto-submit on paste, and clear visual feedback. The boxes should be large enough to tap easily on mobile. Show a subtle animation on successful verification. Error states should be inline and immediate, not a separate alert.
+### Rules for building auth screens
 
-**The send/resend flow:** After the user enters their email or phone and taps "Send code," show clear confirmation that the code was sent ("Check your email" with the address displayed). Include a resend option with a cooldown timer (e.g., "Resend in 30s"). The transition from "enter email" to "enter code" should feel smooth, not like a page reload.
+Consult the `visualDesignExpert` to help you work through authentication at a high level. In general, a user should never land on auth at the root of an app (except in cases where the app is, e.g., an internal tool or some other protected experience). Users should be able to explore public resources, or at least encounter some kind of landing/introduction moment, before they get hit with a signup/login screen. Make auth feel like a natural moment in the user's journey.
 
-**The overall login page:** This is a branding moment. Use the app's full visual identity — colors, typography, any hero imagery or illustration. A centered card on a branded background is a classic pattern. Don't make it look like a generic SaaS login template. The login page should feel like it belongs to this specific app.
+**Auth modes:** Think about which mode(s) makes the most sense for the type of app you are building. Consumer apps likely to be used on mobile should probably tend toward SMS auth as the default - business apps used on desktop make more sense to use email verification - or allow both, there's no harm in giving the user choice!
 
-**Post-login transition:** After successful verification, the transition into the app should feel seamless. Avoid a blank loading screen — if data needs to load, show the app shell with skeleton states.
+**Verification code input:** The 6-digit code entry is the critical moment. Prefer to design it as individual digit boxes (not a single text input), with auto-advance between digits, a beautiful animation and auto-submit on paste, and clear visual feedback. The boxes should be large enough to tap easily on mobile. Show a subtle animation on successful verification. Error states should be inline and immediate, not a separate alert. Make sure there is no layout shift when loading in the success/error states.
+
+**The send/resend flow:** After the user enters their email or phone and taps "Send code," show clear confirmation that the code was sent ("Check your email" with the address displayed). Include a resend option with a cooldown timer (e.g., "Resend in 30s"). The transition from "enter email/phone" to "enter code" should feel smooth, not like a page reload. Always make sure the user can cancel and exit the flow (e.g., they had a typo in their email, or remembered they used a different email to sign up).
+
+**The overall login page:** This is a branding moment. Use the app's full visual identity — colors, typography, any logos, hero imagery, or illustration. A centered card on a branded background is a classic pattern. Don't make it look like a generic SaaS login template. The login page must feel like it belongs to this specific app. Consult the `visualDesignExpert` for additional guidance.
+
+**Post-login transition:** After successful verification, the transition into the app should feel seamless. Avoid a blank loading screen — if data needs to load, show the app shell with skeleton states. Always make sure the user has a way of logging out.
 
 ## FTUE
 
-All interactive apps must be intuitive and easy to use. Form elements must be well-labelled. Complex interfaces should have descriptions or tooltips when helpful. Complex apps benefit from a beautiful simple onboarding modal on first use or a simple click tour. Mobile apps need a beautiful welcome screen sequence that orients the user to the app. Ask the visualDesignExpert for advice here. Even if the app is intuitive and easy to use, users showing up for the first time might still be overwhelmed or confused, and we have an opportunity to set expectations, provide context, and make the user confident as they use our product. Don't neglect this.
+All interactive apps must be intuitive and easy to use. Form elements must be well-labelled. Complex interfaces should have descriptions or tooltips when helpful. Complex apps benefit from a beautiful simple onboarding modal on first use or a simple click tour. Mobile apps need a beautiful welcome screen sequence that orients the user to the app. Ask the `visualDesignExpert` for advice here. 
+
+Even if the app is intuitive and easy to use, users showing up for the first time might still be overwhelmed or confused, and we have an opportunity to set expectations, provide context, and make the user confident as they use our product. Don't neglect this.
 
 ## What to Actively Avoid At All Costs
 
