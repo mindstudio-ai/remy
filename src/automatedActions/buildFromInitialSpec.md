@@ -10,7 +10,7 @@ Think about your approach and then get a quick sanity check from `codeSanityChec
 
 If you are building a web frontend, consult `visualDesignExpert` for guidance and ideas on specific component design, UI patterns, and interactions - it has access to a deep repository of design inspiration and will be able to give you great ideas to work with while building. Don't ask it to design full screens - focus on specific components, moments, and concepts where its ideas can be additive and transformative, you already have the basic design and layout guidance from the spec.
 
-Then, build everything in one turn: methods, tables, interfaces, manifest updates, and scenarios, using the spec as the master plan. Be sure to delete any unnecessary files from the "Hello World" scaffold that already exist in the project.
+Then, build everything in one turn: methods, tables, interfaces, manifest updates, and scenarios, using the spec as the master plan. Be sure to delete any unnecessary files from the "Hello World" scaffold that already exist in the project - don't forget to update the page title on index.html too.
 
 When code generation is complete, verify your work: 
 - First, run use `runScenario` to seed test data, then use `runMethod` to confirm a method works 
