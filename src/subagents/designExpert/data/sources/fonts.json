@@ -192,22 +192,6 @@
       "description": "This sans-serif typeface exhibits monolinear stroke weight with no stress angle and a grotesque construction characterized by optically-adjusted rounded terminals throughout. The apertures are moderately open in letters like 'c', 'e', and 'a', with a single-story 'a' and 'g' construction, while the x-height is relatively high compared to the cap height. The letterforms display regular width proportions with distinctive rounded terminals that soften the otherwise geometric structure, and the bowls show consistent circular forms particularly visible in 'o', 'b', 'd', and 'p'."
     },
     {
-      "name": "Melodrama",
-      "slug": "melodrama",
-      "category": "Sans, Display",
-      "variable": true,
-      "weights": [
-        300,
-        400,
-        500,
-        600,
-        700
-      ],
-      "italics": false,
-      "source": "fontshare",
-      "description": "This display serif exhibits high stroke contrast with a vertical stress axis and features distinctive ball terminals on letters like 'a', 'c', and 'r'. The serifs are unbracketed and hairline-thin, creating sharp transitions from the thick vertical strokes, while the apertures are moderately open in characters like 'e' and 'c'. The typeface shows a high x-height relative to cap height, regular width proportions, and a rational construction with geometric qualities, particularly evident in the circular bowls and precise vertical stems."
-    },
-    {
       "name": "New Title",
       "slug": "new-title",
       "category": "Sans, Display",
