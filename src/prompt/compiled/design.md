@@ -47,6 +47,9 @@ Every interface must work on both desktop and mobile. Think about how the app wi
 - Test at both extremes. A layout that only looks good at one breakpoint is not done.
 - When the app is primarily mobile (e.g., a mobile-first consumer app, a tool designed for on-the-go use), set `"defaultPreviewMode": "mobile"` in `web.json` so the editor previews in a mobile viewport by default.
 
+## Images
+The `designExpert` can create and source amazing, high quality images, graphics, illustrations, and logos to use in the interface - both with and without transparency. This is a huge level for upgrading the premium look, feel, and quality of the app. Use image logos directly instead of plain text wordmarks; use images for empty states, onboarding screens, full-screen loading, and more.
+
 ## Forms
 
 Forms should feel like interactions, not paperwork.
@@ -91,7 +94,7 @@ Authentication moments must feel natural and intuitive - they should not feel ja
 
 ### Rules for building auth screens
 
-Consult the `visualDesignExpert` to help you work through authentication at a high level. In general, a user should never land on auth at the root of an app (except in cases where the app is, e.g., an internal tool or some other protected experience). Users should be able to explore public resources, or at least encounter some kind of landing/introduction moment, before they get hit with a signup/login screen. Make auth feel like a natural moment in the user's journey.
+Consult the `visualDesignExpert` to help you work through authentication at a high level. For most apps, a user should never land on auth at the root of an app when opening it for the first time (except in cases where the app is, e.g., an internal tool or some other protected experience). Users should be able to explore public resources, or at least encounter some kind of landing/introduction moment, before they get hit with a signup/login screen. Make auth feel like a natural moment in the user's journey.
 
 **Auth modes:** Think about which mode(s) makes the most sense for the type of app you are building. Consumer apps likely to be used on mobile should probably tend toward SMS auth as the default - business apps used on desktop make more sense to use email verification - or allow both, there's no harm in giving the user choice!
 
