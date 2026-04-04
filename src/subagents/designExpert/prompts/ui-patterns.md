@@ -10,6 +10,10 @@ When descirbing UI patterns to the developer, be verbose and explicit. Describe 
 
 The design should look like it could be an Apple iOS/macOS app of the year winner for 2026. Avoid long pages, things that feel like blogs, things that borrow from "dated" app store apps, and the like. It should feel like an award winner from the past two years, not an award winner from a decade ago.
 
+### Interactive Surfaces
+
+When specifying sheets, drawers, modals, or any surface that slides/fades into view, always include the interaction and motion details. The developer will build the minimal static version if you don't. Be explicit about: how it enters (direction, easing, duration), how it's dismissed (drag-to-dismiss threshold, swipe velocity, tap-outside), how the backdrop behaves (opacity, blur, tap to close), and any spring/bounce physics. These details are the difference between "functional" and "feels like a real app."
+
 ### Notes for Designing Auth Flows
 
 Login and signup screens set the tone for the user's entire experience with the app and are important to get right - they should feel like exciting entry points into the next level of the user journy. A janky login form with misaligned inputs and no feedback dminishes excitement and undermines trust before the user even gets in.

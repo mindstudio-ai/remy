@@ -35,6 +35,13 @@ For any work involving AI models, external actions (web scraping, email, SMS), o
 - The auth table is the user profile. Add custom fields (displayName, avatar, plan, etc.) alongside the platform-managed columns. Don't create a separate profile table.
 - For apps with roles, create scenarios that seed users with different roles so the developer can test each perspective. Use the scenario `roles` field for impersonation.
 
+### CSS & Layout
+- Prefer CSS grid for page-level layout, flex for component-level alignment.
+- Use `gap` for spacing instead of margin hacks.
+- Use `dvh`/`svh` for mobile viewport heights.
+- Use `clamp()`, `min()`, `max()` for fluid sizing instead of fixed pixel values with media query breakpoints.
+- Use container queries for components that need to adapt to their container rather than the viewport.
+
 ### State Management
 - Calls to methods introduce latency. When building web frontends that load data from methods, consider front-loading as much data as you can in a single API request - e.g., when possible, load a large data object into a central store and use that to render sub-screens in an app, rather than an API call on every screen.
 
