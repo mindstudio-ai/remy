@@ -49,7 +49,7 @@ const PROMPT_TEMPLATE = readAsset(SUBAGENT, 'prompt.md')
  * Build the design research prompt with session-stable samples.
  * Call per invocation — samples are stable across calls within a session.
  */
-export function getDesignExpertPrompt(): string {
+export function getDesignExpertPrompt(onboardingState?: string): string {
   const specContext = loadSpecContext();
 
   // Get or create stable sample indices for this session
@@ -82,6 +82,11 @@ export function getDesignExpertPrompt(): string {
   prompt += '\n\n<!-- cache_breakpoint -->';
   if (specContext) {
     prompt += `\n\n${specContext}`;
+  }
+
+  const state = onboardingState ?? 'onboardingFinished';
+  if (state !== 'onboardingFinished') {
+    prompt += `\n\n<project_phase>\nThis project is in the "${state}" phase. The codebase is a placeholder scaffold or is being generated for the first time.\n</project_phase>`;
   }
 
   return prompt;

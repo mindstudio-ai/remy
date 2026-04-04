@@ -48,7 +48,7 @@ export const designExpertTool: Tool = {
       : [];
 
     const result = await runSubAgent({
-      system: getDesignExpertPrompt(),
+      system: getDesignExpertPrompt(context.onboardingState),
       task: input.task,
       history: history.length > 0 ? history : undefined,
       tools: DESIGN_EXPERT_TOOLS,

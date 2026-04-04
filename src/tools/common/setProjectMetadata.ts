@@ -21,7 +21,7 @@ export const setProjectMetadataTool: Tool = {
           description:
             "Project display name. Keep it short (2-4 words). Use the app's actual name if the user mentioned one, otherwise pick something descriptive.",
         },
-        shortDescription: {
+        description: {
           type: 'string',
           description:
             'Short description for the project - user facing only - appears for the project creator in their list of apps.',

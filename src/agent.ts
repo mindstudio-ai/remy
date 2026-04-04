@@ -588,6 +588,7 @@ export async function runTurn(params: {
                 resolveExternalTool,
                 toolCallId: tc.id,
                 requestId,
+                onboardingState,
                 subAgentMessages,
                 conversationMessages: state.messages,
                 toolRegistry,

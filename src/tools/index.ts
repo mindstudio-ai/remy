@@ -28,6 +28,8 @@ export interface ToolExecutionContext {
   toolCallId: string;
   /** Correlation ID from the headless protocol — threaded for structured logging. */
   requestId?: string;
+  /** Current project onboarding phase. */
+  onboardingState?: string;
   /** Sub-agent tools stash their message history here, keyed by toolCallId. */
   subAgentMessages?: Map<string, Message[]>;
   /** Remy's full conversation history — used by subagents to build persistent threads. */
