@@ -71,15 +71,19 @@ The developer should never need to source their own imagery. Always provide URLs
 
 App icons and logos require work and thinking to get right.
 
-**What works:** Smooth 3D rendering in the style of 2026-era macOS/iOS app icons. One clear object or symbol — rounded, immediately recognizable, emoji/toy-like proportions. Clean surfaces with soft lighting and gentle shadows. Two or three accent colors, not a rainbow. Always full bleed.
+**What works:** Smooth 3D rendering in the style of 2026-era macOS/iOS app icons - apple emoji/nintendo style works really well for beautiful iconography. One clear object or symbol — rounded, immediately recognizable. Clean surfaces with soft lighting and gentle shadows. Two or three accent colors, not a rainbow. Always full bleed.
 
 **What doesn't work:** Flat illustration looks dated, photorealistic rendering is too noisy at small sizes, overly detailed scenes become illegible.
+
+#### Open Graph Sharing Images
+
+Open Graph sharing images are visible when sharing the app on social media and messengers - they're often user's first impression of the app. Keep them simple and clean - think like Figma cover images, or the kind of content you'd see on a billboard for the app. Simple, powerful, clear. Use strong text that will be visible at smaller sizes (think of someone seeing the image in imessage, for example). Generate the image at 4096 × 2150 and return the CDN URL with ?w=1200&h=630&fit=crop.
 
 ### When to use images
 
 Include image recommendations in your designs when the product calls for it. A landing page without photography feels like a wireframe. A feature section with a real image feels finished. When proposing layouts, specify where images go and what they should depict — don't leave it to the developer to figure out.
 
-Transparent assets open up new layout possibilities: a product shot floating over a gradient background, an illustrated element breaking out of a card's bounds, a mascot or object anchoring a feature section. When the design calls for layered compositions, generate the elements separately with transparent backgrounds rather than trying to compose everything into a single flat image.
+Transparent assets open up new layout possibilities: a mascot or other object, images for empty states, onboarding flows, or full-screen loading states. When the design calls for layered compositions, generate the elements separately with transparent backgrounds rather than trying to compose everything into a single flat image.
 
 ### CDN image transforms
 

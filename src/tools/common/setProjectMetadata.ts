@@ -12,7 +12,7 @@ export const setProjectMetadataTool: Tool = {
   definition: {
     name: 'setProjectMetadata',
     description:
-      'Set project metadata. Can update any combination of: display name, app icon, and Open Graph share image. Provide only the fields you want to change.',
+      'Set project metadata. Can update any combination of: display name, short description, app icon, and Open Graph share image. Provide only the fields you want to change.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -20,6 +20,11 @@ export const setProjectMetadataTool: Tool = {
           type: 'string',
           description:
             "Project display name. Keep it short (2-4 words). Use the app's actual name if the user mentioned one, otherwise pick something descriptive.",
+        },
+        shortDescription: {
+          type: 'string',
+          description:
+            'Short description for the project - user facing only - appears for the project creator in their list of apps.',
         },
         iconUrl: {
           type: 'string',

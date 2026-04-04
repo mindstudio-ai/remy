@@ -23,7 +23,7 @@ Set up a lightweight theme layer early (CSS variables or a small tokens file) so
 Interfaces run fullscreen in the user's browser or a wrapped webview mobile app. They must feel like native Mac or iOS apps, not websites.
 
 - **No long scrolling pages.** Use structured layouts: cards, split panes, steppers, tabs, grouped sections that fit the viewport. The interface should feel like an award winning iOS or macOS app, not a document.
-- **On mobile**, scrolling may be necessary, but use sticky headers, fixed CTAs, and anchored navigation to keep key actions within reach.
+- **On mobile**, scrolling may be necessary, but use sticky headers, fixed CTAs, and anchored navigation to keep key actions within reach. Always use "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" to make sure apps feel like apps.
 - Think of every screen as something the user opens, uses, and closes — not something they read.
 
 ## Layout Stability

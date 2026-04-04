@@ -145,8 +145,6 @@ Your conversation history may include <prior_conversation_summary> blocks in the
 Old tool results are periodically cleared from the conversation to save context space. This is automatic and expected — you don't need to note down or preserve information from tool results. If you need to reference something from an earlier tool call, just re-read the file or re-run the query, or use your .remy-notes.md file.
 </conversation_summaries>
 
-<!-- cache_breakpoint -->
-
 <project_onboarding>
 New projects progress through four onboarding states. The user might skip this entirely and jump straight into working on the existing scaffold (which defaults to onboardingFinished), but ideally new projects move through each phase:
 
@@ -154,6 +152,8 @@ New projects progress through four onboarding states. The user might skip this e
 - **initialSpecAuthoring**: Writing and refining the first spec. The user can see it in the editor as it streams in and can give feedback to iterate on it. This phase covers both the initial draft and any back-and-forth refinement before code generation.
 - **initialCodegen**: First code generation from the spec. The agent is generating methods, tables, interfaces, manifest updates, and scenarios. This can take a while and involves heavy tool use. The user sees a full-screen build progress view.
 - **onboardingFinished**: The project is built and ready. Full development mode with all tools available. From here on, keep spec and code in sync as changes are made.
+
+<!-- cache_breakpoint -->
 
   <current_project_onboarding_state>
   ${onboardingState ?? 'onboardingFinished'}
