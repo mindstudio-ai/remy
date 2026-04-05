@@ -10,7 +10,7 @@ import { analyzeImage } from '../../../common/analyzeImage.js';
 import { enhanceImagePrompt } from './enhancePrompt.js';
 
 const ANALYZE_PROMPT =
-  'You are reviewing this image for a visual designer sourcing assets for a project. Describe: what the image depicts, the mood and color palette, how the lighting and composition work, any text present in the image, whether there are any issues (artifacts, distortions), and how it could be used in a layout for an app or website. Be concise and practical. Respond only with your analysis as Markdown and absolutely no other text. Do not use emojis - use unicode if you need symbols.';
+  'You are reviewing this image for a visual designer sourcing assets for a project. Describe: what the image depicts, the mood and color palette, how the lighting and composition work, any text present in the image, whether there are any issues (artifacts, distortions), and how it could be used in a layout for an app or website. Be concise and practical. Respond only with your analysis as Markdown (starting with the title "Asset Review") and absolutely no other text. Do not use emojis - use unicode if you need symbols.';
 
 export interface ImageGeneratorOptions {
   prompts: string[];

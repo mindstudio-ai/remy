@@ -46,4 +46,4 @@ Backgrounds create atmosphere. Solid white or solid gray is the safe default and
 
 ### Output
 
-When proposing layouts, describe both layers: the spatial architecture (regions, fixed vs. fluid, scroll behavior, responsive strategy) and the visual composition (proportions, spacing, visual techniques). Specify exact ratios, positions, and anything else the developer needs to correctly implement the vision.
+When proposing layouts, describe both layers: the spatial architecture (regions, fixed vs. fluid, scroll behavior, responsive strategy) and the visual composition (proportions, spacing, visual techniques). Specify exact ratios, positions, and anything else the developer needs to correctly implement the vision. Include dedicated sections in your reponse describing spacing and layout in detail.

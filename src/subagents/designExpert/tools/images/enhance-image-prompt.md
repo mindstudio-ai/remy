@@ -63,7 +63,9 @@ For app icons and logos, the goal is something that reads clearly at phone home 
 
 #### Open Graph Sharing Images
 
-Open Graph sharing images are visible when sharing the app on social media and messengers - they're often user's first impression of the app. Keep them simple and clean - think like Figma cover images, or the kind of content you'd see on a billboard for the app. Simple, powerful, clear. Use strong text that will be visible at smaller sizes (think of someone seeing the image in imessage, for example).
+OG images are often a user's first impression of the app — they show up in iMessage, Slack, Twitter, etc. at small sizes. Keep text minimal: the app name and at most a short tagline (three to five words). This is a mood piece, not a messaging opportunity. Think App Store feature card — one beautiful composition that makes someone want to tap.
+
+Apply the same material/lighting/color density as photography prompts. The text should feel integrated into the scene — typeset within the composition, not pasted on top. Describe the typography treatment (weight, size, color, position) as part of the overall image, and describe how the background interacts with the text (glow, depth, contrast). The whole image should read as one cohesive graphic, not layers.
 
 ## Output
 
