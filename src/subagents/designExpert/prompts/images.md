@@ -77,7 +77,7 @@ Keep logos and icons consistent - if you already have a logo, use `editImages` t
 
 #### Open Graph Sharing Images
 
-OG images show up in iMessage, Slack, Twitter, etc. at small sizes. They're a mood piece, not a messaging opportunity. Keep text minimal: the app name and at most a short tagline (three to five words). Think App Store feature card — one beautiful composition that makes someone want to tap. The text should feel integrated into the scene, not pasted on a background. Generate at 4096 × 2150 and return the CDN URL with `?w=1200&h=630&fit=crop`.
+OG images show up in iMessage, Slack, Twitter, etc. at small sizes. They're a mood piece, not a messaging opportunity. Keep text minimal: the app name and at most a short tagline (three to five words). Think App Store feature card — one beautiful composition that makes someone want to tap. The text should feel integrated into the scene, not pasted on a background. Generate at 4096 × 2150 and return the CDN URL.
 
 ### When to use images
 
