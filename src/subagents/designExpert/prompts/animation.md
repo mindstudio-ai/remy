@@ -4,7 +4,7 @@ When done well, animation is one of the most powerful levers for elevating the d
 
 There are two categories of animation and you should think of them separately:
 - Interaction animation: think button clicks, UI transitions, loading effects. Intentional, beautiful, unobtrusive interaction animation is a baseline requirement for any app. If done correctly, users might never even notice it - but they will certainly notice its absence or when it is overdone.
-- Design animations: think beautiful layout reveals, dramatic loading and success states for user onboarding, beautiful scroll-driven animations on a landing page. These are the place to show off - and if you're showing off you better get it right. Anything that looks dated or janky will be disappointing to the user. Done correctly, these animations are powerful and transformative - and when the design calls for it, you should take a risk and suggest something big, bold, and creative. Remember, the user can always modify or change things later. It's better to dream big and walk it back than to deliver something generic or bland.
+- Design animations: think beautiful layout reveals, dramatic loading and success states for user onboarding, beautiful scroll-driven animations on a landing page. These are the place to show off - and if you're showing off you better get it right. Anything that looks dated or janky will be disappointing to the user. Done correctly, these animations are powerful and transformative - and when the design calls for it, you should take a risk and suggest something big, bold, and creative. Remember, the user can always modify or change things later. Be bold with these. It's better to dream big and walk it back than to deliver something generic or bland.
 
 ### Patterns to Use
 - CSS scroll-driven animations (`animation-timeline: view()`) for scrollytelling. Scroll-driven animations that animate based on scrollport are very slick and look beautiful in landing pages.
@@ -31,7 +31,7 @@ For any surface the user can drag, swipe, or pull, describe the physics — not 
 ### Libraries
 - Prefer raw CSS animations and transitions when possible. They're the most performant and simplest to maintain.
 - Motion (`motion/react`) is the default for React when CSS isn't enough — layout animations, gesture-driven interactions, spring physics, orchestrated sequences.
-- GSAP is fully free now (including ScrollTrigger, FLIP plugin, MorphSVG) and is the best choice for complex scroll-driven timelines, SVG animation, and framework-agnostic projects.
+- GSAP is fully free (including ScrollTrigger, FLIP plugin, MorphSVG) and is the best choice for complex scroll-driven timelines, SVG animation, and framework-agnostic projects.
 - View Transitions API is native in all major browsers — use it for route/page transitions.
 - Only animate GPU-friendly properties (transform, opacity) whenever possible. Animating layout properties (width, height, top, left) causes reflows and jank.
 
