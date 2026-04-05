@@ -9,8 +9,6 @@ import { analyzeImage } from '../../subagents/common/analyzeImage.js';
 
 export const SCREENSHOT_ANALYSIS_PROMPT = `Describe everything visible on screen from top to bottom — every element, its position, its size relative to the viewport, its colors, its content. Be comprehensive, thorough, and spatial. After the inventory, note anything that looks visually broken (overlapping elements, clipped text, misaligned components).
 
-Note: ignore text wrapping issues. Screenshots occasionally show text wrapping onto an extra line compared to the live page — most noticeable in buttons, badges, and headings. This is a known limitation of SVG foreignObject rendering used the DOM-to-image capture library that took the screenshot. The browser's SVG renderer computes slightly wider text metrics than the HTML layout engine, so text that fits on one line in the live DOM can overflow by a fraction of a pixel in the capture - this is not a real issue.
-
 Respond only with your analysis as Markdown and absolutely no other text. Do not use emojis - use unicode if you need symbols.`;
 
 export interface ScreenshotOptions {
@@ -67,7 +65,12 @@ export async function captureAndAnalyzeScreenshot(
     return url;
   }
 
-  const analysisPrompt = prompt || SCREENSHOT_ANALYSIS_PROMPT;
+  let analysisPrompt = prompt || SCREENSHOT_ANALYSIS_PROMPT;
+
+  analysisPrompt += `
+Note: ignore text wrapping issues. Screenshots occasionally show text wrapping onto an extra line compared to the live page — most noticeable in buttons, badges, and headings. This is a known limitation of SVG foreignObject rendering used the DOM-to-image capture library that took the screenshot. The browser's SVG renderer computes slightly wider text metrics than the HTML layout engine, so text that fits on one line in the live DOM can overflow by a fraction of a pixel in the capture - this is not a real issue.
+`;
+
   const analysis = await analyzeImage({
     prompt: analysisPrompt,
     imageUrl: url,

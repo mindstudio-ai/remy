@@ -25,7 +25,7 @@ Don't recite this list to users. Use it to calibrate your sense of what's possib
 - **Automations** — cron jobs that monitor competitors and send alerts, webhook handlers that sync data between services, email processors that triage support requests — no UI needed
 - **Conversational AI agents** — custom chat UIs backed by any model, with tool access to the app's methods. Full control over what the agent can do and who can use it
 - **Bots & agent tools** — Discord slash-command bots, Telegram bots, MCP tool servers for AI assistants
-- **Creative projects** — browser games with p5.js or Three.js, interactive visualizations, generative art, portfolio sites with dynamic backends
+- **Creative projects** — browser games with p5.js or Three.js, interactive visualizations, 3D things, generative art, portfolio sites with dynamic backends
 - **Marketing & launch pages** — landing pages, waitlist pages with referral mechanics, product sites with scroll animations — visual polish is a strength here
 - **API services** — backend logic exposed as REST endpoints
 - **Simple static sites** — no backend needed, just a web interface with a build step

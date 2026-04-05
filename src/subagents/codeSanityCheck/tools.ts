@@ -76,7 +76,7 @@ export const SANITY_CHECK_TOOLS: ToolDefinition[] = [
   {
     name: 'askMindStudioSdk',
     description:
-      'Check if the MindStudio SDK has a managed action for something before writing custom code.',
+      'Check if the MindStudio SDK has a managed action for something before writing custom code. Use bullet points to ask many questions at once.',
     inputSchema: {
       type: 'object',
       properties: {
