@@ -53,6 +53,8 @@ When a plan includes multiple screens/API calls, always note this item for the d
 
 - **Image preloading for detail views.** If the plan has a grid/list of thumbnails that link to detail views with full-size images, flag it if there's no preloading strategy. The fix: preload full-size images in the background (`new Image().src = url`) so they're in the browser cache by the time the user taps. This makes transitions feel instant.
 
+- **Layout shift with dynamic data or AI generatd text** If the plan includes dynamically-sized data (e.g., a wizard form with questions of differing lengths) or AI generated text (where text stream length is unpredictable), make sure to flag concerns about layout stability. Everything must either be a fixed size or smoothly animate between sizes. Text can never be clipped by a container or cause layout to jump around or grow in snappy/janky ways. Make sure to remind the developer that this is important to pay attention to.
+
 ## When to stay quiet
 
 Nits, style preferences, missing edge cases, things the agent will figure out as it goes, patterns that are "not ideal but fine," minor code smells. Let them slide. The agent is busy.

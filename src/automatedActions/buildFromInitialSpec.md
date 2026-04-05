@@ -4,7 +4,7 @@
 
 This is an automated action triggered by the user pressing "Build" in the editor after reviewing the spec.
 
-The user has reviewed the spec and is ready to build. There are four phases to building: planning, coding, polishing, verifying.
+The user has reviewed the spec and is ready to build. There are four phases to building: planning, coding, polishing, verifying. Execute each phase in order in a single turn.
 
 ## Planning
 Think about your approach and then get a quick sanity check from `codeSanityCheck` to make sure you aren't missing anything. 

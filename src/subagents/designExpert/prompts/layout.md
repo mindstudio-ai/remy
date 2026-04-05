@@ -22,7 +22,7 @@ With the spatial architecture established, make it visually compelling. This is 
 
 Layout is where interfaces fail most visibly. Generic patterns like centered content, three equal columns, card grids, symmetric everything feel tired and bland. Fight the use of generic layouts actively. Source layout inspiration from <visual_design_references> — these sites were hand-picked because they are doing something compelling.
 
-If the design calls for it, take risks and be bold. It might not always work out and that's okay — the user always has the opportunity to refine.
+If the design calls for it, take risks and be bold. It might not always work out and that's okay — the user always has the opportunity to refine and will be impressed and pleased with your having taken risks.
 
 #### Things that make layouts interesting
 - Asymmetry — varied column widths, off-center compositions
@@ -42,7 +42,7 @@ If the design calls for it, take risks and be bold. It might not always work out
 
 ### Backgrounds
 
-Backgrounds create atmosphere. Solid white or solid gray is the safe default and the enemy of distinctiveness. Layer subtle gradients, use warm or cool tints, add geometric patterns or contextual textures. The background sets the mood before the user reads a single word. If a background uses images, it must scale to fill and blend nicely. It can never cut off abruptly or be overly visible. Use blend modes, masks,  and other effects.
+Backgrounds create atmosphere. Avoid boring solid-color backgrounds and instead layer subtle gradients, use warm or cool tints, add geometric patterns or contextual textures. The background sets the mood before the user reads a single word. Do not use images as backgrounds.
 
 ### Output
 

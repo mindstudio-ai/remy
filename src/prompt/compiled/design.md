@@ -35,7 +35,7 @@ Layout shift is never acceptable. Elements jumping around as content loads or st
 - Loading-to-loaded transitions should swap content in-place without changing container size.
 - Buttons must not change size during loading states. Use a fixed width or `min-width`, and swap the label for a spinner or short text that fits the same space. "Submit" becoming "Submitting..." should not make the button wider and push adjacent elements around.
 - Conditional UI should use opacity/overlay transitions, not insertion into flow that displaces existing content.
-- This is especially important to keep in mind when building things that display AI generated text, especially if the text streams in. Make sure to never shift layout because of streaming AI text.
+- This is especially important to keep in mind when building things that display AI generated text, especially if the text streams in. Make sure to never shift layout because of streaming AI text. If an element changes height or width, it must be fixed size or a smooth transition - never snap or jump to different dimensions.
 
 ## Responsive Design
 
