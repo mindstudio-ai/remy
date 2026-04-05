@@ -129,6 +129,7 @@ await auth.logout();  // clears session
 
 ```typescript
 auth.phone.countries          // ~180 countries with { code, dialCode, name, flag }
+                              // Key selects by country code (US, CA, BB), not dial code — multiple countries share +1
 auth.phone.detectCountry()    // guess from timezone, e.g. 'US'
 auth.phone.toE164('5551234567', 'US')  // '+15551234567'
 auth.phone.format('+15551234567')      // '+1 (555) 123-4567'

@@ -43,7 +43,7 @@ For any work involving AI models, external actions (web scraping, email, SMS), o
 - Use container queries for components that need to adapt to their container rather than the viewport.
 
 ### State Management
-- Calls to methods introduce latency. When building web frontends that load data from methods, consider front-loading as much data as you can in a single API request - e.g., when possible, load a large data object into a central store and use that to render sub-screens in an app, rather than an API call on every screen.
+- Calls to methods introduce latency. When building web frontends that load data from methods, front-load as much data as you can in a single API request - e.g., when possible, load a large data object into a central store and use that to render sub-screens in an app, rather than an API call on every screen. User experience and perceived speed/performance are far more valuable than normalization and good REST API design.
 
 ### Dependencies
 Before installing a package you haven't used in this project, do a quick web search to confirm it's still the best option. The JavaScript ecosystem moves fast — the package you remember from training may have been superseded by something smaller, faster, or better maintained. A 10-second search beats debugging a deprecated library.
