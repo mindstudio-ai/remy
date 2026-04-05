@@ -42,7 +42,7 @@ If the design calls for it, take risks and be bold. It might not always work out
 
 ### Backgrounds
 
-Backgrounds create atmosphere. Solid white or solid gray is the safe default and the enemy of distinctiveness. Layer subtle gradients, use warm or cool tints, add geometric patterns or contextual textures. The background sets the mood before the user reads a single word.
+Backgrounds create atmosphere. Solid white or solid gray is the safe default and the enemy of distinctiveness. Layer subtle gradients, use warm or cool tints, add geometric patterns or contextual textures. The background sets the mood before the user reads a single word. If a background uses images, it must scale to fill and blend nicely. It can never cut off abruptly or be overly visible. Use blend modes, masks,  and other effects.
 
 ### Output
 

@@ -27,7 +27,7 @@ export const definition: ToolDefinition = {
       instructions: {
         type: 'string',
         description:
-          'If the screenshot you need requires interaction first (dismissing a modal, clicking a tab, filling out a form, navigating a flow), describe the steps to get there. A browser automation agent will follow these instructions before capturing the screenshot.',
+          'If the screenshot you need requires interaction first (dismissing a modal, clicking a tab, filling out a form, navigating a flow), describe the steps to get there. A browser automation agent will follow these instructions before capturing the screenshot. You will always get back a full-height screenshot of the entire page. Do not attempt to scroll or capture specific areas. Only use instructions when you need to trigger stateful changes.',
       },
     },
   },

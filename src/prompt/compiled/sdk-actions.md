@@ -127,12 +127,11 @@ const { content } = await agent.generateText({
   modelOverride: {
     model: 'claude-sonnet-4-6',
     temperature: 0.7,
-    maxResponseTokens: 1024,
   },
 });
 ```
 
-Make sure to prioritize new, popular models. MindStudio has a ton of models available - most of them are historical/legacy. Always choose latest generation models from leading providers - Anthropic Claude 4 family, Google Gemini 3, OpenAI GPT 5 to start - the user can adjust later.
+Make sure to prioritize new, popular models. MindStudio has a ton of models available - most of them are historical/legacy. Always choose latest generation models from leading providers - Anthropic Claude 4 family, Google Gemini 3, OpenAI GPT 5 to start - the user can adjust later. In general, do not set maxResponseTokens - let models stop on their own and use prompt guidance to control length. maxResponseTokens includes thinking tokens - so if you set it too low you will not get any results back.
 
 ### Batch Execution
 

@@ -53,7 +53,7 @@ For photorealistic images, go deep on four dimensions:
 
 For app icons and logos, the goal is something that reads clearly at phone home screen size and feels polished and beautiful - like it could appear as an "App of the Year" award winner.
 
-- Frame as "A 3D icon against a XYZ background" followed by the subject. Do NOT use the phrase "app icon" — it triggers mockup framing (the model renders an icon inset on a phone screen or mounted on a wall). "3D icon" works.
+- Frame as "A 3D icon against a XYZ background" followed by the subject. Do NOT use the phrase "app icon" — it triggers mockup framing (the model renders an icon inset on a phone screen or mounted on a wall). "3D icon" works. Always specify "Full bleed square composition with no padding or margin".
 - Describe smooth, rounded emoji-type 3D objects — think current macOS/iOS app icon design language. Apple emoji/nintendo style works really well for beautiful iconography. Not flat illustration, not photorealistic, not vectors.
 - Subjects should be immediately recognizable. Prefer one clear object or symbol, not a scene.
 - Specify "reads well at small sizes" as an explicit constraint.
