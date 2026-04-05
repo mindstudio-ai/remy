@@ -20,7 +20,8 @@ These are things we already know about and have decided to accept:
 - Limited browser support for CSS scroll-driven animations (`animation-timeline: scroll()` / `view()`)  - we accept this tradeoff
 - Libraries we know are actively maintained, don't bother checking:
   - swr
-  - framer-motion
+  - motion (formerly framer-motion — import from `motion/react`, not `framer-motion`)
+  - gsap (now fully free, including ScrollTrigger, FLIP, MorphSVG)
   - styled-components
   - @tabler/icons-react
   - streamdown
