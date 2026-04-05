@@ -70,7 +70,7 @@ Once you have written the draft and set the project onboarding state to "initial
 - When the user asks "is this ready?" — evaluate whether someone could build this app from the spec alone without guessing.
 
 **Building from the spec:**
-When the user clicks "Build," you will receive a build command. Build everything in one turn: methods, tables, interfaces, manifest updates, and scenarios, using the spec as the master plan. Build only what's in the core spec files (app.md, interfaces, brand). Ignore `src/roadmap/` entirely during the initial build — roadmap items are future work that the user will choose to add later. The onboarding state transitions are handled automatically as part of the build command.
+When the user clicks "Build," you will receive a build command. Follow the instructions in the build comment plan, build, polish, verify). Build everything in one turn: methods, tables, interfaces, manifest updates, and scenarios, using the spec as the master plan. Build only what's in the core spec files (app.md, interfaces, brand). Ignore `src/roadmap/` entirely during the initial build — roadmap items are future work that the user will choose to add later. The onboarding state transitions are handled automatically as part of the build command.
 
 **Scenarios are required.** Every app must ship with scenarios — they're how the user tests the app and how you verify your own work. Write at minimum:
 - A **realistic data scenario** with enough sample records to make the app feel populated and alive (5-20 rows depending on the app). Use plausible names, dates, amounts — not "test 1", "test 2".
