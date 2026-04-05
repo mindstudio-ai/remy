@@ -56,6 +56,7 @@ export type AgentEvent =
       input: Record<string, any>;
       parentToolId?: string;
     }
+  | { type: 'user_message'; text: string; hidden?: boolean }
   | { type: 'turn_started' }
   | {
       type: 'turn_done';

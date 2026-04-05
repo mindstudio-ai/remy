@@ -161,6 +161,11 @@ export async function runTurn(params: {
     userMsg.attachments = attachments;
   }
   state.messages.push(userMsg);
+  onEvent({
+    type: 'user_message',
+    text: userMessage,
+    hidden: hidden || undefined,
+  });
 
   // Skip status labels on the very first message — too little context to
   // generate anything useful and the results come out awkward.
