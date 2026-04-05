@@ -8,6 +8,7 @@ import {
   getHeadingTree,
 } from './_helpers.js';
 import { unifiedDiff } from '../_helpers/diff.js';
+import { acquireFileLock } from '../_helpers/fileLock.js';
 
 export const editSpecTool: Tool = {
   clearable: true,
@@ -61,76 +62,81 @@ export const editSpecTool: Tool = {
       return `Error: ${err.message}`;
     }
 
-    let originalContent: string;
+    const release = await acquireFileLock(input.path);
     try {
-      originalContent = await fs.readFile(input.path, 'utf-8');
-    } catch (err: any) {
-      return `Error reading file: ${err.message}`;
-    }
-
-    let content = originalContent;
-
-    for (const edit of input.edits) {
-      let range;
+      let originalContent: string;
       try {
-        range = resolveHeadingPath(content, edit.heading);
+        originalContent = await fs.readFile(input.path, 'utf-8');
       } catch (err: any) {
-        const tree = getHeadingTree(content);
-        return `Error: ${err.message}\n\nDocument structure:\n${tree}`;
+        return `Error reading file: ${err.message}`;
       }
 
-      const lines = content.split('\n');
+      let content = originalContent;
 
-      switch (edit.operation) {
-        case 'replace': {
-          if (edit.content == null) {
-            return 'Error: "content" is required for replace operations.';
+      for (const edit of input.edits) {
+        let range;
+        try {
+          range = resolveHeadingPath(content, edit.heading);
+        } catch (err: any) {
+          const tree = getHeadingTree(content);
+          return `Error: ${err.message}\n\nDocument structure:\n${tree}`;
+        }
+
+        const lines = content.split('\n');
+
+        switch (edit.operation) {
+          case 'replace': {
+            if (edit.content == null) {
+              return 'Error: "content" is required for replace operations.';
+            }
+            const contentLines = edit.content.split('\n');
+            lines.splice(
+              range.contentStart,
+              range.contentEnd - range.contentStart,
+              ...contentLines,
+            );
+            break;
           }
-          const contentLines = edit.content.split('\n');
-          lines.splice(
-            range.contentStart,
-            range.contentEnd - range.contentStart,
-            ...contentLines,
-          );
-          break;
-        }
 
-        case 'insert_after': {
-          if (edit.content == null) {
-            return 'Error: "content" is required for insert_after operations.';
+          case 'insert_after': {
+            if (edit.content == null) {
+              return 'Error: "content" is required for insert_after operations.';
+            }
+            const contentLines = edit.content.split('\n');
+            lines.splice(range.contentEnd, 0, ...contentLines);
+            break;
           }
-          const contentLines = edit.content.split('\n');
-          lines.splice(range.contentEnd, 0, ...contentLines);
-          break;
-        }
 
-        case 'insert_before': {
-          if (edit.content == null) {
-            return 'Error: "content" is required for insert_before operations.';
+          case 'insert_before': {
+            if (edit.content == null) {
+              return 'Error: "content" is required for insert_before operations.';
+            }
+            const contentLines = edit.content.split('\n');
+            lines.splice(range.startLine, 0, ...contentLines);
+            break;
           }
-          const contentLines = edit.content.split('\n');
-          lines.splice(range.startLine, 0, ...contentLines);
-          break;
+
+          case 'delete': {
+            lines.splice(range.startLine, range.contentEnd - range.startLine);
+            break;
+          }
+
+          default:
+            return `Error: Unknown operation "${edit.operation}". Use replace, insert_after, insert_before, or delete.`;
         }
 
-        case 'delete': {
-          lines.splice(range.startLine, range.contentEnd - range.startLine);
-          break;
-        }
-
-        default:
-          return `Error: Unknown operation "${edit.operation}". Use replace, insert_after, insert_before, or delete.`;
+        content = lines.join('\n');
       }
 
-      content = lines.join('\n');
-    }
+      try {
+        await fs.writeFile(input.path, content, 'utf-8');
+      } catch (err: any) {
+        return `Error writing file: ${err.message}`;
+      }
 
-    try {
-      await fs.writeFile(input.path, content, 'utf-8');
-    } catch (err: any) {
-      return `Error writing file: ${err.message}`;
+      return unifiedDiff(input.path, originalContent, content);
+    } finally {
+      release();
     }
-
-    return unifiedDiff(input.path, originalContent, content);
   },
 };

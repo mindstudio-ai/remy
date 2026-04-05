@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { Tool } from '../index.js';
 import { unifiedDiff } from '../_helpers/diff.js';
+import { acquireFileLock } from '../_helpers/fileLock.js';
 
 export const writeFileTool: Tool = {
   clearable: true,
@@ -58,6 +59,7 @@ export const writeFileTool: Tool = {
   })(),
 
   async execute(input) {
+    const release = await acquireFileLock(input.path);
     try {
       await fs.mkdir(path.dirname(input.path), { recursive: true });
 
@@ -75,6 +77,8 @@ export const writeFileTool: Tool = {
       return `${label} ${input.path} (${lineCount} lines)\n${unifiedDiff(input.path, oldContent ?? '', input.content)}`;
     } catch (err: any) {
       return `Error writing file: ${err.message}`;
+    } finally {
+      release();
     }
   },
 };

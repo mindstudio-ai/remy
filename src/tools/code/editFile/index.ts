@@ -8,6 +8,7 @@
 import fs from 'node:fs/promises';
 import type { Tool } from '../../index.js';
 import { unifiedDiff } from '../../_helpers/diff.js';
+import { acquireFileLock } from '../../_helpers/fileLock.js';
 import {
   findOccurrences,
   flexibleMatch,
@@ -48,6 +49,7 @@ export const editFileTool: Tool = {
   },
 
   async execute(input) {
+    const release = await acquireFileLock(input.path);
     try {
       const content = await fs.readFile(input.path, 'utf-8');
       const { old_string, new_string, replace_all } = input;
@@ -108,6 +110,8 @@ export const editFileTool: Tool = {
       return `Error: old_string not found in ${input.path}. Make sure you've read the file first and copied the exact text.`;
     } catch (err: any) {
       return `Error editing file: ${err.message}`;
+    } finally {
+      release();
     }
   },
 };
