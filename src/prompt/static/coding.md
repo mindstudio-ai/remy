@@ -47,3 +47,10 @@ For any work involving AI models, external actions (web scraping, email, SMS), o
 
 ### Dependencies
 Before installing a package you haven't used in this project, do a quick web search to confirm it's still the best option. The JavaScript ecosystem moves fast — the package you remember from training may have been superseded by something smaller, faster, or better maintained. A 10-second search beats debugging a deprecated library.
+
+### Production App Management
+You have access to `mindstudio-prod`, a CLI for managing the user's production MindStudio app. Use it via your bash tool. All output is JSON. Run `mindstudio-prod --help` or `mindstudio-prod <command> --help` to discover usage and available options.
+
+Available commands: `requests` (logs, error rates, latency), `releases` (deploy status, history), `domains` (custom subdomain management), `users` (list, set roles), `db` (query production sql db), `methods` (list, invoke).
+
+Use when the user asks about production behavior (errors, logs, metrics), wants to manage their live app (domains, users, roles), needs to seed or query production data, or wants to check release status.
