@@ -295,7 +295,7 @@ The human-readable spec. Frontmatter contains structured fields (rendered with d
 ```yaml
 ---
 name: Todo Assistant
-model: {"model": "claude-4-5-haiku", "temperature": 0.5, "maxResponseTokens": 15000}
+model: {"model": "claude-4-5-haiku", "temperature": 0.5, "maxResponseTokens": 16000}
 description: Conversational agent that helps users manage their to-do list.
 ---
 ```
@@ -332,7 +332,7 @@ dist/interfaces/agent/
   "agent": {
     "model": "claude-4-5-haiku",
     "temperature": 0.5,
-    "maxTokens": 15000,
+    "maxTokens": 16000,
     "systemPrompt": "system.md",
     "tools": [
       { "method": "create-todo", "description": "tools/createTodo.md" },

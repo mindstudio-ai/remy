@@ -11,6 +11,28 @@ export const SCREENSHOT_ANALYSIS_PROMPT = `Describe everything visible on screen
 
 Respond only with your analysis as Markdown and absolutely no other text. Do not use emojis - use unicode if you need symbols.`;
 
+const TEXT_WRAP_DISCLAIMER = `Note: ignore text wrapping issues. Screenshots occasionally show text wrapping onto an extra line compared to the live page — most noticeable in buttons, badges, and headings. This is a known limitation of SVG foreignObject rendering used the DOM-to-image capture library that took the screenshot. The browser's SVG renderer computes slightly wider text metrics than the HTML layout engine, so text that fits on one line in the live DOM can overflow by a fraction of a pixel in the capture - this is not a real issue.`;
+
+/**
+ * Build a complete screenshot analysis prompt with optional styleMap
+ * and the text-wrap disclaimer. All screenshot analysis paths should
+ * use this to keep prompt construction consistent.
+ */
+export function buildScreenshotAnalysisPrompt(opts?: {
+  prompt?: string;
+  styleMap?: string;
+}): string {
+  let p = opts?.prompt || SCREENSHOT_ANALYSIS_PROMPT;
+
+  if (opts?.styleMap) {
+    p += `\n\nThe following styleMap describes the computed layout state at the moment of capture. Use it to verify typography, spacing, overflow, and element dimensions — it is more accurate than visual estimation from the image.\n\n<style_map>\n${opts.styleMap}\n</style_map>`;
+  }
+
+  p += `\n\n${TEXT_WRAP_DISCLAIMER}`;
+
+  return p;
+}
+
 export interface ScreenshotOptions {
   /** Analysis prompt. Pass `false` to skip analysis and return just the URL. */
   prompt?: string | false;
@@ -45,6 +67,7 @@ export async function captureAndAnalyzeScreenshot(
   }
 
   let url: string;
+  let styleMap: string | undefined;
   if (existingUrl) {
     url = existingUrl;
   } else {
@@ -59,22 +82,22 @@ export async function captureAndAnalyzeScreenshot(
         `No URL in sidecar response. The browser may not be ready yet. Response: ${JSON.stringify(ssResult)}`,
       );
     }
+    styleMap = ssResult?.styleMap;
   }
 
   if (prompt === false) {
     return url;
   }
 
-  let analysisPrompt = prompt || SCREENSHOT_ANALYSIS_PROMPT;
-
-  analysisPrompt += `
-Note: ignore text wrapping issues. Screenshots occasionally show text wrapping onto an extra line compared to the live page — most noticeable in buttons, badges, and headings. This is a known limitation of SVG foreignObject rendering used the DOM-to-image capture library that took the screenshot. The browser's SVG renderer computes slightly wider text metrics than the HTML layout engine, so text that fits on one line in the live DOM can overflow by a fraction of a pixel in the capture - this is not a real issue.
-`;
+  const analysisPrompt = buildScreenshotAnalysisPrompt({
+    prompt: prompt || undefined,
+    styleMap,
+  });
 
   const analysis = await analyzeImage({
     prompt: analysisPrompt,
     imageUrl: url,
     onLog,
   });
-  return JSON.stringify({ url, analysis });
+  return JSON.stringify({ url, analysis, ...(styleMap ? { styleMap } : {}) });
 }

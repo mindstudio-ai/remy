@@ -614,6 +614,12 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       if (pending) {
         pendingTools.delete(id);
         pending.resolve(result);
+      } else if (!running) {
+        // No pending tool and no active turn — likely a late result after
+        // restart (session sanitization already patched the conversation).
+        // Emit completed so the frontend dismisses any stale overlay.
+        log.info('Late tool_result while idle, dismissing', { id });
+        emit('completed', { success: true }, requestId);
       } else {
         earlyResults.set(id, result);
       }

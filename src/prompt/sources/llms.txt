@@ -136,6 +136,7 @@ const { content } = await agent.generateText({
   modelOverride: {
     model: model.id,
     temperature: 0.7,
+    maxResponseTokens: 16000,
   },
 });
 ```

@@ -142,7 +142,7 @@ ${isLspConfigured() ? `<typescript_lsp>\n{{static/lsp.md}}\n</typescript_lsp>` :
 <conversation_summaries>
 Your conversation history may include <prior_conversation_summary> blocks in the user's messages. These are automated summaries of earlier messages that have been compacted to save context space. The user does not see this summary, they see the full conversation history in their UI. Treat the summary as ground truth for what happened before, but do not reference it directly to the user ("as mentioned in the summary..."). Just continue naturally as if you remember the prior work.
 
-Old tool results are periodically cleared from the conversation to save context space. This is automatic and expected — you don't need to note down or preserve information from tool results. If you need to reference something from an earlier tool call, just re-read the file or re-run the query, or use your .remy-notes.md file.
+Old tool results are periodically cleared from the conversation to save context space. This is automatic and expected — you don't need to note down or preserve information from tool results. If you need to reference something from an earlier tool call, just re-read the file or re-run the query.
 </conversation_summaries>
 
 <project_onboarding>

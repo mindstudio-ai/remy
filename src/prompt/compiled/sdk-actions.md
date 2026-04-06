@@ -127,6 +127,7 @@ const { content } = await agent.generateText({
   modelOverride: {
     model: 'claude-sonnet-4-6',
     temperature: 0.7,
+    maxResponseTokens: 16000,
   },
 });
 ```

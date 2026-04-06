@@ -13,7 +13,7 @@ import { getBrowserAutomationPrompt } from './prompt.js';
 import { sidecarRequest } from '../../tools/_helpers/sidecar.js';
 import {
   captureAndAnalyzeScreenshot,
-  SCREENSHOT_ANALYSIS_PROMPT,
+  buildScreenshotAnalysisPrompt,
 } from '../../tools/_helpers/screenshot.js';
 import { runCli } from '../common/runCli.js';
 import { createLogger } from '../../logger.js';
@@ -124,7 +124,9 @@ export const browserAutomationTool: Tool = {
                   stepType: 'analyzeImage',
                   step: {
                     imageUrl: s.result.url,
-                    prompt: SCREENSHOT_ANALYSIS_PROMPT,
+                    prompt: buildScreenshotAnalysisPrompt({
+                      styleMap: s.result.styleMap,
+                    }),
                   },
                 }));
                 const batchResult = await runCli(

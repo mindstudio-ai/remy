@@ -2,7 +2,7 @@ import type { ToolDefinition } from '../../../api.js';
 import type { ToolExecutionContext } from '../../../tools/index.js';
 import {
   captureAndAnalyzeScreenshot,
-  SCREENSHOT_ANALYSIS_PROMPT,
+  buildScreenshotAnalysisPrompt,
 } from '../../../tools/_helpers/screenshot.js';
 import { analyzeImage } from '../../common/analyzeImage.js';
 import { browserAutomationTool } from '../../browserAutomation/index.js';
@@ -56,14 +56,28 @@ export async function execute(
       }
 
       const url = urlMatch[0];
-      const analysisPrompt =
-        (input.prompt as string) || SCREENSHOT_ANALYSIS_PROMPT;
+      // Try to extract styleMap from the subagent result
+      let styleMap: string | undefined;
+      try {
+        const parsed = JSON.parse(result as string);
+        styleMap = parsed?.styleMap;
+      } catch {
+        // Result may not be JSON — that's fine
+      }
+      const analysisPrompt = buildScreenshotAnalysisPrompt({
+        prompt: input.prompt as string | undefined,
+        styleMap,
+      });
       const analysis = await analyzeImage({
         prompt: analysisPrompt,
         imageUrl: url,
         onLog,
       });
-      return JSON.stringify({ url, analysis });
+      return JSON.stringify({
+        url,
+        analysis,
+        ...(styleMap ? { styleMap } : {}),
+      });
     } catch (err: any) {
       return `Error taking interactive screenshot: ${err.message}`;
     }
