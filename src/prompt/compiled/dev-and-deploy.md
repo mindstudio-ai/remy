@@ -40,6 +40,8 @@ The platform builds and deploys automatically:
 5. **Compute effects** — roles diff, cron diff, bot command diffs, table DDL
 6. **Apply** — create/update roles, sync bot commands, apply DDL to a staging database copy, swap the live pointer
 
+All deployed apps are available on <uuid>.msagent.ai where uuid is their app ID. If an app has a custom subdomain, it's available at <subdomain>.msagent.ai as well. This can be configured using the `mindstudio-prod` CLI via bash.
+
 ### Preview Deployments
 
 Push to a non-default branch for a preview deployment — same build pipeline, but doesn't affect the live app. Useful for testing changes before merging.
