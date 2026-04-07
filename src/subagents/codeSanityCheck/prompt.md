@@ -18,6 +18,9 @@ These are things we already know about and have decided to accept:
 
 - Limited browser support for `oklch` gradients using `in <colorspace>` syntax — we accept the compatibility tradeoff for better color quality
 - Limited browser support for CSS scroll-driven animations (`animation-timeline: scroll()` / `view()`)  - we accept this tradeoff
+- Platform SDKs (these are the core of every MindStudio app):
+  - `@mindstudio-ai/interface` — frontend SDK. `createClient<T>()` gives typed RPC to backend methods (no raw fetch). `auth` handles auth state (`auth.currentUser`, `auth.onAuthStateChanged(cb)`, verification flows, logout). `platform.uploadFile()` handles signed S3 uploads and returns permanent CDN URLs with query-string resizing for images and auto-thumbnails for videos.
+  - `@mindstudio-ai/agent` — backend SDK. `db.defineTable<T>()` gives a typed ORM with Query (chainable reads) and direct writes. `auth` gives `auth.userId`, `auth.roles`, `auth.requireRole()`, `auth.hasRole()`. Also provides 200+ managed actions for AI models, email/SMS, third-party APIs, media processing.
 - Libraries we know are actively maintained, don't bother checking:
   - swr
   - motion (formerly framer-motion — import from `motion/react`, not `framer-motion`)
@@ -28,7 +31,7 @@ These are things we already know about and have decided to accept:
   - react-textarea-autosize
 - Preferences:
   - use [wouter](https://github.com/molefrog/wouter) for React routing instead of reaching for react-router
-  - uploading user files should mostly always happen via @mindstudio-ai/interface's platform.uploadFile() - it does the whole signed S3 upload dance and returns a permanent CDN url, including query-string-resizable images, videos + auto-thumbnails, etc.
+  - uploading user files should always happen via `platform.uploadFile()` from `@mindstudio-ai/interface` — not custom S3 code, not FormData to a method endpoint
   - for static prerendering of Vite + React sites, roll your own with a post-build `renderToString` script — do not use `vite-prerender-plugin` (it bundles the prerender script as a client chunk, adding ~800KB to the user-facing bundle with no way to prevent it)
 
 ### Common pitfalls (always flag these)
@@ -53,7 +56,9 @@ When a plan includes multiple screens/API calls, always note this item for the d
 
 - **Image preloading for detail views.** If the plan has a grid/list of thumbnails that link to detail views with full-size images, flag it if there's no preloading strategy. The fix: preload full-size images in the background (`new Image().src = url`) so they're in the browser cache by the time the user taps. This makes transitions feel instant.
 
-- **Layout shift with dynamic data or AI generatd text** If the plan includes dynamically-sized data (e.g., a wizard form with questions of differing lengths) or AI generated text (where text stream length is unpredictable), make sure to flag concerns about layout stability. Everything must either be a fixed size or smoothly animate between sizes. Text can never be clipped by a container or cause layout to jump around or grow in snappy/janky ways. Make sure to remind the developer that this is important to pay attention to.
+- **Auth state read once instead of subscribed.** If the plan reads `auth.currentUser` or `auth.getCurrentUser()` in a `useState` initializer, at component top-level, or in a one-time check, the UI won't update after login/logout. The correct pattern is `auth.onAuthStateChanged(cb)` which fires immediately and on every auth transition. Flag if you see auth state read without a subscription.
+
+- **Layout shift with dynamic data or AI generated text** If the plan includes dynamically-sized data (e.g., a wizard form with questions of differing lengths) or AI generated text (where text stream length is unpredictable), make sure to flag concerns about layout stability. Everything must either be a fixed size or smoothly animate between sizes. Text can never be clipped by a container or cause layout to jump around or grow in snappy/janky ways. Make sure to remind the developer that this is important to pay attention to.
 
 ## When to stay quiet
 
