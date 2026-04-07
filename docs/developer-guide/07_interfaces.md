@@ -73,8 +73,10 @@ const url = await platform.uploadFile(file, {
 controller.abort(); // cancels the upload
 
 // Auth (for apps with auth enabled in manifest)
-auth.getCurrentUser()    // AppUser { id, email, phone, roles, createdAt } | null
-auth.isAuthenticated()   // boolean
+auth.getCurrentUser()               // AppUser { id, email, phone, roles, createdAt } | null
+auth.currentUser                    // same as getCurrentUser() (sync getter)
+auth.isAuthenticated()              // boolean
+auth.onAuthStateChanged(cb)         // fires immediately + on transitions; returns unsubscribe
 auth.sendEmailCode(email)           // → { verificationId }
 auth.verifyEmailCode(verId, code)   // → AppUser (sets session)
 auth.sendSmsCode(phone)             // → { verificationId }

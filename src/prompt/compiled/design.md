@@ -47,6 +47,7 @@ Every interface must work on both desktop and mobile. Think about how the app wi
 - On mobile, stack gracefully. Prioritize content and actions.
 - Test at both extremes. A layout that only looks good at one breakpoint is not done.
 - When the app is primarily mobile (e.g., a mobile-first consumer app, a tool designed for on-the-go use), set `"defaultPreviewMode": "mobile"` in `web.json` so the editor previews in a mobile viewport by default.
+- Even for mobile-first apps, make sure to set desktop or larger device breakpoints - nothing looks jankier than opening a mobile-designed site in a desktop browser and seeing a full width bottom tab bar with nav icons stretching 1000px wide. Don't make sloppy, amateur mistakes or omissions like this - the user will notice them and be disappointed.
 
 ## Images
 The `designExpert` can create and source amazing, high quality images, graphics, illustrations, and logos to use in the interface - both with and without transparency. This is a huge level for upgrading the premium look, feel, and quality of the app. Use image logos directly instead of plain text wordmarks; use images for empty states, onboarding screens, full-screen loading, and more.
@@ -87,25 +88,6 @@ The UI should feel instant. Never make the user wait for a server round-trip to 
 ### Errors
 
 Handle errors gracefully. You don't need to design for every error case, but if remote API requests fail, make sure to show them nicely in a toast or some other appropriate view with a human-friendly label - don't just drop "Error 500 XYZ" inline in a form.
-
-## Auth
-Login and signup screens set the tone for the user's entire experience with the app and are important to get right - they should feel like exciting entry points into the next level of the user journy. A janky login form with misaligned inputs and no feedback dminishes excitement and undermines trust before the user even gets in.
-
-Authentication moments must feel natural and intuitive - they should not feel jarring or surprising. Take care to integrate them into the entire experience when building. MindStudio apps support SMS code verification, email verification, or both, depending on how the app is configured.
-
-### Rules for building auth screens
-
-Consult the `visualDesignExpert` to help you work through authentication at a high level. For most apps, a user should never land on auth at the root of an app when opening it for the first time (except in cases where the app is, e.g., an internal tool or some other protected experience). Users should be able to explore public resources, or at least encounter some kind of landing/introduction moment, before they get hit with a signup/login screen. Make auth feel like a natural moment in the user's journey.
-
-**Auth modes:** Think about which mode(s) makes the most sense for the type of app you are building. Consumer apps likely to be used on mobile should probably tend toward SMS auth as the default - business apps used on desktop make more sense to use email verification - or allow both, there's no harm in giving the user choice!
-
-**Verification code input:** The 6-digit code entry is the critical moment. Prefer to design it as individual digit boxes (not a single text input), with auto-advance between digits, a beautiful animation and auto-submit on paste, and clear visual feedback. The boxes should be large enough to tap easily on mobile. Show a subtle animation on successful verification. Error states should be inline and immediate, not a separate alert. Make sure there is no layout shift when loading in the success/error states.
-
-**The send/resend flow:** After the user enters their email or phone and taps "Send code," show clear confirmation that the code was sent ("Check your email" with the address displayed). Include a resend option with a cooldown timer (e.g., "Resend in 30s"). The transition from "enter email/phone" to "enter code" should feel smooth, not like a page reload. Always make sure the user can cancel and exit the flow (e.g., they had a typo in their email, or remembered they used a different email to sign up).
-
-**The overall login page:** This is a branding moment. Use the app's full visual identity — colors, typography, any logos, hero imagery, or illustration. A centered card on a branded background is a classic pattern. Don't make it look like a generic SaaS login template. The login page must feel like it belongs to this specific app. Consult the `visualDesignExpert` for additional guidance.
-
-**Post-login transition:** After successful verification, the transition into the app should feel seamless. Avoid a blank loading screen — if data needs to load, show the app shell with skeleton states. Always make sure the user has a way of logging out.
 
 ## FTUE
 

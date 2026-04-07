@@ -100,11 +100,25 @@ interface AppUser {
 }
 ```
 
-### State (sync — reads from cached config)
+### State
 
 ```typescript
-auth.getCurrentUser()    // AppUser | null (null = unauthenticated)
-auth.isAuthenticated()   // boolean
+auth.getCurrentUser()         // AppUser | null (null = unauthenticated)
+auth.currentUser              // AppUser | null (sync getter, same as getCurrentUser())
+auth.isAuthenticated()        // boolean
+auth.onAuthStateChanged(cb)   // fires immediately with current user, then on every
+                              // auth transition (verify, confirm, logout).
+                              // Returns an unsubscribe function.
+```
+
+Use `onAuthStateChanged` in React instead of reading `currentUser` once at render time:
+
+```typescript
+function useAuth() {
+  const [user, setUser] = useState<AppUser | null>(null);
+  useEffect(() => auth.onAuthStateChanged(setUser), []);
+  return user;
+}
 ```
 
 ### Email Code Flow
@@ -140,6 +154,19 @@ const user = await auth.confirmPhoneChange('+15559876543', '123456');
 ```typescript
 await auth.logout();  // clears cookie and session
 ```
+
+### Error Codes
+
+All auth methods throw on failure with a `code` property:
+
+| Code | HTTP | Meaning |
+|------|------|---------|
+| `rate_limited` | 429 | Too many requests |
+| `invalid_code` | 400 | Wrong verification code |
+| `verification_expired` | 400 | Code has expired |
+| `max_attempts_exceeded` | 400 | Too many failed attempts |
+| `not_authenticated` | 401 | No active session |
+| `invalid_session` | 401 | Session expired or invalid |
 
 ### Phone Helpers (`auth.phone`)
 
@@ -197,36 +224,56 @@ Returns an array of user IDs with the specified role. Useful for "notify all adm
 ## Login Page Example
 
 ```tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { auth } from '@mindstudio-ai/interface';
+import { useLocation } from 'wouter';
+
+function useAuth() {
+  const [user, setUser] = useState<AppUser | null>(null);
+  useEffect(() => auth.onAuthStateChanged(setUser), []);
+  return user;
+}
 
 function LoginPage() {
+  const user = useAuth();
+  const [, navigate] = useLocation();
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [verificationId, setVerificationId] = useState('');
-  const [codeSent, setCodeSent] = useState(false);
+  const [error, setError] = useState('');
+
+  // Redirect when authenticated (fires via onAuthStateChanged after verify)
+  useEffect(() => { if (user) navigate('/dashboard'); }, [user]);
 
   const handleSendCode = async () => {
-    const { verificationId } = await auth.sendEmailCode(email);
-    setVerificationId(verificationId);
-    setCodeSent(true);
+    try {
+      const { verificationId } = await auth.sendEmailCode(email);
+      setVerificationId(verificationId);
+      setError('');
+    } catch (err: any) {
+      setError(err.code === 'rate_limited' ? 'Too many attempts. Try again later.' : err.message);
+    }
   };
 
   const handleVerify = async () => {
-    await auth.verifyEmailCode(verificationId, code);
-    window.location.href = '/dashboard';
+    try {
+      await auth.verifyEmailCode(verificationId, code);
+      // onAuthStateChanged fires, useAuth updates, redirect happens
+    } catch (err: any) {
+      if (err.code === 'invalid_code') setError('Wrong code. Try again.');
+      else if (err.code === 'verification_expired') setError('Code expired. Request a new one.');
+      else if (err.code === 'max_attempts_exceeded') setError('Too many attempts. Request a new code.');
+      else setError(err.message);
+    }
   };
 
-  if (!codeSent) {
+  if (!verificationId) {
     return (
       <div>
         <h1>Sign in</h1>
-        <input
-          placeholder="Email"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-        />
+        <input placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
         <button onClick={handleSendCode}>Send code</button>
+        {error && <p>{error}</p>}
       </div>
     );
   }
@@ -234,12 +281,10 @@ function LoginPage() {
   return (
     <div>
       <p>Enter the code we sent to {email}</p>
-      <input
-        placeholder="123456"
-        value={code}
-        onChange={e => setCode(e.target.value)}
-      />
+      <input placeholder="123456" value={code} onChange={e => setCode(e.target.value)} />
       <button onClick={handleVerify}>Verify</button>
+      <button onClick={() => setVerificationId('')}>Resend</button>
+      {error && <p>{error}</p>}
     </div>
   );
 }

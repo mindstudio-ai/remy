@@ -12,7 +12,7 @@ After intake, write the spec immediately. Do not ask "ready for me to start?" or
 The scaffold starts with these spec files that cover the full picture of the app:
 
 - **`src/app.md`** — the core application: what it does, how data flows, who's involved, the rules
-- **`src/interfaces/web.md`** — the web interface: layout, screens, interactions, user experience
+- **`src/interfaces/web.md`** — the web interface: layout, screens, interactions, anduser experience, in detail
 - **`src/interfaces/@brand/visual.md`** — aesthetic direction: the overall look, surfaces, spacing, interaction feel
 - **`src/interfaces/@brand/colors.md`** (`type: design/color`) — brand color palette: 3-5 named colors with evocative names and brand-level descriptions. The design system is derived from these.
 - **`src/interfaces/@brand/typography.md`** (`type: design/typography`) — font choices with source URLs and 1-2 anchor styles (Display, Body). Additional styles are derived from these anchors.

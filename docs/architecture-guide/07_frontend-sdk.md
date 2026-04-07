@@ -135,18 +135,18 @@ Uses a presigned S3 upload. When `onProgress` is provided, uses XHR for the uplo
 
 ## `auth`
 
-Read-only user identity:
+User identity and auth state management:
 
 ```typescript
 import { auth } from '@mindstudio-ai/interface';
 
-auth.userId;            // current user's ID
-auth.name;              // display name
-auth.email;             // email address
-auth.profilePictureUrl; // URL or null
+auth.getCurrentUser()           // AppUser | null
+auth.currentUser                // AppUser | null (sync getter, same as getCurrentUser())
+auth.isAuthenticated()          // boolean
+auth.onAuthStateChanged(cb)     // fires immediately + on transitions; returns unsubscribe
 ```
 
-All properties are synchronous, read from `window.__MINDSTUDIO__.user` via a lazy Proxy.
+State is synchronous, read from `window.__MINDSTUDIO__` config. `onAuthStateChanged` fires immediately with the current user on subscribe, then on every auth transition (verify, confirm, logout).
 
 **Display only.** Role checking is a backend concern. The frontend can read roles for UI purposes (showing/hiding elements), but enforcement happens in methods via `auth.requireRole()`. This is intentional: the frontend is untrusted, so access control must be enforced server-side.
 
