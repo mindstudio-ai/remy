@@ -53,12 +53,12 @@ For photorealistic images, go deep on four dimensions:
 
 For app icons and logos, the goal is something that reads clearly at phone home screen size and feels polished and beautiful - like it could appear as an "App of the Year" award winner.
 
-- Frame as "A 3D icon against a XYZ background" followed by the subject. Do NOT use the phrase "app icon" — it triggers mockup framing (the model renders an icon inset on a phone screen or mounted on a wall). "3D icon" works. Always specify "Full bleed square composition with no padding or margin".
+- Frame as "A 3D icon against a ful bleed XYZ background" followed by the subject. Do NOT use the phrase "app icon" — it triggers mockup framing (the model renders an icon inset on a phone screen or mounted on a wall). "3D icon" works. Always specify "Full bleed square composition with no padding or margin".
 - Describe smooth, rounded emoji-type 3D objects — think current macOS/iOS app icon design language. Apple emoji/nintendo style works really well for beautiful iconography. Not flat illustration, not photorealistic, not vectors.
 - Subjects should be immediately recognizable. Prefer one clear object or symbol, not a scene.
 - Specify "reads well at small sizes" as an explicit constraint.
 - Keep color intentional and limited — two or three accent colors plus the object's base tone. Colors should complement the app's brand if known.
-- Make sure to specify full bleed - never say anything about rounded corners or there is a high likelihood that the image will come back as a rounded rectangle on a white background!
+- You must specify that the image is full bleed - never say anything about rounded corners or there is a high likelihood that the image will come back as a rounded rectangle on a white background!
 - Apply the same material/lighting/color density as photography prompts, just to a single object. Describe the surface finish ("high-gloss lacquered finish with clean specular highlights," "soft matte ceramic with subtle surface texture"), the lighting behavior ("warm directional light from upper left producing a bright highlight streak across the curved surface and a soft shadow beneath"), and color as relationships ("deep coral body graduating to warm peach at the highlight edge, with a cream accent on the lens element"). Generic descriptors like "clean surfaces, soft lighting" produce generic icons.
 
 #### Open Graph Sharing Images
