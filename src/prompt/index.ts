@@ -112,6 +112,8 @@ Current date: ${now}
 
 <mindstudio_agent_sdk_docs>
   {{compiled/sdk-actions.md}}
+
+  {{compiled/task-agents.md}}
 </mindstudio_agent_sdk_docs>
 
 <mindstudio_flavored_markdown_spec_docs>
