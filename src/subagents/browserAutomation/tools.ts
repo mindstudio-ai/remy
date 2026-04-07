@@ -8,6 +8,41 @@ import type { ToolDefinition } from '../../api.js';
 
 export const BROWSER_TOOLS: ToolDefinition[] = [
   {
+    clearable: false,
+    name: 'setupBrowser',
+    description:
+      'Pre-authenticate the browser and optionally navigate to a starting page. Call this before interacting with authenticated content instead of manually logging in. Auth is optional — omit to just navigate without authenticating.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        auth: {
+          type: 'object',
+          description:
+            "Authentication config. Upserts the user if they don't exist.",
+          properties: {
+            email: {
+              type: 'string',
+              description: 'User email address.',
+            },
+            phone: {
+              type: 'string',
+              description: 'User phone number.',
+            },
+            roles: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Roles to set on the user.',
+            },
+          },
+        },
+        path: {
+          type: 'string',
+          description: 'Navigate to this path after setup (default "/").',
+        },
+      },
+    },
+  },
+  {
     clearable: true,
     name: 'browserCommand',
     description:

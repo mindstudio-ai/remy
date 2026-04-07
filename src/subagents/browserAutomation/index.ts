@@ -87,6 +87,21 @@ export const browserAutomationTool: Tool = {
         tools: BROWSER_TOOLS,
         externalTools: BROWSER_EXTERNAL_TOOLS,
         executeTool: async (name, _input, _toolCallId, onLog) => {
+          if (name === 'setupBrowser') {
+            try {
+              const result = await sidecarRequest(
+                '/setup-browser',
+                {
+                  auth: _input.auth,
+                  path: _input.path,
+                },
+                { timeout: 15000 },
+              );
+              return JSON.stringify(result);
+            } catch (err: any) {
+              return `Error setting up browser: ${err.message}`;
+            }
+          }
           if (name === 'screenshotFullPage') {
             try {
               return await captureAndAnalyzeScreenshot({
