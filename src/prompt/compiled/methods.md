@@ -252,3 +252,43 @@ const result = await api.generateReport(
 ```
 
 The platform handles the SSE transport. The method returns normally — streaming is managed by the SDK and platform, not by your method code.
+
+## Raw Request Context (API Interface)
+
+Methods invoked via the API interface receive `input._request` alongside the parsed input:
+
+```typescript
+input._request: {
+  method: string;                      // "GET", "POST", etc.
+  headers: Record<string, string>;     // all headers (lowercase keys)
+  rawBody: string | undefined;         // original unparsed body (UTF-8)
+}
+```
+
+`rawBody` preserves the exact bytes the client sent — whitespace, key ordering, encoding. Use it for webhook signature verification:
+
+```typescript
+export async function stripeWebhook(input: {
+  type: string;
+  data: any;
+  _request: { headers: Record<string, string>; rawBody: string };
+}) {
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
+  const event = stripe.webhooks.constructEvent(
+    input._request.rawBody,
+    input._request.headers['stripe-signature'],
+    process.env.STRIPE_WEBHOOK_SECRET!,
+  );
+
+  switch (event.type) {
+    case 'payment_intent.succeeded':
+      // ...
+      break;
+  }
+
+  return { received: true };
+}
+```
+
+For most methods, you don't need `_request` — the parsed path params, query params, and body fields are already on `input` directly.

@@ -212,6 +212,7 @@ Routes are mounted at `/_/api{path}` (e.g. `DELETE /_/api/vendors/abc123`).
 - **Response** is the method output directly (no `{ output: {...} }` wrapper)
 - **Auth** via `Authorization: Bearer sk_...` (API key resolves to a user with full RBAC)
 - **Streaming**: `Accept: text/event-stream` header returns SSE chunks
+- **Raw request context**: Every API method receives `input._request` with `{ method, headers, rawBody }`. `rawBody` is the original unparsed body as a UTF-8 string — critical for webhook signature verification (Stripe, GitHub, Shopify). For most methods you don't need `_request` at all.
 
 ### Manifest
 

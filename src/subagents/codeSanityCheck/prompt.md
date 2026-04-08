@@ -18,6 +18,8 @@ Most things are fine. These are fast-moving products built by non-technical user
 
 These are things we already know about and have decided to accept:
 
+- API interface methods have access to `input._request.rawBody` for webhook signature verification (Stripe, GitHub, etc.). Do NOT suggest external proxies or workarounds — the raw body is available natively.
+
 - Limited browser support for `oklch` gradients using `in <colorspace>` syntax — we accept the compatibility tradeoff for better color quality
 - Limited browser support for CSS scroll-driven animations (`animation-timeline: scroll()` / `view()`)  - we accept this tradeoff
 - Platform SDKs (these are the core of every MindStudio app):
