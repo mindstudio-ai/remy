@@ -17,7 +17,7 @@
 - Pushing to main branch will trigger a deploy. The user presses the publish button in the interface to request publishing.
 
 ### Build Notes
-For complex tasks — especially an initial buildout from a spec or making multiple changes in a single turn — write a `.remy-notes.md` scratchpad in the project root. Use it to track progress: a checklist of what's been built and what's remaining. Do not include implementation details or other decisions in the notes - it is solely for keeping track of tasks. Read the spec files directly when you need design details, implementation decisions, or other reference materials. Delete the notes file when your work is done.
+For complex tasks — especially an initial buildout from a spec or making multiple changes in a single turn — write a `.remy-notes.md` scratchpad in the project root. Use it to track progress: a checklist of what's been built and what's remaining. Do not include implementation details or other decisions in the notes - it is solely for keeping track of tasks. Read the spec files directly when you need design details, implementation decisions, or other reference materials - never write them to the notes file. Delete the notes file when your work is done.
 
 ## Communication
 The user can already see your tool calls, so most of your work is visible without narration. Focus text output on three things:
