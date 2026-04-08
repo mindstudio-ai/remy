@@ -1,12 +1,16 @@
 # Task Agents (`MindStudioAgent runTask`)
 
-`runTask()` runs a multi-step, tool-use agent loop. Give it a prompt, a set of SDK actions as tools, and an example of the structured output you want. The platform runs a loop (calling the model, executing tool calls, feeding results back) until the model produces JSON matching your output example.
+A user types the name of a restaurant into your app, or uploads a photo of a storefront. The API call returns early, and in the background, a task agent searches Google, finds the official website, scrapes the address, gets the official social media accounts, and generates a stylized watercolor postcard of the exterior from images it found online. The user gets back a rich, illustrated card with the canonical name, website, address, and a custom image. A few tool calls (some in parallel), fully autonomous.
 
-Use this for tasks where the model needs to autonomously decide what to do next based on intermediate results. Instead of manually chaining `searchGoogle` then `fetchUrl` then `generateImage` in code, describe the goal and let the model compose the actions. Use `askMindStudioSdk` to help you construct the perfect agent for a task.
+`runTask()` makes this possible. It runs a multi-step, tool-use agent loop: give it a prompt, a set of SDK actions as tools, and an example of the structured output you want. The platform runs the loop (calling the model, executing tool calls, feeding results back) until the model produces JSON matching your output example. The model decides what to do next based on intermediate results — retrying searches with different terms, working around failed tools, batching independent calls in parallel.
+
+This is one of the most powerful pieces of the MindStudio SDK and can make turn apps from amazing into truly magical. Use `askMindStudioSdk` to help construct the perfect agent for a task.
 
 ## When to Use
 
-Run this in the background - depending on the task it can take time to complete. Return an early partial result to the user and upsert later with the final result when the agent has finished executing its task.
+This is the tool to reach for whenever a feature would be dramatically more compelling if the app could autonomously research, enrich, or create on behalf of the user. Think about the difference between "user enters a restaurant name and it gets saved" vs. "user enters a restaurant name and gets back a fully researched, illustrated card." Task agents close that gap.
+
+Run tasks in the background — depending on complexity they can take time to complete. Return an early partial result to the user and upsert later with the final result when the agent finishes.
 
 - **Research and enrichment:** "Given this email, find the person's LinkedIn, role, company, and a headshot" — the model searches, scrapes, extracts, and assembles structured data.
 - **Content creation pipelines:** "Write SEO copy for this product in 3 languages, generate a hero image, extract keywords" — the model calls text generation, image generation, and analysis actions as needed.

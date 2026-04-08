@@ -157,3 +157,7 @@ MindStudio SDK allows us to build all kinds of amazing AI experiences in apps, i
   - Detailed image and video analysis
 
 Consider the ways in which AI can be incorporated into backend methods to solve problems and be creative.
+
+### Task Agents
+
+For multi-step tasks where the model needs to autonomously compose actions (research + scrape + generate, enrichment pipelines, content creation), use `runTask()` instead of chaining actions manually. It runs an agent loop with the SDK actions as tools and returns structured JSON. See the task agents reference for full details.
