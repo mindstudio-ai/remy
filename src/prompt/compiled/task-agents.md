@@ -44,24 +44,48 @@ const result = await agent.runTask<{
     { method: 'generateImage', defaults: { imageModelOverride: { model: 'seedream-4.5' } } },
   ],
 
-  structuredOutputExample: JSON.stringify({
+  structuredOutputExample: {
     name: 'Tartine Bakery',
     url: 'https://tartinebakery.com',
     address: '600 Guerrero St, San Francisco, CA 94110',
     photoUrl: 'https://cdn.mindstudio.ai/...',
-  }),
+  },
 
   model: 'claude-4-6-sonnet',
   maxTurns: 15,
 });
 
+// Always validate before using output
+if (!result.parsedSuccessfully) {
+  console.error('Task failed to produce structured output:', result.outputRaw);
+  throw new Error('Task agent failed');
+}
+
 console.log(result.output.name);    // 'Tartine Bakery'
 console.log(result.output.photoUrl); // URL to the generated illustration
 ```
 
+## Always Validate Output
+
+`runTask()` can return successfully with garbage output — fields null, data echoed back, or raw text instead of JSON. The result includes `parsedSuccessfully` to make this explicit. Always check it before using the output:
+
+```typescript
+const result = await agent.runTask<MyType>({ ... });
+
+if (!result.parsedSuccessfully) {
+  console.error('Task output was not valid JSON:', result.outputRaw);
+  throw new Error('Task agent failed to produce structured output');
+}
+
+// Now safe to use result.output
+await Table.update(id, result.output);
+```
+
 ## Tool Configuration
 
-Tools are SDK action names. The model gets the full input schema for each tool so it knows what parameters to pass.
+Tools are SDK action names. The model gets the full input schema for each tool so it knows what parameters to pass. Only include tools the task actually needs — the model may use extra tools unnecessarily.
+
+Use tool defaults for model/config choices. Use the prompt for task-level instructions.
 
 ```typescript
 tools: [
@@ -76,7 +100,7 @@ tools: [
 ]
 ```
 
-When the model calls a tool, the platform deep-merges the model's arguments with the developer's defaults. The model decides what to do (prompt, query, parameters), the developer controls which model/config to use.
+When the model calls a tool, the platform deep-merges the model's arguments with the developer's defaults. The model decides what to do (prompt, query, parameters), the developer controls which model/config to use. If the model needs to search and generate an image and those are independent, it will call both tools in the same turn (parallel execution server-side).
 
 ## Options
 
@@ -85,7 +109,7 @@ When the model calls a tool, the platform deep-merges the model's arguments with
 | `prompt` | Yes | — | System prompt defining the agent's behavior |
 | `input` | Yes | — | Structured input (passed as user message) |
 | `tools` | Yes | — | SDK action names with optional defaults |
-| `structuredOutputExample` | Yes | — | JSON string showing expected output shape |
+| `structuredOutputExample` | Yes | — | Object or JSON string showing expected output shape. Use realistic example values, not placeholders like `'string'` |
 | `model` | Yes | — | Model ID (must support tool use) |
 | `maxTurns` | No | 10 | Max loop iterations (capped at 25) |
 | `onEvent` | No | — | SSE event callback for real-time streaming |
@@ -98,15 +122,24 @@ Use `askMindStudioSdk` for appropriate models given the task and its complexity.
 
 ```typescript
 interface RunTaskResult<T> {
-  output: T;       // Parsed structured output matching your example
-  turns: number;   // Number of loop iterations used
+  output: T;                // Parsed structured output matching your example
+  outputRaw: string;        // Raw model text before JSON parse
+  parsedSuccessfully: boolean; // Whether output was valid JSON
+  turns: number;            // Number of loop iterations used
   usage: {
     inputTokens: number;
     outputTokens: number;
     totalBillingCost: number;
   };
+  toolCalls: Array<{        // Execution log for debugging
+    name: string;
+    success: boolean;
+    durationMs: number;
+  }>;
 }
 ```
+
+When something goes wrong, `toolCalls` is the first thing to check. If it's empty, the model never used any tools (prompt probably isn't clear enough). If a tool failed, the model may have worked around it or produced garbage.
 
 ## Streaming
 
@@ -123,20 +156,25 @@ const result = await agent.runTask({
 });
 ```
 
-Event types: `text`, `tool_call_start`, `tool_call_result`, `thinking`, `error`, `done`.
+Event types: `text`, `thinking`, `thinking_complete`, `tool_use`, `tool_input_delta`, `tool_input_args`, `tool_call_start`, `tool_call_result`, `error`, `done`.
 
-Without `onEvent`, the SDK uses async polling (returns silently when complete).
+Without `onEvent`, the SDK uses async polling (returns silently when complete). In dev mode (via the dev tunnel), progress and results are automatically logged to console with no setup needed.
 
 ## Error Handling
 
 - Model produces non-JSON output: retried automatically if turns remain
 - Tool execution fails: error fed back to model, it can retry or work around it
 - Max turns exceeded: one final forced output attempt with tools disabled
-- If output still can't be parsed: raw text returned as output (not JSON)
+- If output still can't be parsed: `parsedSuccessfully` will be `false`, raw text available in `outputRaw`
 
 ```typescript
 try {
   const result = await agent.runTask({ ... });
+  if (!result.parsedSuccessfully) {
+    // Task completed but output wasn't valid JSON
+    console.error('Raw output:', result.outputRaw);
+    console.error('Tool calls:', result.toolCalls);
+  }
 } catch (err) {
   if (err instanceof MindStudioError) {
     // err.code: 'task_execution_error' | 'poll_token_expired' | 'stream_error'

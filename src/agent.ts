@@ -220,17 +220,7 @@ export async function runTurn(params: {
           apiConfig,
           getContext: () => {
             const parts: string[] = [];
-            if (userMessage) {
-              parts.push(`User message: ${userMessage.slice(-200)}`);
-            }
-            if (onboardingState) {
-              parts.push(`Build phase: ${onboardingState}`);
-            }
-            const text =
-              subAgentText || getTextContent(contentBlocks).slice(-500);
-            if (text) {
-              parts.push(`Assistant text: ${text}`);
-            }
+            // Current activity first — this is what matters most
             const toolName =
               currentToolNames ||
               getToolCalls(contentBlocks)
@@ -245,6 +235,18 @@ export async function runTurn(params: {
             }
             if (lastCompletedResult) {
               parts.push(`Tool result: ${lastCompletedResult.slice(-200)}`);
+            }
+            const text =
+              subAgentText || getTextContent(contentBlocks).slice(-500);
+            if (text) {
+              parts.push(`Assistant text: ${text}`);
+            }
+            // Background context — stale quickly but useful when nothing else is happening
+            if (onboardingState && onboardingState !== 'onboardingFinished') {
+              parts.push(`Build phase: ${onboardingState}`);
+            }
+            if (userMessage) {
+              parts.push(`User request: ${userMessage.slice(-100)}`);
             }
             return parts.join('\n');
           },
