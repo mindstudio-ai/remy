@@ -94,7 +94,7 @@ const { vendor } = await api.approveVendor({ vendorId: '...' });
 - **Managed databases.** SQLite with typed schemas. Push a schema change and the platform diffs, migrates, and promotes atomically.
 - **Built-in auth.** Opt-in via manifest. Developer builds login UI, platform handles verification codes (email/SMS), cookie sessions, and role enforcement. Backend methods use `auth.requireRole('admin')` for access control.
 - **Multiple interfaces, one codebase.** Web, API, Discord, Telegram, Cron, Webhook, Email, MCP — all invoke the same methods. Methods don't know which interface called them.
-- **Sandboxed execution.** Methods run in isolated sandboxes with npm packages pre-installed.
+- **Sandboxed execution.** Each method invocation runs in its own isolated execution context with npm packages pre-installed.
 - **Git-native deployment.** Push to default branch to deploy. Push to feature branch for preview. Rollback is a git revert.
 
 ## Minimum Viable App

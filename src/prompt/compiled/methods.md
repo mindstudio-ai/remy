@@ -1,6 +1,6 @@
 # Methods
 
-A method is a named async function that runs on the platform. It's the universal unit of backend logic — every interface (web, API, Discord, cron, webhook) invokes methods. Methods run in isolated sandboxes. One file per method, one named export.
+A method is a named async function that runs on the platform. It's the universal unit of backend logic — every interface (web, API, Discord, cron, webhook) invokes methods. One file per method, one named export.
 
 ## Writing a Method
 
@@ -191,6 +191,37 @@ export async function createPurchaseOrder(input: {
   return { purchaseOrderId: po.id, total };
 }
 ```
+
+## Fire-and-Forget Background Tasks
+
+A method can return immediately while kicking off slow work (like `runTask()`) that continues in the background. Don't await the slow call — use `.then()` / `.catch()` to update the record when it completes, and return an early result to the caller. The frontend polls the record's status to track progress.
+
+```typescript
+export async function enrichRestaurant(input: { id: string; name: string }) {
+  await Restaurants.update(input.id, { status: 'enriching' });
+
+  // Fire — don't await
+  agent.runTask<RestaurantData>({
+    prompt: '...',
+    input: { name: input.name },
+    tools: ['searchGoogle', 'fetchUrl', 'generateImage'],
+    structuredOutputExample: { /* ... */ },
+    model: 'claude-4-6-sonnet',
+  }).then(async (result) => {
+    if (result.parsedSuccessfully) {
+      await Restaurants.update(input.id, { ...result.output, status: 'complete' });
+    } else {
+      await Restaurants.update(input.id, { status: 'failed' });
+    }
+  }).catch(async () => {
+    await Restaurants.update(input.id, { status: 'failed' });
+  });
+
+  return { status: 'enriching' };
+}
+```
+
+This works because the execution environment persists between requests. The un-awaited promise continues after the method returns. DB, auth, and SDK all work normally in the background chain. For critical workflows, write a "pending" record before firing so incomplete tasks can be detected and retried.
 
 ## Shared Helpers
 
