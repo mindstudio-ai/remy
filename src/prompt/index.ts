@@ -108,6 +108,10 @@ Current date: ${now}
   <scenarios>
   {{compiled/scenarios.md}}
   </scenarios>
+
+  <secrets>
+  {{compiled/secrets.md}}
+  </secrets>
 </platform_docs>
 
 <mindstudio_agent_sdk_docs>

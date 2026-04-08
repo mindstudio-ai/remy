@@ -100,6 +100,7 @@ TypeScript running in a sandboxed environment. Any npm package can be installed.
 
 - Managed SQLite database with typed schemas and automatic migrations. Define a TypeScript interface, push, and the platform handles diffing and migrating.
 - Built-in app-managed auth. Opt-in via manifest — developer builds login UI, platform handles verification codes (email/SMS), cookie sessions, and role enforcement. Backend methods use auth.requireRole() for access control.
+- Encrypted secrets with separate dev/prod values, injected as process.env. For third-party service credentials not covered by the SDK.
 - Git-native deployment. Push to default branch to deploy.
 
 ## MindStudio SDK

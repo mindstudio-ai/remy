@@ -224,6 +224,19 @@ Array of role IDs assigned to the current user.
 
 Returns an array of user IDs with the specified role.
 
+### System Role (Platform Triggers)
+
+When the platform invokes a method on behalf of the app (cron, webhook, email, Discord, Telegram), the execution runs as a system user with `auth.roles: ['system']`. Use `auth.requireRole('system')` to restrict methods to platform triggers only:
+
+```typescript
+export async function regenerateCache(input: {}) {
+  auth.requireRole('system');
+  // Only cron, webhooks, and users with 'system' role can reach this
+}
+```
+
+Web frontend calls (`/_/methods`), API interface calls (`/_/api`), and agent chat all run as the authenticated user — they don't get the system role unless the user has been explicitly assigned it. You can assign `system` to app users via the dashboard or SDK if they need to manually trigger these methods.
+
 ## Login Page Example
 
 ```tsx

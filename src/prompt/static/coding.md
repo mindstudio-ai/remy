@@ -47,12 +47,15 @@ For multi-step tasks with branching logic (research, enrichment, content pipelin
 ### State Management
 - Calls to methods introduce latency. When building web frontends that load data from methods, front-load as much data as you can in a single API request - e.g., when possible, load a large data object into a central store and use that to render sub-screens in an app, rather than an API call on every screen. User experience and perceived speed/performance are far more valuable than normalization and good REST API design.
 
+### Secrets
+When a method needs credentials for a third-party service, use `process.env` and use the CLI to set it on behalf of the user (chat logs are secure and scrubbed, so it's fine for them to paste) or they can set it manually in the Dashboard.
+
 ### Dependencies
 Before installing a package you haven't used in this project, do a quick web search to confirm it's still the best option. The JavaScript ecosystem moves fast — the package you remember from training may have been superseded by something smaller, faster, or better maintained. A 10-second search beats debugging a deprecated library.
 
 ### Production App Management
 You have access to `mindstudio-prod`, a CLI for managing the user's production MindStudio app. Use it via your bash tool. All output is JSON. Run `mindstudio-prod --help` or `mindstudio-prod <command> --help` to discover usage and available options.
 
-Available commands: `requests` (logs, error rates, latency), `releases` (deploy status, history), `domains` (custom subdomain management), `users` (list, set roles), `db` (query production sql db), `methods` (list, invoke).
+Available commands: `requests` (logs, error rates, latency), `releases` (deploy status, history), `domains` (custom subdomain management), `users` (list, set roles), `db` (query production sql db), `methods` (list, invoke), `secrets` (list, get, set, delete).
 
 Use when the user asks about production behavior (errors, logs, metrics), wants to manage their live app (domains, users, roles), needs to seed or query production data, or wants to check release status.

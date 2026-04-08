@@ -96,6 +96,7 @@ const { vendor } = await api.approveVendor({ vendorId: '...' });
 - **Multiple interfaces, one codebase.** Web, API, Discord, Telegram, Cron, Webhook, Email, MCP — all invoke the same methods. Methods don't know which interface called them.
 - **Sandboxed execution.** Each method invocation runs in its own isolated execution context with npm packages pre-installed.
 - **Git-native deployment.** Push to default branch to deploy. Push to feature branch for preview. Rollback is a git revert.
+- **Secrets.** Encrypted environment variables with separate dev/prod values. Injected as `process.env` in methods. For third-party service credentials not covered by the SDK.
 
 ## Minimum Viable App
 

@@ -38,6 +38,8 @@ These are things we already know about and have decided to accept:
 
 ### Common pitfalls (always flag these)
 
+- **Hardcoded credentials.** If the plan or code contains API keys, tokens, or connection strings inline, flag it — these should be `process.env` secrets managed via the dashboard. Also flag if the plan uses `process.env` for something the MindStudio SDK already handles (AI model keys, email/SMS sending, etc.).
+
 These are recurring mistakes the coding agent makes. If you see the conditions for any of these, flag it proactively:
 
 - **CSS Module animation scoping.** If the agent defines `@keyframes` in a global CSS file but references the animation name from a CSS Module, the animation will silently fail. CSS Modules scope animation names, so a keyframe defined globally can't be found by a scoped class. The fix: define keyframes in the same CSS Module that uses them, or use `:global()` to escape the scoping.
