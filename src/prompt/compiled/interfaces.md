@@ -94,36 +94,130 @@ On deploy, the platform runs `npm install && npm run build` in the web directory
 
 ## API Interface
 
-Auto-generated REST endpoints. Every method becomes an API endpoint.
+REST endpoints for external consumers — other services, mobile apps, integrations. This is separate from the web frontend's internal RPC (`@mindstudio-ai/interface` calls `/_/methods` directly and does not use the API interface). The API interface lives at `/_/api/` and exposes only the methods you choose to route.
 
-### Config (`interface.json`)
+Use it for receiving webhooks (Stripe, Twilio), sync endpoints for other services, a public REST API, batch tools — anything where something outside the app's own frontend needs to call a method over HTTP.
+
+### Spec: `src/interfaces/api.md`
+
+The human-readable spec. Frontmatter declares the API name and description; the body maps methods to REST routes using MSFM.
+
+```yaml
+---
+name: Vendor Management API
+description: API for managing vendors and purchase orders.
+type: interface/api
+---
+```
+
+Routes are declared as `VERB /path → methodExportName` under resource headings, with annotations for params and descriptions:
+
+```markdown
+## Vendors
+
+### List vendors
+GET /vendors → listVendors
+~~~
+Returns all vendors, optionally filtered by status.
+query: status (string, optional) — filter by vendor status
+~~~
+
+### Create vendor
+POST /vendors → submitVendorRequest
+~~~
+Submit a new vendor for approval.
+body: name (string, required) — vendor name
+      contactEmail (string, required) — billing contact
+~~~
+
+### Delete vendor
+DELETE /vendors/:vendorId → deleteVendor
+~~~
+path: vendorId (string, required) — the vendor's unique identifier
+~~~
+```
+
+### Compiled Output: `dist/interfaces/api/api.json`
 
 ```json
 {
-  "methods": ["submit-vendor-request", "list-vendors", "get-dashboard"]
+  "api": {
+    "name": "Vendor Management API",
+    "description": "API for managing vendors and purchase orders.",
+    "routes": [
+      {
+        "method": "GET",
+        "path": "/vendors",
+        "handler": "list-vendors",
+        "summary": "List vendors",
+        "description": "Returns all vendors, optionally filtered by status.",
+        "tag": "Vendors",
+        "params": {
+          "query": {
+            "status": { "type": "string", "required": false, "description": "Filter by vendor status" }
+          }
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/vendors",
+        "handler": "submit-vendor-request",
+        "summary": "Create vendor",
+        "description": "Submit a new vendor for approval.",
+        "tag": "Vendors",
+        "params": {
+          "body": {
+            "name": { "type": "string", "required": true, "description": "Vendor name" },
+            "contactEmail": { "type": "string", "required": true, "description": "Billing contact" }
+          }
+        }
+      },
+      {
+        "method": "DELETE",
+        "path": "/vendors/:vendorId",
+        "handler": "delete-vendor",
+        "summary": "Delete vendor",
+        "description": "Permanently remove a vendor.",
+        "tag": "Vendors",
+        "params": {
+          "path": {
+            "vendorId": { "type": "string", "required": true, "description": "The vendor's unique identifier" }
+          }
+        }
+      }
+    ]
+  }
 }
 ```
 
-Omit the `methods` field (or the config entirely) to expose all methods.
+| Field | Description |
+|-------|-------------|
+| `name` | API display name (used in generated OpenAPI spec) |
+| `description` | API description |
+| `routes[].method` | HTTP method: `GET`, `POST`, `PUT`, `PATCH`, `DELETE` |
+| `routes[].path` | URL path with `:param` placeholders for path params |
+| `routes[].handler` | Method `id` from the manifest (kebab-case) |
+| `routes[].summary` | Short description for the endpoint |
+| `routes[].description` | Longer description |
+| `routes[].tag` | Resource grouping (becomes a tag in OpenAPI) |
+| `routes[].params` | Parameter declarations: `path`, `query`, and/or `body` objects |
 
-### Usage
+### Platform Behavior
 
-```bash
-curl -X POST https://{app-subdomain}.mindstudio.ai/_/methods/submit-vendor-request/invoke \
-  -H "Authorization: Bearer sk..." \
-  -H "Content-Type: application/json" \
-  -d '{ "input": { "name": "Acme" } }'
+Routes are mounted at `/_/api{path}` (e.g. `DELETE /_/api/vendors/abc123`).
+
+- **Path params** are extracted and merged into the method's input: `/:vendorId` → `{ vendorId: "abc123" }`
+- **Query params** are merged into input for GET requests: `?status=approved` → `{ status: "approved" }`
+- **Request body** for POST/PUT/PATCH is the input directly (no `{ input: {...} }` wrapper)
+- **Response** is the method output directly (no `{ output: {...} }` wrapper)
+- **Auth** via `Authorization: Bearer sk_...` (API key resolves to a user with full RBAC)
+- **Streaming**: `Accept: text/event-stream` header returns SSE chunks
+
+### Manifest
+
+```json
+{ "type": "api", "path": "dist/interfaces/api/api.json" }
 ```
-
-Auth via API key. Returns `{ output, $releaseId, $methodId }`.
-
-### Streaming
-
-```bash
-curl -X POST ... -d '{ "input": {...}, "stream": true }'
-```
-
-Returns SSE: `data: { type: 'token', text }` chunks, then `data: { type: 'done', output }`.
 
 ## Discord Bot
 

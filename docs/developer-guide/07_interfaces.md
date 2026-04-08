@@ -92,36 +92,134 @@ On `git push`, the platform runs `npm install && npm run build` in the web direc
 
 ## API Interface
 
-Auto-generated REST endpoints. Every method becomes an API endpoint.
+Exposes selected methods as REST endpoints with clean URLs and HTTP methods — for external consumers (other services, mobile apps, integrations). This is separate from the web frontend's internal RPC (`@mindstudio-ai/interface` calls `/_/methods` directly). The API interface lives at `/_/api/`.
 
-### Config (`interface.json`)
+Use it for anything external: a Stripe webhook endpoint, sync endpoints for another service, a public REST API, a batch export tool. Not every method needs an API route — expose only what external consumers need.
+
+### Spec: `src/interfaces/api.md`
+
+Routes are declared as `VERB /path → methodExportName` under resource headings, with annotations for params:
+
+```markdown
+---
+name: Vendor Management API
+description: API for managing vendors and purchase orders.
+type: interface/api
+---
+
+## Vendors
+
+### List vendors
+GET /vendors → listVendors
+~~~
+Returns all vendors, optionally filtered by status.
+query: status (string, optional) — filter by vendor status
+~~~
+
+### Create vendor
+POST /vendors → submitVendorRequest
+~~~
+Submit a new vendor for approval.
+body: name (string, required) — vendor name
+      contactEmail (string, required) — billing contact
+~~~
+
+### Delete vendor
+DELETE /vendors/:vendorId → deleteVendor
+~~~
+path: vendorId (string, required) — the vendor's unique identifier
+~~~
+```
+
+### Compiled Output: `dist/interfaces/api/api.json`
+
+Remy compiles the spec into structured config the platform reads for routing and OpenAPI generation:
 
 ```json
 {
-  "methods": ["submit-vendor-request", "list-vendors", "get-dashboard"]
+  "api": {
+    "name": "Vendor Management API",
+    "description": "API for managing vendors and purchase orders.",
+    "routes": [
+      {
+        "method": "GET",
+        "path": "/vendors",
+        "handler": "list-vendors",
+        "summary": "List vendors",
+        "description": "Returns all vendors, optionally filtered by status.",
+        "tag": "Vendors",
+        "params": {
+          "query": {
+            "status": { "type": "string", "required": false, "description": "Filter by vendor status" }
+          }
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/vendors",
+        "handler": "submit-vendor-request",
+        "summary": "Create vendor",
+        "description": "Submit a new vendor for approval.",
+        "tag": "Vendors",
+        "params": {
+          "body": {
+            "name": { "type": "string", "required": true, "description": "Vendor name" },
+            "contactEmail": { "type": "string", "required": true, "description": "Billing contact" }
+          }
+        }
+      },
+      {
+        "method": "DELETE",
+        "path": "/vendors/:vendorId",
+        "handler": "delete-vendor",
+        "summary": "Delete vendor",
+        "tag": "Vendors",
+        "params": {
+          "path": {
+            "vendorId": { "type": "string", "required": true, "description": "The vendor's unique identifier" }
+          }
+        }
+      }
+    ]
+  }
 }
 ```
 
-Omit the `methods` field (or the config entirely) to expose all methods.
+### Platform Behavior
+
+- **Path params** extracted and merged into method input: `DELETE /_/api/vendors/abc` → `deleteVendor({ vendorId: "abc" })`
+- **Query params** merged into input for GET: `?status=approved` → `listVendors({ status: "approved" })`
+- **Request body** for POST/PUT/PATCH is the input directly (no wrapper)
+- **Response** is the method output directly (no wrapper)
+- **Auth** via `Authorization: Bearer sk_...`
+- **Streaming**: `Accept: text/event-stream` header returns SSE chunks
 
 ### Usage
 
 ```bash
-curl -X POST https://{app-subdomain}.mindstudio.ai/_/methods/submit-vendor-request/invoke \
-  -H "Authorization: Bearer sk..." \
+# Create a vendor
+curl -X POST https://{app-subdomain}.mindstudio.ai/_/api/vendors \
+  -H "Authorization: Bearer sk_..." \
   -H "Content-Type: application/json" \
-  -d '{ "input": { "name": "Acme" } }'
+  -d '{ "name": "Acme", "contactEmail": "billing@acme.com" }'
+# → { "vendorId": "...", "status": "pending" }
+
+# List vendors
+curl https://{app-subdomain}.mindstudio.ai/_/api/vendors?status=approved \
+  -H "Authorization: Bearer sk_..."
+# → { "vendors": [...] }
+
+# Delete
+curl -X DELETE https://{app-subdomain}.mindstudio.ai/_/api/vendors/abc123 \
+  -H "Authorization: Bearer sk_..."
+# → { "deleted": true }
 ```
 
-Auth via API key (`sk...`). Returns `{ output, $releaseId, $methodId }`.
+### Manifest
 
-### Streaming
-
-```bash
-curl -X POST ... -d '{ "input": {...}, "stream": true }'
+```json
+{ "type": "api", "path": "dist/interfaces/api/api.json" }
 ```
-
-Returns SSE: `data: { type: 'token', text }` chunks, then `data: { type: 'done', output }`.
 
 ---
 

@@ -40,7 +40,7 @@
 
   "interfaces": [
     { "type": "web", "path": "dist/interfaces/web/web.json" },
-    { "type": "api" },
+    { "type": "api", "path": "dist/interfaces/api/api.json" },
     { "type": "cron", "path": "dist/interfaces/cron/interface.json" }
   ],
 
@@ -71,11 +71,12 @@
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `enabled` | `boolean` | Yes | `true` to enable auth |
-| `methods` | `string[]` | Yes | Auth methods: `"email-code"`, `"sms-code"`. At least one required. |
+| `methods` | `string[]` | Yes | Auth methods: `"email-code"`, `"sms-code"`, `"api-key"`. At least one required. |
 | `table.name` | `string` | Yes | Name of the `defineTable` table holding user records |
 | `table.columns.email` | `string` | If email-code | Column name for email (platform-managed, read-only from code) |
 | `table.columns.phone` | `string` | If sms-code | Column name for phone (platform-managed, read-only from code) |
 | `table.columns.roles` | `string` | No | Column name for roles array (bidirectional sync) |
+| `table.columns.apiKey` | `string` | If api-key | Column name for API key (platform-managed, stores masked value) |
 
 ### `roles`
 `Array<{ id, name?, description? }>`. Defaults to `[]`.

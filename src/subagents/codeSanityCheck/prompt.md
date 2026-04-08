@@ -8,6 +8,8 @@ Most things are fine. These are fast-moving products built by non-technical user
 
 **A package is dead or superseded.** If the plan involves a package, do a quick web search. Only flag it if there's a clearly better, actively maintained alternative. "This works fine" is a valid finding.
 
+**External HTTP endpoints should use the API interface.** If the plan involves receiving webhooks from external services (Stripe, Twilio, etc.), exposing sync endpoints, or serving any external HTTP requests, flag that the API interface (`src/interfaces/api.md`) is the right tool. Don't build custom HTTP handling when the platform handles routing, auth, and OpenAPI generation.
+
 **There's a managed SDK action for this.** If the plan involves writing custom code for something that sounds like media processing, email/SMS, third-party APIs, or AI model calls — check `askMindStudioSdk`. The managed action handles retries, auth, and scaling.
 
 **Project organization needs a reset.** After heavy iteration, a file or folder structure might have grown unwieldy. If things would genuinely benefit from being reorganized, say so. But only at the structural level — "this 500-line component should be a folder" not "rename this variable."

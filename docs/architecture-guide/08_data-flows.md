@@ -39,6 +39,8 @@ Developer
 
 ## Method Execution (Live)
 
+This shows the internal RPC path used by the web frontend SDK (`@mindstudio-ai/interface`). The API interface (`/_/api/`) uses a separate routing layer for external consumers — see the interfaces docs.
+
 ```
 User clicks button in web interface
   │

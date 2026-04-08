@@ -16,7 +16,8 @@ MindStudio apps can have and manage their own users. Auth is opt-in: configure i
       "columns": {
         "email": "email",
         "phone": "phone",
-        "roles": "roles"
+        "roles": "roles",
+        "apiKey": "apiKey"
       }
     }
   },
@@ -32,11 +33,13 @@ MindStudio apps can have and manage their own users. Auth is opt-in: configure i
 - **`auth.methods`** — which verification methods the app supports. At least one required.
   - `email-code` — 6-digit code sent via email
   - `sms-code` — 6-digit code sent via SMS
+  - `api-key` — programmatic access via `Authorization: Bearer sk_...` header. Resolves to a user with full RBAC.
 - **`auth.table.name`** — name of the `defineTable` table that holds user records.
 - **`auth.table.columns`** — maps platform-managed fields to column names in the developer's table.
   - `email` — required if `email-code` is in methods
   - `phone` — required if `sms-code` is in methods
   - `roles` — optional. Maps to a JSON array column for role assignments.
+  - `apiKey` — optional. Required if `api-key` is in methods. Platform stores masked value (`sk_...xxxx`) for display; one key per user.
 - **`roles`** — declares valid roles for the app. Same as before: `id`, `name`, optional `description`.
 
 ## Auth Table
@@ -51,6 +54,7 @@ export const Users = db.defineTable<{
   email: string;
   phone?: string;
   roles: string[];
+  apiKey?: string;       // masked value (sk_...xxxx), read-only from code
   // Developer's own fields
   displayName: string;
   plan: 'free' | 'pro';
@@ -60,7 +64,7 @@ export const Users = db.defineTable<{
 
 ### Platform-Managed Column Behavior
 
-- **`email` / `phone`** — read-only from code. Writing via `update()` or `push()` throws a `MindStudioError`. Use the auth API to change a user's email or phone.
+- **`email` / `phone` / `apiKey`** — read-only from code. Writing via `update()` or `push()` throws a `MindStudioError`. Use the auth API to change a user's email or phone, and `auth.createApiKey()` / `auth.revokeApiKey()` for API keys.
 - **`roles`** — read/write from both code and the dashboard. `Users.update(userId, { roles: ['admin'] })` works and syncs to the platform. Dashboard role changes sync back to the table.
 - All other columns are fully the developer's. When auth creates a user row, only the managed columns (email/phone, roles) are populated. All user-defined columns start as null until the user completes onboarding — type them as optional and guard against null.
 
@@ -80,6 +84,7 @@ interface AppUser {
   email: string | null;
   phone: string | null;
   roles: string[];
+  apiKey: string | null;    // masked value (sk_...xxxx), null if no key
   createdAt: string;
 }
 ```
@@ -139,6 +144,24 @@ const user = await auth.confirmPhoneChange('+15559876543', '123456');
 await auth.logout();  // clears session
 ```
 
+### API Keys
+
+For apps with `api-key` in their auth methods. API keys resolve to a user with the same `auth.userId`, `auth.roles`, and `requireRole()` enforcement as a cookie session.
+
+```typescript
+// Generate a key for the current user (must be logged in)
+const { key } = await auth.createApiKey();
+// key = "sk_..." — show once, not stored. user.apiKey updates to masked value.
+
+// Revoke current user's key
+await auth.revokeApiKey();
+// user.apiKey becomes null
+```
+
+Both methods fire `onAuthStateChanged` since they modify the user object. One key per user — creating a new key replaces the old one.
+
+Consumers use the key as a Bearer token: `Authorization: Bearer sk_...`. The platform resolves it to the user, populates the auth context, and executes the method normally. Invalid or revoked key: 401.
+
 ### Error Codes
 
 All auth methods throw on failure with a `code` property:
@@ -151,6 +174,7 @@ All auth methods throw on failure with a `code` property:
 | `max_attempts_exceeded` | 400 | Too many failed attempts |
 | `not_authenticated` | 401 | No active session |
 | `invalid_session` | 401 | Session expired or invalid |
+| `not_supported` | 400 | Feature not enabled for this app (e.g. API keys without `api-key` in methods) |
 
 ### Phone Helpers
 

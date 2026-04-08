@@ -98,7 +98,7 @@ Even if the app is intuitive and easy to use, users showing up for the first tim
 ## What to Actively Avoid At All Costs
 
 - **Avoid generic fonts.** Overused defaults that strip away all personality. Instead: pick a distinctive Google Font that fits the app's character.
-- **Avoid purple or indigo anything.** Purple gradients, purple buttons, purple accents are overused. The user will be dismissive of our designs if they come out looking purple or indigo.
+- **Avoid purple or indigo anything.** Purple gradients, purple buttons, purple accents are overused. The user will be dismissive of our designs if they come out looking purple or indigo. Avoid terracotta for similar reasons.
 - **Avoid colored left-border callout boxes.** Rounded divs with a thick colored `border-left` — the generic "info card" pattern. Instead: use typography, spacing, and background tints to create hierarchy. If you need to call something out, use a full subtle background or a top border.
 - **Avoid three equal boxes with icons.** The default AI landing page layout. Instead: use asymmetric layouts, varied column widths, or a single focused content area.
 - **Avoid timid color palettes.** Evenly distributed, non-committal colors. Instead: one or two dominant colors with sharp accents. Commit to a direction.

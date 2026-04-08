@@ -41,7 +41,7 @@ The manifest declares everything the platform needs to know about your app: meth
 
   "interfaces": [
     { "type": "web", "path": "dist/interfaces/web/web.json" },
-    { "type": "api" },
+    { "type": "api", "path": "dist/interfaces/api/api.json" },
     { "type": "cron", "path": "dist/interfaces/cron/interface.json" },
     { "type": "discord", "path": "dist/interfaces/discord/interface.json" }
   ],

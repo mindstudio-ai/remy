@@ -92,7 +92,7 @@ my-app/
           App.tsx
           pages/
           components/
-      api/interface.json                 API config
+      api/api.json                       API config
       discord/interface.json             Discord bot config
       telegram/interface.json            Telegram bot config
       cron/interface.json                cron config

@@ -40,7 +40,7 @@ my-app/
         web.json                           dev server config
         package.json
         src/
-      api/interface.json                 REST API config
+      api/api.json                       REST API config
       discord/interface.json             Discord bot config
       telegram/interface.json            Telegram bot config
       cron/interface.json                cron config
