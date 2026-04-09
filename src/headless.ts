@@ -63,10 +63,6 @@ function emit(
 // Simple command handlers — pure functions that return data or throw
 // ---------------------------------------------------------------------------
 
-function handleGetHistory(state: AgentState): Record<string, unknown> {
-  return { messages: state.messages };
-}
-
 function handleClear(state: AgentState): Record<string, unknown> {
   clearSession(state);
   return {};
@@ -631,7 +627,11 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       // (background completions are deferred while a turn is in progress,
       // but callers — e.g., sandbox init frame — need the latest state).
       applyPendingBlockUpdates();
-      dispatchSimple(requestId, 'history', () => handleGetHistory(state));
+      dispatchSimple(requestId, 'history', () => ({
+        messages: state.messages,
+        running,
+        ...(running && currentRequestId ? { currentRequestId } : {}),
+      }));
       return;
     }
 
