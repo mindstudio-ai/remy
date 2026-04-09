@@ -9,7 +9,11 @@
  * adding features from user requests, reorganizing lanes.
  */
 
-import type { Tool, ToolExecutionContext } from '../../tools/index.js';
+import {
+  type Tool,
+  type ToolExecutionContext,
+  deriveContext,
+} from '../../tools/index.js';
 import { runSubAgent } from '../runner.js';
 import { VISION_TOOLS } from './tools.js';
 import { executeVisionTool } from './executor.js';
@@ -55,7 +59,12 @@ export const productVisionTool: Tool = {
       history: history.length > 0 ? history : undefined,
       tools: VISION_TOOLS,
       externalTools: new Set<string>(),
-      executeTool: (name, input) => executeVisionTool(name, input, context),
+      executeTool: (name, input, toolCallId) =>
+        executeVisionTool(
+          name,
+          input,
+          toolCallId ? deriveContext(context, toolCallId) : context,
+        ),
       apiConfig: context.apiConfig,
       model: context.model,
       subAgentId: 'productVision',

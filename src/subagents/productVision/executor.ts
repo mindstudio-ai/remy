@@ -1,12 +1,15 @@
 /**
  * Filesystem operations for the product vision sub-agent.
  *
- * Simple file tools scoped to src/roadmap/, plus design expert
- * delegation for the pitch deck.
+ * File tools scoped to src/roadmap/, plus design expert
+ * delegation for the pitch deck. Output formats match the
+ * main agent's readFile/writeFile/listDir for consistent
+ * frontend rendering.
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { unifiedDiff } from '../../tools/_helpers/diff.js';
 import type { ToolExecutionContext } from '../../tools/index.js';
 import { designExpertTool } from '../designExpert/index.js';
 
@@ -24,11 +27,30 @@ export async function executeVisionTool(
   context?: ToolExecutionContext,
 ): Promise<string> {
   switch (name) {
-    case 'listFiles': {
+    case 'listDir': {
       try {
         fs.mkdirSync(ROADMAP_DIR, { recursive: true });
-        const files = fs.readdirSync(ROADMAP_DIR).sort();
-        return files.length > 0 ? files.join('\n') : '(empty)';
+        const entries = fs.readdirSync(ROADMAP_DIR, { withFileTypes: true });
+        const lines: string[] = [];
+        // Directories first, then files — matches main listDir
+        const dirs = entries
+          .filter((e) => e.isDirectory())
+          .sort((a, b) => a.name.localeCompare(b.name));
+        const files = entries
+          .filter((e) => !e.isDirectory())
+          .sort((a, b) => a.name.localeCompare(b.name));
+        for (const d of dirs) {
+          lines.push(`${d.name}/`);
+        }
+        for (const f of files) {
+          const stat = fs.statSync(resolve(f.name));
+          const size =
+            stat.size < 1024
+              ? `${stat.size}B`
+              : `${(stat.size / 1024).toFixed(1)}KB`;
+          lines.push(`${f.name}  (${size})`);
+        }
+        return lines.length > 0 ? lines.join('\n') : '(empty)';
       } catch (err: any) {
         return `Error: ${err.message}`;
       }
@@ -37,7 +59,12 @@ export async function executeVisionTool(
     case 'readFile': {
       const filePath = resolve(input.path);
       try {
-        return fs.readFileSync(filePath, 'utf-8');
+        const content = fs.readFileSync(filePath, 'utf-8');
+        const lines = content.split('\n');
+        const numbered = lines
+          .map((line, i) => `${String(i + 1).padStart(4)} ${line}`)
+          .join('\n');
+        return numbered;
       } catch (err: any) {
         return `Error reading ${filePath}: ${err.message}`;
       }
@@ -47,8 +74,18 @@ export async function executeVisionTool(
       const filePath = resolve(input.path);
       try {
         fs.mkdirSync(ROADMAP_DIR, { recursive: true });
+
+        let oldContent: string | null = null;
+        try {
+          oldContent = fs.readFileSync(filePath, 'utf-8');
+        } catch {
+          // New file
+        }
+
         fs.writeFileSync(filePath, input.content, 'utf-8');
-        return `Wrote ${filePath} (${input.content.split('\n').length} lines)`;
+        const lineCount = input.content.split('\n').length;
+        const label = oldContent !== null ? 'Wrote' : 'Created';
+        return `${label} ${filePath} (${lineCount} lines)\n${unifiedDiff(filePath, oldContent ?? '', input.content)}`;
       } catch (err: any) {
         return `Error writing ${filePath}: ${err.message}`;
       }
@@ -60,8 +97,9 @@ export async function executeVisionTool(
         if (!fs.existsSync(filePath)) {
           return `Error: ${filePath} does not exist`;
         }
+        const oldContent = fs.readFileSync(filePath, 'utf-8');
         fs.unlinkSync(filePath);
-        return `Deleted ${filePath}`;
+        return `Deleted ${filePath}\n${unifiedDiff(filePath, oldContent, '')}`;
       } catch (err: any) {
         return `Error deleting ${filePath}: ${err.message}`;
       }
@@ -81,7 +119,17 @@ export async function executeVisionTool(
           ? fs.readFileSync(filePath, 'utf-8').trim()
           : '';
 
-        let task = `Build a self-contained responsive HTML slide deck for this app's pitch. Use the app's brand identity (fonts, colors, logos from the spec). Arrow key navigation between slides. The deck should feel like a polished startup pitch — make it beautiful and exciting. Keep it clean and beautiful - less is more with these sorts of things. One file HTML - it will be rendered in an iframe.\n\n<pitch_content>${input.prompt}</pitch_content>`;
+        let task = `
+<pitch_content>${input.prompt}</pitch_content>
+
+We are building the pitch deck for the app. Using the provided <pitch_content>, as well as the app's spec data, think about what would make a compelling, interactive, self-contained HTML slide deck for this product. Keep it simple, clean, powerful. Giant text, large logo, big, bold stats and claims. Edit the content as necessary to create the most impactful, bold, and beautiful slides. This should not feel text heavy, and it should not feel like a landing page - it should feel like a modern interactive presentation that leaves the user wowed by the product.
+
+### Rules
+- The deck must be a single HTML file - it will be rendered in an iFrame.
+- The deck must support keyboard navigation and click navigation to move between slides.
+- Animation between slides must be seamless, no flicker or flashing
+- Be bold and impactful. Do not be wordy or verbose, no one reads decks with too many words.
+`;
 
         if (existingHtml) {
           task += `\n\nThe current pitch deck HTML is below. Refine and update it rather than starting from scratch — preserve the existing design and structure where it still works, and update the content and slides to reflect the new pitch.\n\n<existing_pitch_html>${existingHtml}</existing_pitch_html>`;
@@ -97,8 +145,14 @@ export async function executeVisionTool(
         );
         const html = htmlMatch ? htmlMatch[1].trim() : (result as string);
 
+        const oldContent = fs.existsSync(filePath)
+          ? fs.readFileSync(filePath, 'utf-8')
+          : '';
+
         fs.writeFileSync(filePath, html, 'utf-8');
-        return `Wrote ${filePath} (${html.split('\n').length} lines)`;
+        const lineCount = html.split('\n').length;
+        const label = oldContent ? 'Wrote' : 'Created';
+        return `${label} ${filePath} (${lineCount} lines)\n${unifiedDiff(filePath, oldContent, html)}`;
       } catch (err: any) {
         return `Error generating pitch deck: ${err.message}`;
       }

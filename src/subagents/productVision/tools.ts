@@ -1,7 +1,7 @@
 /**
  * Tool definitions for the product vision sub-agent.
  *
- * Simple file tools scoped to src/roadmap/, plus design expert
+ * File tools scoped to src/roadmap/, plus design expert
  * delegation for the pitch deck.
  */
 
@@ -9,7 +9,7 @@ import type { ToolDefinition } from '../../api.js';
 
 export const VISION_TOOLS: ToolDefinition[] = [
   {
-    name: 'listFiles',
+    name: 'listDir',
     description: 'List files in src/roadmap/.',
     inputSchema: {
       type: 'object',
@@ -34,7 +34,7 @@ export const VISION_TOOLS: ToolDefinition[] = [
   {
     name: 'writeFile',
     description:
-      'Write a file to src/roadmap/. Creates or overwrites. Path is relative to src/roadmap/ (e.g. "index.json", "ai-weekly-digest.md").',
+      'Create or overwrite a file in src/roadmap/. Path is relative to src/roadmap/ (e.g. "index.json", "ai-weekly-digest.md").',
     inputSchema: {
       type: 'object',
       properties: {
@@ -44,7 +44,7 @@ export const VISION_TOOLS: ToolDefinition[] = [
         },
         content: {
           type: 'string',
-          description: 'Full file content.',
+          description: 'The full content to write to the file.',
         },
       },
       required: ['path', 'content'],
@@ -68,14 +68,14 @@ export const VISION_TOOLS: ToolDefinition[] = [
   {
     name: 'writePitchDeck',
     description:
-      'Generate a branded HTML pitch deck for the product and save it to src/roadmap/pitch.html. Delegates to the design expert who builds a beautiful self-contained slide deck from your request.',
+      'Generate a branded HTML pitch deck for the product and save it to src/roadmap/pitch.html. Delegates to the design expert who builds a beautiful self-contained slide deck from your request. Do NOT describe the design or structure of the deck, only provide the copy.',
     inputSchema: {
       type: 'object',
       properties: {
         prompt: {
           type: 'string',
           description:
-            'Full description of the pitch deck content. Include the full structure and copy of the deck and each slide.',
+            'Full description of the pitch deck content. Include the full copy of each slide in detail.',
         },
       },
       required: ['prompt'],

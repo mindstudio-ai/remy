@@ -47,6 +47,14 @@ export interface ToolExecutionContext {
   ) => void;
 }
 
+/** Create a child context for delegating to another agent tool. */
+export function deriveContext(
+  parent: ToolExecutionContext,
+  toolCallId: string,
+): ToolExecutionContext {
+  return { ...parent, toolCallId };
+}
+
 export interface Tool {
   definition: ToolDefinition;
   /** Whether results from this tool can be cleared from old turns to save context.

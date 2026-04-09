@@ -3,7 +3,10 @@
  */
 
 import type { ToolDefinition } from '../../../api.js';
-import type { ToolExecutionContext } from '../../../tools/index.js';
+import {
+  type ToolExecutionContext,
+  deriveContext,
+} from '../../../tools/index.js';
 
 import * as searchGoogle from './searchGoogle.js';
 import * as scrapeWebUrl from './scrapeWebUrl.js';
@@ -38,5 +41,7 @@ export async function executeDesignExpertTool(
   if (!tool) {
     return `Error: unknown tool "${name}"`;
   }
-  return tool.execute(input, onLog, context);
+  const childContext =
+    context && toolCallId ? deriveContext(context, toolCallId) : context;
+  return tool.execute(input, onLog, childContext);
 }
