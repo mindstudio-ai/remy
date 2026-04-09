@@ -72,13 +72,13 @@ export const VISION_TOOLS: ToolDefinition[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        prompt: {
+        task: {
           type: 'string',
           description:
             'Full description of the pitch deck content. Include the full copy of each slide in detail.',
         },
       },
-      required: ['prompt'],
+      required: ['task'],
     },
   },
 ];
