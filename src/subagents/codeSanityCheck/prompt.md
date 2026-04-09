@@ -40,10 +40,6 @@ These are things we already know about and have decided to accept:
 
 ### Common pitfalls (always flag these)
 
-- **External redirects in iframe.** If the plan involves redirecting to a third-party domain (payment checkout, OAuth login, external auth), flag that `window.location.href = url` will break in the preview iframe. Use `window.open(url, '_top')` for same-tab navigation or `window.open(url, '_blank')` for a new tab. This applies to any external redirect — Stripe, OAuth providers, third-party login pages.
-
-- **Hardcoded credentials.** If the plan or code contains API keys, tokens, or connection strings inline, flag it — these should be `process.env` secrets managed via the dashboard. Also flag if the plan uses `process.env` for something the MindStudio SDK already handles (AI model keys, email/SMS sending, etc.).
-
 These are recurring mistakes the coding agent makes. If you see the conditions for any of these, flag it proactively:
 
 - **CSS Module animation scoping.** If the agent defines `@keyframes` in a global CSS file but references the animation name from a CSS Module, the animation will silently fail. CSS Modules scope animation names, so a keyframe defined globally can't be found by a scoped class. The fix: define keyframes in the same CSS Module that uses them, or use `:global()` to escape the scoping.
@@ -71,6 +67,15 @@ When a plan includes multiple screens/API calls, always note this item for the d
 - **MindStudio SDK `runTask()` output used without validation.** `runTask()` can return successfully with garbage output (null fields, echoed input, raw text). The result includes `parsedSuccessfully` — if the plan uses `result.output` without checking `result.parsedSuccessfully` first, flag it. This is the #1 footgun with task agents.
 
 - **Layout shift with dynamic data or AI generated text** If the plan includes dynamically-sized data (e.g., a wizard form with questions of differing lengths) or AI generated text (where text stream length is unpredictable), make sure to flag concerns about layout stability. Everything must either be a fixed size or smoothly animate between sizes. Text can never be clipped by a container or cause layout to jump around or grow in snappy/janky ways. Make sure to remind the developer that this is important to pay attention to.
+
+- **Games** If the plan involves building a browser game, make sure to remind the developer of the following:
+  - They should always use a real engine like threejs (can use something like p5 if it's super simple). Developer should not build their own engine. 
+  - The design expert can generate beautiful assets — characters, objects, backgrounds, UI elements — with transparent backgrounds at proper resolution.
+  - Most importantly, make sure all UI and assets are responsively sized, especially for modern mobile retina devices. This is critical - things with assets too small are literally unplayable on modern devices and the user will be disappointed.
+
+- **External redirects in iframe.** If the plan involves redirecting to a third-party domain (payment checkout, OAuth login, external auth), flag that `window.location.href = url` will break in the preview iframe. Use `window.open(url, '_top')` for same-tab navigation or `window.open(url, '_blank')` for a new tab. This applies to any external redirect — Stripe, OAuth providers, third-party login pages.
+
+- **Hardcoded credentials.** If the plan or code contains API keys, tokens, or connection strings inline, flag it — these should be `process.env` secrets managed via the dashboard. Also flag if the plan uses `process.env` for something the MindStudio SDK already handles (AI model keys, email/SMS sending, etc.).
 
 ## When to stay quiet
 

@@ -85,6 +85,8 @@ Include image recommendations in your designs when the product calls for it. A l
 
 Transparent assets open up layout possibilities: a mascot or other object, images for empty states, onboarding flows. When the design calls for layered compositions, generate the elements separately with transparent backgrounds rather than trying to compose everything into a single flat image.
 
+For games and other interactive projects, generate real assets — characters, objects, enemies, backgrounds, UI elements — with `transparentBackground: true`.
+
 ### CDN image transforms
 
 Generated images and uploaded images are hosted on `i.mscdn.ai`. Use query string parameters to request appropriately sized images rather than CSS-scaling full-resolution originals:
