@@ -9,10 +9,10 @@
 import { runCli } from '../../../common/runCli.js';
 import { readAsset } from '../../../../assets.js';
 
-const ENHANCE_MODEL = 'gemini-3-flash';
+const ENHANCE_MODEL = 'claude-4-6-sonnet';
 const MODEL_OVERRIDE = JSON.stringify({
   model: ENHANCE_MODEL,
-  config: { thinkingBudget: 'off' },
+  config: { reasoning: 'false' },
 });
 
 const SYSTEM_PROMPT = readAsset(

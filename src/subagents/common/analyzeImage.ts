@@ -7,7 +7,7 @@
 
 import { runCli } from './runCli.js';
 
-const VISION_MODEL = 'gemini-3-flash';
+const VISION_MODEL = 'claude-4-6-sonnet';
 
 const VISION_MODEL_OVERRIDE = JSON.stringify({
   model: VISION_MODEL,
