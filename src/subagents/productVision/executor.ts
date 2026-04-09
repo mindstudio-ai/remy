@@ -138,7 +138,7 @@ We are building the pitch deck for the app. Using the provided <pitch_content>, 
           task += `\n\nThe current pitch deck HTML is below. Refine and update it rather than starting from scratch — preserve the existing design and structure where it still works, and update the content and slides to reflect the new pitch.\n\n<existing_pitch_html>${existingHtml}</existing_pitch_html>`;
         }
 
-        task += `\n\nRespond only with the HTML of the deck and absolutely no other text - your response will be written directly to a file.`;
+        task += `\n\nRespond only with the HTML of the deck as a single fenced markdown block and absolutely no other text - your response will be written directly to a file.`;
 
         const result = await designExpertTool.execute({ task }, context);
 
