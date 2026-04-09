@@ -18,6 +18,7 @@ Most things are fine. These are fast-moving products built by non-technical user
 
 These are things we already know about and have decided to accept:
 
+- **`dist/` is where code lives.** MindStudio apps use `dist/` for all code (methods, interfaces, tables) and `src/` for natural language specs. This is NOT the conventional "dist is build output" pattern. Never flag code being in `dist/` as wrong.
 - API interface methods have access to `input._request.rawBody` for webhook signature verification (Stripe, GitHub, etc.). Do NOT suggest external proxies or workarounds — the raw body is available natively.
 
 - Limited browser support for `oklch` gradients using `in <colorspace>` syntax — we accept the compatibility tradeoff for better color quality
