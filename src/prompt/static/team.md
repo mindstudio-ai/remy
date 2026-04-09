@@ -20,7 +20,7 @@ Always consult the design expert during intake and before building any new produ
 
 ### Product Vision (`productVision`)
 
-Your product thinking partner. Owns the roadmap in `src/roadmap/`, but also the right tool any time the conversation is about what to build rather than how to build it. Roadmap operations (seeding ideas, marking items done, adding/removing features), but also strategic questions about the product's direction, what's missing, what would make it more compelling. It reads spec and roadmap files automatically. Describe the situation and let it decide what to do. Notify `projectVision` after building new features, adding new interfaces, or other large refactors, so it can keep the roadmap up to date in the background.
+Your product thinking partner. Owns the roadmap in `src/roadmap/` — the lanes, individual items, and the overall pitch deck that captures the big vision for where the app is heading. This is the right tool to consult any time the conversation is about what to build, rather than how to build it. It is responsible for roadmap operations (seeding ideas, marking items done, adding/removing features, organizing lanes), but also strategic questions about the product's direction, what's missing, what would make it more compelling. It owns the vision for the product - think of it like your well-intentioned but sometimes-head-in-the-clouds CEO. It reads spec and roadmap files automatically. Describe the situation and let it decide what to do or what advice to give you. Notify `productVision` after building new features, adding new interfaces, or other large refactors, so it can keep the roadmap and pitch deck up to date in the background.
 
 ### Mindstudio SDK Consultant (`askMindStudioSdk`)
 

@@ -1,108 +1,84 @@
 /**
  * Tool definitions for the product vision sub-agent.
+ *
+ * Simple file tools scoped to src/roadmap/, plus design expert
+ * delegation for the pitch deck.
  */
 
 import type { ToolDefinition } from '../../api.js';
 
 export const VISION_TOOLS: ToolDefinition[] = [
   {
-    name: 'writeRoadmapItem',
-    description: 'Create a new roadmap item in src/roadmap/.',
+    name: 'listFiles',
+    description: 'List files in src/roadmap/.',
     inputSchema: {
       type: 'object',
-      properties: {
-        slug: {
-          type: 'string',
-          description:
-            'Kebab-case filename (without .md). e.g. "ai-weekly-digest"',
-        },
-        name: {
-          type: 'string',
-          description: 'User-facing feature name.',
-        },
-        description: {
-          type: 'string',
-          description: 'Short user-facing summary (1-2 sentences).',
-        },
-        effort: {
-          type: 'string',
-          enum: ['quick', 'small', 'medium', 'large'],
-        },
-        requires: {
-          type: 'array',
-          items: { type: 'string' },
-          description:
-            'Slugs of prerequisite roadmap items. Empty array if independent.',
-        },
-        body: {
-          type: 'string',
-          description:
-            'Full MSFM body: prose description for the user, followed by ~~~annotation~~~ with technical implementation notes.',
-        },
-      },
-      required: ['slug', 'name', 'description', 'effort', 'requires', 'body'],
+      properties: {},
     },
   },
   {
-    name: 'updateRoadmapItem',
+    name: 'readFile',
     description:
-      'Update an existing roadmap item. Only include the fields you want to change.',
+      'Read a file from src/roadmap/. Path is relative to src/roadmap/ (e.g. "index.json", "mute.md").',
     inputSchema: {
       type: 'object',
       properties: {
-        slug: {
+        path: {
           type: 'string',
-          description: 'The slug of the item to update (filename without .md).',
-        },
-        status: {
-          type: 'string',
-          enum: ['done', 'in-progress', 'not-started'],
-          description: 'New status.',
-        },
-        name: {
-          type: 'string',
-          description: 'Updated feature name.',
-        },
-        description: {
-          type: 'string',
-          description: 'Updated summary.',
-        },
-        effort: {
-          type: 'string',
-          enum: ['quick', 'small', 'medium', 'large'],
-          description: 'Updated effort level.',
-        },
-        requires: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Updated prerequisites.',
-        },
-        body: {
-          type: 'string',
-          description: 'Full replacement body (overwrites existing body).',
-        },
-        appendHistory: {
-          type: 'string',
-          description:
-            'A history entry to append. Format: "- **2026-03-22** — Description of what was done."',
+          description: 'File path relative to src/roadmap/.',
         },
       },
-      required: ['slug'],
+      required: ['path'],
     },
   },
   {
-    name: 'deleteRoadmapItem',
+    name: 'writeFile',
     description:
-      'Remove a roadmap item. Use when an idea is no longer relevant or has been absorbed into another item.',
+      'Write a file to src/roadmap/. Creates or overwrites. Path is relative to src/roadmap/ (e.g. "index.json", "ai-weekly-digest.md").',
     inputSchema: {
       type: 'object',
       properties: {
-        slug: {
+        path: {
           type: 'string',
-          description: 'The slug of the item to delete (filename without .md).',
+          description: 'File path relative to src/roadmap/.',
+        },
+        content: {
+          type: 'string',
+          description: 'Full file content.',
         },
       },
-      required: ['slug'],
+      required: ['path', 'content'],
+    },
+  },
+  {
+    name: 'deleteFile',
+    description:
+      'Delete a file from src/roadmap/. Path is relative to src/roadmap/.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: {
+          type: 'string',
+          description: 'File path relative to src/roadmap/.',
+        },
+      },
+      required: ['path'],
+    },
+  },
+  {
+    name: 'writePitchDeck',
+    description:
+      'Generate a branded HTML pitch deck for the product and save it to src/roadmap/pitch.html. Delegates to the design expert who builds a beautiful self-contained slide deck from your request.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        prompt: {
+          type: 'string',
+          description:
+            'Full description of the pitch deck content. Include the full structure and copy of the deck and each slide.',
+        },
+      },
+      required: ['prompt'],
     },
   },
 ];

@@ -55,7 +55,7 @@ export const productVisionTool: Tool = {
       history: history.length > 0 ? history : undefined,
       tools: VISION_TOOLS,
       externalTools: new Set<string>(),
-      executeTool: executeVisionTool,
+      executeTool: (name, input) => executeVisionTool(name, input, context),
       apiConfig: context.apiConfig,
       model: context.model,
       subAgentId: 'productVision',

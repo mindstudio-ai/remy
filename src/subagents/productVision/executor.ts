@@ -1,152 +1,106 @@
 /**
  * Filesystem operations for the product vision sub-agent.
  *
- * Handles writing/updating/deleting roadmap files in src/roadmap/.
- * Context loading (spec, roadmap) is in subagents/common/context.ts.
+ * Simple file tools scoped to src/roadmap/, plus design expert
+ * delegation for the pitch deck.
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { unifiedDiff } from '../../tools/_helpers/diff.js';
+import type { ToolExecutionContext } from '../../tools/index.js';
+import { designExpertTool } from '../designExpert/index.js';
 
 export { loadSpecContext, loadRoadmapContext } from '../common/context.js';
 
-// ---------------------------------------------------------------------------
-// Tool execution
-// ---------------------------------------------------------------------------
-
 const ROADMAP_DIR = 'src/roadmap';
 
-function formatRequires(requires: string[]): string {
-  return requires.length === 0
-    ? '[]'
-    : `[${requires.map((r: string) => `"${r}"`).join(', ')}]`;
+function resolve(filePath: string): string {
+  return path.join(ROADMAP_DIR, filePath);
 }
 
 export async function executeVisionTool(
   name: string,
   input: Record<string, any>,
+  context?: ToolExecutionContext,
 ): Promise<string> {
   switch (name) {
-    case 'writeRoadmapItem': {
-      const {
-        slug,
-        name: itemName,
-        description,
-        effort,
-        requires,
-        body,
-      } = input;
-      const filePath = path.join(ROADMAP_DIR, `${slug}.md`);
-
+    case 'listFiles': {
       try {
         fs.mkdirSync(ROADMAP_DIR, { recursive: true });
+        const files = fs.readdirSync(ROADMAP_DIR).sort();
+        return files.length > 0 ? files.join('\n') : '(empty)';
+      } catch (err: any) {
+        return `Error: ${err.message}`;
+      }
+    }
 
-        const oldContent = fs.existsSync(filePath)
-          ? fs.readFileSync(filePath, 'utf-8')
-          : '';
+    case 'readFile': {
+      const filePath = resolve(input.path);
+      try {
+        return fs.readFileSync(filePath, 'utf-8');
+      } catch (err: any) {
+        return `Error reading ${filePath}: ${err.message}`;
+      }
+    }
 
-        const content = `---
-name: ${itemName}
-type: roadmap
-status: ${slug === 'mvp' ? 'in-progress' : 'not-started'}
-description: ${description}
-effort: ${effort}
-requires: ${formatRequires(requires)}
----
-
-${body}
-`;
-        fs.writeFileSync(filePath, content, 'utf-8');
-        const lineCount = content.split('\n').length;
-        const label = oldContent ? 'Updated' : 'Wrote';
-        return `${label} ${filePath} (${lineCount} lines)\n${unifiedDiff(filePath, oldContent, content)}`;
+    case 'writeFile': {
+      const filePath = resolve(input.path);
+      try {
+        fs.mkdirSync(ROADMAP_DIR, { recursive: true });
+        fs.writeFileSync(filePath, input.content, 'utf-8');
+        return `Wrote ${filePath} (${input.content.split('\n').length} lines)`;
       } catch (err: any) {
         return `Error writing ${filePath}: ${err.message}`;
       }
     }
 
-    case 'updateRoadmapItem': {
-      const { slug } = input;
-      const filePath = path.join(ROADMAP_DIR, `${slug}.md`);
-
+    case 'deleteFile': {
+      const filePath = resolve(input.path);
       try {
         if (!fs.existsSync(filePath)) {
           return `Error: ${filePath} does not exist`;
         }
-
-        const oldContent = fs.readFileSync(filePath, 'utf-8');
-        let content = oldContent;
-
-        // Update frontmatter fields
-        if (input.status) {
-          content = content.replace(
-            /^status:\s*.+$/m,
-            `status: ${input.status}`,
-          );
-        }
-        if (input.name) {
-          content = content.replace(/^name:\s*.+$/m, `name: ${input.name}`);
-        }
-        if (input.description) {
-          content = content.replace(
-            /^description:\s*.+$/m,
-            `description: ${input.description}`,
-          );
-        }
-        if (input.effort) {
-          content = content.replace(
-            /^effort:\s*.+$/m,
-            `effort: ${input.effort}`,
-          );
-        }
-        if (input.requires) {
-          content = content.replace(
-            /^requires:\s*.+$/m,
-            `requires: ${formatRequires(input.requires)}`,
-          );
-        }
-
-        // Replace body if provided
-        if (input.body) {
-          const endOfFrontmatter = content.indexOf('---', 4);
-          if (endOfFrontmatter !== -1) {
-            const frontmatter = content.slice(0, endOfFrontmatter + 3);
-            content = `${frontmatter}\n\n${input.body}\n`;
-          }
-        }
-
-        // Append history entry
-        if (input.appendHistory) {
-          if (content.includes('## History')) {
-            content = content.trimEnd() + `\n${input.appendHistory}\n`;
-          } else {
-            content =
-              content.trimEnd() + `\n\n## History\n\n${input.appendHistory}\n`;
-          }
-        }
-
-        fs.writeFileSync(filePath, content, 'utf-8');
-        const lineCount = content.split('\n').length;
-        return `Updated ${filePath} (${lineCount} lines)\n${unifiedDiff(filePath, oldContent, content)}`;
+        fs.unlinkSync(filePath);
+        return `Deleted ${filePath}`;
       } catch (err: any) {
-        return `Error updating ${filePath}: ${err.message}`;
+        return `Error deleting ${filePath}: ${err.message}`;
       }
     }
 
-    case 'deleteRoadmapItem': {
-      const { slug } = input;
-      const filePath = path.join(ROADMAP_DIR, `${slug}.md`);
+    case 'writePitchDeck': {
+      if (!context) {
+        return 'Error: writePitchDeck requires execution context for design expert delegation';
+      }
+
+      const filePath = resolve('pitch.html');
 
       try {
-        if (!fs.existsSync(filePath)) {
-          return `Error: ${filePath} does not exist`;
+        fs.mkdirSync(ROADMAP_DIR, { recursive: true });
+
+        const existingHtml = fs.existsSync(filePath)
+          ? fs.readFileSync(filePath, 'utf-8').trim()
+          : '';
+
+        let task = `Build a self-contained responsive HTML slide deck for this app's pitch. Use the app's brand identity (fonts, colors, logos from the spec). Arrow key navigation between slides. The deck should feel like a polished startup pitch — make it beautiful and exciting. Keep it clean and beautiful - less is more with these sorts of things. One file HTML - it will be rendered in an iframe.\n\n<pitch_content>${input.prompt}</pitch_content>`;
+
+        if (existingHtml) {
+          task += `\n\nThe current pitch deck HTML is below. Refine and update it rather than starting from scratch — preserve the existing design and structure where it still works, and update the content and slides to reflect the new pitch.\n\n<existing_pitch_html>${existingHtml}</existing_pitch_html>`;
         }
-        const oldContent = fs.readFileSync(filePath, 'utf-8');
-        fs.unlinkSync(filePath);
-        return `Deleted ${filePath}\n${unifiedDiff(filePath, oldContent, '')}`;
+
+        task += `\n\nRespond only with the HTML of the deck and absolutely no other text - your response will be written directly to a file.`;
+
+        const result = await designExpertTool.execute({ task }, context);
+
+        // Extract HTML from code fences if present
+        const htmlMatch = (result as string).match(
+          /```(?:html|wireframe)\n([\s\S]*?)```/,
+        );
+        const html = htmlMatch ? htmlMatch[1].trim() : (result as string);
+
+        fs.writeFileSync(filePath, html, 'utf-8');
+        return `Wrote ${filePath} (${html.split('\n').length} lines)`;
       } catch (err: any) {
-        return `Error deleting ${filePath}: ${err.message}`;
+        return `Error generating pitch deck: ${err.message}`;
       }
     }
 
