@@ -220,6 +220,10 @@ Routes are mounted at `/_/api{path}` (e.g. `DELETE /_/api/vendors/abc123`).
 { "type": "api", "path": "dist/interfaces/api/api.json" }
 ```
 
+## Platform-Triggered Interfaces
+
+Discord, Telegram, Cron, Webhook, and Email interfaces are invoked by the platform, not by a user session. Methods called through these interfaces run with `auth.roles: ['system']`. Use `auth.requireRole('system')` to restrict a method to platform triggers only.
+
 ## Discord Bot
 
 Slash commands that invoke methods.
