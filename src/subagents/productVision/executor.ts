@@ -131,7 +131,7 @@ We are building the pitch deck for the app. Using the provided <pitch_content>, 
 - Animation between slides must be seamless, no flicker or flashing
 - Be bold and impactful. Do not be wordy or verbose, no one reads decks with too many words.
 - Keep it simple: 5-7 slides max. No fluff, just imapct.
-- Code must be clean, bug free, and easy-to-parse. Nothing complex.
+- Code must be clean, bug free, and easy-to-parse. Use GSAP for animations.
 `;
 
         if (existingHtml) {
