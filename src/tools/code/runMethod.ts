@@ -26,6 +26,17 @@ export const runMethodTool: Tool = {
           description:
             'The input payload to pass to the method. Omit for methods that take no input.',
         },
+        roles: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            'Optional. Role names for this request (e.g. ["admin"]). Can be used without userId to test role-gated logic. Overrides session-level impersonation for this call only.',
+        },
+        userId: {
+          type: 'string',
+          description:
+            "Optional. User ID for this request — use a managed user's ID to simulate their identity. Overrides session-level impersonation for this call only.",
+        },
       },
       required: ['method'],
     },

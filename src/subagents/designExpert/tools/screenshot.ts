@@ -17,7 +17,8 @@ export const definition: ToolDefinition = {
     properties: {
       prompt: {
         type: 'string',
-        description: 'Optional specific question about the screenshot.',
+        description:
+          'Optional specific question about the screenshot. Use a bulleted list to ask many questions at once.',
       },
       path: {
         type: 'string',
@@ -27,7 +28,7 @@ export const definition: ToolDefinition = {
       instructions: {
         type: 'string',
         description:
-          'If the screenshot you need requires interaction first (dismissing a modal, clicking a tab, filling out a form, navigating a flow, getting through a login/auth checkpoint), describe the steps to get there. A browser automation agent will follow these instructions before capturing the screenshot - it can bypass auth and get right to where it needs to be if you tell it to authenticate as a test user and give it the path/screen to start its test at. You will always get back a full-height screenshot of the entire page. Do not attempt to scroll or capture specific areas. Only use instructions when you need to trigger stateful changes. Never describe what names or values to use when applying the isntructions - the browser automation agent must use its own values for it to work properly.',
+          'If the screenshot you need requires interaction first (dismissing a modal, clicking a tab, filling out a form, navigating a flow, getting through a login/auth checkpoint), describe the steps to get there. A browser automation agent will follow these instructions before capturing the screenshot - it can bypass auth and get right to where it needs to be if you tell it to authenticate as a test user and give it the path/screen to start its test at. You will always get back a full-height screenshot of the entire page. Do not attempt to scroll or capture specific areas. Only use instructions when you need to trigger stateful changes. Never describe what names or values to use when applying the isntructions - the browser automation agent must use its own values for it to work properly. If a specific auth role is required to access the content, be sure to note that - it can automatically assume it for the purpose of testing.',
       },
     },
   },

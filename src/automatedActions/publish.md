@@ -12,6 +12,6 @@ If approved:
 - Stage and commit any uncommitted changes with a clean, descriptive commit message
 - Push to main
 - Use `mindstudio-prod releases status --wait` to poll the build until it completes. Let the user know it's deploying, then report back when it's live.
-- Once deployed, offer to help with next steps: setting up a custom domain (`mindstudio-prod domains`), checking for errors (`mindstudio-prod requests stats`), seeding production data (`mindstudio-prod db`), or anything else they need for launch.
+- Once deployed, offer to help with next steps: setting up a custom domain (`mindstudio-prod domains`), checking for errors (`mindstudio-prod requests stats`), seeding production data (`mindstudio-prod db`), managing env vars/secrets, or anything else they need for launch.
 
 If dismissed, acknowledge and do nothing.

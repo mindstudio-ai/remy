@@ -3,14 +3,19 @@
  */
 
 import type { Tool } from '../index.js';
-import { captureAndAnalyzeScreenshot } from '../_helpers/screenshot.js';
+import {
+  captureAndAnalyzeScreenshot,
+  buildScreenshotAnalysisPrompt,
+} from '../_helpers/screenshot.js';
+import { analyzeImage } from '../../subagents/common/analyzeImage.js';
+import { browserAutomationTool } from '../../subagents/browserAutomation/index.js';
 
 export const screenshotTool: Tool = {
   clearable: true,
   definition: {
     name: 'screenshot',
     description:
-      "Capture a full-height screenshot of the app preview and get a description of what's on screen. Provides static image analysis only, will not capture animations or video. Optionally provide specific questions about what you're looking for. Use a bulleted list to ask many questions at once. To ask additional questions about a screenshot you have already captured, pass its URL as imageUrl to skip recapture.",
+      "Capture a full-height screenshot of the app preview and get a description of what's on screen. Provides static image analysis only, will not capture animations or video. Optionally provide specific questions about what you're looking for. Use a bulleted list to ask many questions at once. To ask additional questions about a screenshot you have already captured, pass its URL as imageUrl to skip recapture. If the screenshot requires interaction first (logging in, clicking a tab, dismissing a modal), use the instructions param to describe the steps.",
     inputSchema: {
       type: 'object',
       properties: {
@@ -29,6 +34,11 @@ export const screenshotTool: Tool = {
           description:
             'Navigate to this path before capturing (e.g. "/settings", "/dashboard"). If omitted, screenshots the current page.',
         },
+        instructions: {
+          type: 'string',
+          description:
+            'If the screenshot you need requires interaction first (dismissing a modal, clicking a tab, filling out a form, navigating a flow, getting through a login/auth checkpoint), describe the steps to get there. A browser automation agent will follow these instructions before capturing the screenshot - it can bypass auth and get right to where it needs to be if you tell it to authenticate as a test user and give it the path/screen to start its test at. You will always get back a full-height screenshot of the entire page. Do not attempt to scroll or capture specific areas. Only use instructions when you need to trigger stateful changes. Never describe what names or values to use when applying the isntructions - the browser automation agent must use its own values for it to work properly. If a specific auth role is required to access the content, be sure to note that - it can automatically assume it for the purpose of testing.',
+        },
       },
     },
   },
@@ -42,6 +52,46 @@ export const screenshotTool: Tool = {
           onLog: context?.onLog,
         });
       }
+
+      // Interactive screenshot — delegate to browser automation
+      if (input.instructions && context) {
+        const task = input.path
+          ? `Navigate to "${input.path}", then: ${input.instructions}. After completing these steps, take a full-page screenshot.`
+          : `${input.instructions}. After completing these steps, take a full-page screenshot.`;
+
+        const result = await browserAutomationTool.execute({ task }, context);
+
+        const urlMatch = (result as string).match(
+          /https:\/\/[^\s"')]+\.(?:png|jpg|jpeg|webp)/i,
+        );
+        if (!urlMatch) {
+          return `Error: browser navigation completed but no screenshot URL was returned. Agent output: ${result}`;
+        }
+
+        const url = urlMatch[0];
+        let styleMap: string | undefined;
+        try {
+          const parsed = JSON.parse(result as string);
+          styleMap = parsed?.styleMap;
+        } catch {
+          // Result may not be JSON
+        }
+        const analysisPrompt = buildScreenshotAnalysisPrompt({
+          prompt: input.prompt as string | undefined,
+          styleMap,
+        });
+        const analysis = await analyzeImage({
+          prompt: analysisPrompt,
+          imageUrl: url,
+          onLog: context?.onLog,
+        });
+        return JSON.stringify({
+          url,
+          analysis,
+          ...(styleMap ? { styleMap } : {}),
+        });
+      }
+
       return await captureAndAnalyzeScreenshot({
         prompt: input.prompt as string,
         path: input.path as string | undefined,
