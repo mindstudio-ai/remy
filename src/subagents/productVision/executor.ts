@@ -126,7 +126,8 @@ We are building the pitch deck for the app. Using the provided <pitch_content>, 
 
 ### Rules
 - The deck must be a single HTML file - it will be rendered in an iFrame.
-- The deck must support keyboard navigation and click navigation to move between slides.
+- Keep it simple: 100svh slides that scroll using browser scrolling.
+- The deck must support keyboard navigation up and down, and big clickable arrows to move up and down.
 - Animation between slides must be seamless, no flicker or flashing
 - Be bold and impactful. Do not be wordy or verbose, no one reads decks with too many words.
 `;

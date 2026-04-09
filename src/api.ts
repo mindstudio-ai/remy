@@ -300,7 +300,7 @@ export async function* streamChat(params: {
 
 // --- Retry wrapper ---
 
-const MAX_RETRIES = 3;
+const MAX_RETRIES = 5;
 const INITIAL_BACKOFF_MS = 1000;
 
 function isRetryableError(error: string): boolean {
