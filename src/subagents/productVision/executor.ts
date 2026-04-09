@@ -122,13 +122,13 @@ export async function executeVisionTool(
         let task = `
 <pitch_content>${input.task}</pitch_content>
 
-We are building the pitch deck for the app. Using the provided <pitch_content>, as well as the app's spec data, think about what would make a compelling, interactive, self-contained HTML slide deck for this product. Keep it simple, clean, powerful. Giant text, large logo, big, bold stats and claims. Edit the content as necessary to create the most impactful, bold, and beautiful slides. This should not feel text heavy, and it should not feel like a landing page - it should feel like a modern interactive presentation that leaves the user wowed by the product.
+We are building the pitch deck for the app. Using the provided <pitch_content>, as well as the app's spec data, think about what would make a compelling, interactive, self-contained horizontally-scrolling HTML slide deck for this product. Keep it simple, clean, powerful. Giant text, large logo, big, bold stats and claims. Edit the content as necessary to create the most impactful, bold, and beautiful slides. This should not feel text heavy, and it should not feel like a landing page - it should feel like a modern interactive presentation that leaves the user wowed by the product.
 
 ### Rules
 - The deck must be a single HTML file - it will be rendered in an iFrame.
-- Keep it simple: 100svh 100vw slides that scroll using browser scrolling. Must look beautiful on desktop and mobile - use all the principles you know about designing effective landing pages to make a beautiful deck.
-- The deck must support keyboard navigation up and down, and big clickable arrows to move up and down.
-- Animation between slides must be seamless, no flicker or flashing
+- Keep it simple: 100svh 100vw slides that scroll horizontally using browser scrolling. Must look beautiful on desktop and mobile - use all the principles you know about designing effective landing pages to make a beautiful deck.
+- The deck must support keyboard navigation left and right, and big clickable arrows to transition.
+- Animation between slides must be seamless, no flicker or flashing.
 - Be bold and impactful. Do not be wordy or verbose, no one reads decks with too many words.
 - Keep it simple: 5-7 slides max. No fluff, just imapct.
 - Code must be clean, bug free, and easy-to-parse. Use GSAP for animations.
