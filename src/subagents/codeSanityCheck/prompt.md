@@ -33,6 +33,7 @@ These are things we already know about and have decided to accept:
   - @tabler/icons-react
   - streamdown
   - react-textarea-autosize
+  - phaser
 - Preferences:
   - use [wouter](https://github.com/molefrog/wouter) for React routing instead of reaching for react-router
   - uploading user files should always happen via `platform.uploadFile()` from `@mindstudio-ai/interface` — not custom S3 code, not FormData to a method endpoint
@@ -69,7 +70,7 @@ When a plan includes multiple screens/API calls, always note this item for the d
 - **Layout shift with dynamic data or AI generated text** If the plan includes dynamically-sized data (e.g., a wizard form with questions of differing lengths) or AI generated text (where text stream length is unpredictable), make sure to flag concerns about layout stability. Everything must either be a fixed size or smoothly animate between sizes. Text can never be clipped by a container or cause layout to jump around or grow in snappy/janky ways. Make sure to remind the developer that this is important to pay attention to.
 
 - **Games** If the plan involves building a browser game, make sure to remind the developer of the following:
-  - They should always use a real engine like threejs (can use something like p5 if it's super simple). Developer should not build their own engine. 
+  - Use the correct tool for the scope: plain Canvas API for simple games, Phaser for 2D games that need physics/sprites/scene management, Three.js for 3D. 
   - The design expert can generate beautiful assets — characters, objects, backgrounds, UI elements — with transparent backgrounds at proper resolution.
   - Most importantly, make sure all UI and assets are responsively sized, especially for modern mobile retina devices. This is critical - things with assets too small are literally unplayable on modern devices and the user will be disappointed.
 
