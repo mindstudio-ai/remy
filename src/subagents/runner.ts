@@ -116,10 +116,15 @@ export async function runSubAgent(
   // The core loop
   let turns = 0;
   const run = async (): Promise<SubAgentResult> => {
+    // History is prepended for API context but not stored back.
+    // Only messages from this invocation (task onward) are returned
+    // for storage, preventing exponential history growth.
+    const historyLen = (history ?? []).length;
     const messages: Message[] = [
       ...(history ?? []),
       { role: 'user', content: task },
     ];
+    const thisInvocation = () => messages.slice(historyLen);
 
     /** Collect accumulated text from content blocks for graceful interruption. */
     function getPartialText(blocks: ContentBlock[]): string {
@@ -136,10 +141,10 @@ export async function runSubAgent(
           text: partial
             ? `[INTERRUPTED - PARTIAL OUTPUT RETRIEVED] Note that partial output may include thinking text or other unfinalized decisions. It is NOT an authoritative response from this agent.\n\n${partial}`
             : '[INTERRUPTED] Agent was interrupted before producing output.',
-          messages,
+          messages: thisInvocation(),
         };
       }
-      return { text: 'Error: cancelled', messages };
+      return { text: 'Error: cancelled', messages: thisInvocation() };
     }
 
     let lastToolResult = '';
@@ -258,7 +263,10 @@ export async function runSubAgent(
               break;
 
             case 'error':
-              return { text: `Error: ${event.error}`, messages };
+              return {
+                text: `Error: ${event.error}`,
+                messages: thisInvocation(),
+              };
           }
         }
       } catch (err: any) {
@@ -287,7 +295,7 @@ export async function runSubAgent(
       if (stopReason !== 'tool_use' || toolCalls.length === 0) {
         statusWatcher.stop();
         const text = getPartialText(contentBlocks);
-        return { text, messages };
+        return { text, messages: thisInvocation() };
       }
 
       // Execute tool calls
