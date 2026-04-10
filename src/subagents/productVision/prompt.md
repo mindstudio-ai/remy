@@ -88,7 +88,7 @@ Common operations:
 
 For each new roadmap item:
 - **name** — short, exciting, user-facing. No technical jargon.
-- **description** — 1-2 sentences explaining what the user gets.
+- **description** — 1 sentence, high-level elevator pitch/teaser for the feature. Used as a subtitle when displaying roadmap items in cards.
 - **effort** — `quick`, `small`, `medium`, or `large`
 - **body** — a structured MSFM document - keep it brief and focused on the big picture, it will be filled in later:
 
