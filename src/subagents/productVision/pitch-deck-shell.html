@@ -150,11 +150,14 @@ html, body {
 
 @media (max-width: 768px) {
   .slide { padding: 32px 24px; }
-  .nav { bottom: 24px; }
 }
+
+/* Reveal: elements with data-reveal start hidden, GSAP animates them in */
+[data-reveal] { opacity: 0; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+  [data-reveal] { opacity: 1 !important; }
 }
 </style>
 </head>
@@ -165,18 +168,18 @@ html, body {
 <div class="deck" id="deck">
 
   <div class="slide slide-dark" data-index="0">
-    <h1>Slide One</h1>
-    <p>Placeholder subtitle text</p>
+    <h1 data-reveal>Slide One</h1>
+    <p data-reveal>Placeholder subtitle text</p>
   </div>
 
   <div class="slide slide-light" data-index="1">
-    <h1 style="color:var(--text-dark)">Slide Two</h1>
-    <p>Another placeholder</p>
+    <h1 data-reveal style="color:var(--text-dark)">Slide Two</h1>
+    <p data-reveal>Another placeholder</p>
   </div>
 
   <div class="slide slide-dark" data-index="2">
-    <h1>Slide Three</h1>
-    <p>Final placeholder</p>
+    <h1 data-reveal>Slide Three</h1>
+    <p data-reveal>Final placeholder</p>
   </div>
 
 </div>
@@ -204,6 +207,8 @@ html, body {
   const tapPrev = document.getElementById('tapPrev');
   const tapNext = document.getElementById('tapNext');
   const progress = document.getElementById('progress');
+  const chevronPrev = document.getElementById('chevronPrev');
+  const chevronNext = document.getElementById('chevronNext');
 
   // Build progress segments
   for (let i = 0; i < totalSlides; i++) {
@@ -226,15 +231,30 @@ html, body {
     chevronPrev.classList.toggle('hidden', current === 0);
     chevronNext.classList.toggle('hidden', current === totalSlides - 1);
 
-    // Light/dark adjustment
-    const isLight = slides[current].classList.contains('slide-light');
+    // Light/dark adjustment — checks class or data-theme attribute
+    const s = slides[current];
+    const isLight = s.classList.contains('slide-light') || s.classList.contains('s-light') || s.dataset.theme === 'light';
     progress.classList.toggle('light', isLight);
     chevronPrev.classList.toggle('light', isLight);
     chevronNext.classList.toggle('light', isLight);
   }
 
-  const chevronPrev = document.getElementById('chevronPrev');
-  const chevronNext = document.getElementById('chevronNext');
+  // Slide content reveal — called once per slide on first visit.
+  // Elements with [data-reveal] start hidden (CSS opacity:0) and
+  // animate in. Override this function to customize per-slide animations.
+  const revealed = new Set();
+  function revealSlide(index) {
+    if (revealed.has(index)) return;
+    revealed.add(index);
+    const els = slides[index].querySelectorAll('[data-reveal]');
+    els.forEach((el, i) => {
+      const delay = (parseFloat(el.dataset.reveal) || 0) + i * 0.04;
+      gsap.fromTo(el,
+        { opacity: 0, y: 16 },
+        { opacity: 1, y: 0, duration: 0.5, delay, ease: 'power2.out' }
+      );
+    });
+  }
 
   function goTo(index) {
     if (index === current || isAnimating || index < 0 || index >= totalSlides) return;
@@ -246,7 +266,10 @@ html, body {
       x: -current * window.innerWidth,
       duration: 0.4,
       ease: 'power2.inOut',
-      onComplete: () => { isAnimating = false; }
+      onComplete: () => {
+        revealSlide(current);
+        isAnimating = false;
+      }
     });
   }
 
@@ -287,9 +310,11 @@ html, body {
     resizeTimer = setTimeout(() => gsap.set(deck, { x: -current * window.innerWidth }), 100);
   });
 
-  // Init
+  // Init — first slide is visible immediately, no reveal animation
   gsap.set(deck, { x: 0 });
   updateNav();
+  revealed.add(0);
+  slides[0].querySelectorAll('[data-reveal]').forEach(el => { el.style.opacity = 1; });
 })();
 </script>
 

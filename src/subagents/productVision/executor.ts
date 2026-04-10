@@ -95,7 +95,7 @@ Use <current_deck> as your starting point and replace or update the content as n
 ### Rules
 - The deck must be a single HTML file — it will be rendered in an iframe.
 - Must look beautiful on desktop and mobile.
-- Animation between slides must be seamless, no flicker or flashing. For reveal animations: hide elements with CSS \`opacity: 0\` only (no transform in CSS). Let GSAP handle transforms via inline styles and never use \`clearProps\`.
+- Animation between slides must be seamless, no flicker or flashing. For reveal animations: hide elements with CSS \`opacity: 0\` only (no transform in CSS). Let GSAP handle transforms via inline styles and never use \`clearProps\`. Use the existing scaffold, do not write your own transition logic or slide mechanics.
 - Be bold and impactful.
 - Code must be clean, bug free, and easy to parse. Use GSAP for animations.
 - Keep the progress bar and edge chevrons from the shell — they are part of the navigation UX.
