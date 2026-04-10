@@ -27,7 +27,7 @@ These are things we already know about and have decided to accept:
   - `@mindstudio-ai/interface` — frontend SDK. `createClient<T>()` gives typed RPC to backend methods (no raw fetch). `auth` handles auth state (`auth.currentUser`, `auth.onAuthStateChanged(cb)`, verification flows, logout). `platform.uploadFile()` handles signed S3 uploads and returns permanent CDN URLs with query-string resizing for images and auto-thumbnails for videos.
   - `@mindstudio-ai/agent` — backend SDK. `db.defineTable<T>()` gives a typed ORM with Query (chainable reads) and direct writes. `auth` gives `auth.userId`, `auth.roles`, `auth.requireRole()`, `auth.hasRole()`. Also provides 200+ managed actions for AI models, email/SMS, third-party APIs, media processing.
 - Libraries we know are actively maintained, don't bother checking:
-  - swr
+  - zustand
   - motion (formerly framer-motion — import from `motion/react`, not `framer-motion`)
   - gsap (now fully free, including ScrollTrigger, FLIP, MorphSVG)
   - styled-components

@@ -49,7 +49,10 @@ For multi-step tasks with branching logic (research, enrichment, content pipelin
 - Runtime errors must render visibly on screen, not produce a blank white page. User and agent must be able to visibly debug and spot them.
 
 ### State Management
-- Calls to methods introduce latency. When building web frontends that load data from methods, front-load as much data as you can in a single API request - e.g., when possible, load a large data object into a central store and use that to render sub-screens in an app, rather than an API call on every screen. User experience and perceived speed/performance are far more valuable than normalization and good REST API design.
+- Prefer to use a library like Zustand for global state. Load a big data bundle on app start into a Zustand store, then render everything from memory. Navigation between screens should feel instant — no loading spinners for data that's already in the store.
+- Optimistic updates: mutate the store immediately, fire the API call in the background, roll back on error. The user should never wait for the server to confirm before seeing their change.
+- Not everything needs global state. Form inputs, UI toggles, modal visibility — keep those in local component state. Global state is for data that multiple screens need access to.
+- Do not use SWR for apps where you can load everything on startup. Those libraries are for server-cache patterns where data is too large or dynamic to hold in memory. For small apps with a handful of users, a Zustand store with a single initial fetch is simpler and faster.
 
 ### Secrets & Third-Party Integrations
 When a method needs credentials for a third-party service, use `process.env` and use the CLI to set it on behalf of the user (chat logs are secure and scrubbed, so it's fine for them to paste) or they can set it manually in the Dashboard.
