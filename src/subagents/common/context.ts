@@ -1,8 +1,8 @@
 /**
  * Shared context loaders for sub-agents.
  *
- * Loads spec files and roadmap files from disk and formats them
- * as XML blocks for injection into sub-agent system prompts.
+ * Provides lightweight file indexes (frontmatter only) for system
+ * prompts. Subagents use read tools to access full contents on demand.
  */
 
 import fs from 'node:fs';
@@ -24,37 +24,108 @@ function walkMdFiles(dir: string, skip?: Set<string>): string[] {
   } catch {
     // Directory may not exist
   }
-  return files;
+  return files.sort();
 }
 
-function loadFilesAsXml(dir: string, tag: string, skip?: Set<string>): string {
-  const files = walkMdFiles(dir, skip);
+function parseFrontmatter(filePath: string): Record<string, string> {
+  try {
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const match = content.match(/^---\n([\s\S]*?)\n---/);
+    if (!match) {
+      return {};
+    }
+    const fm: Record<string, string> = {};
+    for (const line of match[1].split('\n')) {
+      const sep = line.indexOf(':');
+      if (sep > 0) {
+        const key = line.slice(0, sep).trim();
+        const val = line.slice(sep + 1).trim();
+        fm[key] = val;
+      }
+    }
+    return fm;
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Lightweight index of spec files (frontmatter only).
+ * Subagents use readFile to access full contents on demand.
+ */
+export function loadSpecIndex(): string {
+  const files = walkMdFiles('src', new Set(['roadmap']));
   if (files.length === 0) {
     return '';
   }
 
-  const sections = files
-    .map((f) => {
-      try {
-        const content = fs.readFileSync(f, 'utf-8').trim();
-        return `<file path="${f}">\n${content}\n</file>`;
-      } catch {
-        return '';
+  const lines = files.map((f) => {
+    const fm = parseFrontmatter(f);
+    let line = `- ${f}`;
+    if (fm.name) {
+      line += ` — "${fm.name}"`;
+    }
+    if (fm.description) {
+      line += ` — ${fm.description}`;
+    }
+    return line;
+  });
+
+  return `<spec_files>\n## Project Spec Files\nUse readFile to access full contents.\n\n${lines.join('\n')}\n</spec_files>`;
+}
+
+/**
+ * Lightweight index of roadmap files (frontmatter + lane summary).
+ * Subagents use readFile to access full contents on demand.
+ */
+export function loadRoadmapIndex(): string {
+  const parts: string[] = [];
+
+  // Lane summary from index.json
+  try {
+    const indexJson = JSON.parse(
+      fs.readFileSync('src/roadmap/index.json', 'utf-8'),
+    );
+    if (indexJson.lanes?.length > 0) {
+      const laneLines = indexJson.lanes.map(
+        (l: { name: string; narrative?: string; items?: string[] }) =>
+          `- **${l.name}**: ${l.narrative || ''} (${l.items?.length || 0} items)`,
+      );
+      parts.push(`### Lanes\n${laneLines.join('\n')}`);
+    }
+    if (indexJson.standalone?.length > 0) {
+      parts.push(
+        `### Standalone\n${indexJson.standalone.map((s: string) => `- ${s}`).join('\n')}`,
+      );
+    }
+  } catch {
+    // No index.json
+  }
+
+  // Item frontmatter
+  const files = walkMdFiles('src/roadmap');
+  if (files.length > 0) {
+    const lines = files.map((f) => {
+      const fm = parseFrontmatter(f);
+      let line = `- ${f}`;
+      if (fm.name) {
+        line += ` — "${fm.name}"`;
       }
-    })
-    .filter(Boolean);
+      if (fm.status) {
+        line += ` (${fm.status})`;
+      }
+      if (fm.description) {
+        line += ` — ${fm.description}`;
+      }
+      return line;
+    });
+    parts.push(`### Items\n${lines.join('\n')}`);
+  }
 
-  return `<${tag}>\n${sections.join('\n\n')}\n</${tag}>`;
-}
-
-/** Load all spec files from src/ (excluding roadmap). */
-export function loadSpecContext(): string {
-  return loadFilesAsXml('src', 'spec_files', new Set(['roadmap']));
-}
-
-/** Load all roadmap files from src/roadmap/. */
-export function loadRoadmapContext(): string {
-  return loadFilesAsXml('src/roadmap', 'current_roadmap');
+  if (parts.length === 0) {
+    return '';
+  }
+  return `<current_roadmap>\n## Roadmap\nUse readFile to access full contents.\n\n${parts.join('\n\n')}\n</current_roadmap>`;
 }
 
 /** Platform context for sub-agents that need to understand what's buildable. */

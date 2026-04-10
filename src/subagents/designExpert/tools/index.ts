@@ -7,6 +7,7 @@ import {
   type ToolExecutionContext,
   deriveContext,
 } from '../../../tools/index.js';
+import { COMMON_READ_TOOLS } from '../../common/tools.js';
 
 import * as searchGoogle from './searchGoogle.js';
 import * as scrapeWebUrl from './scrapeWebUrl.js';
@@ -26,9 +27,10 @@ const tools = {
   editImages,
 } as const;
 
-export const DESIGN_EXPERT_TOOLS: ToolDefinition[] = Object.values(tools).map(
-  (t) => t.definition,
-);
+export const DESIGN_EXPERT_TOOLS: ToolDefinition[] = [
+  ...COMMON_READ_TOOLS,
+  ...Object.values(tools).map((t) => t.definition),
+];
 
 export async function executeDesignExpertTool(
   name: string,

@@ -1,54 +1,13 @@
 /**
  * Tool definitions for the code sanity check sub-agent.
- * All readonly — can search, read, and query but cannot modify anything.
+ * Common read tools + web search + SDK consultant.
  */
 
 import type { ToolDefinition } from '../../api.js';
+import { COMMON_READ_TOOLS } from '../common/tools.js';
 
 export const SANITY_CHECK_TOOLS: ToolDefinition[] = [
-  {
-    name: 'readFile',
-    description: 'Read a file from the project.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        path: {
-          type: 'string',
-          description: 'File path relative to project root.',
-        },
-      },
-      required: ['path'],
-    },
-  },
-  {
-    name: 'grep',
-    description: 'Search file contents for a pattern.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        pattern: { type: 'string', description: 'Search pattern (regex).' },
-        path: {
-          type: 'string',
-          description: 'Directory or file to search in.',
-        },
-      },
-      required: ['pattern'],
-    },
-  },
-  {
-    name: 'glob',
-    description: 'Find files by glob pattern.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        pattern: {
-          type: 'string',
-          description: 'Glob pattern (e.g., "src/**/*.ts").',
-        },
-      },
-      required: ['pattern'],
-    },
-  },
+  ...COMMON_READ_TOOLS,
   {
     name: 'searchGoogle',
     description:

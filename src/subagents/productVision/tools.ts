@@ -1,36 +1,15 @@
 /**
  * Tool definitions for the product vision sub-agent.
  *
- * File tools scoped to src/roadmap/, plus design expert
- * delegation for the pitch deck.
+ * Common read tools (project-wide) + scoped write tools for
+ * src/roadmap/ + design expert delegation for pitch deck.
  */
 
 import type { ToolDefinition } from '../../api.js';
+import { COMMON_READ_TOOLS } from '../common/tools.js';
 
 export const VISION_TOOLS: ToolDefinition[] = [
-  {
-    name: 'listDir',
-    description: 'List files in src/roadmap/.',
-    inputSchema: {
-      type: 'object',
-      properties: {},
-    },
-  },
-  {
-    name: 'readFile',
-    description:
-      'Read a file from src/roadmap/. Path is relative to src/roadmap/ (e.g. "index.json", "mute.md").',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        path: {
-          type: 'string',
-          description: 'File path relative to src/roadmap/.',
-        },
-      },
-      required: ['path'],
-    },
-  },
+  ...COMMON_READ_TOOLS,
   {
     name: 'writeFile',
     description:

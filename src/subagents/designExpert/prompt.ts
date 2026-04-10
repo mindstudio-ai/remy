@@ -10,7 +10,7 @@
 
 import fs from 'node:fs';
 import { readAsset } from '../../assets.js';
-import { loadSpecContext } from '../common/context.js';
+import { loadSpecIndex } from '../common/context.js';
 import { getSampleIndices } from './data/sampleCache.js';
 import { getFontLibrarySample, fontData } from './data/getFontLibrarySample.js';
 import {
@@ -50,7 +50,7 @@ const PROMPT_TEMPLATE = readAsset(SUBAGENT, 'prompt.md')
  * Call per invocation — samples are stable across calls within a session.
  */
 export function getDesignExpertPrompt(onboardingState?: string): string {
-  const specContext = loadSpecContext();
+  const specContext = loadSpecIndex();
 
   // Get or create stable sample indices for this session
   const indices = getSampleIndices(

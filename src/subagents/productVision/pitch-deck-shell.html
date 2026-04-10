@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pitch Deck</title>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-dark: #111;
+  --bg-light: #f5f5f3;
+  --text-light: #f5f5f3;
+  --text-dark: #111;
+  --text-muted: #888;
+  --accent: #3b82f6;
+}
+
+html, body {
+  height: 100svh;
+  overflow: hidden;
+  background: var(--bg-dark);
+  font-family: system-ui, sans-serif;
+  color: var(--text-light);
+  -webkit-font-smoothing: antialiased;
+}
+
+.deck {
+  display: flex;
+  width: max-content;
+  height: 100svh;
+}
+
+.slide {
+  flex: 0 0 100vw;
+  width: 100vw;
+  height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 48px;
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Progress bar */
+.progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 4px;
+  padding: 12px 16px;
+  z-index: 100;
+}
+
+.progress-seg {
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.12);
+  overflow: hidden;
+  transition: background 0.3s;
+}
+
+.progress-seg .fill {
+  height: 100%;
+  width: 0%;
+  background: rgba(255,255,255,0.65);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.progress-seg.done .fill { width: 100%; }
+.progress-seg.active .fill { width: 100%; }
+
+/* Light slide progress adjustment */
+.progress.light .progress-seg { background: rgba(0,0,0,0.08); }
+.progress.light .progress-seg .fill { background: rgba(0,0,0,0.45); }
+
+/* Tap zones */
+.tap-zones {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  z-index: 50;
+}
+
+.tap-zone {
+  height: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tap-prev { width: 33.333%; }
+.tap-next { width: 66.667%; }
+
+/* Edge chevrons */
+.chevron {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 100;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+.chevron svg {
+  width: 36px;
+  height: 36px;
+  stroke: rgba(255,255,255,0.5);
+  stroke-width: 2;
+  fill: none;
+}
+
+.chevron-prev { left: 16px; }
+.chevron-next { right: 16px; }
+
+.chevron.hidden { opacity: 0; }
+
+.chevron.light svg { stroke: rgba(0,0,0,0.35); }
+
+@media (max-width: 768px) {
+  .chevron { display: none; }
+}
+
+.slide-dark { background: var(--bg-dark); }
+.slide-light { background: var(--bg-light); color: var(--text-dark); }
+
+.slide h1 {
+  font-size: clamp(48px, 7vw, 80px);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  text-align: center;
+}
+
+.slide p {
+  font-size: clamp(16px, 2vw, 22px);
+  color: var(--text-muted);
+  text-align: center;
+  max-width: 500px;
+  line-height: 1.5;
+  margin-top: 24px;
+}
+
+@media (max-width: 768px) {
+  .slide { padding: 32px 24px; }
+  .nav { bottom: 24px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<div class="deck" id="deck">
+
+  <div class="slide slide-dark" data-index="0">
+    <h1>Slide One</h1>
+    <p>Placeholder subtitle text</p>
+  </div>
+
+  <div class="slide slide-light" data-index="1">
+    <h1 style="color:var(--text-dark)">Slide Two</h1>
+    <p>Another placeholder</p>
+  </div>
+
+  <div class="slide slide-dark" data-index="2">
+    <h1>Slide Three</h1>
+    <p>Final placeholder</p>
+  </div>
+
+</div>
+
+<div class="tap-zones">
+  <div class="tap-zone tap-prev" id="tapPrev"></div>
+  <div class="tap-zone tap-next" id="tapNext"></div>
+</div>
+
+<div class="chevron chevron-prev hidden" id="chevronPrev">
+  <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
+</div>
+<div class="chevron chevron-next" id="chevronNext">
+  <svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"></polyline></svg>
+</div>
+
+<script>
+(function() {
+  const deck = document.getElementById('deck');
+  const slides = document.querySelectorAll('.slide');
+  const totalSlides = slides.length;
+  let current = 0;
+  let isAnimating = false;
+
+  const tapPrev = document.getElementById('tapPrev');
+  const tapNext = document.getElementById('tapNext');
+  const progress = document.getElementById('progress');
+
+  // Build progress segments
+  for (let i = 0; i < totalSlides; i++) {
+    const seg = document.createElement('div');
+    seg.className = 'progress-seg' + (i === 0 ? ' active' : '');
+    seg.innerHTML = '<div class="fill"></div>';
+    seg.addEventListener('click', () => goTo(i));
+    progress.appendChild(seg);
+  }
+
+  function updateNav() {
+    // Update progress bar
+    const segs = progress.querySelectorAll('.progress-seg');
+    segs.forEach((s, i) => {
+      s.classList.toggle('done', i < current);
+      s.classList.toggle('active', i === current);
+    });
+
+    // Caret visibility
+    chevronPrev.classList.toggle('hidden', current === 0);
+    chevronNext.classList.toggle('hidden', current === totalSlides - 1);
+
+    // Light/dark adjustment
+    const isLight = slides[current].classList.contains('slide-light');
+    progress.classList.toggle('light', isLight);
+    chevronPrev.classList.toggle('light', isLight);
+    chevronNext.classList.toggle('light', isLight);
+  }
+
+  const chevronPrev = document.getElementById('chevronPrev');
+  const chevronNext = document.getElementById('chevronNext');
+
+  function goTo(index) {
+    if (index === current || isAnimating || index < 0 || index >= totalSlides) return;
+    isAnimating = true;
+    current = index;
+    updateNav();
+
+    gsap.to(deck, {
+      x: -current * window.innerWidth,
+      duration: 0.4,
+      ease: 'power2.inOut',
+      onComplete: () => { isAnimating = false; }
+    });
+  }
+
+  // Keyboard
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); goTo(current + 1); }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); goTo(current - 1); }
+  });
+
+  // Tap zones
+  tapPrev.addEventListener('click', () => goTo(current - 1));
+  tapNext.addEventListener('click', () => goTo(current + 1));
+
+  // Touch/swipe
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let touchLocked = false;
+
+  document.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    touchLocked = false;
+  }, { passive: true });
+
+  document.addEventListener('touchend', (e) => {
+    if (touchLocked) return;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return;
+    if (dx < 0) goTo(current + 1);
+    else goTo(current - 1);
+  }, { passive: true });
+
+  // Resize
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => gsap.set(deck, { x: -current * window.innerWidth }), 100);
+  });
+
+  // Init
+  gsap.set(deck, { x: 0 });
+  updateNav();
+})();
+</script>
+
+</body>
+</html>

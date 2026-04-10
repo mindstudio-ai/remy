@@ -6,23 +6,23 @@
  */
 
 import { readAsset } from '../../assets.js';
-import { loadSpecContext, loadRoadmapContext } from './executor.js';
+import { loadSpecIndex, loadRoadmapIndex } from './executor.js';
 import { loadPlatformBrief } from '../common/context.js';
 
 const BASE_PROMPT = readAsset('subagents/productVision', 'prompt.md');
 
-/** Build the system prompt with current spec and roadmap context. */
+/** Build the system prompt with lightweight spec/roadmap indexes. */
 export function getProductVisionPrompt(): string {
-  const specContext = loadSpecContext();
-  const roadmapContext = loadRoadmapContext();
+  const specIndex = loadSpecIndex();
+  const roadmapIndex = loadRoadmapIndex();
 
   const parts = [BASE_PROMPT, loadPlatformBrief()];
   parts.push('<!-- cache_breakpoint -->');
-  if (specContext) {
-    parts.push(specContext);
+  if (specIndex) {
+    parts.push(specIndex);
   }
-  if (roadmapContext) {
-    parts.push(roadmapContext);
+  if (roadmapIndex) {
+    parts.push(roadmapIndex);
   }
 
   return parts.join('\n\n');

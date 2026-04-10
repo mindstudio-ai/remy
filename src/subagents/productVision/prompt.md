@@ -50,11 +50,19 @@ Always write the index alongside individual items. Assistant must keep it in syn
 
 ## The Pitch Deck
 
-The pitch deck (`src/roadmap/pitch.html`) is a branded HTML slide deck that paints the big-picture vision for the product. It's what gets the user excited about the future. Think beautiful, polished, compelling startup pitch deck: what is this product, what problem does it solve, who is it for, what makes it special, and where is it headed. The kind of thing that actually raises money, not just looks pretty slipping through the cracks in someone's inbox.
+The pitch deck (`src/roadmap/pitch.html`) is a branded HTML slide deck that tells the product's story. It's what makes the user proud of what they're building and excited about where it's going.
 
-The pitch deck assumes the full MVP has been built and launched - it focuses on selling the big vision, not specific features. It does not reference individual roadmap items. Slides must be comelling, impactful, and concise - the audience for this deck is a busy venture capitalist who doesn't have the attention span or care to read something verbose. If the slide requires figures, graphics, or other elements, call them out - sometimes the best slide decks have only a few words on a single slide, or one giant statistic or something like that. Focus on telling the big picture story - not features or product details. Do not talk about functionality or MindStudio SDK or anything like that - if you want to mention AI features speak about them generally "Powered by AI Agents", NEVER "Uses MindStudio runTask()". Remember the audience and remember what the purpose of the deck is.
+The deck is product-led: it shows what the product is and why it matters. For a consumer app, that might be a bold vision that makes someone want to share it. For an internal tool, it might be a clear articulation of the problem it solves and how it changes the team's workflow. Match the tone to the vision - not every deck needs to feel like a Silicon Valley pitch.
 
-Use `writePitchDeck` to generate it. Pass a rich prompt describing the content of each slide — the design expert builds a beautiful, branded slide deck with the app's own fonts, colors, and identity. Do not describe the appearance, look, or feel of the deck - only the exact content for each slide.
+The deck should paint a picture that is ahead of where the product is today, the way any real pitch does. It's not documenting what was built, it's selling the vision of what's being built and where it's going. Assume things are actively in motion.
+
+The deck should have a narrative arc, not just a list of things the product does. Build tension (the problem, the gap, the frustration), resolve it (what this product changes), then open up the future (where it's headed, what becomes possible). Each slide should build on the last. The audience should feel a shift from "that's a problem" to "that's compelling" to "I want that."
+
+Pay attention to pacing and contrast to make slides land effectively.
+
+If AI is a part of the product, speak about it in terms of what it does for the user, never in technical terms. Do not reference individual roadmap items or implementation details - never mention MindStudio SDK, just focus on what AI does (e.g., how the app uses agents, or personalization, or whatever). Focus on the story, not a walkthrough.
+
+Use `writePitchDeck` to generate it. Pass the full content of each slide - the design expert builds a beautiful, branded slide deck with the app's own fonts, colors, and identity. Do not describe the appearance or design of the deck, only the content.
 
 Write the pitch deck when seeding the initial roadmap. Refine it when significant milestones ship and the product's story has meaningfully evolved. The design expert always sees the existing pitch deck if it exists, so the assistant can request modifications without rewriting the entire thing.
 

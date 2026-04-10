@@ -5,9 +5,15 @@
  * and visual direction. Can answer from expertise alone or research the web.
  */
 
-import type { Tool, ToolExecutionContext } from '../../tools/index.js';
+import {
+  type Tool,
+  type ToolExecutionContext,
+  deriveContext,
+  executeTool as mainExecuteTool,
+} from '../../tools/index.js';
 import { runSubAgent } from '../runner.js';
 import { DESIGN_EXPERT_TOOLS, executeDesignExpertTool } from './tools/index.js';
+import { COMMON_READ_TOOL_NAMES } from '../common/tools.js';
 import { getDesignExpertPrompt } from './prompt.js';
 import { getSubAgentHistory } from '../common/history.js';
 
@@ -53,8 +59,15 @@ export const designExpertTool: Tool = {
       history: history.length > 0 ? history : undefined,
       tools: DESIGN_EXPERT_TOOLS,
       externalTools: new Set<string>(),
-      executeTool: (name, input, toolCallId, onLog) =>
-        executeDesignExpertTool(name, input, context, toolCallId, onLog),
+      executeTool: (name, input, toolCallId, onLog) => {
+        if (COMMON_READ_TOOL_NAMES.has(name)) {
+          const childCtx = toolCallId
+            ? deriveContext(context, toolCallId)
+            : context;
+          return mainExecuteTool(name, input, childCtx);
+        }
+        return executeDesignExpertTool(name, input, context, toolCallId, onLog);
+      },
       apiConfig: context.apiConfig,
       model: context.model,
       subAgentId: 'visualDesignExpert',

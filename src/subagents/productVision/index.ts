@@ -13,9 +13,11 @@ import {
   type Tool,
   type ToolExecutionContext,
   deriveContext,
+  executeTool as mainExecuteTool,
 } from '../../tools/index.js';
 import { runSubAgent } from '../runner.js';
 import { VISION_TOOLS } from './tools.js';
+import { COMMON_READ_TOOL_NAMES } from '../common/tools.js';
 import { executeVisionTool } from './executor.js';
 import { getProductVisionPrompt } from './prompt.js';
 import { getSubAgentHistory } from '../common/history.js';
@@ -59,12 +61,15 @@ export const productVisionTool: Tool = {
       history: history.length > 0 ? history : undefined,
       tools: VISION_TOOLS,
       externalTools: new Set<string>(),
-      executeTool: (name, input, toolCallId) =>
-        executeVisionTool(
-          name,
-          input,
-          toolCallId ? deriveContext(context, toolCallId) : context,
-        ),
+      executeTool: (name, input, toolCallId) => {
+        const childCtx = toolCallId
+          ? deriveContext(context, toolCallId)
+          : context;
+        if (COMMON_READ_TOOL_NAMES.has(name)) {
+          return mainExecuteTool(name, input, childCtx);
+        }
+        return executeVisionTool(name, input, childCtx);
+      },
       apiConfig: context.apiConfig,
       model: context.model,
       subAgentId: 'productVision',

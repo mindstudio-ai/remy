@@ -9,7 +9,7 @@
 import type { Tool, ToolExecutionContext } from '../../tools/index.js';
 import { readAsset } from '../../assets.js';
 import { runSubAgent } from '../runner.js';
-import { loadSpecContext, loadPlatformBrief } from '../common/context.js';
+import { loadSpecIndex, loadPlatformBrief } from '../common/context.js';
 import { executeTool } from '../../tools/index.js';
 import { SANITY_CHECK_TOOLS } from './tools.js';
 
@@ -39,11 +39,11 @@ export const codeSanityCheckTool: Tool = {
       return 'Error: code sanity check requires execution context';
     }
 
-    const specContext = loadSpecContext();
+    const specIndex = loadSpecIndex();
     const parts = [BASE_PROMPT, loadPlatformBrief()];
     parts.push('<!-- cache_breakpoint -->');
-    if (specContext) {
-      parts.push(specContext);
+    if (specIndex) {
+      parts.push(specIndex);
     }
     const system = parts.join('\n\n');
 
