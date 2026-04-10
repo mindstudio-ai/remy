@@ -61,10 +61,10 @@ export const productVisionTool: Tool = {
       history: history.length > 0 ? history : undefined,
       tools: VISION_TOOLS,
       externalTools: new Set<string>(),
-      executeTool: (name, input, toolCallId) => {
+      executeTool: (name, input, toolCallId, _onLog, sams) => {
         const childCtx = toolCallId
-          ? deriveContext(context, toolCallId)
-          : context;
+          ? { ...deriveContext(context, toolCallId), subAgentMessages: sams }
+          : { ...context, subAgentMessages: sams };
         if (COMMON_READ_TOOL_NAMES.has(name)) {
           return mainExecuteTool(name, input, childCtx);
         }

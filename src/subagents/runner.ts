@@ -34,6 +34,7 @@ export interface SubAgentConfig {
     input: Record<string, any>,
     toolCallId?: string,
     onLog?: (line: string) => void,
+    subAgentMessages?: Map<string, Message[]>,
   ) => Promise<string>;
   apiConfig: { baseUrl: string; apiKey: string };
   model?: string;
@@ -120,6 +121,7 @@ export async function runSubAgent(
     // Only messages from this invocation (task onward) are returned
     // for storage, preventing exponential history growth.
     const historyLen = (history ?? []).length;
+    const subAgentMessages = new Map<string, Message[]>();
     const messages: Message[] = [
       ...(history ?? []),
       { role: 'user', content: task },
@@ -350,7 +352,13 @@ export async function runSubAgent(
                     name: tc.name,
                     result: line,
                   });
-                result = await executeTool(tc.name, input, tc.id, onLog);
+                result = await executeTool(
+                  tc.name,
+                  input,
+                  tc.id,
+                  onLog,
+                  subAgentMessages,
+                );
               }
               safeSettle(result, result.startsWith('Error'));
             } catch (err: any) {
@@ -419,6 +427,10 @@ export async function runSubAgent(
           block.result = r.result;
           block.isError = r.isError;
           block.completedAt = Date.now();
+          const innerMsgs = subAgentMessages.get(r.id);
+          if (innerMsgs) {
+            block.subAgentMessages = innerMsgs;
+          }
         }
 
         // Still append as user messages — the LLM needs them for the next loop iteration

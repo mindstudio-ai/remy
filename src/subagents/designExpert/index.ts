@@ -59,14 +59,20 @@ export const designExpertTool: Tool = {
       history: history.length > 0 ? history : undefined,
       tools: DESIGN_EXPERT_TOOLS,
       externalTools: new Set<string>(),
-      executeTool: (name, input, toolCallId, onLog) => {
+      executeTool: (name, input, toolCallId, onLog, sams) => {
+        const childCtx = toolCallId
+          ? { ...deriveContext(context, toolCallId), subAgentMessages: sams }
+          : { ...context, subAgentMessages: sams };
         if (COMMON_READ_TOOL_NAMES.has(name)) {
-          const childCtx = toolCallId
-            ? deriveContext(context, toolCallId)
-            : context;
           return mainExecuteTool(name, input, childCtx);
         }
-        return executeDesignExpertTool(name, input, context, toolCallId, onLog);
+        return executeDesignExpertTool(
+          name,
+          input,
+          childCtx,
+          toolCallId,
+          onLog,
+        );
       },
       apiConfig: context.apiConfig,
       model: context.model,

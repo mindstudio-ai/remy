@@ -90,14 +90,13 @@ export async function executeVisionTool(
 
 We are building the pitch deck for the app. Using the provided <pitch_content>, as well as the app's spec data, think about what would make a compelling, interactive, self-contained horizontally-scrolling HTML slide deck for this product. Keep it simple, clean, powerful. Giant text, large logo, big, bold stats and claims. Edit the content as necessary to create the most impactful, bold, and beautiful slides. This should not feel like an essay, and it should not feel like a landing page — it should feel like a modern interactive presentation that leaves the user wowed by the product and excited about its future.
 
-Use <current_deck> as your starting point and replace or update the content as needed, maintaining the bones of the presentation scaffolding.
+Use <current_deck> as your starting point and replace or update the content as needed, maintaining the bones of the presentation scaffolding. Always keep the progress bar, chevron navigation, and keyboard navigation - they are part of the scaffold.
 
 ### Rules
 - The deck must be a single HTML file — it will be rendered in an iframe.
 - Must look beautiful on desktop and mobile.
 - Animation between slides must be seamless, no flicker or flashing. For reveal animations: hide elements with CSS \`opacity: 0\` only (no transform in CSS). Let GSAP handle transforms via inline styles and never use \`clearProps\`.
 - Be bold and impactful.
-- 6-8 slides max. No fluff, just impact.
 - Code must be clean, bug free, and easy to parse. Use GSAP for animations.
 - Keep the progress bar and edge chevrons from the shell — they are part of the navigation UX.
 
@@ -110,15 +109,9 @@ Respond only with the complete HTML file and absolutely no other text. Your resp
           /```(?:html|wireframe)\n([\s\S]*?)```/,
         );
         const html = htmlMatch ? htmlMatch[1].trim() : (result as string);
-
-        const oldContent = fs.existsSync(filePath)
-          ? fs.readFileSync(filePath, 'utf-8')
-          : '';
-
         fs.writeFileSync(filePath, html, 'utf-8');
-        const lineCount = html.split('\n').length;
-        const label = oldContent ? 'Wrote' : 'Created';
-        return `${label} ${filePath} (${lineCount} lines)\n${unifiedDiff(filePath, oldContent, html)}`;
+
+        return `Pitch deck written successfully.`;
       } catch (err: any) {
         return `Error generating pitch deck: ${err.message}`;
       }
