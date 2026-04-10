@@ -45,6 +45,9 @@ For multi-step tasks with branching logic (research, enrichment, content pipelin
 - Use container queries for components that need to adapt to their container rather than the viewport.
 - For canvas-based UIs (games, visualizations, interactive graphics): size the canvas to fill its container, account for `devicePixelRatio` for Retina sharpness, and scale all objects relative to the viewport — not in fixed pixel sizes - otherwise they are going to be tiny and unusable.
 
+### Error Visibility
+- Runtime errors must render visibly on screen, not produce a blank white page. User and agent must be able to visibly debug and spot them.
+
 ### State Management
 - Calls to methods introduce latency. When building web frontends that load data from methods, front-load as much data as you can in a single API request - e.g., when possible, load a large data object into a central store and use that to render sub-screens in an app, rather than an API call on every screen. User experience and perceived speed/performance are far more valuable than normalization and good REST API design.
 

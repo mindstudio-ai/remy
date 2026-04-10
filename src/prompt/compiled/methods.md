@@ -108,24 +108,33 @@ No separate API keys needed — the platform routes to the correct provider (Ope
 
 ## Error Handling
 
-Throw errors with messages that make sense to end users — these may surface in the UI:
+Errors need to serve two audiences: the user seeing it in the UI, and the developer (or agent) debugging it in logs.
+
+For validation and business logic errors (bad input, not found, wrong state), throw clear, specific messages:
 
 ```typescript
-export async function approveVendor(input: { vendorId: string }) {
-  auth.requireRole('admin', 'grc');
+if (!vendor) {
+  throw new Error('Vendor not found.');
+}
 
-  const vendor = await Vendors.get(input.vendorId);
-  if (!vendor) {
-    throw new Error('Vendor not found.');
-  }
-
-  if (vendor.status !== 'pending') {
-    throw new Error('This vendor has already been reviewed.');
-  }
-
-  // ...
+if (vendor.status !== 'pending') {
+  throw new Error('This vendor has already been reviewed.');
 }
 ```
+
+For errors from external services or internal failures (API calls, AI generation, file processing), log the real error and throw a user-friendly message that still communicates what went wrong:
+
+```typescript
+try {
+  const result = await agent.generateVideo({ ... });
+  return { videoUrl: result.url };
+} catch (err) {
+  console.error('Video generation failed:', err);
+  throw new Error('There was an error generating your video. Check the logs for details.');
+}
+```
+
+Never throw cute or vague errors like "Oops!" or "Something went wrong, try again!" — the user needs to know *what* failed, and the logs need the actual error for debugging. `console.error` output is captured in method logs and visible in the browser console during development.
 
 `auth.requireRole()` throws 401 if unauthenticated, 403 if the user doesn't have the required role.
 
