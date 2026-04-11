@@ -120,6 +120,14 @@ export function cleanMessagesForApi(messages: Message[]): Message[] {
           return false;
         }
       }
+      // Drop empty assistant messages (no content blocks)
+      if (
+        msg.role === 'assistant' &&
+        Array.isArray(msg.content) &&
+        (msg.content as ContentBlock[]).length === 0
+      ) {
+        return false;
+      }
       // Drop orphaned tool_results whose tool_use was pruned by compaction
       if (
         msg.role === 'user' &&

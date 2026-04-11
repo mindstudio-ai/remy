@@ -483,11 +483,13 @@ export async function runTurn(params: {
       return;
     }
 
-    // Record assistant message in conversation history
-    state.messages.push({
-      role: 'assistant',
-      content: [...contentBlocks].sort((a, b) => a.startedAt - b.startedAt),
-    });
+    // Record assistant message in conversation history (skip if empty)
+    if (contentBlocks.length > 0) {
+      state.messages.push({
+        role: 'assistant',
+        content: [...contentBlocks].sort((a, b) => a.startedAt - b.startedAt),
+      });
+    }
 
     // If no tool calls, the turn is complete
     const toolCalls = getToolCalls(contentBlocks);
