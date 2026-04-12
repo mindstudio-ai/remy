@@ -12,6 +12,10 @@ import { BROWSER_TOOLS, BROWSER_EXTERNAL_TOOLS } from './tools.js';
 import { getBrowserAutomationPrompt } from './prompt.js';
 import { sidecarRequest } from '../../tools/_helpers/sidecar.js';
 import {
+  acquireBrowserLock,
+  checkBrowserConnected,
+} from '../../tools/_helpers/browserLock.js';
+import {
   captureAndAnalyzeScreenshot,
   buildScreenshotAnalysisPrompt,
 } from '../../tools/_helpers/screenshot.js';
@@ -19,20 +23,6 @@ import { runCli } from '../common/runCli.js';
 import { createLogger } from '../../logger.js';
 
 const log = createLogger('browser-automation');
-
-// Session lock — only one browser automation session at a time.
-// The browser is a single physical resource; concurrent sessions corrupt each other.
-let lockQueue: Promise<void> = Promise.resolve();
-
-function acquireBrowserLock(): Promise<() => void> {
-  let release!: () => void;
-  const next = new Promise<void>((res) => {
-    release = res;
-  });
-  const wait = lockQueue;
-  lockQueue = next;
-  return wait.then(() => release);
-}
 
 export const browserAutomationTool: Tool = {
   clearable: true,
@@ -61,17 +51,9 @@ export const browserAutomationTool: Tool = {
     const release = await acquireBrowserLock();
     try {
       // Check if the browser preview is connected before spinning up the sub-agent
-      try {
-        const status = await sidecarRequest(
-          '/browser-status',
-          {},
-          { timeout: 5000 },
-        );
-        if (!status.connected) {
-          return 'Error: the browser preview is not connected. The user needs to open the preview before browser tests can run.';
-        }
-      } catch {
-        return 'Error: could not check browser status. The dev environment may not be running.';
+      const browserStatus = await checkBrowserConnected();
+      if (!browserStatus.connected) {
+        return `Error: ${browserStatus.error}`;
       }
 
       // Reset browser to clean state before the test

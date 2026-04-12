@@ -6,24 +6,18 @@ There is a huge amount of capability here: hundreds of text generation models (O
 
 ## Usage in Methods
 
-Inside a MindStudio app method, create an instance with no arguments — credentials come from the execution environment:
+Inside a MindStudio app method, use the `mindstudio` singleton — credentials come from the execution environment automatically:
 
 ```typescript
-import { MindStudioAgent } from '@mindstudio-ai/agent';
+import { mindstudio } from '@mindstudio-ai/agent';
 
-const agent = new MindStudioAgent();
-```
-
-Every action is a method on the agent instance:
-
-```typescript
-const { content } = await agent.generateText({ message: 'Summarize this...' });
+const { content } = await mindstudio.generateText({ message: 'Summarize this...' });
 ```
 
 Results are returned flat — output fields at the top level alongside metadata:
 
 ```typescript
-const result = await agent.generateText({ message: 'Hello' });
+const result = await mindstudio.generateText({ message: 'Hello' });
 result.content;              // step-specific output
 result.$billingCost;         // cost in credits (if applicable)
 ```
@@ -104,13 +98,13 @@ For other services, use `runFromConnectorRegistry`:
 
 ```typescript
 // Discover available connectors
-const { connectors } = await agent.listConnectors();
+const { connectors } = await mindstudio.listConnectors();
 
 // Get action details
-const action = await agent.getConnectorAction('hubspot', 'create-contact');
+const action = await mindstudio.getConnectorAction('hubspot', 'create-contact');
 
 // Execute
-const result = await agent.runFromConnectorRegistry({
+const result = await mindstudio.runFromConnectorRegistry({
   serviceId: 'hubspot',
   actionId: 'create-contact',
   input: { email: 'user@example.com', firstName: 'Alice' },
@@ -122,7 +116,7 @@ const result = await agent.runFromConnectorRegistry({
 Override the default model for any AI action. Each model has its own config options (dimensions, seed, inference steps, etc.) so always use `askMindStudioSdk` to look up the correct config before specifying a model override:
 
 ```typescript
-const { content } = await agent.generateText({
+const { content } = await mindstudio.generateText({
   message: 'Hello',
   modelOverride: {
     model: 'claude-sonnet-4-6',
@@ -139,7 +133,7 @@ Make sure to prioritize new, popular models. MindStudio has a ton of models avai
 Run up to 50 actions in parallel:
 
 ```typescript
-const result = await agent.executeStepBatch([
+const result = await mindstudio.executeStepBatch([
   { stepType: 'generateImage', step: { prompt: 'a sunset' } },
   { stepType: 'textToSpeech', step: { text: 'hello world' } },
 ]);

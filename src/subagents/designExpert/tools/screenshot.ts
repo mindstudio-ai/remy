@@ -4,6 +4,10 @@ import {
   captureAndAnalyzeScreenshot,
   buildScreenshotAnalysisPrompt,
 } from '../../../tools/_helpers/screenshot.js';
+import {
+  acquireBrowserLock,
+  checkBrowserConnected,
+} from '../../../tools/_helpers/browserLock.js';
 import { analyzeImage } from '../../common/analyzeImage.js';
 import { browserAutomationTool } from '../../browserAutomation/index.js';
 
@@ -84,8 +88,13 @@ export async function execute(
     }
   }
 
-  // Standard screenshot — existing behavior
+  // Standard screenshot — acquire browser lock and check status
+  const release = await acquireBrowserLock();
   try {
+    const browserStatus = await checkBrowserConnected();
+    if (!browserStatus.connected) {
+      return `Error: ${browserStatus.error}`;
+    }
     return await captureAndAnalyzeScreenshot({
       prompt: input.prompt as string,
       path: input.path as string | undefined,
@@ -93,5 +102,7 @@ export async function execute(
     });
   } catch (err: any) {
     return `Error taking screenshot: ${err.message}`;
+  } finally {
+    release();
   }
 }

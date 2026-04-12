@@ -192,13 +192,15 @@ styles:
 ```
 ```
 
-Roadmap item example (one file per feature in `src/roadmap/`):
+Roadmap item examples (one file per feature in `src/roadmap/`):
+
+Built item (status updated to `done` after build, with History appended):
 
 ```markdown
 ---
 name: Share & Export
 type: roadmap
-status: not-started
+status: done
 description: Share haikus as image cards to social media or download as prints.
 requires: []
 effort: medium
@@ -219,4 +221,21 @@ clipboard fallback for unsupported browsers.
 
 - **2026-03-22** — Built card generation using generateImage.
   Added share button to haiku detail view.
+```
+
+Unbuilt item:
+
+```markdown
+---
+name: Daily Prompt Engine
+type: roadmap
+status: not-started
+description: A new writing prompt every day, tuned to the user's style and interests.
+requires: []
+effort: small
+---
+
+Generate a personalized daily writing prompt based on the user's past haikus,
+preferred themes, and seasonal context. Surface it as a gentle nudge on the
+home screen, not a notification.
 ```

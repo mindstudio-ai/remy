@@ -285,7 +285,7 @@ The `@mindstudio-ai/agent` package also provides:
 
 - `mindstudio.executeStep()` — invoke v1 workflow steps (AI generation, connectors, etc.)
 - `mindstudio.runAgent()` — invoke other MindStudio apps
-- `resolveUser(userId)` — get user display info (name, email, picture)
+- `mindstudio.resolveUser(userId)` — get user display info (name, email, picture)
 - `mindstudio.uploadFile()` — upload to CDN
 - `mindstudio.listModels()` — discover available AI models
 - `mindstudio.listConnectors()` — browse OAuth connector registry

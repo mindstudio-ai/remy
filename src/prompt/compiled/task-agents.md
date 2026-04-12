@@ -1,4 +1,4 @@
-# Task Agents (`MindStudioAgent runTask`)
+# Task Agents (`mindstudio.runTask`)
 
 A user types the name of a restaurant into your app, or uploads a photo of a storefront. The API call returns early, and in the background, a task agent searches Google, finds the official website, scrapes the address, gets the official social media accounts, and generates a stylized watercolor postcard of the exterior from images it found online. The user gets back a rich, illustrated card with the canonical name, website, address, and a custom image. A few tool calls (some in parallel), fully autonomous.
 
@@ -26,11 +26,9 @@ Run tasks in the background — depending on complexity they can take time to co
 ## Usage
 
 ```typescript
-import { MindStudioAgent } from '@mindstudio-ai/agent';
+import { mindstudio } from '@mindstudio-ai/agent';
 
-const agent = new MindStudioAgent();
-
-const result = await agent.runTask<{
+const result = await mindstudio.runTask<{
   name: string;
   url: string;
   address: string;
@@ -74,7 +72,7 @@ console.log(result.output.photoUrl); // URL to the generated illustration
 `runTask()` can return successfully with garbage output — fields null, data echoed back, or raw text instead of JSON. The result includes `parsedSuccessfully` to make this explicit. Always check it before using the output:
 
 ```typescript
-const result = await agent.runTask<MyType>({ ... });
+const result = await mindstudio.runTask<MyType>({ ... });
 
 if (!result.parsedSuccessfully) {
   console.error('Task output was not valid JSON:', result.outputRaw);
@@ -105,6 +103,10 @@ tools: [
 ```
 
 When the model calls a tool, the platform deep-merges the model's arguments with the developer's defaults. The model decides what to do (prompt, query, parameters), the developer controls which model/config to use. If the model needs to search and generate an image and those are independent, it will call both tools in the same turn (parallel execution server-side).
+
+## Voice & Tone in Prompts
+
+When a task agent produces user-facing text, the prompt must include a note voice and tone constraints. Make sure to specify no emojis, em dashes, and other "ai-isms" in the prompt, as well as the desired tone and voice of the output.
 
 ## Options
 
@@ -150,7 +152,7 @@ When something goes wrong, `toolCalls` is the first thing to check. If it's empt
 Pass an `onEvent` callback to get real-time events:
 
 ```typescript
-const result = await agent.runTask({
+const result = await mindstudio.runTask({
   // ... same options ...
   onEvent: (event) => {
     if (event.type === 'text') console.log('Agent:', event.text);
@@ -173,7 +175,7 @@ Without `onEvent`, the SDK uses async polling (returns silently when complete). 
 
 ```typescript
 try {
-  const result = await agent.runTask({ ... });
+  const result = await mindstudio.runTask({ ... });
   if (!result.parsedSuccessfully) {
     // Task completed but output wasn't valid JSON
     console.error('Raw output:', result.outputRaw);

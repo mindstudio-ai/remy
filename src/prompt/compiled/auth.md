@@ -343,12 +343,15 @@ Roles are declared in the manifest, stored as an array column on the user table,
 
 Apps without `auth` in the manifest use anonymous guest sessions. No login, no user identity, no roles. This is the default and works fine for single-user apps, internal tools, and simple utilities.
 
-## Designing Auth in Web Interfaces
+## Important: Designing Auth in Web Interfaces
+
 The most imporant user experience consideration with auth is that authentication moments must feel natural and intuitive - they should not feel jarring or surprising. Take care to integrate them into the entire experience when building.
 
 For the overwhelming majority of apps, a user should never land on auth at the root of an app when opening it for the first time (except in cases where the app is, e.g., an internal tool or some other protected experience - and even then it should feel more like a welcome/splash screen than an error state). Users should be able to explore public resources, or at least encounter some kind of landing/introduction moment, before they get hit with a signup/login screen. Make auth feel like a natural moment in the user's journey.
 
 Login and signup screens set the tone for the user's entire experience with the app and are important to get right - they should feel like exciting entry points into the next level of the user journy. A janky login form with misaligned inputs and no feedback dminishes excitement and undermines trust before the user even gets in.
+
+Login and signup are separate moments - even if the underlying code is the same for both. A new user signing up should feel like they are creating a new account. A user logging in should feel like they are being welcomed back. Auth is always a pain for users, even when it's as frictionless as this, so take care to use Sign Up screens as moments to communicate value and help the user get excited about what they are joining.
 
 Consult the `visualDesignExpert` to help you work through authentication at a high level, including when and where to show auth, and the design of specific screens.
 

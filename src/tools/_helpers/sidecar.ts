@@ -51,7 +51,13 @@ export async function sidecarRequest(
       log.error('Sidecar error', { endpoint, status: res.status });
       throw new Error(`Sidecar error: ${res.status}`);
     }
-    return res.json();
+    const data = await res.json();
+    // Tunnel structured errors arrive as HTTP 200 with success: false
+    if (data?.success === false) {
+      const code = data.errorCode ? ` [${data.errorCode}]` : '';
+      throw new Error(`${data.error || 'Unknown error'}${code}`);
+    }
+    return data;
   } catch (err: any) {
     if (err.message.startsWith('Sidecar error')) {
       throw err;

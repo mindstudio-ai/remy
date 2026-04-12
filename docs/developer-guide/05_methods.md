@@ -126,43 +126,41 @@ See [Roles & Auth](06_roles-and-auth.md).
 
 ### Platform Capabilities
 
-The SDK provides access to 200+ AI models and 1,000+ actions (email, SMS, web scraping, file uploads, image/video generation, third-party integrations, and more). Create an instance and call actions directly. No constructor arguments needed; credentials come from the execution environment:
+The SDK provides access to 200+ AI models and 1,000+ actions (email, SMS, web scraping, file uploads, image/video generation, third-party integrations, and more). Use the `mindstudio` singleton — credentials come from the execution environment automatically:
 
 ```typescript
-import { MindStudioAgent } from '@mindstudio-ai/agent';
-
-const agent = new MindStudioAgent();
+import { mindstudio } from '@mindstudio-ai/agent';
 
 // AI text generation
-const { content } = await agent.generateText({
+const { content } = await mindstudio.generateText({
   message: 'Summarize this invoice...',
 });
 
 // AI image generation
-const { imageUrl } = await agent.generateImage({
+const { imageUrl } = await mindstudio.generateImage({
   prompt: 'A professional headshot placeholder',
 });
 
 // Send email
-await agent.sendEmail({
+await mindstudio.sendEmail({
   to: 'user@example.com',
   subject: 'Your invoice',
   body: content,
 });
 
 // Upload files
-const { url } = await agent.uploadFile({
+const { url } = await mindstudio.uploadFile({
   data: buffer,
   fileName: 'report.pdf',
 });
 
 // Web scraping
-const { markdown } = await agent.scrapeUrl({
+const { markdown } = await mindstudio.scrapeUrl({
   url: 'https://example.com',
 });
 
 // Resolve user display info
-const { displayName, email } = await agent.resolveUser({
+const { displayName, email } = await mindstudio.resolveUser({
   userId,
 });
 ```

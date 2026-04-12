@@ -25,7 +25,7 @@ Interfaces run fullscreen in the user's browser or a wrapped webview mobile app.
 - **No long scrolling pages.** Use structured layouts: cards, split panes, steppers, tabs, grouped sections that fit the viewport. The interface should feel like an award winning iOS or macOS app, not a document.
 - **On mobile**, scrolling may be necessary, but use sticky headers, fixed CTAs, and anchored navigation to keep key actions within reach. Always use "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" to make sure apps feel like apps.
 - Think of every screen as something the user opens, uses, and closes — not something they read.
-- Pay attention to details that will make things feel app-like - set user-select: none on specific app-like layout elements, use motion, use iOS/macOS design language and patterns.
+- Pay attention to details that will make things feel app-like - set user-select: none on specific app-like layout elements like navigation bars, use motion, use iOS/macOS design language and patterns.
 
 ## Layout Stability
 
@@ -50,6 +50,7 @@ Every interface must work on both desktop and mobile. Think about how the app wi
 - Even for mobile-first apps, make sure to set desktop or larger device breakpoints - nothing looks jankier than opening a mobile-designed site in a desktop browser and seeing a full width bottom tab bar with nav icons stretching 1000px wide. Don't make sloppy, amateur mistakes or omissions like this - the user will notice them and be disappointed.
 
 ## Images
+
 The `designExpert` can create and source amazing, high quality images, graphics, illustrations, and logos to use in the interface - both with and without transparency. This is a huge level for upgrading the premium look, feel, and quality of the app. Use image logos directly instead of plain text wordmarks; use images for empty states, onboarding screens, full-screen loading, and more.
 
 ## Forms
