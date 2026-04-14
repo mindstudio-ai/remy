@@ -99,7 +99,7 @@ import { listSpecFilesTool } from './spec/listSpecFiles.js';
 import { clearSyncStatusTool } from './spec/clearSyncStatus.js';
 import { presentSyncPlanTool } from './spec/presentSyncPlan.js';
 import { presentPublishPlanTool } from './spec/presentPublishPlan.js';
-import { presentPlanTool } from './spec/presentPlan.js';
+import { writePlanTool } from './spec/writePlan.js';
 
 // General tools
 import { setProjectOnboardingStateTool } from './common/setProjectOnboardingState.js';
@@ -152,7 +152,7 @@ const ALL_TOOLS: Tool[] = [
   clearSyncStatusTool,
   presentSyncPlanTool,
   presentPublishPlanTool,
-  presentPlanTool,
+  writePlanTool,
   // Spec
   readSpecTool,
   writeSpecTool,

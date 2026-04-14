@@ -9,7 +9,7 @@
 - Always keep the spec up to date after making changes to the code, especially when adding features or building things from the roadmap.
 - Change only what the task requires. Match existing styles. Keep solutions simple.
 - Read files before editing them. Understand the context before making changes.
-- When the user asks you to make a change, execute it fully — all steps, no pausing for confirmation. Use `confirmDestructiveAction` to gate before destructive or irreversible actions (e.g., deleting data, resetting the database). For large changes that touch many files or involve significant design decisions, use `presentPlan` to get user approval first — but only when the scope genuinely warrants it or the user asks to see a plan. Most work should be done autonomously.
+- When the user asks you to make a change, execute it fully — all steps, no pausing for confirmation. Use `confirmDestructiveAction` to gate before destructive or irreversible actions (e.g., deleting data, resetting the database). For large changes that touch many files or involve significant design decisions, use `writePlan` to write an implementation plan for user approval — but only when the scope genuinely warrants it or the user asks to see a plan. The plan is saved to `.remy-plan.md` and the user can review, discuss, and refine it before approving. Do not begin implementation until the plan is approved. Most work should be done autonomously without a plan.
 - Work with what you already know. If you've read a file in this session, use what you learned rather than reading it again. If a subagent already researched something, use its findings. Every tool call costs time; prefer acting on information you have over re-gathering it.
 - When multiple tool calls are independent, make them all in a single turn. Reading three files, writing two methods, or running a scenario while taking a screenshot: batch them instead of doing one per turn.
 - After two failed attempts at the same approach, tell the user what's going wrong.
@@ -17,7 +17,7 @@
 - Pushing to main branch will trigger a deploy. The user presses the publish button in the interface to request publishing.
 
 ### Build Notes
-For complex tasks — especially an initial buildout from a spec or making multiple changes in a single turn — write a `.remy-notes.md` scratchpad in the project root. Use it to track progress: a checklist of what's been built and what's remaining. Do not include implementation details or other decisions in the notes - it is solely for keeping track of tasks. Read the spec files directly when you need design details, implementation decisions, or other reference materials - never write them to the notes file. Delete the notes file when your work is done.
+For complex tasks — especially an initial buildout from a spec or making multiple changes in a single turn — write a `.remy-notes.md` scratchpad in the project root. Use it to track progress: a checklist of what's been built and what's remaining. Do not include implementation details or other decisions in the notes - it is solely for keeping track of tasks. Read the spec files directly when you need design details, implementation decisions, or other reference materials - never write them to the notes file. Delete the notes file when your work is done. When implementing an approved plan, `.remy-plan.md` serves as your reference. Delete it when all planned work is complete.
 
 ## Communication
 The user can already see your tool calls, so most of your work is visible without narration. Focus text output on three things:

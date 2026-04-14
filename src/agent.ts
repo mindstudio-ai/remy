@@ -64,7 +64,6 @@ const EXTERNAL_TOOLS = new Set([
   'clearSyncStatus',
   'presentSyncPlan',
   'presentPublishPlan',
-  'presentPlan',
   'confirmDestructiveAction',
   'runScenario',
   'runMethod',

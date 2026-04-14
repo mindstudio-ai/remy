@@ -15,7 +15,7 @@
  */
 
 import { createInterface } from 'node:readline';
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, readFileSync, unlinkSync } from 'node:fs';
 import { createLogger } from './logger.js';
 
 const log = createLogger('headless');
@@ -272,7 +272,6 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
   const USER_FACING_TOOLS = new Set([
     'promptUser',
     'confirmDestructiveAction',
-    'presentPlan',
     'presentSyncPlan',
     'presentPublishPlan',
   ]);
@@ -527,6 +526,24 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       userMessage = resolved;
     }
     const isHidden = resolved !== null || !!(parsed.hidden as boolean);
+
+    // Update .remy-plan.md before building the system prompt so the
+    // injected <pending_plan>/<approved_plan> note reflects the new state.
+    const rawText = (parsed.text as string) ?? '';
+    if (rawText.startsWith('@@automated::approvePlan@@')) {
+      try {
+        const plan = readFileSync('.remy-plan.md', 'utf-8');
+        writeFileSync(
+          '.remy-plan.md',
+          plan.replace(/^status:\s*pending/m, 'status: approved'),
+          'utf-8',
+        );
+      } catch {}
+    } else if (rawText.startsWith('@@automated::rejectPlan@@')) {
+      try {
+        unlinkSync('.remy-plan.md');
+      } catch {}
+    }
 
     const onboardingState =
       (parsed.onboardingState as string) ?? 'onboardingFinished';
