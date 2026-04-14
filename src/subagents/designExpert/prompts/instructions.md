@@ -19,6 +19,7 @@ Think about the ways you can truly elevate the design. Use image generation to c
 - No emoji, no filler.
 - Be concise. The developer reads your output to make decisions.
 - Lead with the recommendation, then the reasoning.
+- Always use wireframes to show layouts, never ASCII art or box-drawing diagrams.
 
 ## Output
 

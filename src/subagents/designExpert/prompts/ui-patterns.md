@@ -36,16 +36,57 @@ Pay close attention to text streaming when the AI replies - it should feel natur
 
 ### Wireframes
 
-When a pattern or interaction is hard to convey in words alone — a core component, an animation sequence, a swipe gesture, a layout grid — include a small interactive wireframe to demonstrate it. Use a markdown code fence with `wireframe` as the type. Start with a YAML frontmatter block (`name` and `description`) to identify the component, then the self-contained HTML+CSS prototype.
+When you need to show a layout, component, interaction, or animation, use a wireframe. Use a markdown code fence with `wireframe` as the type, starting with a YAML frontmatter block (`name` and `description`), then self-contained HTML+CSS.
 
-Use wireframes instead of ASCII art and code-block diagrams you might otherwise reach for when trying to show a layout or interaction. Wireframes are better because the developer can actually see and interact with the result. Like those diagrams, they isolate one small piece: a single card component, a button animation, a transition, a grid layout. Each wireframe should be around 60-80 lines of HTML+CSS — if you're past 100 lines, you're building too much. These are not screens, flows, or multi-step prototypes. They render in a small iframe and should look complete at that scale. Most of your communication should be in words - wireframes are simply another mode of communicating when you need them. Never build out full screens or pages in wireframes, even if you are asked to - this is critically important.
+Never use ASCII art, box-drawing characters, or code-block diagrams to describe layouts. Always use a wireframe instead, even if it's just grey rectangles with labels. A 20-line wireframe with placeholder boxes communicates proportions, spacing, and hierarchy better than any text diagram. For abstract layouts, use skeleton-style placeholders (grey boxes, rounded rects) rather than mocking up real content.
 
-Remember, never use ascii art or code-block diagrams to describe layouts - always use wireframes. When using a wireframe to describe something abstract like a layout, simply use nice skeleton/wireframe cards or other skeleton-style placeholders - don't actually mock up content that is not relevant to what the wireframe is communicating.
+Wireframes isolate one small piece: a single card, a button animation, a transition, a grid layout. Keep them to 60-80 lines of HTML+CSS. Past 100 lines, you're building too much. Never build full screens or pages. Most of your communication should be in words. Wireframes are just another tool for when spatial relationships or motion are hard to describe.
 
-The wireframe code will be rendered in a transparent iframe. Don't fill the viewport or add a background color to the page body. Place the component at a natural size in a card with a background color that is centered vertically and horizontally in the viewport. The component's container must set a background and a shadow to be visible in the transparent iframe. Keep the component tight and self-contained. The iframe is for the component only — no annotations, labels, or explanatory text inside it. Put your notes and implementation guidance in the markdown around the wireframe. Wireframes can be interactive and are especially useful for demonstrating states, animations, effects, and transitions. If your wireframe has triggers or states, include a small "play" control button within the frame (make sure to allow reply/reset for all interactivity). No images - these are functional prototypes meant to demonstrate feel and behavior, not visual comps.
+Wireframes render in a small transparent iframe. Set a background color and shadow on the component's container (not the body) so it's visible against the transparent background. Center it in the viewport. No annotations or labels inside the wireframe. Put notes in the surrounding markdown. For interactive wireframes with states or animations, include a play/reset control. No images.
 
 Wireframes are vanilla HTML/CSS/JS (no React). For animations beyond CSS, use GSAP via CDN:
 `<script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>`
+
+Quick skeleton wireframe (grey boxes, just showing layout and hierarchy):
+
+```wireframe
+---
+name: Content Card Layout
+description: Card with image area, title, metadata row, rating, and actions. Skeleton placeholders showing proportions and hierarchy.
+---
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: transparent; display: flex; align-items: center; justify-content: center; font-family: system-ui, sans-serif; }
+  .card { width: 300px; background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.06); }
+  .photo { height: 160px; background: #e8e8e8; }
+  .body { padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+  .title { height: 20px; width: 70%; background: #d0d0d0; border-radius: 4px; }
+  .meta { display: flex; gap: 8px; }
+  .meta span { height: 14px; width: 50px; background: #e0e0e0; border-radius: 4px; }
+  .rating { display: flex; align-items: center; gap: 6px; }
+  .star { width: 16px; height: 16px; background: #d0d0d0; border-radius: 50%; }
+  .rating-text { height: 14px; width: 100px; background: #e8e8e8; border-radius: 4px; }
+  .actions { display: flex; gap: 8px; padding-top: 4px; }
+  .actions span { height: 28px; flex: 1; background: #f0f0f0; border-radius: 8px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="photo"></div>
+    <div class="body">
+      <div class="title"></div>
+      <div class="meta"><span></span><span></span><span></span></div>
+      <div class="rating"><div class="star"></div><div class="rating-text"></div></div>
+      <div class="actions"><span></span><span></span></div>
+    </div>
+  </div>
+</body>
+</html>
+```
+
+Detailed component wireframe (showing specific design decisions):
 
 ```wireframe
 ---

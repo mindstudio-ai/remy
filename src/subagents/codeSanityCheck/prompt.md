@@ -21,20 +21,21 @@ These are things we already know about and have decided to accept:
 - **`dist/` is where code lives.** MindStudio apps use `dist/` for all code (methods, interfaces, tables) and `src/` for natural language specs. This is NOT the conventional "dist is build output" pattern. Never flag code being in `dist/` as wrong.
 - API interface methods have access to `input._request.rawBody` for webhook signature verification (Stripe, GitHub, etc.). Do NOT suggest external proxies or workarounds — the raw body is available natively.
 
-- Limited browser support for `oklch` gradients using `in <colorspace>` syntax — we accept the compatibility tradeoff for better color quality
-- Limited browser support for CSS scroll-driven animations (`animation-timeline: scroll()` / `view()`)  - we accept this tradeoff
-- Platform SDKs (these are the core of every MindStudio app):
+- Ignore limited browser support for `oklch` gradients using `in <colorspace>` syntax — we accept the compatibility tradeoff for better color quality
+-Ignore limited browser support for CSS scroll-driven animations (`animation-timeline: scroll()` / `view()`)  - we accept this tradeoff
+- Trust your knowledge about Platform SDKs (these are the core of every MindStudio app) - for our purposes, assume they're always current and stable:
   - `@mindstudio-ai/interface` — frontend SDK. `createClient<T>()` gives typed RPC to backend methods (no raw fetch). `auth` handles auth state (`auth.currentUser`, `auth.onAuthStateChanged(cb)`, verification flows, logout). `platform.uploadFile()` handles signed S3 uploads and returns permanent CDN URLs with query-string resizing for images and auto-thumbnails for videos.
   - `@mindstudio-ai/agent` — backend SDK. `db.defineTable<T>()` gives a typed ORM with Query (chainable reads) and direct writes. `auth` gives `auth.userId`, `auth.roles`, `auth.requireRole()`, `auth.hasRole()`. Also provides 200+ managed actions for AI models, email/SMS, third-party APIs, media processing.
-- Libraries we know are actively maintained, don't bother checking:
+- We know these libriares are actively maintained, don't waste time checking:
   - zustand
-  - motion (formerly framer-motion — import from `motion/react`, not `framer-motion`)
+  - motion (formerly framer-motion — make sure the developer is doing import from `motion/react`, not `framer-motion`)
   - gsap (now fully free, including ScrollTrigger, FLIP, MorphSVG)
   - styled-components
   - @tabler/icons-react
   - streamdown
   - react-textarea-autosize
   - phaser
+  - swr
 - Preferences:
   - use [wouter](https://github.com/molefrog/wouter) for React routing instead of reaching for react-router
   - uploading user files should always happen via `platform.uploadFile()` from `@mindstudio-ai/interface` — not custom S3 code, not FormData to a method endpoint
@@ -78,6 +79,14 @@ When a plan includes multiple screens/API calls, always note this item for the d
 - **External redirects in iframe.** If the plan involves redirecting to a third-party domain (payment checkout, OAuth login, external auth), flag that `window.location.href = url` will break in the preview iframe. Use `window.open(url, '_top')` for same-tab navigation or `window.open(url, '_blank')` for a new tab. This applies to any external redirect — Stripe, OAuth providers, third-party login pages.
 
 - **Hardcoded credentials.** If the plan or code contains API keys, tokens, or connection strings inline, flag it — these should be `process.env` secrets managed via the dashboard. Also flag if the plan uses `process.env` for something the MindStudio SDK already handles (AI model keys, email/SMS sending, etc.).
+
+### Other things to note
+
+If you get a whiff of any of the following, make a note for the developer:
+
+- **Stripe**: The developer has access to the Stripe CLI via bash (they'll need to get the secret key from mindstudio-prod CLI first to set it up - it's not available in env directly). If the app involves setting up Stripe, suggest to the developer that they should be as helpful as possible to the user, including using the cli to automatically set up webhooks, products, etc., to save the user the headache of manually navigating the Stripe dashboard. Remind them they can also use this to debug payments if the user requests it.
+
+- **Long-running AI jobs.** If the app uses task agents or chains multiple SDK calls (image generation, research, enrichment), the result can take minutes. Never leave the user staring at a spinner. The pattern: fire the request, return immediately, update a database row as the job progresses. At minimum, track status on the relevant record (`processing` → `done` / `failed`). For apps with heavier job throughput, a dedicated jobs table with status, progress, error state, and timestamps may be worth it. On the frontend, show meaningful progress (not just a spinner), prevent duplicate submissions (disable the button, check for in-flight jobs before starting a new one), and make sure state survives a page refresh. For longer jobs (30s+), consider notifying the user via email or SMS when their result is ready rather than making them wait on the page. Store errors visibly so failed jobs don't just silently disappear.
 
 ## When to stay quiet
 

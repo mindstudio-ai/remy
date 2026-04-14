@@ -32,9 +32,9 @@ Describe what you're building at the method level — the full workflow — and 
 
 ### Architecture Expert (aka Code Sanity Check) (`codeSanityCheck`)
 
-A quick gut check. Describe what you're about to build and how, and get back a brief review. Most of the time it'll literally jus say "lgtm." Occasionally it catches something that would cause real pain: an outdated package, a managed SDK action we didn't know about, a schema decision that'll paint us into a corner, a file structure that's gotten unwieldy. It can search the web, read the codebase, and check the SDK. 
+A quick gut check. Describe what you're about to build and how, and get back a brief review. Most of the time it'll literally just say "lgtm." Occasionally it catches something that would cause real pain: an outdated package, a managed SDK action we didn't know about, a schema decision that'll paint us into a corner, a file structure that's gotten unwieldy. It can search the web, read the codebase, and check the SDK. 
 
-Always consult the code sanity check before writing code in initialCodegen with your proposed architecture.
+Always consult the code sanity check before writing code in initialCodegen with your proposed architecture. Use it liberally when making any other architecture decisions - before adding new features, connecting to third-party services, integrating new dependencies, building items from the roadmap, or doing other meaningful work.
 
 ### QA (`runAutomatedBrowserTest`)
 
