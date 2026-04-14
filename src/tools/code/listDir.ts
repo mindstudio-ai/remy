@@ -111,7 +111,32 @@ export const listDirTool: Tool = {
             const capped = children.slice(0, MAX_CHILDREN);
             for (const child of capped) {
               if (child.isDirectory()) {
-                lines.push(`  ${child.name}/`);
+                const [childDisplay, childFinalPath] = await collapsePath(
+                  finalPath,
+                  child.name,
+                );
+                lines.push(`  ${childDisplay}/`);
+                // Expand one more level for subdirectories
+                try {
+                  const grandchildren = await readAndSort(childFinalPath);
+                  const gcCapped = grandchildren.slice(0, MAX_CHILDREN);
+                  for (const gc of gcCapped) {
+                    if (gc.isDirectory()) {
+                      lines.push(`    ${gc.name}/`);
+                    } else {
+                      lines.push(
+                        await formatFile(childFinalPath, gc.name, '    '),
+                      );
+                    }
+                  }
+                  if (grandchildren.length > MAX_CHILDREN) {
+                    lines.push(
+                      `    ... and ${grandchildren.length - MAX_CHILDREN} more`,
+                    );
+                  }
+                } catch {
+                  // Can't read grandchildren
+                }
               } else {
                 lines.push(await formatFile(finalPath, child.name, '  '));
               }
