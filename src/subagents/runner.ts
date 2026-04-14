@@ -52,6 +52,8 @@ export interface SubAgentConfig {
   background?: boolean;
   /** Called when a backgrounded sub-agent finishes all its work. */
   onBackgroundComplete?: (result: SubAgentResult) => void;
+  /** Tool names whose last result (parsed as JSON) should be stashed in result.artifacts. */
+  captureArtifacts?: string[];
 }
 
 export interface SubAgentResult {
@@ -59,6 +61,8 @@ export interface SubAgentResult {
   messages: Message[];
   /** True if the sub-agent is still running in the background. */
   backgrounded?: boolean;
+  /** Structured data captured during the run, keyed by tool name. */
+  artifacts?: Record<string, any>;
 }
 
 export async function runSubAgent(
@@ -82,7 +86,11 @@ export async function runSubAgent(
     history,
     background,
     onBackgroundComplete,
+    captureArtifacts,
   } = config;
+
+  // Structured data captured from tool results when captureArtifacts is set.
+  const artifacts: Record<string, any> = {};
 
   // For background mode, create our own AbortController so we outlive the parent turn.
   // For foreground, use the parent signal directly.
@@ -297,7 +305,12 @@ export async function runSubAgent(
       if (stopReason !== 'tool_use' || toolCalls.length === 0) {
         statusWatcher.stop();
         const text = getPartialText(contentBlocks);
-        return { text, messages: thisInvocation() };
+        const hasArtifacts = Object.keys(artifacts).length > 0;
+        return {
+          text,
+          messages: thisInvocation(),
+          ...(hasArtifacts ? { artifacts } : {}),
+        };
       }
 
       // Execute tool calls
@@ -430,6 +443,15 @@ export async function runSubAgent(
           const innerMsgs = subAgentMessages.get(r.id);
           if (innerMsgs) {
             block.subAgentMessages = innerMsgs;
+          }
+
+          // Capture artifact if this tool is in the captureArtifacts list
+          if (captureArtifacts?.includes(block.name) && !r.isError) {
+            try {
+              artifacts[block.name] = JSON.parse(r.result);
+            } catch {
+              // Not JSON — skip
+            }
           }
         }
 

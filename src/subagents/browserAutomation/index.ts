@@ -160,6 +160,7 @@ export const browserAutomationTool: Tool = {
           return result;
         },
         toolRegistry: context.toolRegistry,
+        captureArtifacts: ['screenshotFullPage'],
       });
 
       // Reset browser after the test so the next session starts clean
@@ -170,6 +171,15 @@ export const browserAutomationTool: Tool = {
       }
 
       context.subAgentMessages?.set(context.toolCallId, result.messages);
+
+      const ss = result.artifacts?.screenshotFullPage;
+      if (ss?.url) {
+        return JSON.stringify({
+          text: result.text,
+          screenshotUrl: ss.url,
+          ...(ss.styleMap ? { styleMap: ss.styleMap } : {}),
+        });
+      }
       return result.text;
     } finally {
       release();

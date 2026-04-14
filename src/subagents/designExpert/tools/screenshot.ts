@@ -51,23 +51,21 @@ export async function execute(
         : `${input.instructions}. After completing these steps, take a full-page screenshot.`;
 
       const result = await browserAutomationTool.execute({ task }, context);
+      const resultStr = result as string;
 
-      // Extract screenshot URL from the subagent's output
-      const urlMatch = (result as string).match(
-        /https:\/\/[^\s"')]+\.(?:png|jpg|jpeg|webp)/i,
-      );
-      if (!urlMatch) {
-        return `Error: browser navigation completed but no screenshot URL was returned. Agent output: ${result}`;
+      let url: string | undefined;
+      let styleMap: string | undefined;
+
+      try {
+        const parsed = JSON.parse(resultStr);
+        url = parsed.screenshotUrl;
+        styleMap = parsed.styleMap;
+      } catch {
+        // Not JSON — browser automation returned prose without a screenshot
       }
 
-      const url = urlMatch[0];
-      // Try to extract styleMap from the subagent result
-      let styleMap: string | undefined;
-      try {
-        const parsed = JSON.parse(result as string);
-        styleMap = parsed?.styleMap;
-      } catch {
-        // Result may not be JSON — that's fine
+      if (!url) {
+        return `Error: browser navigation completed but no screenshot URL was returned. Agent output: ${resultStr}`;
       }
       const analysisPrompt = buildScreenshotAnalysisPrompt({
         prompt: input.prompt as string | undefined,
