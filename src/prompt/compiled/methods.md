@@ -245,20 +245,54 @@ export function getApprovalState(approvals: Approval[]) {
 
 ## Streaming
 
-Methods can stream token-by-token output (useful for AI-generated content):
+Methods can push real-time updates to the frontend using `stream()`. This is the standard pattern for any method that takes more than a few seconds.
 
 ```typescript
-// Frontend
-const result = await api.generateReport(
-  { month: 'march' },
-  {
-    stream: true,
-    onToken: (text) => setPreview(text),
-  },
-);
+import { mindstudio, stream } from '@mindstudio-ai/agent';
+
+export async function enrichProfile(input: { name: string }) {
+  await stream('Researching...');
+
+  const { content } = await mindstudio.generateText(
+    { message: `Find background info on ${input.name}` },
+    { onLog: (event) => stream({ status: event.value }) },
+  );
+
+  await stream({ status: 'generating_image', progress: 0.5 });
+
+  const { imageUrl } = await mindstudio.generateImage(
+    { prompt: `Professional portrait illustration of ${input.name}` },
+    { onLog: (event) => stream({ status: event.value }) },
+  );
+
+  return { bio: content, imageUrl };
+}
 ```
 
-The platform handles the SSE transport. The method returns normally — streaming is managed by the SDK and platform, not by your method code.
+Two data types:
+- `stream('text')` sends a text token (like LLM streaming output)
+- `stream({ ... })` sends structured data (progress, status, intermediate results)
+
+Every SDK action accepts an `onLog` callback that emits execution progress. Pipe it through `stream()` so the frontend sees what's happening inside each action in real time. Use `stream()` directly for your own status messages between actions.
+
+When there's no active stream (method not called with `stream: true`, CLI execution, background jobs), `stream()` is a silent no-op. Always safe to include unconditionally.
+
+### Frontend
+
+The frontend calls the method with `stream: true` and receives updates via `onToken`. The `text` value is accumulated (not a delta), so replace your display content each time.
+
+```typescript
+const result = await api.enrichProfile(
+  { name: 'Alice' },
+  {
+    stream: true,
+    onToken: (text) => setResponseText(text),
+  },
+);
+// result is the same final output you'd get without streaming
+```
+
+Use `onStreamError` for transient error handling. The method's promise still resolves with the final return value once execution completes.
 
 ## Raw Request Context (API Interface)
 
