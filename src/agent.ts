@@ -476,6 +476,13 @@ export async function runTurn(params: {
         state.messages.push({
           role: 'assistant',
           content: [...contentBlocks].sort((a, b) => a.startedAt - b.startedAt),
+          usage: {
+            inputTokens: turnInputTokens,
+            outputTokens: turnOutputTokens,
+            cacheCreationTokens: turnCacheCreation || undefined,
+            cacheReadTokens: turnCacheRead || undefined,
+            llmCalls: turnLlmCalls,
+          },
         });
       }
       onEvent({ type: 'turn_cancelled' });
@@ -488,6 +495,13 @@ export async function runTurn(params: {
       state.messages.push({
         role: 'assistant',
         content: [...contentBlocks].sort((a, b) => a.startedAt - b.startedAt),
+        usage: {
+          inputTokens: turnInputTokens,
+          outputTokens: turnOutputTokens,
+          cacheCreationTokens: turnCacheCreation || undefined,
+          cacheReadTokens: turnCacheRead || undefined,
+          llmCalls: turnLlmCalls,
+        },
       });
     }
 

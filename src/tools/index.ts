@@ -109,6 +109,7 @@ import { askMindStudioSdkTool } from '../subagents/sdkConsultant/index.js';
 
 import { searchGoogleTool } from './common/searchGoogle.js';
 import { setProjectMetadataTool } from './common/setProjectMetadata.js';
+import { compactConversationTool } from './common/compactConversation.js';
 
 // Code tools
 import { readFileTool } from './code/readFile.js';
@@ -146,6 +147,7 @@ const ALL_TOOLS: Tool[] = [
   designExpertTool,
   productVisionTool,
   codeSanityCheckTool,
+  compactConversationTool,
   // Post-onboarding
   clearSyncStatusTool,
   presentSyncPlanTool,

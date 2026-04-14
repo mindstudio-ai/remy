@@ -12,4 +12,4 @@ Then, put together a plan to build out the feature. Present the plan to the user
 
 When they've approved the plan, be sure to update the spec first - remember, the spec is the source of truth about the product. Then, build everything in one turn, using the spec as the master plan.
 
-When you're finished, verify your work, then tell`productVision` what was done so it can update the roadmap to reflect the progress. Give the user a summary of what was done.
+When you're finished, verify your work, then tell `productVision` what was done so it can update the roadmap to reflect the progress. Give the user a summary of what was done, then call `compactConversation` to summarize the build session and free up context.

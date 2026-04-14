@@ -72,6 +72,14 @@ export interface Message {
   attachments?: Attachment[];
   // Hidden messages are sent to the LLM but not shown in the UI
   hidden?: boolean;
+  // Token usage for this turn (assistant messages only)
+  usage?: {
+    inputTokens: number;
+    outputTokens: number;
+    cacheCreationTokens?: number;
+    cacheReadTokens?: number;
+    llmCalls: number;
+  };
 }
 
 // Tool definition sent to the LLM — vendor-agnostic JSON Schema format

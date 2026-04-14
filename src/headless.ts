@@ -21,8 +21,7 @@ import { createLogger } from './logger.js';
 const log = createLogger('headless');
 import { resolveConfig } from './config.js';
 import { buildSystemPrompt } from './prompt/index.js';
-import { compactConversation } from './compaction/index.js';
-import { getToolDefinitions } from './tools/index.js';
+import { triggerCompaction } from './compaction/trigger.js';
 import { setLspBaseUrl } from './tools/_helpers/lsp.js';
 import {
   createAgentState,
@@ -681,43 +680,31 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     }
 
     if (action === 'compact') {
-      sessionStats.compactionInProgress = true;
-      sessionStats.updatedAt = Date.now();
-      try {
-        writeFileSync('.remy-stats.json', JSON.stringify(sessionStats));
-      } catch {}
-      // Run in background — does not block the conversation. Snapshots the
-      // current message index and inserts checkpoints there when done.
-      // Pass the main system prompt and tools so the summarization call
-      // reuses the same prompt cache instead of triggering a full cache miss.
-      const compactSystem = buildSystemPrompt('onboardingFinished');
-      const compactTools = getToolDefinitions('onboardingFinished');
-      compactConversation(state, config, compactSystem, compactTools)
-        .then(() => {
-          saveSession(state);
+      triggerCompaction(state, config, {
+        onStart: () => {
+          sessionStats.compactionInProgress = true;
+          sessionStats.updatedAt = Date.now();
+          try {
+            writeFileSync('.remy-stats.json', JSON.stringify(sessionStats));
+          } catch {}
+        },
+        onComplete: () => {
           emit('compaction_complete', {}, requestId);
           emit('completed', { success: true }, requestId);
-        })
-        .catch((err: any) => {
-          emit(
-            'compaction_complete',
-            { error: err.message || 'Compaction failed' },
-            requestId,
-          );
-          emit(
-            'completed',
-            { success: false, error: err.message || 'Compaction failed' },
-            requestId,
-          );
-        })
-        .finally(() => {
+        },
+        onError: (error) => {
+          emit('compaction_complete', { error }, requestId);
+          emit('completed', { success: false, error }, requestId);
+        },
+        onFinally: () => {
           sessionStats.compactionInProgress = false;
           sessionStats.messageCount = state.messages.length;
           sessionStats.updatedAt = Date.now();
           try {
             writeFileSync('.remy-stats.json', JSON.stringify(sessionStats));
           } catch {}
-        });
+        },
+      });
       return;
     }
 

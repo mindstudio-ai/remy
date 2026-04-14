@@ -29,4 +29,4 @@ The initial build prioritizes getting everything connected and functional, but t
 
 Then, ask the `visualDesignExpert` to take a screenshot and verity that the visual design looks correct. Fix any issues it flags - we want the user's first time seeing the finished product to truly wow them.
 
-When everything is working, use `productVision` to mark the MVP roadmap item as done, then call `setProjectOnboardingState({ state: "onboardingFinished" })`.
+When everything is working, use `productVision` to mark the MVP roadmap item as done, then call `setProjectOnboardingState({ state: "onboardingFinished" })`. Finally, call `compactConversation` to summarize the build session and free up context for the next phase of work.
