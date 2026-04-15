@@ -100,6 +100,7 @@ import { clearSyncStatusTool } from './spec/clearSyncStatus.js';
 import { presentSyncPlanTool } from './spec/presentSyncPlan.js';
 import { presentPublishPlanTool } from './spec/presentPublishPlan.js';
 import { writePlanTool } from './spec/writePlan.js';
+import { updatePlanStatusTool } from './spec/updatePlanStatus.js';
 
 // General tools
 import { setProjectOnboardingStateTool } from './common/setProjectOnboardingState.js';
@@ -153,6 +154,7 @@ const ALL_TOOLS: Tool[] = [
   presentSyncPlanTool,
   presentPublishPlanTool,
   writePlanTool,
+  updatePlanStatusTool,
   // Spec
   readSpecTool,
   writeSpecTool,
