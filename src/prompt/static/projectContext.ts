@@ -143,7 +143,7 @@ export function loadPlanStatus(): string {
     const status = match?.[1]?.match(/^status:\s*(.+)$/m)?.[1]?.trim();
 
     if (status === 'pending') {
-      return `\n<pending_plan>\nYou have a pending implementation plan in .remy-plan.md awaiting user approval. Do NOT begin implementing the plan until the user approves it. You may continue chatting, answering questions, and revising the plan if asked. To revise, call writePlan again with updated content.\n</pending_plan>`;
+      return `\n<pending_plan>\nYou have a pending implementation plan in .remy-plan.md awaiting user approval. Do NOT begin implementing the plan until the user approves it. You may continue chatting, answering questions, and revising the plan if asked. To revise, call writePlan again with updated content. When the user approves the plan (via chat or any other signal), call updatePlanStatus with status "approved" before beginning any implementation work.\n</pending_plan>`;
     }
     if (status === 'approved') {
       return `\n<approved_plan>\nThe user has approved your implementation plan in .remy-plan.md. You may reference it during implementation. Delete the file when you have finished all planned work.\n</approved_plan>`;
