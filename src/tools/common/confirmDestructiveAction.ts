@@ -5,8 +5,8 @@
  * a consent screen. Use only for actions the user might regret, like
  * deleting data or discarding work.
  *
- * Do NOT use this after presentSyncPlan, presentPublishPlan, or
- * writePlan (those already include approval). Do NOT use before
+ * Do NOT use this after presentPublishPlan or writePlan (those
+ * already include approval). Do NOT use before
  * onboarding state transitions (those are automatic).
  *
  * Results:
@@ -21,7 +21,7 @@ export const confirmDestructiveActionTool: Tool = {
   definition: {
     name: 'confirmDestructiveAction',
     description:
-      'Confirm a destructive or irreversible action with the user. Use for things like deleting data, resetting the database, or discarding draft work. Do not use after presentSyncPlan, presentPublishPlan, or writePlan (those already include approval). Do not use before onboarding state transitions.',
+      'Confirm a destructive or irreversible action with the user. Use for things like deleting data, resetting the database, or discarding draft work. Do not use after presentPublishPlan or writePlan (those already include approval). Do not use before onboarding state transitions.',
     inputSchema: {
       type: 'object',
       properties: {

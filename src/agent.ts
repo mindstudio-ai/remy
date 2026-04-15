@@ -61,8 +61,6 @@ function getToolCalls(
 const EXTERNAL_TOOLS = new Set([
   'promptUser',
   'setProjectOnboardingState',
-  'clearSyncStatus',
-  'presentSyncPlan',
   'presentPublishPlan',
   'confirmDestructiveAction',
   'runScenario',
@@ -176,7 +174,6 @@ export async function runTurn(params: {
   const STATUS_EXCLUDED_TOOLS = new Set([
     'setProjectOnboardingState',
     'setProjectMetadata',
-    'clearSyncStatus',
     'editsFinished',
   ]);
 

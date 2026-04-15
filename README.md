@@ -105,16 +105,13 @@ Available only when `onboardingState` is `onboardingFinished`.
 
 | Tool | Description |
 |------|-------------|
-| `clearSyncStatus` | Clear sync flags after syncing spec and code |
-| `presentSyncPlan` | Present a markdown sync plan to the user for approval (streams content) |
 | `presentPublishPlan` | Present a publish changelog for user approval (streams content) |
-| `presentPlan` | Present an implementation plan for user approval (streams content) |
 
 ### Tool Streaming
 
 Tools can opt into streaming via a `streaming` config on the tool definition:
 
-- **Content streaming** (writeSpec, writeFile, presentSyncPlan, presentPublishPlan, presentPlan): Streams `tool_input_delta` events with progressive content as the LLM generates tool arguments. Tools can provide a `transform` function to customize the streamed output (e.g., writeSpec/writeFile compute a progressive diff).
+- **Content streaming** (writeSpec, writeFile, presentPublishPlan): Streams `tool_input_delta` events with progressive content as the LLM generates tool arguments. Tools can provide a `transform` function to customize the streamed output (e.g., writeSpec/writeFile compute a progressive diff).
 - **Input streaming** (promptUser): Streams progressive `tool_start` events with `partial: true` as structured input (like a questions array) builds up.
 - **No streaming** (all other tools): `tool_start` fires once when the complete tool arguments are available.
 
@@ -157,10 +154,7 @@ Some tools are resolved by the sandbox rather than executed locally. Remy emits 
 - `setProjectOnboardingState` — advances the onboarding flow
 - `setProjectName` — sets the project name
 - `confirmDestructiveAction` — renders a confirmation dialog
-- `clearSyncStatus` — clears sync dirty flags and updates git sync ref
-- `presentSyncPlan` — renders a full-screen markdown plan for user approval
 - `presentPublishPlan` — renders a full-screen changelog for user approval
-- `presentPlan` — renders a full-screen implementation plan for user approval
 
 ### Project Structure
 

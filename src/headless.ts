@@ -272,7 +272,6 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
   const USER_FACING_TOOLS = new Set([
     'promptUser',
     'confirmDestructiveAction',
-    'presentSyncPlan',
     'presentPublishPlan',
   ]);
 

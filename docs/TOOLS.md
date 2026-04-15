@@ -156,26 +156,6 @@ No input properties.
 - Clearable: no
 - Result: File listing
 
-### `clearSyncStatus`
-Clears the sync status indicator. External — sandbox handles UI state.
-
-No input properties.
-
-- External: yes
-- Clearable: no
-- Result: confirmation from sandbox
-
-### `presentSyncPlan`
-Presents a sync plan for user approval. External — sandbox renders approval UI.
-
-| Property | Type | Required | Description |
-|----------|------|----------|-------------|
-| `content` | string | yes | Markdown plan content |
-
-- External: yes
-- Clearable: no
-- Result: `"approved"` after user approval
-
 ### `presentPublishPlan`
 Presents a publish changelog for user approval. External — sandbox renders approval UI.
 

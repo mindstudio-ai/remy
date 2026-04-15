@@ -365,3 +365,14 @@ Consult the `visualDesignExpert` to help you work through authentication at a hi
 **The overall login page:** This is a branding moment. Use the app's full visual identity — colors, typography, any logos, hero imagery, or illustration. A centered card on a branded background is a classic pattern. Don't make it look like a generic SaaS login template. The login page must feel like it belongs to this specific app. Consult the `visualDesignExpert` for guidance on how to really make this shine.
 
 **Post-login transition:** After successful verification, the transition into the app should feel seamless and instant. Avoid a blank loading screen — if data needs to load, show the app shell with skeleton states. Always make sure the user has a way of logging out.
+
+## Testing Auth in Development
+
+Auth works the same in dev/preview as in production — real verification codes are sent to real email addresses and phone numbers. There are two test bypasses:
+
+- **Email:** `remy@mindstudio.ai` — verification code is always `123456`
+- **Phone:** any `555` number (e.g. `+15551234567`) — verification code is always `123456`
+
+All other emails and phone numbers receive real codes. There is no dev-mode bypass, no fake code, and no way to skip verification. When testing auth flows in the preview, use one of the test bypasses above or a real email/phone.
+
+Browser automation tools (screenshots, automated browser tests) handle their own auth sessions. Scenarios seed database data but do not create browser auth sessions.

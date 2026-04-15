@@ -96,8 +96,6 @@ import { readSpecTool } from './spec/readSpec.js';
 import { writeSpecTool } from './spec/writeSpec.js';
 import { editSpecTool } from './spec/editSpec.js';
 import { listSpecFilesTool } from './spec/listSpecFiles.js';
-import { clearSyncStatusTool } from './spec/clearSyncStatus.js';
-import { presentSyncPlanTool } from './spec/presentSyncPlan.js';
 import { presentPublishPlanTool } from './spec/presentPublishPlan.js';
 import { writePlanTool } from './spec/writePlan.js';
 import { updatePlanStatusTool } from './spec/updatePlanStatus.js';
@@ -150,8 +148,6 @@ const ALL_TOOLS: Tool[] = [
   codeSanityCheckTool,
   compactConversationTool,
   // Post-onboarding
-  clearSyncStatusTool,
-  presentSyncPlanTool,
   presentPublishPlanTool,
   writePlanTool,
   updatePlanStatusTool,
