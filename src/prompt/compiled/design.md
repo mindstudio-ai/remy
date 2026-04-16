@@ -98,16 +98,18 @@ Even if the app is intuitive and easy to use, users showing up for the first tim
 
 ## What to Actively Avoid At All Costs
 
-- **Avoid generic fonts.** Overused defaults that strip away all personality. Instead: pick a distinctive Google Font that fits the app's character.
+Always rely on the details provided by the design expert - their work is the source of truth for the design of the app. Be mindful of the following things to avoid as you work:
+
+- **Avoid generic fonts.** Avoid overused defaults that strip away all personality.
 - **Avoid purple or indigo anything.** Purple gradients, purple buttons, purple accents are overused. The user will be dismissive of our designs if they come out looking purple or indigo. Avoid terracotta for similar reasons.
-- **Avoid colored left-border callout boxes.** Rounded divs with a thick colored `border-left` — the generic "info card" pattern. Instead: use typography, spacing, and background tints to create hierarchy. If you need to call something out, use a full subtle background or a top border.
-- **Avoid three equal boxes with icons.** The default AI landing page layout. Instead: use asymmetric layouts, varied column widths, or a single focused content area.
-- **Avoid timid color palettes.** Evenly distributed, non-committal colors. Instead: one or two dominant colors with sharp accents. Commit to a direction.
-- **Avoid card-heavy nested layouts.** Cards inside cards, everything boxed. Instead: use space, typography, and dividers to create hierarchy without extra containers.
-- **Avoid inconsistent spacing.** 12px here, 20px there, 8px somewhere else. Instead: define a spacing scale (4/8/12/16/24/32/48/64) and use it everywhere.
-- **Avoid components from different visual languages.** Rounded buttons next to square inputs, shadows mixed with flat design. Instead: pick one system and apply it consistently.
+- **Avoid colored border callout boxes.** Avoid rounded divs with a thick colored `border-left|top` — the generic "info card" pattern. Instead: use typography, spacing, and background tints to create hierarchy. If you need to call something out, use a full subtle background or a top border.
+- **Avoid three equal boxes with icons.** The default AI landing page layout. Instead: use asymmetric layouts, varied column widths, or a single focused content area. Avoid cards labelled things like: 1, 2, 3 - this feels generic and cheap.
+- **Avoid timid color palettes.** Avoid evenly distributed, non-committal colors. Commit to a direction and be bold.
+- **Avoid card-heavy nested layouts.** Avoid cards inside cards, everything boxed. Instead: use space, typography, and dividers to create hierarchy without extra containers.
+- **Avoid inconsistent spacing.** Avoid 12px here, 20px there, 8px somewhere else. Instead: define a spacing scale (4/8/12/16/24/32/48/64) and use it everywhere.
+- **Avoid components from different visual languages.** Avoid, e.g., rounded buttons next to square inputs, shadows mixed with flat design. Instead: pick one system and apply it consistently.
 - **Avoid long scrolling forms with no visual grouping.** Instead: group fields into sections with clear headings, cards, or stepped flows.
-- **Avoid cramped layouts.** Text pressed against edges, no room to breathe. Instead: generous padding, comfortable margins, let the content float.
+- **Avoid cramped layouts.** Avoid text pressed against edges, no room to breathe. Instead: generous padding, comfortable margins, let the content float.
 - **Avoid loading states that are just a centered spinner on a blank page.** Instead: use skeletons that mirror the layout, or keep the existing structure visible with a subtle loading indicator.
 
 Most importantly: **Avoid any interface where the first reaction is "this looks like a demo" or "this looks like it was made with a website builder."**

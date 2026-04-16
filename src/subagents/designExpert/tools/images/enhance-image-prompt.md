@@ -33,7 +33,7 @@ These are non-negotiable. Violating them produces bad output.
 You'll receive context about the generation parameters. Use them:
 
 - **Dimensions**: If the image is wide (landscape), compose horizontally. If tall (portrait), compose vertically. If square, center the subject.
-- **Transparent background**: The background will be removed after generation. Don't describe elaborate backgrounds — focus on the subject. Describe it as an isolated element.
+- **Transparent background**: The background will be removed after generation and the image will be trimmed to the subject bounds (no extra padding). Don't describe elaborate backgrounds — focus on the subject. Describe it as an isolated element.
 
 ## Photography prompts
 

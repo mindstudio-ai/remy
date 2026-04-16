@@ -28,7 +28,7 @@ export const definition: ToolDefinition = {
       transparentBackground: {
         type: 'boolean',
         description:
-          'Remove the background from generated images, producing transparent PNGs. Useful for icons, logos, product shots, and assets that need to be composited onto other backgrounds.',
+          'Remove the background from generated images, producing transparent PNGs trimmed to the subject bounds. Useful for icons, logos, product shots, and assets that need to be composited onto other backgrounds.',
       },
     },
     required: ['prompts'],
