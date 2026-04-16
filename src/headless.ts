@@ -21,7 +21,11 @@ import { createLogger } from './logger.js';
 const log = createLogger('headless');
 import { resolveConfig } from './config.js';
 import { buildSystemPrompt } from './prompt/index.js';
-import { triggerCompaction } from './compaction/trigger.js';
+import {
+  triggerCompaction,
+  getPendingSummaries,
+} from './compaction/trigger.js';
+import { findSafeInsertionPoint } from './compaction/index.js';
 import { setLspBaseUrl } from './tools/_helpers/lsp.js';
 import {
   createAgentState,
@@ -231,6 +235,17 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     }
   }
 
+  /** Drain pending compaction summaries and insert at a safe point. */
+  function applyPendingSummaries(): void {
+    const summaries = getPendingSummaries();
+    if (summaries.length === 0) {
+      return;
+    }
+    const idx = findSafeInsertionPoint(state.messages);
+    state.messages.splice(idx, 0, ...summaries);
+    saveSession(state);
+  }
+
   function onBackgroundComplete(
     toolCallId: string,
     name: string,
@@ -345,9 +360,10 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
           { success: true, durationMs: Date.now() - turnStart },
           rid,
         );
-        // Apply queued background mutations and flush results
+        // Apply queued mutations and flush results
         // (deferred to next tick so `running` is cleared first)
         setTimeout(() => {
+          applyPendingSummaries();
           applyPendingBlockUpdates();
           flushBackgroundQueue();
         }, 0);
@@ -706,7 +722,10 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
             writeFileSync('.remy-stats.json', JSON.stringify(sessionStats));
           } catch {}
         },
-        onComplete: () => {
+        onSummariesReady: () => {
+          if (!running) {
+            applyPendingSummaries();
+          }
           emit('compaction_complete', {}, requestId);
           emit('completed', { success: true }, requestId);
         },

@@ -25,7 +25,6 @@ import {
 } from '../api.js';
 import { readAsset } from '../assets.js';
 import { createLogger } from '../logger.js';
-import type { AgentState } from '../types.js';
 
 const log = createLogger('compaction');
 
@@ -46,23 +45,22 @@ const SUMMARIZABLE_SUBAGENTS = ['visualDesignExpert', 'productVision'];
  * @param tools - The main conversation's tool definitions (reused for cache hits)
  */
 export async function compactConversation(
-  state: AgentState,
+  messages: Message[],
   apiConfig: { baseUrl: string; apiKey: string },
   system?: string,
   tools?: ToolDefinition[],
-): Promise<void> {
-  // Snapshot the insertion point — summaries cover everything up to here.
-  // Must land on a safe message boundary: never between an assistant message
-  // with tool_use blocks and its corresponding tool_result messages.
-  const insertionIndex = findSafeInsertionPoint(state.messages);
+): Promise<Message[]> {
+  // Snapshot the end of the messages to summarize. The caller will
+  // determine the actual insertion point when it's safe to splice.
+  const endIndex = findSafeInsertionPoint(messages);
 
   const summaries: Array<{ name: string; text: string }> = [];
   const tasks: Promise<void>[] = [];
 
   // Main conversation summary
   const conversationMessages = getConversationMessagesForSummary(
-    state.messages,
-    insertionIndex,
+    messages,
+    endIndex,
   );
   if (conversationMessages.length > 0) {
     tasks.push(
@@ -90,9 +88,9 @@ export async function compactConversation(
   // subagent's own system prompt and tools here instead.
   for (const name of SUMMARIZABLE_SUBAGENTS) {
     const subagentMessages = getSubAgentMessagesForSummary(
-      state.messages,
+      messages,
       name,
-      insertionIndex,
+      endIndex,
     );
     if (subagentMessages.length > 0) {
       tasks.push(
@@ -114,8 +112,6 @@ export async function compactConversation(
 
   await Promise.all(tasks);
 
-  // Insert checkpoints at the snapshot point — anything appended after
-  // insertionIndex during generation stays after the checkpoints.
   const checkpointMessages: Message[] = summaries.map((s) => ({
     role: 'user' as const,
     hidden: true,
@@ -129,16 +125,8 @@ export async function compactConversation(
     ],
   }));
 
-  if (checkpointMessages.length > 0) {
-    state.messages.splice(insertionIndex, 0, ...checkpointMessages);
-  }
-
-  log.info('Compaction complete', {
-    summaries: summaries.length,
-    insertionIndex,
-    messagesAfter:
-      state.messages.length - insertionIndex - checkpointMessages.length,
-  });
+  log.info('Compaction complete', { summaries: summaries.length });
+  return checkpointMessages;
 }
 
 /**
@@ -146,7 +134,7 @@ export async function compactConversation(
  * Walks backward from the end to find a boundary that isn't between an
  * assistant message with tool_use blocks and its tool_result messages.
  */
-function findSafeInsertionPoint(messages: Message[]): number {
+export function findSafeInsertionPoint(messages: Message[]): number {
   let idx = messages.length;
 
   // Walk backward past any trailing tool_result messages
