@@ -232,14 +232,16 @@ Slash commands that invoke methods.
 
 ```json
 {
-  "commands": [
-    {
-      "name": "submit-vendor",
-      "description": "Request a new vendor",
-      "method": "submit-vendor-request"
-    }
-  ],
-  "loadingMessage": "Processing your request..."
+  "discord": {
+    "commands": [
+      {
+        "name": "submit-vendor",
+        "description": "Request a new vendor",
+        "method": "submit-vendor-request"
+      }
+    ],
+    "loadingMessage": "Processing your request..."
+  }
 }
 ```
 
@@ -253,14 +255,16 @@ Bot commands and message handling.
 
 ```json
 {
-  "commands": [
-    {
-      "command": "/submit",
-      "description": "Submit a vendor request",
-      "method": "submit-vendor-request"
-    }
-  ],
-  "defaultMethod": "handle-message"
+  "telegram": {
+    "commands": [
+      {
+        "command": "/submit",
+        "description": "Submit a vendor request",
+        "method": "submit-vendor-request"
+      }
+    ],
+    "defaultMethod": "handle-message"
+  }
 }
 ```
 
@@ -274,18 +278,20 @@ Scheduled method execution.
 
 ```json
 {
-  "jobs": [
-    {
-      "schedule": "0 9 * * 5",
-      "method": "process-weekly-payments",
-      "description": "Process approved invoices every Friday at 9am"
-    },
-    {
-      "schedule": "*/30 * * * *",
-      "method": "sync-vendor-status",
-      "description": "Sync vendor statuses every 30 minutes"
-    }
-  ]
+  "cron": {
+    "jobs": [
+      {
+        "schedule": "0 9 * * 5",
+        "method": "process-weekly-payments",
+        "description": "Process approved invoices every Friday at 9am"
+      },
+      {
+        "schedule": "*/30 * * * *",
+        "method": "sync-vendor-status",
+        "description": "Sync vendor statuses every 30 minutes"
+      }
+    ]
+  }
 }
 ```
 
@@ -299,13 +305,15 @@ Inbound HTTP endpoints that invoke methods.
 
 ```json
 {
-  "endpoints": [
-    {
-      "method": "handle-payment-webhook",
-      "description": "Stripe payment notifications",
-      "secret": "whk_abc123..."
-    }
-  ]
+  "webhook": {
+    "endpoints": [
+      {
+        "method": "handle-payment-webhook",
+        "description": "Stripe payment notifications",
+        "secret": "whk_abc123..."
+      }
+    ]
+  }
 }
 ```
 
@@ -321,7 +329,9 @@ Inbound email triggers.
 
 ```json
 {
-  "method": "handle-inbound-email"
+  "email": {
+    "method": "handle-inbound-email"
+  }
 }
 ```
 
@@ -335,7 +345,9 @@ Expose methods as AI tools.
 
 ```json
 {
-  "methods": ["submit-vendor-request", "list-vendors"]
+  "mcp": {
+    "methods": ["submit-vendor-request", "list-vendors"]
+  }
 }
 ```
 
