@@ -557,19 +557,17 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
 
   async function persistAttachments(
     attachments: Attachment[],
-  ): Promise<PersistResult[]> {
-    // Skip voice messages (transcripts stay inline) and images (passed directly to the model)
-    const documents = attachments.filter(
-      (a) => !a.isVoice && !isImageAttachment(a),
-    );
-    if (documents.length === 0) {
-      return [];
+  ): Promise<{ documents: PersistResult[]; images: PersistResult[] }> {
+    // Skip voice messages (transcripts stay inline)
+    const nonVoice = attachments.filter((a) => !a.isVoice);
+    if (nonVoice.length === 0) {
+      return { documents: [], images: [] };
     }
 
     mkdirSync(UPLOADS_DIR, { recursive: true });
 
     const results = await Promise.allSettled(
-      documents.map(async (att): Promise<PersistResult> => {
+      nonVoice.map(async (att): Promise<PersistResult> => {
         const name = resolveUniqueFilename(
           att.filename || filenameFromUrl(att.url),
         );
@@ -609,7 +607,14 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       }),
     );
 
-    return results.map((r) => (r.status === 'fulfilled' ? r.value : null));
+    const settled = results.map((r, i) => ({
+      result: r.status === 'fulfilled' ? r.value : null,
+      isImage: isImageAttachment(nonVoice[i]),
+    }));
+    return {
+      documents: settled.filter((s) => !s.isImage).map((s) => s.result),
+      images: settled.filter((s) => s.isImage).map((s) => s.result),
+    };
   }
 
   function buildUploadHeader(results: PersistResult[]): string {
@@ -670,12 +675,13 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       });
     }
 
-    // Persist document uploads to disk (skip voice messages and images)
+    // Persist file uploads to disk (skip voice messages)
     let userMessage = (parsed.text as string) ?? '';
-    if (attachments?.some((a) => !a.isVoice && !isImageAttachment(a))) {
+    if (attachments?.some((a) => !a.isVoice)) {
       try {
-        const results = await persistAttachments(attachments);
-        const header = buildUploadHeader(results);
+        const { documents, images } = await persistAttachments(attachments);
+        const all = [...documents, ...images];
+        const header = buildUploadHeader(all);
         if (header) {
           userMessage = userMessage ? `${header}\n\n${userMessage}` : header;
         }

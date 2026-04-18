@@ -35,7 +35,7 @@ box-shadow: 0 8px 32px rgba(0,0,0,0.3) for floating depth
 ~~~
 ```
 
-When you have image URLs (from the design expert), embed them directly in the spec using markdown image syntax. Write descriptive alt text that captures what the image actually depicts (this helps accessibility and helps the coding agent understand the image without loading it). Use the surrounding prose to explain the design intent — what the image is for, how it should be used in the layout, and why it was chosen.
+When you have image URLs (from the design expert), embed them directly in the spec using markdown image syntax. Write descriptive alt text that captures what the image actually depicts (this helps accessibility and helps the coding agent understand the image without loading it). Use the surrounding prose to explain the design intent — what the image is for, how it should be used in the layout, and why it was chosen. User-uploaded files (images, documents, reference materials) are saved to `src/.user-uploads/` and can be referenced from specs using their disk path.
 
 When the design expert provides wireframes, include them directly in the spec for future reference.
 
