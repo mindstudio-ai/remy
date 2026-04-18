@@ -19,6 +19,8 @@ const log = createLogger('api');
 export interface Attachment {
   url: string;
   extractedTextUrl?: string;
+  /** Original filename of the uploaded file (provided by the platform). */
+  filename?: string;
   /** Voice message transcript (speech-to-text output). */
   transcript?: string;
   /** Voice message duration in milliseconds. */
@@ -235,6 +237,7 @@ export async function* streamChat(params: {
   const reader = res.body!.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
+  let receivedDone = false;
 
   while (true) {
     let stallTimer: ReturnType<typeof setTimeout>;
@@ -282,6 +285,7 @@ export async function* streamChat(params: {
         const event = JSON.parse(line.slice(6)) as StreamEvent;
         if (event.type === 'done') {
           const elapsed = Date.now() - startTime;
+          receivedDone = true;
           log.info('Stream complete', {
             requestId,
             ...(subAgentId && { subAgentId }),
@@ -290,12 +294,28 @@ export async function* streamChat(params: {
             inputTokens: event.usage.inputTokens,
             outputTokens: event.usage.outputTokens,
           });
+        } else if (event.type === 'error') {
+          log.error('SSE error event', {
+            requestId,
+            ...(subAgentId && { subAgentId }),
+            error: event.error,
+            durationMs: Date.now() - startTime,
+          });
         }
         yield event;
       } catch {
         // Skip malformed SSE lines
       }
     }
+  }
+
+  if (!receivedDone) {
+    log.warn('Stream ended without done event', {
+      requestId,
+      ...(subAgentId && { subAgentId }),
+      durationMs: Date.now() - startTime,
+      remainingBuffer: buffer.slice(0, 200),
+    });
   }
 
   // Flush remaining buffer

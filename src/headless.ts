@@ -15,8 +15,17 @@
  */
 
 import { createInterface } from 'node:readline';
-import { writeFileSync, readFileSync, unlinkSync } from 'node:fs';
+import {
+  writeFileSync,
+  readFileSync,
+  unlinkSync,
+  mkdirSync,
+  existsSync,
+} from 'node:fs';
+import { writeFile } from 'node:fs/promises';
+import { basename, join, extname } from 'node:path';
 import { createLogger } from './logger.js';
+import type { Attachment } from './api.js';
 
 const log = createLogger('headless');
 import { resolveConfig } from './config.js';
@@ -489,6 +498,143 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
   toolRegistry.onEvent = onEvent;
 
   // ---------------------------------------------------------------------------
+  // File upload persistence
+  // ---------------------------------------------------------------------------
+
+  const UPLOADS_DIR = 'src/.user-uploads';
+
+  type PersistResult = {
+    filename: string;
+    localPath: string;
+    extractedTextPath?: string;
+  } | null;
+
+  function filenameFromUrl(url: string): string {
+    try {
+      const pathname = new URL(url).pathname;
+      const name = basename(pathname);
+      return name && name !== '/'
+        ? decodeURIComponent(name)
+        : `upload-${Date.now()}`;
+    } catch {
+      return `upload-${Date.now()}`;
+    }
+  }
+
+  function resolveUniqueFilename(name: string): string {
+    if (!existsSync(join(UPLOADS_DIR, name))) {
+      return name;
+    }
+    const ext = extname(name);
+    const base = name.slice(0, name.length - ext.length);
+    let counter = 1;
+    while (existsSync(join(UPLOADS_DIR, `${base}-${counter}${ext}`))) {
+      counter++;
+    }
+    return `${base}-${counter}${ext}`;
+  }
+
+  const IMAGE_EXTENSIONS = new Set([
+    '.png',
+    '.jpg',
+    '.jpeg',
+    '.gif',
+    '.webp',
+    '.svg',
+    '.bmp',
+    '.ico',
+    '.tiff',
+    '.tif',
+    '.avif',
+    '.heic',
+    '.heif',
+  ]);
+
+  function isImageAttachment(att: Attachment): boolean {
+    const name = att.filename || filenameFromUrl(att.url);
+    return IMAGE_EXTENSIONS.has(extname(name).toLowerCase());
+  }
+
+  async function persistAttachments(
+    attachments: Attachment[],
+  ): Promise<PersistResult[]> {
+    // Skip voice messages (transcripts stay inline) and images (passed directly to the model)
+    const documents = attachments.filter(
+      (a) => !a.isVoice && !isImageAttachment(a),
+    );
+    if (documents.length === 0) {
+      return [];
+    }
+
+    mkdirSync(UPLOADS_DIR, { recursive: true });
+
+    const results = await Promise.allSettled(
+      documents.map(async (att): Promise<PersistResult> => {
+        const name = resolveUniqueFilename(
+          att.filename || filenameFromUrl(att.url),
+        );
+        const localPath = join(UPLOADS_DIR, name);
+
+        const res = await fetch(att.url, {
+          signal: AbortSignal.timeout(30_000),
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status} downloading ${att.url}`);
+        }
+        const buffer = Buffer.from(await res.arrayBuffer());
+        await writeFile(localPath, buffer);
+        log.info('Attachment saved', {
+          filename: name,
+          path: localPath,
+          bytes: buffer.length,
+        });
+
+        let extractedTextPath: string | undefined;
+        if (att.extractedTextUrl) {
+          try {
+            const textRes = await fetch(att.extractedTextUrl, {
+              signal: AbortSignal.timeout(30_000),
+            });
+            if (textRes.ok) {
+              extractedTextPath = `${localPath}.txt`;
+              await writeFile(extractedTextPath, await textRes.text(), 'utf-8');
+              log.info('Extracted text saved', { path: extractedTextPath });
+            }
+          } catch {
+            // Non-fatal — sidecar download failed
+          }
+        }
+
+        return { filename: name, localPath, extractedTextPath };
+      }),
+    );
+
+    return results.map((r) => (r.status === 'fulfilled' ? r.value : null));
+  }
+
+  function buildUploadHeader(results: PersistResult[]): string {
+    const succeeded = results.filter(Boolean) as Exclude<PersistResult, null>[];
+    if (succeeded.length === 0) {
+      return '';
+    }
+    if (succeeded.length === 1) {
+      const r = succeeded[0];
+      const parts = [`[Uploaded file: ${r.localPath}`];
+      if (r.extractedTextPath) {
+        parts.push(`extracted text: ${r.extractedTextPath}`);
+      }
+      return parts.join(' — ') + ']';
+    }
+    const lines = succeeded.map((r) => {
+      if (r.extractedTextPath) {
+        return `- ${r.localPath} (extracted text: ${r.extractedTextPath})`;
+      }
+      return `- ${r.localPath}`;
+    });
+    return `[Uploaded files]\n${lines.join('\n')}`;
+  }
+
+  // ---------------------------------------------------------------------------
   // Message command handler (long-running / streaming)
   // ---------------------------------------------------------------------------
 
@@ -516,18 +662,29 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     completedEmitted = false;
     turnStart = Date.now();
 
-    const attachments = parsed.attachments as
-      | import('./api.js').Attachment[]
-      | undefined;
+    const attachments = parsed.attachments as Attachment[] | undefined;
     if (attachments?.length) {
-      console.warn(
-        `[headless] Message has ${attachments.length} attachment(s):`,
-        attachments.map((a: { url: string }) => a.url),
-      );
+      log.info('Message has attachments', {
+        count: attachments.length,
+        urls: attachments.map((a) => a.url),
+      });
+    }
+
+    // Persist document uploads to disk (skip voice messages and images)
+    let userMessage = (parsed.text as string) ?? '';
+    if (attachments?.some((a) => !a.isVoice && !isImageAttachment(a))) {
+      try {
+        const results = await persistAttachments(attachments);
+        const header = buildUploadHeader(results);
+        if (header) {
+          userMessage = userMessage ? `${header}\n\n${userMessage}` : header;
+        }
+      } catch (err: any) {
+        log.warn('Attachment persistence failed', { error: err.message });
+      }
     }
 
     // Resolve @@automated:: actions — loads prompt, interpolates params
-    let userMessage = (parsed.text as string) ?? '';
     let resolved: string | null = null;
     try {
       resolved = resolveAction(userMessage);
