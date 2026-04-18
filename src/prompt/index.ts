@@ -11,9 +11,7 @@
  */
 
 import { readAsset } from '../assets.js';
-import { isLspConfigured } from '../tools/_helpers/lsp.js';
 import {
-  loadProjectInstructions,
   loadProjectManifest,
   loadProjectFileListing,
   loadSpecFileMetadata,
@@ -46,7 +44,6 @@ export function buildSystemPrompt(
   viewContext?: ViewContext,
 ): string {
   const projectContext = [
-    loadProjectInstructions(),
     loadProjectManifest(),
     loadSpecFileMetadata(),
     loadProjectFileListing(),
@@ -125,27 +122,26 @@ Current date: ${now}
   {{compiled/msfm.md}}
 </mindstudio_flavored_markdown_spec_docs>
 
-<project_context>
-${projectContext}
-</project_context>
-
 <intake_mode_instructions>
-{{static/intake.md}}
+  {{static/intake.md}}
 </intake_mode_instructions>
 
 <spec_authoring_instructions>
-{{static/authoring.md}}
+  {{static/authoring.md}}
 </spec_authoring_instructions>
 
-{{static/team.md}}
+<team>
+  {{static/team.md}}
+</team>
 
 <code_authoring_instructions>
 {{static/coding.md}}
-${isLspConfigured() ? `<typescript_lsp>\n{{static/lsp.md}}\n</typescript_lsp>` : ''}
+
+<typescript_lsp>
+{{static/lsp.md}}
+</typescript_lsp>
 </code_authoring_instructions>
 
-{{static/instructions.md}}
-${loadPlanStatus()}
 <conversation_summaries>
 Your conversation history may include <prior_conversation_summary> blocks in the user's messages. These are automated summaries of earlier messages that have been compacted to save context space. The user does not see this summary, they see the full conversation history in their UI. Treat the summary as ground truth for what happened before, but do not reference it directly to the user ("as mentioned in the summary..."). Just continue naturally as if you remember the prior work.
 
@@ -159,18 +155,26 @@ New projects progress through four onboarding states. The user might skip this e
 - **initialSpecAuthoring**: Writing and refining the first spec. The user can see it in the editor as it streams in and can give feedback to iterate on it. This phase covers both the initial draft and any back-and-forth refinement before code generation.
 - **initialCodegen**: First code generation from the spec. The agent is generating methods, tables, interfaces, manifest updates, and scenarios. This can take a while and involves heavy tool use. The user sees a full-screen build progress view.
 - **onboardingFinished**: The project is built and ready. Full development mode with all tools available. From here on, keep spec and code in sync as changes are made.
+</project_onboarding>
+
+{{static/instructions.md}}
 
 <!-- cache_breakpoint -->
 
-  <current_project_onboarding_state>
+<current_project_onboarding_state>
   ${onboardingState ?? 'onboardingFinished'}
-  </current_project_onboarding_state>
-</project_onboarding>
+</current_project_onboarding_state>
+
+<project_context>
+${projectContext}
+</project_context>
 
 <view_context>
 The user is currently in ${viewContext?.mode ?? 'code'} mode.
 ${viewContext?.activeFile ? `Active file: ${viewContext.activeFile}` : ''}
 </view_context>
+
+${loadPlanStatus()}
 `;
 
   return resolveIncludes(template);

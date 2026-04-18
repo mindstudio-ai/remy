@@ -9,42 +9,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-/** Files checked for project-level agent instructions, in priority order. */
-const AGENT_INSTRUCTION_FILES = [
-  'CLAUDE.md',
-  'claude.md',
-  '.claude/instructions.md',
-  'AGENTS.md',
-  'agents.md',
-  '.agents.md',
-  'COPILOT.md',
-  'copilot.md',
-  '.copilot-instructions.md',
-  '.github/copilot-instructions.md',
-  'REMY.md',
-  'remy.md',
-  '.cursorrules',
-  '.cursorules',
-];
-
-/**
- * Load project-level agent instructions from the first matching file.
- * Returns formatted prompt section, or empty string if none found.
- */
-export function loadProjectInstructions(): string {
-  for (const file of AGENT_INSTRUCTION_FILES) {
-    try {
-      const content = fs.readFileSync(file, 'utf-8').trim();
-      if (content) {
-        return `\n## Project Instructions (${file})\n${content}`;
-      }
-    } catch {
-      // File doesn't exist — try next
-    }
-  }
-  return '';
-}
-
 /**
  * Load the project manifest (mindstudio.json) from cwd.
  * Returns formatted prompt section, or empty string if not found.

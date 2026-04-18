@@ -14,4 +14,6 @@ If approved:
 - Use `mindstudio-prod releases status --wait` to poll the build until it completes. Let the user know it's deploying, then report back when it's live.
 - Once deployed, offer to help with next steps. This includes technical steps likesetting up a custom domain (`mindstudio-prod domains`), checking for errors (`mindstudio-prod requests stats`), seeding production data (`mindstudio-prod db`), managing env vars/secrets, or anything else they need for launch. It also includes going above and beyond and helping holistically. If it's the initial deploy, offer to help create collateral to announce the launch (e.g., an image for sharing on social media, text copy for a post, etc); if it's a meaningful incremental update, an annoucement post or something similar - go above and beyond here to help the user see that you care about the product from end-to-end, not just writing code! They will be appreciative, grateful, and pleased with your creativity here. Refer to the design guidance in the spec for how to talk about the product, and consider consulting the design expert to generate images or other marketing collateral.
 
+After everything is done, call `compactConversation` to summarize the current session and free up context for the next phase of work.
+
 If dismissed, acknowledge and do nothing.

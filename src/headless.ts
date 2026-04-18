@@ -155,6 +155,9 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
   // whether a terminal `completed` was already sent so we emit exactly one.
   let completedEmitted = false;
   let turnStart = 0;
+  // Chained action: if the current turn's automated action has a `next` field,
+  // queue it for delivery after the turn completes.
+  let pendingNextAction: string | undefined;
 
   // ---------------------------------------------------------------------------
   // External tool results — keyed by tool call id.
@@ -375,10 +378,20 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
           applyPendingSummaries();
           applyPendingBlockUpdates();
           flushBackgroundQueue();
+          // Chain to the next automated action if specified in frontmatter
+          if (pendingNextAction) {
+            const next = pendingNextAction;
+            pendingNextAction = undefined;
+            handleMessage(
+              { action: 'message', text: `@@automated::${next}@@` } as any,
+              `chain-${Date.now()}`,
+            );
+          }
         }, 0);
         return;
       case 'turn_cancelled':
         completedEmitted = true;
+        pendingNextAction = undefined;
         emit('completed', { success: false, error: 'cancelled' }, rid);
         return;
 
@@ -691,7 +704,7 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     }
 
     // Resolve @@automated:: actions — loads prompt, interpolates params
-    let resolved: string | null = null;
+    let resolved: ReturnType<typeof resolveAction> = null;
     try {
       resolved = resolveAction(userMessage);
     } catch (err: any) {
@@ -702,8 +715,10 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       );
       return;
     }
+    pendingNextAction = undefined;
     if (resolved !== null) {
-      userMessage = resolved;
+      userMessage = resolved.message;
+      pendingNextAction = resolved.next;
     }
     const isHidden = resolved !== null || !!(parsed.hidden as boolean);
 

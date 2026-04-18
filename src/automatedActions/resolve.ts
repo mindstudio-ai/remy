@@ -12,12 +12,18 @@ import { readAsset } from '../assets.js';
 /** Sentinels that use the @@automated:: prefix but are not action files. */
 const NON_ACTION_SENTINELS = new Set(['background_results']);
 
+export interface ResolvedAction {
+  message: string;
+  /** Name of the next automated action to queue after this turn completes. */
+  next?: string;
+}
+
 /**
  * If `text` is an @@automated:: sentinel that maps to an action file,
  * load the prompt, interpolate params, and return the resolved message.
  * Returns null if the text is not an action sentinel.
  */
-export function resolveAction(text: string): string | null {
+export function resolveAction(text: string): ResolvedAction | null {
   const match = text.match(/^@@automated::(\w+)@@(.*)/s);
   if (!match) {
     return null;
@@ -37,8 +43,16 @@ export function resolveAction(text: string): string | null {
     } catch {}
   }
 
-  // Load and strip frontmatter
+  // Load asset and extract 'next' from frontmatter before stripping
   let body = readAsset('automatedActions', `${triggerName}.md`);
+  let next: string | undefined;
+  const fmMatch = body.match(/^---\s*\n([\s\S]*?)\n---/);
+  if (fmMatch) {
+    const nextMatch = fmMatch[1].match(/^\s*next:\s*(\w+)\s*$/m);
+    if (nextMatch) {
+      next = nextMatch[1];
+    }
+  }
   body = body.replace(/^---[\s\S]*?---\s*/, '');
 
   // Interpolate {{key}} placeholders
@@ -47,5 +61,8 @@ export function resolveAction(text: string): string | null {
     body = body.replaceAll(`{{${key}}}`, str);
   }
 
-  return `@@automated::${triggerName}@@\n${body}`;
+  return {
+    message: `@@automated::${triggerName}@@\n${body}`,
+    next,
+  };
 }
