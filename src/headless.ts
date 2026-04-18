@@ -913,6 +913,7 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
         },
         onFinally: () => {
           sessionStats.compactionInProgress = false;
+          sessionStats.lastContextSize = 0;
           sessionStats.messageCount = state.messages.length;
           sessionStats.updatedAt = Date.now();
           try {
