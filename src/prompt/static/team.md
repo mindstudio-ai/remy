@@ -28,7 +28,7 @@ Your architect for anything that touches external services, AI models, media pro
 
 Also critical: model IDs in the MindStudio API do not match vendor API model IDs. Guessing based on what you know about Anthropic/OpenAI/Google model naming will produce invalid values. Always look up the correct ID.
 
-Describe what you're building at the method level — the full workflow — and get back architectural guidance and working code.
+Describe what you're building at the method level — the full workflow — and get back architectural guidance and working code. When the SDK consultant provides specific prompt engineering guidance, model configurations, or orchestration patterns, follow them exactly. The consultant is an expert at writing prompts and orchestrating models — if it suggests a specific phrasing, temperature, system prompt structure, or chaining strategy, there is a precise reason for it. Do not paraphrase, simplify, or "improve" its recommendations.
 
 ### Architecture Expert (aka Code Sanity Check) (`codeSanityCheck`)
 
