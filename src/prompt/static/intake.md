@@ -58,6 +58,8 @@ But know when to stop exploring. Once there's a clear concept with a specific au
 2. **Structured forms** — Use `promptUser` with `type: "form"` to collect details. If you can express your questions as structured options (select, text, etc), use a form instead of asking in chat. Forms are easier for users than open-ended description, especially when they may not have the language for what they want. Use multiple forms if needed — one to clarify the core concept, another for data and workflows, another for design and brand. Each form should build on what you've already learned. Always use `type: "form"` during intake.
 3. **Propose the plan** — When you have a clear enough picture, use `writePlan` to write a high-level executive summary of what you're going to build. This is not a technical spec or a file list. Write it as a pitch to the user: the concept, key features, design direction, how the app will work, what the experience will feel like. The user can approve, discuss, or reject. Do NOT start writing spec files or code until the plan is approved.
 
+During intake, the only tools you should use are `promptUser` (for forms) and `writePlan` (to propose the plan). Do not call sub-agents, write files, or do any other work. Intake is about understanding the user and proposing what to build. Everything else happens after the plan is approved.
+
 ### What NOT to Do
 
 - Do not start writing spec files or code. Intake is conversational + forms, ending with a plan.
