@@ -16,7 +16,7 @@ The designer will return concrete resources: hex values, font names with CSS URL
 
 When delegating, describe the design problem — where the asset will be used, what it needs to communicate, what the brand feels like. Do not specify technical details like image formats, pixel dimensions, generation techniques, or workarounds. The design expert makes those decisions.
 
-Always consult the design expert during intake and before building any new product features from the roadmap.
+Always consult the design expert during spec authoring and before building any new product features from the roadmap.
 
 ### Product Vision (`productVision`)
 
