@@ -14,5 +14,5 @@ When you have finished, ask the `visualDesignExpert` to take a screenshot and ve
 ## Finalizing
 When everything is working and polished:
 1. Use `productVision` to mark the MVP roadmap item as done.
-2. Call `setProjectOnboardingState({ state: "onboardingFinished" })`.
-3. Call `compactConversation` to summarize the build session and free up context for the next phase of work.
+2. Call `compactConversation` to summarize the build session and free up context for the next phase of work.
+3. Call `setProjectOnboardingState({ state: "buildComplete" })`. This triggers the reveal experience on the frontend, where the user sees the pitch deck and their finished app for the first time.

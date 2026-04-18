@@ -109,10 +109,27 @@ html, body {
   transition: opacity 0.3s;
 }
 
+.chevron {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.chevron:hover { background: rgba(255,255,255,0.3); transform: translateY(-50%) scale(1.06); }
+.chevron:active { transform: translateY(-50%) scale(0.96); }
+
 .chevron svg {
-  width: 36px;
-  height: 36px;
-  stroke: rgba(255,255,255,0.5);
+  width: 22px;
+  height: 22px;
+  stroke: rgba(255,255,255,0.9);
   stroke-width: 2;
   fill: none;
 }
@@ -120,12 +137,17 @@ html, body {
 .chevron-prev { left: 16px; }
 .chevron-next { right: 16px; }
 
-.chevron.hidden { opacity: 0; }
+.chevron.hidden { opacity: 0; pointer-events: none; }
 
-.chevron.light svg { stroke: rgba(0,0,0,0.35); }
+.chevron.light { background: rgba(0,0,0,0.08); }
+.chevron.light:hover { background: rgba(0,0,0,0.16); }
+.chevron.light svg { stroke: rgba(0,0,0,0.5); }
 
 @media (max-width: 768px) {
-  .chevron { display: none; }
+  .chevron { width: 36px; height: 36px; }
+  .chevron svg { width: 18px; height: 18px; }
+  .chevron-prev { left: 8px; }
+  .chevron-next { right: 8px; }
 }
 
 .slide-dark { background: var(--bg-dark); }
@@ -257,7 +279,11 @@ html, body {
   }
 
   function goTo(index) {
-    if (index === current || isAnimating || index < 0 || index >= totalSlides) return;
+    if (index === current || isAnimating || index < 0) return;
+    if (index >= totalSlides) {
+      window.parent.postMessage({ type: 'pitch-deck-complete' }, '*');
+      return;
+    }
     isAnimating = true;
     current = index;
     updateNav();
@@ -282,6 +308,10 @@ html, body {
   // Tap zones
   tapPrev.addEventListener('click', () => goTo(current - 1));
   tapNext.addEventListener('click', () => goTo(current + 1));
+
+  // Chevron clicks
+  chevronPrev.addEventListener('click', (e) => { e.stopPropagation(); goTo(current - 1); });
+  chevronNext.addEventListener('click', (e) => { e.stopPropagation(); goTo(current + 1); });
 
   // Touch/swipe
   let touchStartX = 0;

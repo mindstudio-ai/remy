@@ -519,6 +519,7 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
   type PersistResult = {
     filename: string;
     localPath: string;
+    remoteUrl: string;
     extractedTextPath?: string;
   } | null;
 
@@ -616,7 +617,12 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
           }
         }
 
-        return { filename: name, localPath, extractedTextPath };
+        return {
+          filename: name,
+          localPath,
+          remoteUrl: att.url,
+          extractedTextPath,
+        };
       }),
     );
 
@@ -637,17 +643,18 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     }
     if (succeeded.length === 1) {
       const r = succeeded[0];
-      const parts = [`[Uploaded file: ${r.localPath}`];
+      const parts = [`[Uploaded file: ${r.localPath} (CDN: ${r.remoteUrl})`];
       if (r.extractedTextPath) {
         parts.push(`extracted text: ${r.extractedTextPath}`);
       }
       return parts.join(' — ') + ']';
     }
     const lines = succeeded.map((r) => {
+      const parts = [`- ${r.localPath} (CDN: ${r.remoteUrl})`];
       if (r.extractedTextPath) {
-        return `- ${r.localPath} (extracted text: ${r.extractedTextPath})`;
+        parts.push(`  extracted text: ${r.extractedTextPath}`);
       }
-      return `- ${r.localPath}`;
+      return parts.join('\n');
     });
     return `[Uploaded files]\n${lines.join('\n')}`;
   }
@@ -725,7 +732,10 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     // Update .remy-plan.md before building the system prompt so the
     // injected <pending_plan>/<approved_plan> note reflects the new state.
     const rawText = (parsed.text as string) ?? '';
-    if (rawText.startsWith('@@automated::approvePlan@@')) {
+    if (
+      rawText.startsWith('@@automated::approvePlan@@') ||
+      rawText.startsWith('@@automated::approveInitialPlan@@')
+    ) {
       try {
         const plan = readFileSync('.remy-plan.md', 'utf-8');
         writeFileSync(

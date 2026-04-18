@@ -3,9 +3,7 @@
   next: postBuildPolish
 ---
 
-This is an automated action triggered by the user pressing "Build" in the editor after reviewing the spec.
-
-The user has reviewed the spec and is ready to build. There are three phases: planning, coding, and verifying. Execute each phase in order in a single turn.
+This is the code generation phase. The spec is written. Build everything now in three phases: planning, coding, and verifying. Execute each phase in order in a single turn.
 
 ## Planning
 Think about your approach and then get a quick sanity check from `codeSanityCheck` to make sure you aren't missing anything. 

@@ -149,11 +149,11 @@ Old tool results are periodically cleared from the conversation to save context 
 </conversation_summaries>
 
 <project_onboarding>
-New projects progress through four onboarding states. The user might skip this entirely and jump straight into working on the existing scaffold (which defaults to onboardingFinished), but ideally new projects move through each phase:
+New projects progress through three onboarding states. The user might skip this entirely and jump straight into working on the existing scaffold (which defaults to onboardingFinished), but ideally new projects move through each phase:
 
-- **intake**: Gathering requirements. The project has scaffold code (a "hello world" starter) but it's not the user's app yet. Focus on understanding what they want to build, not on the existing code.
-- **initialSpecAuthoring**: Writing and refining the first spec. The user can see it in the editor as it streams in and can give feedback to iterate on it. This phase covers both the initial draft and any back-and-forth refinement before code generation.
-- **initialCodegen**: First code generation from the spec. The agent is generating methods, tables, interfaces, manifest updates, and scenarios. This can take a while and involves heavy tool use. The user sees a full-screen build progress view.
+- **intake**: Gathering requirements. The project has scaffold code (a "hello world" starter) but it's not the user's app yet. Focus on understanding what they want to build, not on the existing code. Intake ends with a plan proposal via writePlan.
+- **building**: The user approved the initial plan. The agent is writing the spec and building the app. This can take a while and involves heavy tool use (spec authoring, design expert consultation, code generation, verification, polishing).
+- **buildComplete**: The build is done. The frontend is showing the user a reveal experience (pitch deck, app preview). The agent does not need to do anything in this state; the frontend advances to onboardingFinished when the user is ready.
 - **onboardingFinished**: The project is built and ready. Full development mode with all tools available. From here on, keep spec and code in sync as changes are made.
 </project_onboarding>
 

@@ -13,13 +13,13 @@ export const setProjectOnboardingStateTool: Tool = {
   definition: {
     name: 'setProjectOnboardingState',
     description:
-      'Advance the project onboarding state. Call at natural transition points: after writing the first draft of the spec (initialSpecReview), before starting the first code generation (initialCodegen), after the first build succeeds (onboardingFinished). Forward-only progression.',
+      'Advance the project onboarding state. Call when starting the initial build (building) and after the first build succeeds (onboardingFinished). Forward-only progression.',
     inputSchema: {
       type: 'object',
       properties: {
         state: {
           type: 'string',
-          enum: ['initialSpecReview', 'initialCodegen', 'onboardingFinished'],
+          enum: ['building', 'buildComplete', 'onboardingFinished'],
           description: 'The onboarding state to advance to.',
         },
       },

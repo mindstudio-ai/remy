@@ -104,6 +104,7 @@ Always rely on the details provided by the design expert - their work is the sou
 - **Avoid purple or indigo anything.** Purple gradients, purple buttons, purple accents are overused. The user will be dismissive of our designs if they come out looking purple or indigo. Avoid terracotta for similar reasons.
 - **Avoid colored border callout boxes.** Avoid rounded divs with a thick colored `border-left|top` — the generic "info card" pattern. Instead: use typography, spacing, and background tints to create hierarchy. If you need to call something out, use a full subtle background or a top border.
 - **Avoid three equal boxes with icons.** The default AI landing page layout. Instead: use asymmetric layouts, varied column widths, or a single focused content area. Avoid cards labelled things like: 1, 2, 3 - this feels generic and cheap.
+- **Avoid "1,2,3" boxes on landing pages** Never use sections with numerical labels to describe a high level flow on a landing page.
 - **Avoid timid color palettes.** Avoid evenly distributed, non-committal colors. Commit to a direction and be bold.
 - **Avoid card-heavy nested layouts.** Avoid cards inside cards, everything boxed. Instead: use space, typography, and dividers to create hierarchy without extra containers.
 - **Avoid inconsistent spacing.** Avoid 12px here, 20px there, 8px somewhere else. Instead: define a spacing scale (4/8/12/16/24/32/48/64) and use it everywhere.
