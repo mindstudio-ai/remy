@@ -377,8 +377,9 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
         setTimeout(() => {
           applyPendingSummaries();
           applyPendingBlockUpdates();
-          flushBackgroundQueue();
-          // Chain to the next automated action if specified in frontmatter
+          // Chain takes priority over background results — it's a pipeline
+          // continuation and starts a new turn (sets running = true).
+          // Background results will flush after the chained turn completes.
           if (pendingNextAction) {
             const next = pendingNextAction;
             pendingNextAction = undefined;
@@ -386,14 +387,24 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
               { action: 'message', text: `@@automated::${next}@@` } as any,
               `chain-${Date.now()}`,
             );
+          } else {
+            flushBackgroundQueue();
           }
         }, 0);
         return;
-      case 'turn_cancelled':
+      case 'turn_cancelled': {
         completedEmitted = true;
-        pendingNextAction = undefined;
-        emit('completed', { success: false, error: 'cancelled' }, rid);
+        const cancelled: Record<string, unknown> = {
+          success: false,
+          error: 'cancelled',
+        };
+        if (pendingNextAction) {
+          cancelled.pendingNextMessage = `@@automated::${pendingNextAction}@@`;
+          pendingNextAction = undefined;
+        }
+        emit('completed', cancelled, rid);
         return;
+      }
 
       // Streaming events — forward with requestId
       case 'text':
