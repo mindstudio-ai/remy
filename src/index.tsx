@@ -76,16 +76,18 @@ const logLevel = (flags.logLevel as LogLevel) || undefined;
 
 if (headless) {
   initLoggerHeadless(logLevel);
-  const { startHeadless } = await import('./headless.js');
-  startHeadless({
+  const { HeadlessSession } = await import('./headless/index.js');
+  new HeadlessSession({
     apiKey: flags.apiKey,
     baseUrl: flags.baseUrl,
     model: flags.model,
     lspUrl: flags.lspUrl,
-  }).catch((err: any) => {
-    console.error(err.message);
-    process.exit(1);
-  });
+  })
+    .start()
+    .catch((err: any) => {
+      console.error(err.message);
+      process.exit(1);
+    });
 } else {
   initLoggerInteractive(logLevel);
   try {

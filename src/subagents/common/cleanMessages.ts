@@ -10,6 +10,10 @@
  */
 
 import type { Message, ContentBlock } from '../../api.js';
+import {
+  isAutomatedMessage,
+  stripSentinelLine,
+} from '../../automatedActions/sentinel.js';
 
 /**
  * Find the index of the last summary checkpoint for a given name.
@@ -143,12 +147,9 @@ export function cleanMessagesForApi(messages: Message[]): Message[] {
       if (
         msg.role === 'user' &&
         typeof msg.content === 'string' &&
-        msg.content.startsWith('@@automated::')
+        isAutomatedMessage(msg.content)
       ) {
-        return {
-          ...msg,
-          content: msg.content.replace(/^@@automated::[^@]*@@[^\n]*\n?/, ''),
-        };
+        return { ...msg, content: stripSentinelLine(msg.content) };
       }
 
       if (!Array.isArray(msg.content)) {

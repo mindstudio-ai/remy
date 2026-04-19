@@ -39,7 +39,7 @@ export default defineConfig([
     },
   },
   {
-    entry: ['src/headless.ts'],
+    entry: { headless: 'src/headless/index.ts' },
     format: ['esm'],
     splitting: false,
     sourcemap: false,

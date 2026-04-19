@@ -8,6 +8,7 @@
  */
 
 import { readAsset } from '../assets.js';
+import { parseSentinel, automatedMessage } from './sentinel.js';
 
 /** Sentinels that use the @@automated:: prefix but are not action files. */
 const NON_ACTION_SENTINELS = new Set(['background_results']);
@@ -24,19 +25,18 @@ export interface ResolvedAction {
  * Returns null if the text is not an action sentinel.
  */
 export function resolveAction(text: string): ResolvedAction | null {
-  const match = text.match(/^@@automated::(\w+)@@(.*)/s);
-  if (!match) {
+  const parsed = parseSentinel(text);
+  if (!parsed) {
     return null;
   }
 
-  const triggerName = match[1];
+  const { name: triggerName, remainder } = parsed;
   if (NON_ACTION_SENTINELS.has(triggerName)) {
     return null;
   }
 
   // Parse optional JSON params from the first line after @@
   let params: Record<string, unknown> = {};
-  const remainder = match[2];
   if (remainder) {
     try {
       params = JSON.parse(remainder.split('\n')[0]);
@@ -62,7 +62,7 @@ export function resolveAction(text: string): ResolvedAction | null {
   }
 
   return {
-    message: `@@automated::${triggerName}@@\n${body}`,
+    message: automatedMessage(triggerName, body),
     next,
   };
 }
