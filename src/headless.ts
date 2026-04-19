@@ -158,6 +158,8 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
   // Chained action: if the current turn's automated action has a `next` field,
   // queue it for delivery after the turn completes.
   let pendingNextAction: string | undefined;
+  // Last onboarding state from the sandbox — passed through to chained actions.
+  let lastOnboardingState: string | undefined;
 
   // ---------------------------------------------------------------------------
   // External tool results — keyed by tool call id.
@@ -347,6 +349,9 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
       case 'turn_started':
         emit('turn_started', {}, rid);
         return;
+      case 'user_message':
+        emit('user_message', { text: e.text }, rid);
+        return;
 
       // Terminal events — translate to `completed`
       case 'turn_done':
@@ -367,11 +372,16 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
         try {
           writeFileSync('.remy-stats.json', JSON.stringify(sessionStats));
         } catch {}
-        emit(
-          'completed',
-          { success: true, durationMs: Date.now() - turnStart },
-          rid,
-        );
+        {
+          const completedData: Record<string, unknown> = {
+            success: true,
+            durationMs: Date.now() - turnStart,
+          };
+          if (pendingNextAction) {
+            completedData.pendingNextMessage = `@@automated::${pendingNextAction}@@`;
+          }
+          emit('completed', completedData, rid);
+        }
         // Apply queued mutations and flush results
         // (deferred to next tick so `running` is cleared first)
         setTimeout(() => {
@@ -762,7 +772,10 @@ export async function startHeadless(opts: HeadlessOptions = {}): Promise<void> {
     }
 
     const onboardingState =
-      (parsed.onboardingState as string) ?? 'onboardingFinished';
+      (parsed.onboardingState as string) ??
+      lastOnboardingState ??
+      'onboardingFinished';
+    lastOnboardingState = onboardingState;
     const system = buildSystemPrompt(
       onboardingState,
       parsed.viewContext as any,
