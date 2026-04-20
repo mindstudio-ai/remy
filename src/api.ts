@@ -309,6 +309,13 @@ export async function* streamChat(params: {
     }
   }
 
+  // Flush remaining buffer
+  if (buffer.startsWith('data: ')) {
+    try {
+      yield JSON.parse(buffer.slice(6)) as StreamEvent;
+    } catch {}
+  }
+
   if (!receivedDone) {
     log.warn('Stream ended without done event', {
       requestId,
@@ -316,13 +323,15 @@ export async function* streamChat(params: {
       durationMs: Date.now() - startTime,
       remainingBuffer: buffer.slice(0, 200),
     });
-  }
-
-  // Flush remaining buffer
-  if (buffer.startsWith('data: ')) {
-    try {
-      yield JSON.parse(buffer.slice(6)) as StreamEvent;
-    } catch {}
+    // Surface as a retryable error. Without a `done` event the caller
+    // doesn't know the final stopReason — if tool_use blocks arrived but
+    // `done` never did, treating the turn as complete would push an
+    // assistant message with orphan tool_use (no matching tool_result),
+    // which the next turn's API request would reject.
+    yield {
+      type: 'error' as const,
+      error: 'Network error: stream ended before completion',
+    };
   }
 }
 

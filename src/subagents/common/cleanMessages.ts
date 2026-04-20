@@ -48,9 +48,13 @@ function fixOrphanedToolCalls(messages: Message[]): Message[] {
     }
   }
 
-  const result = [...messages];
-  for (let i = result.length - 1; i >= 0; i--) {
-    const msg = result[i];
+  // Walk forward, fixing every orphaned assistant message — not just the
+  // last one. A stream that ends without a `done` event after emitting
+  // tool_use blocks can create an orphan mid-history, and a later turn can
+  // then create a second orphan at the tail. Both need synthetic results.
+  const result: Message[] = [];
+  for (const msg of messages) {
+    result.push(msg);
     if (msg.role !== 'assistant' || !Array.isArray(msg.content)) {
       continue;
     }
@@ -58,17 +62,15 @@ function fixOrphanedToolCalls(messages: Message[]): Message[] {
       (b): b is ContentBlock & { type: 'tool' } => b.type === 'tool',
     );
     const orphans = toolBlocks.filter((tc) => !toolResultIds.has(tc.id));
-    if (orphans.length === 0) {
-      continue;
+    for (const tc of orphans) {
+      result.push({
+        role: 'user' as const,
+        content: 'Error: tool result lost (session recovered)',
+        toolCallId: tc.id,
+        isToolError: true,
+      });
+      toolResultIds.add(tc.id);
     }
-    const synthetics: Message[] = orphans.map((tc) => ({
-      role: 'user' as const,
-      content: 'Error: tool result lost (session recovered)',
-      toolCallId: tc.id,
-      isToolError: true,
-    }));
-    result.splice(i + 1, 0, ...synthetics);
-    break; // Only the last assistant message should have orphans
   }
 
   return result;
