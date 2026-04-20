@@ -47,6 +47,7 @@ import { resolveAction } from '../automatedActions/resolve.js';
 import {
   sentinel,
   buildBackgroundResultsMessage,
+  mergeBackgroundResultsMessages,
 } from '../automatedActions/sentinel.js';
 
 const log = createLogger('headless');
@@ -720,6 +721,10 @@ export class HeadlessSession {
   /**
    * Drain the queue in strict FIFO order. Caller must hold `running = true`.
    * User messages arriving during the drain will be enqueued behind current items.
+   *
+   * Consecutive background-source items are coalesced into a single turn so
+   * the LLM sees all the background results together and produces one
+   * acknowledgment, not N separate ones.
    */
   private async drainQueueLoop(): Promise<void> {
     while (true) {
@@ -727,6 +732,32 @@ export class HeadlessSession {
       if (!next) {
         break;
       }
+
+      // If this is a background item, coalesce any following background items
+      // into a single combined message so the LLM sees all the results together
+      // and produces one acknowledgment instead of N. Stops at the first
+      // non-background item (which stays in the queue for the next iteration).
+      if (next.source === 'background') {
+        const batch = [next];
+        while (this.queue.peek()?.source === 'background') {
+          const more = this.queue.shift();
+          if (more) {
+            batch.push(more);
+          }
+        }
+        const combinedCommand: StdinCommand = {
+          action: 'message',
+          text: mergeBackgroundResultsMessages(
+            batch.map((b) => (b.command.text as string) ?? ''),
+          ),
+          ...(this.currentOnboardingState && {
+            onboardingState: this.currentOnboardingState,
+          }),
+        };
+        await this.runSingleTurn(combinedCommand, `background-${Date.now()}`);
+        continue;
+      }
+
       const nextRid =
         (next.command.requestId as string | undefined) ??
         `${next.source}-${Date.now()}`;

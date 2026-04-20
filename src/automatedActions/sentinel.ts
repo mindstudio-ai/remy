@@ -69,8 +69,28 @@ export function buildBackgroundResultsMessage(
         `<tool_result id="${r.toolCallId}" name="${r.name}">\n${r.result}\n</tool_result>`,
     )
     .join('\n\n');
+  const plural = results.length > 1 ? 's' : '';
   const body =
-    'This is an automated message containing the result of a tool call that has been working in the background. This is not a direct message from the user.\n' +
+    `This is an automated message containing the result${plural} of ${results.length > 1 ? 'tool calls' : 'a tool call'} that ${results.length > 1 ? 'have' : 'has'} been working in the background. This is not a direct message from the user.\n` +
     `<background_results>\n${xml}\n</background_results>`;
   return automatedMessage('background_results', body);
+}
+
+/**
+ * Merge one or more `@@automated::background_results@@` messages into a
+ * single combined message. Extracts the `<tool_result>` blocks from each
+ * input and wraps them in a single `<background_results>` envelope.
+ * When given a single input, returns an equivalent single-result message.
+ */
+export function mergeBackgroundResultsMessages(messages: string[]): string {
+  const results: Array<{ toolCallId: string; name: string; result: string }> =
+    [];
+  const toolRe =
+    /<tool_result id="([^"]+)" name="([^"]+)">\n([\s\S]*?)\n<\/tool_result>/g;
+  for (const msg of messages) {
+    for (const m of msg.matchAll(toolRe)) {
+      results.push({ toolCallId: m[1], name: m[2], result: m[3] });
+    }
+  }
+  return buildBackgroundResultsMessage(results);
 }

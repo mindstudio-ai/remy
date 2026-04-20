@@ -61,6 +61,11 @@ export class MessageQueue {
     return [...this.items];
   }
 
+  /** Return the next item without removing it. */
+  peek(): QueuedMessage | undefined {
+    return this.items[0];
+  }
+
   get length(): number {
     return this.items.length;
   }
