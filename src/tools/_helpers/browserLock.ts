@@ -24,7 +24,8 @@ export function acquireBrowserLock(): Promise<() => void> {
 
 export async function checkBrowserConnected(): Promise<{
   connected: boolean;
-  error?: string;
+  /** Human-readable reason when not connected. Already phrased as a status, not an error — callers should return it as-is without prefixing "Error:". */
+  reason?: string;
 }> {
   try {
     const status = await sidecarRequest(
@@ -35,17 +36,24 @@ export async function checkBrowserConnected(): Promise<{
     if (!status.connected) {
       return {
         connected: false,
-        error:
-          'The browser preview is not connected. The user needs to open the preview.',
+        reason: BROWSER_UNAVAILABLE_MESSAGE,
       };
     }
     return { connected: true };
-  } catch (err: any) {
+  } catch {
     return {
       connected: false,
-      error:
-        err?.message ||
-        'Could not check browser status. The dev environment may not be running.',
+      reason: BROWSER_UNAVAILABLE_MESSAGE,
     };
   }
 }
+
+/**
+ * Canonical "browser unavailable" message. Deliberately does NOT start with
+ * "Error:" so the agent layer (`agent.ts` sets `isError` from that prefix)
+ * treats this as an informational result, not a tool failure. Unavailability
+ * means the user has closed their browser and we are continuing to work in
+ * the background — nothing for the agent to diagnose or guide the user through.
+ */
+export const BROWSER_UNAVAILABLE_MESSAGE =
+  'Browser preview unavailable — the user has closed their browser and we are continuing to work in the background. This is not a code failure and not something to diagnose. Do not tell the user to click or open anything. Skip the visual check and verify your work through other means: runMethod for backend behavior, queryDatabase for data checks, .logs/devServer.ndjson for build errors, .logs/browser.ndjson for runtime errors, lspDiagnostics for type/syntax, or read the code directly.';

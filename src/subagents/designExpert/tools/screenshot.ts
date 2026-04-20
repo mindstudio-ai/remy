@@ -91,7 +91,9 @@ export async function execute(
   try {
     const browserStatus = await checkBrowserConnected();
     if (!browserStatus.connected) {
-      return `Error: ${browserStatus.error}`;
+      // Return the unavailability message as-is (not prefixed with "Error:")
+      // so the agent treats it as a status to work around, not a failure.
+      return browserStatus.reason ?? 'Browser preview unavailable.';
     }
     return await captureAndAnalyzeScreenshot({
       prompt: input.prompt as string,

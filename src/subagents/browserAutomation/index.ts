@@ -50,10 +50,12 @@ export const browserAutomationTool: Tool = {
 
     const release = await acquireBrowserLock();
     try {
-      // Check if the browser preview is connected before spinning up the sub-agent
+      // Check if the browser preview is connected before spinning up the sub-agent.
+      // If not, return the unavailability message as-is (not prefixed with "Error:")
+      // so the agent treats it as a status to work around, not a failure to diagnose.
       const browserStatus = await checkBrowserConnected();
       if (!browserStatus.connected) {
-        return `Error: ${browserStatus.error}`;
+        return browserStatus.reason ?? 'Browser preview unavailable.';
       }
 
       // Reset browser to clean state before the test
