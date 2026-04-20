@@ -14,3 +14,7 @@ Then, put together a plan to build out the feature. Write the plan with `writePl
 When they've approved the plan, be sure to update the spec first - remember, the spec is the source of truth about the product. Then, build everything in one turn, using the spec as the master plan.
 
 When you're finished building, verify your work and give the user a summary of what was done.
+
+## When you are done
+
+End this turn cleanly once verification passes. Do not finalize or clean up — another chained phase handles that. You are not the last step in the pipeline.

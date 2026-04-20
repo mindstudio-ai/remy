@@ -6,7 +6,9 @@
  * "Planning the data model") based on recent conversation context.
  *
  * Completely passive — the main agent loop doesn't know it exists.
- * Fails silently on errors. Deduplicates consecutive identical labels.
+ * Fails silently on errors. Always emits on each tick, even when the
+ * context hasn't changed, so the user sees continuous activity. The
+ * model's temperature produces natural variation across polls.
  */
 
 export interface StatusWatcherConfig {
@@ -22,15 +24,14 @@ export interface StatusWatcher {
 }
 
 export function startStatusWatcher(config: StatusWatcherConfig): StatusWatcher {
-  const { apiConfig, getContext, onStatus, interval = 3000, signal } = config;
+  const { apiConfig, getContext, onStatus, interval = 5000, signal } = config;
 
-  let lastLabel = '';
-  let lastContext = '';
   let inflight = false;
   let stopped = false;
   const url = `${apiConfig.baseUrl}/_internal/v2/agent/remy/generate-status`;
 
   async function tick(): Promise<void> {
+    // Skip if a previous call is still running — don't pile up requests.
     if (stopped || signal?.aborted || inflight) {
       return;
     }
@@ -38,10 +39,9 @@ export function startStatusWatcher(config: StatusWatcherConfig): StatusWatcher {
 
     try {
       const context = getContext();
-      if (!context || context === lastContext) {
+      if (!context) {
         return;
       }
-      lastContext = context;
 
       const res = await fetch(url, {
         method: 'POST',
@@ -53,19 +53,15 @@ export function startStatusWatcher(config: StatusWatcherConfig): StatusWatcher {
         signal,
       });
 
-      if (!res.ok) {
+      if (!res.ok || stopped) {
         return;
       }
 
       const data = (await res.json()) as { label?: string };
-      if (!data.label || data.label === lastLabel) {
+      if (!data.label) {
         return;
       }
 
-      lastLabel = data.label;
-      if (stopped) {
-        return;
-      }
       onStatus(data.label);
     } catch {
     } finally {

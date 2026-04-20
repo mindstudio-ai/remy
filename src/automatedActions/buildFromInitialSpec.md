@@ -20,3 +20,7 @@ Then, build everything in one turn: tables, methods, interfaces, manifest update
 - If the app has a web frontend, check the browser logs to make sure there are no errors rendering it.
 - Use `runAutomatedBrowserTest` to smoke-test the main UI flow. The dev database is a disposable snapshot, so don't worry about being destructive. Fix any errors before finishing.
 - If there is a scenario that seeds the app with mock data, use it to present the app to the user with initial data seeded, so they can see and play with the real app. Let the user know they can reset the app using a scenario to empty it if they wish. Showing the user something they can play with immediately is important when it comes to landing a strong first impression.
+
+## When you are done
+
+End this turn cleanly once verification passes. Do not finalize or clean up — another chained phase handles that. You are not the last step in the pipeline.

@@ -40,6 +40,7 @@ import { friendlyError } from './errors.js';
 
 import { cleanMessagesForApi } from './subagents/common/cleanMessages.js';
 import { CLEARABLE_TOOLS } from './tools/index.js';
+import { parseSentinel } from './automatedActions/sentinel.js';
 
 // Content block helpers
 function getTextContent(blocks: ContentBlock[]): string {
@@ -227,13 +228,13 @@ export async function runTurn(params: {
               parts.push(`Tool: ${toolName}`);
             }
             if (lastCompletedInput) {
-              parts.push(`Tool input: ${lastCompletedInput.slice(-300)}`);
+              parts.push(`Tool input: ${lastCompletedInput.slice(-1500)}`);
             }
             if (lastCompletedResult) {
-              parts.push(`Tool result: ${lastCompletedResult.slice(-200)}`);
+              parts.push(`Tool result: ${lastCompletedResult.slice(-1500)}`);
             }
             const text =
-              subAgentText || getTextContent(contentBlocks).slice(-500);
+              subAgentText || getTextContent(contentBlocks).slice(-2000);
             if (text) {
               parts.push(`Assistant text: ${text}`);
             }
@@ -241,8 +242,16 @@ export async function runTurn(params: {
             if (onboardingState && onboardingState !== 'onboardingFinished') {
               parts.push(`Build phase: ${onboardingState}`);
             }
-            if (userMessage) {
-              parts.push(`User request: ${userMessage.slice(-100)}`);
+            // For automated actions (chained build steps, approveInitialPlan,
+            // etc.), surface only the action name — not the body. The body is
+            // instructional text ("end the turn, build will start") that the
+            // status generator would faithfully but misleadingly summarize as
+            // "Ending turn, build starting."
+            const automated = parseSentinel(userMessage);
+            if (automated) {
+              parts.push(`Automated action: ${automated.name}`);
+            } else if (userMessage) {
+              parts.push(`User request: ${userMessage.slice(-500)}`);
             }
             return parts.join('\n');
           },

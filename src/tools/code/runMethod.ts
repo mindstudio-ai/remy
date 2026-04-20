@@ -13,7 +13,7 @@ export const runMethodTool: Tool = {
   definition: {
     name: 'runMethod',
     description:
-      'Run a method in the dev environment and return the result. Use for testing methods after writing or modifying them. Returns output, captured console output, errors with stack traces, and duration. If it fails, check .logs/tunnel.log or .logs/requests.ndjson for more details. Return synchronously - no need to sleep before checking results.',
+      'Run a method in the dev environment and return the result. Use for testing methods after writing or modifying them. Returns output, captured console output, errors with stack traces, and duration. If it fails, check .logs/tunnel.log or .logs/requests.ndjson for more details. Returns synchronously — no need to sleep before checking results.\n\nBy default methods run unauthenticated. If the method is auth-gated (calls `auth.requireRole()`, filters on `auth.userId`, etc.), pass `userId: "testUser"` to run as the default test user — no scenario setup required, no userId lookup.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -26,16 +26,16 @@ export const runMethodTool: Tool = {
           description:
             'The input payload to pass to the method. Omit for methods that take no input.',
         },
+        userId: {
+          type: 'string',
+          description:
+            'Optional. Run the method as a specific user. Pass "testUser" to auto-auth as the default test user (the sandbox handles user creation/lookup — no scenario setup needed). Or pass a real user ID from scenario-seeded data for a specific user. Overrides session-level impersonation for this call only.',
+        },
         roles: {
           type: 'array',
           items: { type: 'string' },
           description:
-            'Optional. Role names for this request (e.g. ["admin"]). Can be used without userId to test role-gated logic. Overrides session-level impersonation for this call only.',
-        },
-        userId: {
-          type: 'string',
-          description:
-            "Optional. User ID for this request — use a managed user's ID to simulate their identity. Overrides session-level impersonation for this call only.",
+            'Optional. Role names for this request (e.g. ["admin"]). Combine with `userId` to test a specific role, or use alone to test role-gated logic without a full identity. Overrides session-level impersonation for this call only.',
         },
       },
       required: ['method'],
