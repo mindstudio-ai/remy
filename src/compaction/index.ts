@@ -281,6 +281,11 @@ function serializeForSummary(messages: Message[]): string {
  * The compaction instruction is sent as a user message instead of as the
  * system prompt.
  */
+// Max serialized chars per summarization call. Leaves headroom for the
+// system prompt + tools + compaction instructions under the 1M-token API
+// limit (~4 chars/token → 2.4M chars ≈ 600K tokens of user content).
+const CHUNK_CHAR_LIMIT = 2_400_000;
+
 async function generateSummary(
   apiConfig: { baseUrl: string; apiKey: string },
   name: string,
@@ -292,6 +297,39 @@ async function generateSummary(
   const serialized = serializeForSummary(messagesToSummarize);
   if (!serialized.trim()) {
     return null;
+  }
+
+  // If serialized content would overflow the API context, recursively split
+  // the message list in half and summarize each side in parallel, then join
+  // the partial summaries. Without this, /compact silently fails on long
+  // conversations — exactly the case where the user most needs it to work.
+  if (serialized.length > CHUNK_CHAR_LIMIT && messagesToSummarize.length > 1) {
+    const mid = Math.floor(messagesToSummarize.length / 2);
+    log.info('Chunking summary', {
+      name,
+      messageCount: messagesToSummarize.length,
+      serializedLength: serialized.length,
+    });
+    const [first, second] = await Promise.all([
+      generateSummary(
+        apiConfig,
+        `${name} [pt1]`,
+        compactionPrompt,
+        messagesToSummarize.slice(0, mid),
+        mainSystem,
+        mainTools,
+      ),
+      generateSummary(
+        apiConfig,
+        `${name} [pt2]`,
+        compactionPrompt,
+        messagesToSummarize.slice(mid),
+        mainSystem,
+        mainTools,
+      ),
+    ]);
+    const parts = [first, second].filter((p): p is string => !!p);
+    return parts.length > 0 ? parts.join('\n\n---\n\n') : null;
   }
 
   log.info('Generating summary', {

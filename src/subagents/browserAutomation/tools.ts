@@ -46,7 +46,7 @@ export const BROWSER_TOOLS: ToolDefinition[] = [
     clearable: true,
     name: 'browserCommand',
     description:
-      "Interact with the app's live preview by sending browser commands. Commands execute sequentially with an animated cursor. Always start with a snapshot to see the current state and get ref identifiers. The result includes a snapshot field with the final page state after all steps complete. On error, the failing step has an error field and execution stops. Timeout: 120s.",
+      "Interact with the app's live preview by sending browser commands. Commands execute sequentially with an animated cursor. Always start with a snapshot to see the current state and get ref identifiers. The result includes a snapshot field with the final page state after all steps complete. On error, the failing step has an error field and execution stops. Batches that contain an interactive step (click, type, select) also return a `recordingUrl` — an rrweb session recording for visual replay. Timeout: 120s.",
     inputSchema: {
       type: 'object',
       properties: {

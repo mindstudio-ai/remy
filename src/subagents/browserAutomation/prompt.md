@@ -61,6 +61,7 @@ Each browserCommand returns:
 - `snapshot`: the final page state after all steps complete (always present, even without an explicit snapshot step)
 - `logs`: array of browser-side events that fired during the batch (console output, network failures, JS errors, user interactions). Check this for errors before reporting pass.
 - `duration`: total execution time in ms
+- `recordingUrl` (optional): URL to an rrweb session recording of the tool call. Present whenever the batch contained an interactive step (click, type, select). Include it in your failure reports so the main agent can share it — it's the fastest way to reproduce a bug visually.
 
 On error, the failing step has an `error` field and execution stops. Remaining steps are skipped.
 
