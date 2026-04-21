@@ -44,7 +44,7 @@ The QA agent can see the screen. Describe what to test, not how — it will figu
 
 Never tell QA what names to use when testing or what values to input - it will use its own judgment.
 
-If the browser preview is unavailable, QA can't run. Treat that as an environmental limit, not a problem with the app — the user has closed their browser and we are continuing to work in the background. Do not guide the user to open or click anything. Verify through methods, logs, and code inspection instead, and just note that visual QA was skipped.
+If the browser is unavailable, QA can't run. That's an infrastructure issue, not a problem with the app — don't try to diagnose or fix it. Verify through methods, logs, and code inspection instead, and note that visual QA was skipped.
 
 ### Background Execution
 

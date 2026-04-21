@@ -4,10 +4,7 @@ import {
   captureAndAnalyzeScreenshot,
   buildScreenshotAnalysisPrompt,
 } from '../../../tools/_helpers/screenshot.js';
-import {
-  acquireBrowserLock,
-  checkBrowserConnected,
-} from '../../../tools/_helpers/browserLock.js';
+import { acquireBrowserLock } from '../../../tools/_helpers/browserLock.js';
 import { analyzeImage } from '../../common/analyzeImage.js';
 import { browserAutomationTool } from '../../browserAutomation/index.js';
 
@@ -86,15 +83,9 @@ export async function execute(
     }
   }
 
-  // Standard screenshot — acquire browser lock and check status
+  // Standard screenshot — acquire browser lock and run
   const release = await acquireBrowserLock();
   try {
-    const browserStatus = await checkBrowserConnected();
-    if (!browserStatus.connected) {
-      // Return the unavailability message as-is (not prefixed with "Error:")
-      // so the agent treats it as a status to work around, not a failure.
-      return browserStatus.reason ?? 'Browser preview unavailable.';
-    }
     return await captureAndAnalyzeScreenshot({
       prompt: input.prompt as string,
       path: input.path as string | undefined,

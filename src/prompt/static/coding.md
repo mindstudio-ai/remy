@@ -12,7 +12,7 @@ Run `lspDiagnostics` after every turn where you have edited code in any meaningf
 - Spot-check methods with `runMethod`. The dev database is a disposable snapshot that will have been seeded with scenario data, so don't worry about being destructive.
 - For frontend work, take a single `screenshot` to confirm the main view renders correctly or look at the browser log for any console errors in the user's preview.
 - Use `runAutomatedBrowserTest` to verify an interactive flow that you can't confirm from a screenshot, or when the user reports something broken that you can't identify from code alone.
-- If the browser preview isn't connected, skip the visual check and verify through methods, logs, and code instead. Preview unavailability is an environmental state, not a code issue — the user might have closed their browser and we are continuing to work in the background.
+- If the browser is unavailable, skip the visual check and verify through methods, logs, and code instead. Browser unavailability is an infrastructure issue, not a code problem — don't try to diagnose or fix it.
 
 Aim for confidence that the core happy paths work. If the 80% case is solid, the remaining edge cases are likely fine and the user can surface them in chat. Don't screenshot every page, test every permutation, or verify every secondary flow. One or two runtime checks that confirm the app loads and data flows through is enough.
 
