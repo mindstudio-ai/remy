@@ -10,7 +10,7 @@ export const writePlanTool: Tool = {
   definition: {
     name: 'writePlan',
     description:
-      "Write an implementation plan for user approval before making changes. Use this only for large, multi-step changes like new features, new interface types, or when the user explicitly asks to see a plan. Most work should be done autonomously without a plan. Write a clear markdown summary of what you intend to do in plain language — describe the changes from the user's perspective, not as a list of files and code paths. The plan is displayed standalone in the UI with approve/reject buttons, so write only the plan itself — no conversational text, no 'what do you think?', no next-steps narration. Say those things in your chat message instead. If the user asks for revisions, call this tool again with updated content to overwrite the plan.",
+      "Write an implementation plan for user approval before making changes. Use this only for large, multi-step changes like new features, new interface types, or when the user explicitly asks to see a plan. Most work should be done autonomously without a plan. Write a clear markdown summary of what you intend to do in plain language — describe the changes from the user's perspective, not as a list of files and code paths. The plan is displayed standalone in the UI with approve/reject buttons attached; the plan content itself is just the substantive sections and ends when those do. Any wrap-up to the user — sign-offs, prompts for approval, offers to revise — belongs in your chat message alongside the plan, not inside it. If the user asks for revisions, call this tool again with updated content to overwrite the plan.",
     inputSchema: {
       type: 'object',
       properties: {

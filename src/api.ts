@@ -253,18 +253,25 @@ export async function* streamChat(params: {
         }),
       ]);
       clearTimeout(stallTimer!);
-    } catch {
+    } catch (err: any) {
       clearTimeout(stallTimer!);
-      await reader.cancel();
-      log.error('Stream stalled', {
+      // Cancel the reader best-effort. On an already-errored stream this
+      // can itself reject — swallow it so cleanup failure doesn't mask the
+      // original error and escape the generator as an uncaught throw.
+      try {
+        await reader.cancel();
+      } catch {}
+      const isStall = err?.message === 'stream_stall';
+      const errorMessage = isStall
+        ? 'Stream stalled — no data received for 5 minutes'
+        : `Network error: stream interrupted — ${err?.message ?? 'unknown'}`;
+      log.error(isStall ? 'Stream stalled' : 'Stream interrupted', {
         requestId,
         ...(subAgentId && { subAgentId }),
         durationMs: Date.now() - startTime,
+        error: errorMessage,
       });
-      yield {
-        type: 'error' as const,
-        error: 'Stream stalled — no data received for 5 minutes',
-      };
+      yield { type: 'error' as const, error: errorMessage };
       return;
     }
 

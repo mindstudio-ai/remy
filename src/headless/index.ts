@@ -669,10 +669,10 @@ export class HeadlessSession {
         requestId,
         error: err.message,
       });
-      // Stop the chain on a thrown error — don't cascade failures.
-      // emitCompleted already surfaced queuedMessages if present, so the
-      // sandbox can inspect/resume manually if desired.
-      this.queue.drain();
+      // Leave the queue intact. emitCompleted surfaced it via queuedMessages
+      // so the sandbox can offer a resume action — transient errors like
+      // network termination shouldn't silently throw away the rest of the
+      // pipeline. Explicit user cancel is what drains the queue.
     }
 
     // Apply queued mutations — happens on both success and cancel paths
