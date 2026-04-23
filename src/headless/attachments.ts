@@ -49,21 +49,11 @@ function resolveUniqueFilename(name: string): string {
   return `${base}-${counter}${ext}`;
 }
 
-const IMAGE_EXTENSIONS = new Set([
-  '.png',
-  '.jpg',
-  '.jpeg',
-  '.gif',
-  '.webp',
-  '.svg',
-  '.bmp',
-  '.ico',
-  '.tiff',
-  '.tif',
-  '.avif',
-  '.heic',
-  '.heif',
-]);
+// Only formats the model accepts as image blocks. Anything else (svg, bmp,
+// tiff, ico, heic/heif, avif) is persisted as a document so the agent can
+// open it with readFile — sending it as an image block gets rejected by the
+// provider and loops the whole turn.
+const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp']);
 
 function isImageAttachment(att: Attachment): boolean {
   const name = att.filename || filenameFromUrl(att.url);
