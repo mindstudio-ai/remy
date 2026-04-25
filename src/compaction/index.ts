@@ -345,7 +345,11 @@ async function generateSummary(
   // instruction goes into the user message instead.
   const useMainCache = !!mainSystem;
   const system = useMainCache ? mainSystem : compactionPrompt;
-  const tools = useMainCache ? (mainTools ?? []) : [];
+  // Always pass empty tools to the summarizer. With the main system prompt
+  // and the full agent toolset available, the model often picks `tool_use`
+  // over producing a summary, leaving summaryText empty and silently
+  // breaking /compact.
+  const tools: ToolDefinition[] = [];
   const userContent = useMainCache
     ? `${compactionPrompt}\n\n---\n\nConversation to summarize:\n\n${serialized}`
     : serialized;

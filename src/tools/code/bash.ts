@@ -5,13 +5,17 @@ import type { Tool, ToolExecutionContext } from '../index.js';
 
 const DEFAULT_TIMEOUT_MS = 120_000;
 const DEFAULT_MAX_LINES = 500;
+// Byte cap on output. Line caps don't help when single lines are huge
+// (NDJSON, minified JS, base64), where a few hundred lines can be megabytes
+// and blow the model's context. Pair the line cap with a hard byte limit.
+const MAX_OUTPUT_BYTES = 30_000;
 
 export const bashTool: Tool = {
   clearable: true,
   definition: {
     name: 'bash',
     description:
-      'Run a shell command and return stdout + stderr. 120-second timeout by default (configurable). Use for: npm install/build/test, git operations, tsc --noEmit, or any CLI tool. Prefer dedicated tools over bash when available (use grep instead of bash + rg, readFile instead of bash + cat). Output is truncated to 500 lines by default.',
+      'Run a shell command and return stdout + stderr. 120-second timeout by default (configurable). Use for: npm install/build/test, git operations, tsc --noEmit, or any CLI tool. Prefer dedicated tools over bash when available (use grep instead of bash + rg, readFile instead of bash + cat). Output is truncated to 500 lines or 30KB, whichever comes first. If a command would emit a lot of data, narrow it down (grep, head/tail, --short flags) rather than reading everything.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -80,11 +84,35 @@ export const bashTool: Tool = {
           return;
         }
 
-        const lines = output.split('\n');
-        if (lines.length > maxLines) {
+        const totalBytes = Buffer.byteLength(output, 'utf-8');
+        let truncated = output;
+        let byteTruncated = false;
+        if (totalBytes > MAX_OUTPUT_BYTES) {
+          truncated = Buffer.from(output, 'utf-8')
+            .subarray(0, MAX_OUTPUT_BYTES)
+            .toString('utf-8');
+          byteTruncated = true;
+        }
+
+        const lines = truncated.split('\n');
+        const lineTruncated = lines.length > maxLines;
+        if (lineTruncated) {
+          truncated = lines.slice(0, maxLines).join('\n');
+        }
+
+        if (byteTruncated || lineTruncated) {
+          const reasons: string[] = [];
+          if (lineTruncated) {
+            reasons.push(`${maxLines} lines`);
+          }
+          if (byteTruncated) {
+            reasons.push(
+              `${(MAX_OUTPUT_BYTES / 1024).toFixed(0)}KB of ${(totalBytes / 1024).toFixed(0)}KB`,
+            );
+          }
           resolve(
-            lines.slice(0, maxLines).join('\n') +
-              `\n\n(truncated at ${maxLines} lines of ${lines.length} total — increase maxLines to see more)`,
+            truncated +
+              `\n\n(truncated at ${reasons.join(' / ')} — narrow the command (grep, head/tail, smaller paths) instead of increasing limits)`,
           );
         } else {
           resolve(output);
