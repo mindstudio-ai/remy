@@ -145,17 +145,25 @@ export async function listVendors(input: {
   status?: string;
   search?: string;
 }) {
-  const vendors = await Vendors
-    .filter(v => {
-      if (input.status && v.status !== input.status) return false;
-      if (input.search && !v.name.includes(input.search)) return false;
-      return true;
-    })
-    .sortBy(v => v.name);
-
+  let q = Vendors.sortBy(v => v.name);
+  if (input.status) {
+    q = q.filter(
+      (v, $) => v.status === $.status,
+      { status: input.status }, // bindings: lifts closure var so filter compiles to SQL
+    );
+  }
+  if (input.search) {
+    q = q.filter(
+      (v, $) => v.name.includes($.search),
+      { search: input.search }, // bindings (LIKE): lifts closure var so filter compiles to SQL
+    );
+  }
+  const vendors = await q;
   return { vendors };
 }
 ```
+
+Building the query progressively (one `.filter` per optional input) is the canonical shape — each clause compiles to SQL independently and the bindings form keeps `input.*` references out of closures.
 
 ### Role-Gated Operation
 

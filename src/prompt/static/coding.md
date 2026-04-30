@@ -35,6 +35,8 @@ For multi-step tasks with branching logic (research, enrichment, content pipelin
 
 For methods that take more than a few seconds, use `stream()` from `@mindstudio-ai/agent` to push real-time progress to the frontend. Pipe `onLog` from SDK actions through `stream()` so users see what's happening. The frontend calls the method with `stream: true` and gets updates via `onToken`. See the methods reference for the full pattern.
 
+When writing `db` filter predicates that reference outer-scope values (`input.*`, `auth.*`, foreign keys collected earlier, etc.), use the bindings form so the filter compiles to SQL — see `tables.md` "Filter Predicates" for patterns and the inline-comment convention.
+
 ### Auth
 - Not every app needs auth, and even for apps that do need auth, not every screen needs auth. Think intentionally about places where auth is required. Don't make auth be the first thing a user sees - that's jarring. Only show auth at intuitive and natural moments in the user's journey - be thoughtful about how to implement auth in the UI.
 - Frontend interfaces are always untrusted. Always enforce auth in backend methods. Use frontend auth and role information as a hint to conditionally show/hide UI to make the experience pleasant and seamless for users depending on their state, but remember to always use backend methods for gating data that is conditional on auth.

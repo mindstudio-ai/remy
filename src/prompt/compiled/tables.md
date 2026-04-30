@@ -195,25 +195,89 @@ const cleared = await Vendors.clear();                               // number (
 
 ### Filter Predicates
 
-Predicates are arrow functions compiled to SQL WHERE clauses:
+Predicates are arrow functions compiled to SQL WHERE clauses. Two forms — closure (literal-only) and bindings (when the predicate references an outer-scope value):
 
 ```typescript
-Vendors.filter(v => v.status === 'approved')                          // equality
-Vendors.filter(v => v.totalCents > 10000)                             // comparison
-Vendors.filter(v => v.totalCents >= 5000 && v.totalCents <= 50000)    // range
-Vendors.filter(v => v.paymentTerms !== null)                          // null check
-Vendors.filter(v => v.status === 'approved' && v.totalCents > 10000)  // logical AND
-Vendors.filter(v => v.status === 'approved' || v.status === 'pending') // logical OR
-Vendors.filter(v => ['approved', 'pending'].includes(v.status))       // IN
-Vendors.filter(v => v.name.includes('Acme'))                          // LIKE
-Vendors.filter(v => v.address.city === 'New York')                    // nested JSON
-const minAmount = 10000;
-Vendors.filter(v => v.totalCents > minAmount)                         // captured variables
+// Closure form — works for literals only:
+Vendors.filter(v => v.status === 'approved');
+
+// Bindings form — required when the predicate references an outer-scope
+// value (input.*, auth.*, foreign keys collected earlier, etc.). Without
+// bindings, the predicate falls back to fetching every row and filtering
+// in JS — a warning is logged when this happens.
+Vendors.filter(
+  (v, $) => v.companyId === $.companyId,
+  { companyId: input.companyId }, // bindings: lifts closure var so filter compiles to SQL
+);
 ```
 
-**What compiles to SQL** (efficient): equality, comparisons, `&&`/`||`, `.includes()` for arrays and strings, null checks, boolean negation, captured variables.
+Both produce identical results. The bindings form is faster on tables of any size and dramatically faster on large tables.
 
-**What falls back to JS** (fetches all rows, filters in memory): `.startsWith()`, regex, computed expressions like `o.a + o.b > 100`, complex closures. A warning is logged when this happens. Avoid these patterns on large tables.
+#### Patterns
+
+```typescript
+// Equality / inequality
+Companies.filter((c, $) => c.ownerId === $.ownerId, { ownerId: auth.userId }); // bindings: lifts closure var so filter compiles to SQL
+
+// Comparison / range
+Investments.filter((i, $) => i.amountInvested >= $.minAmount, { minAmount: 10000 }); // bindings: lifts closure var so filter compiles to SQL
+
+// Mixed bindings + literal — freely combinable
+Investments.filter(
+  (i, $) => i.companyId === $.companyId && i.status === 'active',
+  { companyId: input.companyId }, // bindings: lifts closure var so filter compiles to SQL
+);
+
+// IN clause — array binding
+ContactRelationships.filter(
+  (r, $) => $.contactIds.includes(r.contactId),
+  { contactIds: ['a', 'b', 'c'] }, // bindings: lifts closure var so filter compiles to SQL
+);
+
+// LIKE clause — string binding
+SimpleRecords.filter(
+  (r, $) => r.slug.includes($.prefix),
+  { prefix: 'lat-' }, // bindings: lifts closure var so filter compiles to SQL
+);
+
+// Nested keys
+Orders.filter(
+  (o, $) => o.companyId === $.user.companyId,
+  { user: { companyId: input.companyId } }, // bindings: lifts closure var so filter compiles to SQL
+);
+
+// removeAll with bindings — single DELETE WHERE … instead of fetch-all-then-delete-by-id
+SimpleRecords.removeAll(
+  (r, $) => r.slug.includes($.prefix),
+  { prefix: 'lat-' }, // bindings: lifts closure var so removeAll compiles to SQL
+);
+```
+
+#### What compiles to SQL
+
+- Literals: equality, comparisons, range, null checks, `&&`/`||`/`!`, `.includes()` for arrays and strings, nested JSON access (`v.address.city === 'New York'`).
+- Outer-scope values when passed via bindings (same shapes as above).
+
+#### What falls back to JS
+
+- Closure references without a bindings argument: `o => o.x === input.x`.
+- Two-param predicate without a bindings argument: `(o, $) => …` but no `{…}` second arg.
+- Mixed predicate where some closure refs aren't lifted (e.g. `(o, $) => o.companyId === $.companyId && o.status === stale` where `stale` is from outer scope). Falls back for the *whole* predicate — lift everything outer-scope into bindings.
+- Bindings keys missing or `undefined` (predicate references `$.foo` but bindings has no `foo`). The SDK does not silently substitute NULL.
+- Bindings value is a non-scalar/non-array (e.g. `$.user` is `{...}`). Read scalar leaves only.
+- `.startsWith()`, regex, computed expressions like `o.a + o.b > 100`.
+
+A warning is logged whenever a predicate falls back to JS. Avoid these patterns on large tables.
+
+#### When to use bindings — and when to skip
+
+Use bindings whenever a predicate compares against `input.*`, `auth.*`, request params, foreign keys collected earlier, or any other function-scope value, and the table can grow beyond a few hundred rows. Always use them inside `db.batch(...)` where table size could grow over time.
+
+Skip bindings when the predicate only references the row plus string/number literals — those already compile to SQL with no help. Also fine to skip on small fixed-size tables (under ~100 rows) where the JS fallback is fast enough not to matter.
+
+#### Inline-comment requirement
+
+When you write a bindings argument, include a brief inline comment on the bindings object explaining its purpose. Without the comment, downstream coding agents read the bindings object as boilerplate and "simplify" it back to closure form — silently regressing performance. The canonical phrasing is `// bindings: lifts closure var so filter compiles to SQL`. Exact wording isn't critical; what matters is naming the failure mode.
 
 ### Time Helpers
 
@@ -251,11 +315,15 @@ Write methods throw `MindStudioError` with specific codes:
 `db.batch()` combines multiple operations into a single HTTP round-trip. Every `await` on a table operation is a network call, so batching is critical for performance. Use it whenever you have multiple reads, writes, or a mix of both. `upsert()` works in batches just like `push()` and `update()`:
 
 ```typescript
-// Reads: fetch related data in one call instead of sequential awaits
+// Reads: fetch related data in one call instead of sequential awaits.
+// Note the bindings on PurchaseOrders — without it, that filter would
+// fall back to JS because vendorId is a closure capture. Hoisting a
+// shared `$` lets every filter in the batch reuse it.
+const $ = { vendorId }; // bindings: lifts closure var so filters compile to SQL
 const [vendors, orders, invoiceCount] = await db.batch(
-  Vendors.filter(v => v.status === 'approved'),
-  PurchaseOrders.filter(po => po.vendorId === vendorId),
-  Invoices.count(i => i.status === 'pending'),
+  Vendors.filter(v => v.status === 'approved'),                    // literal — no bindings needed
+  PurchaseOrders.filter((po, $) => po.vendorId === $.vendorId, $), // bindings
+  Invoices.count(i => i.status === 'pending'),                     // literal — no bindings needed
 );
 
 // Writes: batch multiple updates instead of awaiting each one in a loop
