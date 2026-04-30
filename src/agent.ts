@@ -71,6 +71,16 @@ const EXTERNAL_TOOLS = new Set([
   'setProjectMetadata',
 ]);
 
+// Subset of EXTERNAL_TOOLS that block on a user action (clicking approve,
+// answering a form). While one of these is awaiting a result the status
+// watcher should pause — generated labels like "Aligning on design" while
+// the user reads a plan are misleading.
+const USER_BLOCKING_EXTERNAL_TOOLS = new Set([
+  'promptUser',
+  'presentPublishPlan',
+  'confirmDestructiveAction',
+]);
+
 export type { AgentEvent, AgentState, ExternalToolResolver } from './types.js';
 import type { AgentEvent, AgentState, ExternalToolResolver } from './types.js';
 
@@ -212,7 +222,7 @@ export async function runTurn(params: {
     let currentToolNames = '';
 
     const statusWatcher = isFirstMessage
-      ? { stop() {} }
+      ? { stop() {}, pause() {}, resume() {} }
       : startStatusWatcher({
           apiConfig,
           getContext: () => {
@@ -606,7 +616,17 @@ export async function runTurn(params: {
                 toolCallId: tc.id,
                 name: tc.name,
               });
-              result = await resolveExternalTool(tc.id, tc.name, input);
+              const blocksUser = USER_BLOCKING_EXTERNAL_TOOLS.has(tc.name);
+              if (blocksUser) {
+                statusWatcher.pause();
+              }
+              try {
+                result = await resolveExternalTool(tc.id, tc.name, input);
+              } finally {
+                if (blocksUser) {
+                  statusWatcher.resume();
+                }
+              }
             } else {
               result = await executeTool(tc.name, input, {
                 apiConfig,

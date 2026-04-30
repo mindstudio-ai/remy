@@ -2,10 +2,9 @@ import type { ToolDefinition } from '../../../api.js';
 import type { ToolExecutionContext } from '../../../tools/index.js';
 import {
   captureAndAnalyzeScreenshot,
-  buildScreenshotAnalysisPrompt,
+  streamScreenshotAnalysis,
 } from '../../../tools/_helpers/screenshot.js';
 import { acquireBrowserLock } from '../../../tools/_helpers/browserLock.js';
-import { analyzeImage } from '../../common/analyzeImage.js';
 import { browserAutomationTool } from '../../browserAutomation/index.js';
 
 export const definition: ToolDefinition = {
@@ -64,19 +63,11 @@ export async function execute(
       if (!url) {
         return `Error: browser navigation completed but no screenshot URL was returned. Agent output: ${resultStr}`;
       }
-      const analysisPrompt = buildScreenshotAnalysisPrompt({
+      return await streamScreenshotAnalysis({
+        url,
         prompt: input.prompt as string | undefined,
         styleMap,
-      });
-      const analysis = await analyzeImage({
-        prompt: analysisPrompt,
-        imageUrl: url,
         onLog,
-      });
-      return JSON.stringify({
-        url,
-        analysis,
-        ...(styleMap ? { styleMap } : {}),
       });
     } catch (err: any) {
       return `Error taking interactive screenshot: ${err.message}`;

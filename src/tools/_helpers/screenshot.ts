@@ -45,6 +45,43 @@ export interface ScreenshotOptions {
 }
 
 /**
+ * Run analysis on a known screenshot URL and stream cumulative
+ * `{ url, analysis }` JSON snapshots through `onLog` so the frontend can
+ * show the image immediately and update the analysis pane as it arrives.
+ *
+ * The frontend treats each `tool_input_delta` `result` as a complete
+ * snapshot (replaces, doesn't append), so every emit must include the
+ * full state so far — `analysis: null` initially, then the accumulated
+ * text as it streams.
+ */
+export async function streamScreenshotAnalysis(opts: {
+  url: string;
+  prompt?: string;
+  styleMap?: string;
+  onLog?: (line: string) => void;
+}): Promise<string> {
+  const { url, prompt, styleMap, onLog } = opts;
+
+  // Image-only snapshot before analysis starts — the frontend renders the
+  // captured image right away while the analysis sub-agent is still working.
+  onLog?.(JSON.stringify({ url, analysis: null }));
+
+  const analysisPrompt = buildScreenshotAnalysisPrompt({ prompt, styleMap });
+
+  let accumulated = '';
+  const analysis = await analyzeImage({
+    prompt: analysisPrompt,
+    imageUrl: url,
+    onLog: (chunk) => {
+      accumulated += chunk;
+      onLog?.(JSON.stringify({ url, analysis: accumulated }));
+    },
+  });
+
+  return JSON.stringify({ url, analysis, ...(styleMap ? { styleMap } : {}) });
+}
+
+/**
  * Capture a screenshot via sidecar and optionally analyze it.
  * If imageUrl is provided, skip capture and analyze that image directly.
  */
@@ -89,15 +126,10 @@ export async function captureAndAnalyzeScreenshot(
     return url;
   }
 
-  const analysisPrompt = buildScreenshotAnalysisPrompt({
+  return streamScreenshotAnalysis({
+    url,
     prompt: prompt || undefined,
     styleMap,
-  });
-
-  const analysis = await analyzeImage({
-    prompt: analysisPrompt,
-    imageUrl: url,
     onLog,
   });
-  return JSON.stringify({ url, analysis, ...(styleMap ? { styleMap } : {}) });
 }

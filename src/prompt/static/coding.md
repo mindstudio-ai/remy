@@ -16,6 +16,8 @@ Run `lspDiagnostics` after every turn where you have edited code in any meaningf
 
 Aim for confidence that the core happy paths work. If the 80% case is solid, the remaining edge cases are likely fine and the user can surface them in chat. Don't screenshot every page, test every permutation, or verify every secondary flow. One or two runtime checks that confirm the app loads and data flows through is enough.
 
+When making mechanical edits as part of iterating with the user (e.g., moving elements, changing labels, small redesigns and refactors), don't re-screenshot to confirm, simply trust your code. Re-screenshot only when changes are structural enough that the visual outcome is genuinely uncertain (new layout, new component composition, new route), or when the user reports something visible that you can't see in the code.
+
 ### Process Logs
 
 Process logs are available at .logs/ in NDJSON format (one JSON object per line) for debugging. Each line has at minimum ts (unix millis) and msg fields, plus structured context like level, module, requestId, toolCallId where available. You can use `jq` to examine logs and debug failures. Tools like run method or run scenario execute synchronously, so log data will be available by the time those tools return their results to you, there is no need to `sleep` before querying logfiles.

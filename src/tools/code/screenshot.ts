@@ -5,10 +5,9 @@
 import type { Tool } from '../index.js';
 import {
   captureAndAnalyzeScreenshot,
-  buildScreenshotAnalysisPrompt,
+  streamScreenshotAnalysis,
 } from '../_helpers/screenshot.js';
 import { acquireBrowserLock } from '../_helpers/browserLock.js';
-import { analyzeImage } from '../../subagents/common/analyzeImage.js';
 import { browserAutomationTool } from '../../subagents/browserAutomation/index.js';
 
 export const screenshotTool: Tool = {
@@ -77,19 +76,11 @@ export const screenshotTool: Tool = {
         if (!url) {
           return `Error: browser navigation completed but no screenshot URL was returned. Agent output: ${resultStr}`;
         }
-        const analysisPrompt = buildScreenshotAnalysisPrompt({
+        return await streamScreenshotAnalysis({
+          url,
           prompt: input.prompt as string | undefined,
           styleMap,
-        });
-        const analysis = await analyzeImage({
-          prompt: analysisPrompt,
-          imageUrl: url,
           onLog: context?.onLog,
-        });
-        return JSON.stringify({
-          url,
-          analysis,
-          ...(styleMap ? { styleMap } : {}),
         });
       }
 

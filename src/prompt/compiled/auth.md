@@ -208,6 +208,8 @@ auth.requireRole('admin');
 auth.requireRole('admin', 'approver');  // any of these
 ```
 
+**Require login: check `auth.userId`. Roles are RBAC** — only declare roles that map to real business distinctions (vendor/buyer/admin), and only check them when behavior should differ. Newly verified users have `roles: []` until your code assigns them.
+
 ### `auth.hasRole(...roles)`
 
 Returns `boolean`. Same logic as `requireRole` but doesn't throw.
@@ -374,5 +376,7 @@ Auth works the same in dev/preview as in production — real verification codes 
 - **Phone:** any `555` number (e.g. `+15551234567`) — verification code is always `123456`
 
 All other emails and phone numbers receive real codes. There is no dev-mode bypass, no fake code, and no way to skip verification. When testing auth flows in the preview, use one of the test bypasses above or a real email/phone.
+
+The `runMethod` tool's `userId: "testUser"` shortcut resolves to this same dev-bypass identity. The platform find-or-creates a real users-table row for it on first call and caches the row's UUID for the rest of the dev session. **`auth.userId` inside the method is that UUID — not the literal string `"testUser"`.** The user row already exists, so don't try to insert it. If you need the UUID to seed app-specific rows that reference it (profiles, preferences, foreign keys), read it from any method response or query the users table directly: `SELECT id FROM users WHERE email = 'remy@mindstudio.ai'` (or `phone = '+15555555555'` for SMS-auth apps).
 
 Browser automation tools (screenshots, automated browser tests) handle their own auth sessions. Scenarios seed database data but do not create browser auth sessions.
