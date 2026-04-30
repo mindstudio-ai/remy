@@ -213,7 +213,18 @@ export async function runTurn(params: {
     }
 
     const contentBlocks: ContentBlock[] = [];
-    let thinkingStartedAt = 0;
+    // Start times for each thinking block in arrival order. The platform
+    // emits one `thinking` event with `text: ''` per block start, then
+    // emits all `thinking_complete` events at end of stream from
+    // finalMessage.content. Tracking starts as a queue (rather than a
+    // single accumulator) keeps interleaved-thinking blocks in their
+    // original positions after the contentBlocks sort by startedAt —
+    // a single accumulator caused the second-and-later thinking blocks
+    // to receive startedAt: 0, which then sorted them ahead of every
+    // text/tool block and corrupted the message in a way Anthropic
+    // rejects on the next request via signature validation.
+    const thinkingBlockStartTimes: number[] = [];
+    let thinkingCompleteCount = 0;
     const toolInputAccumulators = new Map<string, ToolInputAcc>();
     let stopReason = 'end_turn';
 
@@ -386,8 +397,13 @@ export async function runTurn(params: {
           }
 
           case 'thinking':
-            if (!thinkingStartedAt) {
-              thinkingStartedAt = event.ts;
+            // The platform emits a `thinking` event with `text: ''` at
+            // each thinking-block start (see AnthropicAdapter handling of
+            // content_block_start for type=thinking). Each empty-text
+            // event marks a new block; record its timestamp so we can
+            // pair it with the matching thinking_complete later.
+            if (event.text === '') {
+              thinkingBlockStartTimes.push(event.ts);
             }
             onEvent({ type: 'thinking', text: event.text });
             break;
@@ -397,10 +413,11 @@ export async function runTurn(params: {
               type: 'thinking',
               thinking: event.thinking,
               signature: event.signature,
-              startedAt: thinkingStartedAt,
+              startedAt:
+                thinkingBlockStartTimes[thinkingCompleteCount] ?? event.ts,
               completedAt: event.ts,
             });
-            thinkingStartedAt = 0;
+            thinkingCompleteCount++;
             break;
 
           case 'tool_input_delta': {
