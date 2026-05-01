@@ -41,6 +41,9 @@ import { friendlyError } from './errors.js';
 import { cleanMessagesForApi } from './subagents/common/cleanMessages.js';
 import { CLEARABLE_TOOLS } from './tools/index.js';
 import { parseSentinel } from './automatedActions/sentinel.js';
+import { triggerBrandExtraction } from './brandExtraction/trigger.js';
+
+const BRAND_TRIGGERING_TOOLS = new Set(['writeSpec', 'editSpec']);
 
 // Content block helpers
 function getTextContent(blocks: ContentBlock[]): string {
@@ -720,6 +723,9 @@ export async function runTurn(params: {
           result: r.result,
           isError: r.isError,
         });
+        if (!r.isError && BRAND_TRIGGERING_TOOLS.has(tc.name)) {
+          triggerBrandExtraction(apiConfig);
+        }
         return r;
       }),
     );

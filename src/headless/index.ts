@@ -24,6 +24,7 @@ import {
   getPendingSummaries,
 } from '../compaction/trigger.js';
 import { findSafeInsertionPoint } from '../compaction/index.js';
+import { triggerBrandExtraction } from '../brandExtraction/trigger.js';
 import { setLspBaseUrl } from '../tools/_helpers/lsp.js';
 import {
   createAgentState,
@@ -171,6 +172,12 @@ export class HeadlessSession {
         ...this.queueFields(),
       });
     }
+
+    // Cold-start brand extraction. The hash check inside the trigger makes
+    // this a no-op when `.remy-brand.json` is already up to date; it covers
+    // (a) projects loaded with brand spec but no extracted JSON yet, and
+    // (b) spec files edited outside the agent (IDE) since last session.
+    triggerBrandExtraction(this.config);
 
     // Wire registry events through the same onEvent handler
     this.toolRegistry.onEvent = this.onEvent;

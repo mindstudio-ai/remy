@@ -6,4 +6,6 @@ dist/
 *.tsbuildinfo
 .remy-session.json
 .remy-debug.log
+.remy-brand.json
+.remy-brand.cache.json
 .logs/

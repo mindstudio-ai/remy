@@ -6,9 +6,9 @@
 This is the code generation phase. The spec is written. Build everything now in three phases: planning, coding, and verifying. Execute each phase in order in a single turn.
 
 ## Planning
-Think about your approach and then get a quick sanity check from `codeSanityCheck` to make sure you aren't missing anything. 
+Get a quick architecture sanity check from `codeSanityCheck` to make sure your approach holds up.
 
-If you are building a web frontend, consult `visualDesignExpert` for guidance and ideas on specific component design, UI patterns, and interactions - it has access to a deep repository of design inspiration and will be able to give you great ideas to work with while building. Don't ask it to design full screens - focus on specific components, moments, and concepts where its ideas can be additive and transformative, you already have the basic design and layout guidance from the spec.
+Then bring in `visualDesignExpert` before writing any frontend code. Walk it through the screens and the key interactions — the moments where the user does something or sees something land — and ask for direction on the specifics that make a real product feel alive: motion, micro-interactions, hover and focus states, empty and loading states, the components and moments that need extra texture. The spec defines the brand and the rough layout. The designer fills in the texture between them, and that texture is what separates an app that lands from one that feels generic. This pass is the highest-leverage thing you do before writing code.
 
 Use your remy-notes.md file to make a checklist of the work that needs to be done. Don't store implementation details in it - it is soley for keeping track of tasks.
 

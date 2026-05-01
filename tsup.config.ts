@@ -12,6 +12,7 @@ function copyAssets() {
     ['src/subagents', 'dist/subagents'],
     ['src/automatedActions', 'dist/automatedActions'],
     ['src/compaction', 'dist/compaction'],
+    ['src/brandExtraction', 'dist/brandExtraction'],
   ];
   for (const [src, dest] of pairs) {
     try {
