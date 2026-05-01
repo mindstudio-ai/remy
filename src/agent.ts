@@ -228,6 +228,16 @@ export async function runTurn(params: {
     // rejects on the next request via signature validation.
     const thinkingBlockStartTimes: number[] = [];
     let thinkingCompleteCount = 0;
+    // True when the most recent block-producing event was a text event with
+    // no thinking-block boundary since. New text events merge into the last
+    // text block while this is true; cleared at thinking-block starts so
+    // text segments separated by interleaved thinking stay as distinct
+    // blocks. Without this, two text streams sandwiching a thinking block
+    // get concatenated into one and the resulting assistant message has a
+    // shape that doesn't match what the API originally returned, which
+    // trips Anthropic's thinking-block signature validation on the next
+    // request.
+    let textBlockOpen = false;
     const toolInputAccumulators = new Map<string, ToolInputAcc>();
     let stopReason = 'end_turn';
 
@@ -384,9 +394,11 @@ export async function runTurn(params: {
 
         switch (event.type) {
           case 'text': {
-            // Append to last text block if it exists, else push new one
+            // Append to the last text block when one is open. A thinking-
+            // block start clears textBlockOpen so a text segment after
+            // interleaved thinking starts its own block.
             const lastBlock = contentBlocks.at(-1);
-            if (lastBlock?.type === 'text') {
+            if (lastBlock?.type === 'text' && textBlockOpen) {
               lastBlock.text += event.text;
             } else {
               contentBlocks.push({
@@ -395,6 +407,7 @@ export async function runTurn(params: {
                 startedAt: event.ts,
               });
             }
+            textBlockOpen = true;
             onEvent({ type: 'text', text: event.text });
             break;
           }
@@ -404,9 +417,12 @@ export async function runTurn(params: {
             // each thinking-block start (see AnthropicAdapter handling of
             // content_block_start for type=thinking). Each empty-text
             // event marks a new block; record its timestamp so we can
-            // pair it with the matching thinking_complete later.
+            // pair it with the matching thinking_complete later, and
+            // close any open text block so subsequent text doesn't merge
+            // across the boundary.
             if (event.text === '') {
               thinkingBlockStartTimes.push(event.ts);
+              textBlockOpen = false;
             }
             onEvent({ type: 'thinking', text: event.text });
             break;
