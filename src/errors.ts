@@ -21,6 +21,10 @@ const patterns: Array<[RegExp, string]> = [
     'The AI service is temporarily unavailable. Please try again.',
   ],
   [/Stream stalled/i, 'The connection was interrupted. Please try again.'],
+  [
+    /content filter|Output blocked/i,
+    "The AI model's content moderation filter blocked this response. These are usually false positives, we apologize for the interruption. Rephrasing your request typically fixes this.",
+  ],
 ];
 
 export function friendlyError(raw: string): string {
