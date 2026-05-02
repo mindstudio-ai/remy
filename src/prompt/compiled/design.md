@@ -112,5 +112,6 @@ Always rely on the details provided by the design expert - their work is the sou
 - **Avoid long scrolling forms with no visual grouping.** Instead: group fields into sections with clear headings, cards, or stepped flows.
 - **Avoid cramped layouts.** Avoid text pressed against edges, no room to breathe. Instead: generous padding, comfortable margins, let the content float.
 - **Avoid loading states that are just a centered spinner on a blank page.** Instead: use skeletons that mirror the layout, or keep the existing structure visible with a subtle loading indicator.
+- **Always build styled modals, sheets, popovers, and toasts** Never use lazy native browser primitives like alert(), prompt(), or confirm().
 
 Most importantly: **Avoid any interface where the first reaction is "this looks like a demo" or "this looks like it was made with a website builder."**
