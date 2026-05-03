@@ -575,15 +575,19 @@ export class HeadlessSession {
       });
     }
 
-    // Persist file uploads to disk (skip voice messages)
+    // Persist file uploads to disk (skip voice messages). The header tells
+    // the LLM where to read each file from disk; it's passed separately so it
+    // gets injected at API-send time and never persisted into the user's
+    // chat content (which would leak into history restore on the frontend).
     let userMessage = (parsed.text as string) ?? '';
+    let attachmentHeader: string | undefined;
     if (attachments?.some((a) => !a.isVoice)) {
       try {
         const { documents, images } = await persistAttachments(attachments);
         const all = [...documents, ...images];
         const header = buildUploadHeader(all);
         if (header) {
-          userMessage = userMessage ? `${header}\n\n${userMessage}` : header;
+          attachmentHeader = header;
         }
       } catch (err: any) {
         log.warn('Attachment persistence failed', { error: err.message });
@@ -638,6 +642,7 @@ export class HeadlessSession {
         state: this.state,
         userMessage,
         attachments,
+        attachmentHeader,
         apiConfig: this.config,
         system,
         model: this.opts.model,

@@ -13,7 +13,7 @@ export const setProjectOnboardingStateTool: Tool = {
   definition: {
     name: 'setProjectOnboardingState',
     description:
-      "Advance the project onboarding state. Only call this when an automated action explicitly instructs you to — calling it at the wrong time skips stages the user hasn't experienced. Forward-only: building → buildComplete → onboardingFinished. `onboardingFinished` is set by the frontend after the user dismisses the reveal; do not call it yourself.",
+      "Advance the project onboarding state. Forward-only: building → buildComplete → onboardingFinished. Normally driven by automated actions — don't call this out of order during a normal build, or you'll skip stages the user hasn't experienced. Exception: if the project has been in `building` for a while, the build is clearly done (the user is iterating on a working app, deploying, etc.), and the user reports the editor seems stuck — disabled Preview/Spec/Code tabs, no reveal, etc. — call `setProjectOnboardingState({ state: 'buildComplete' })` to unstick them. `onboardingFinished` is always set by the frontend after the user dismisses the reveal; never call it yourself.",
     inputSchema: {
       type: 'object',
       properties: {

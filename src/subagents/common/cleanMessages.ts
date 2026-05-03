@@ -145,13 +145,20 @@ export function cleanMessagesForApi(messages: Message[]): Message[] {
       return true;
     })
     .map((msg) => {
-      // Strip @@automated::...@@ sentinel from user messages before sending to LLM
-      if (
-        msg.role === 'user' &&
-        typeof msg.content === 'string' &&
-        isAutomatedMessage(msg.content)
-      ) {
-        return { ...msg, content: stripSentinelLine(msg.content) };
+      // For user messages with string content: strip @@automated::...@@
+      // sentinel, prepend the attachment header, and drop the internal-only
+      // attachmentHeader field so it never reaches the API.
+      if (msg.role === 'user' && typeof msg.content === 'string') {
+        const { attachmentHeader, ...rest } = msg;
+        let content = isAutomatedMessage(msg.content)
+          ? stripSentinelLine(msg.content)
+          : msg.content;
+        if (attachmentHeader) {
+          content = content
+            ? `${attachmentHeader}\n\n${content}`
+            : attachmentHeader;
+        }
+        return { ...rest, content };
       }
 
       if (!Array.isArray(msg.content)) {

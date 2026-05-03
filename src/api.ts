@@ -72,6 +72,10 @@ export interface Message {
   isToolError?: boolean;
   // User messages may include file attachments
   attachments?: Attachment[];
+  // Internal-only header (file paths, extracted-text paths) prepended to
+  // content when sent to the LLM. Stripped before the API request and not
+  // emitted to the frontend, so history restore shows the user's clean text.
+  attachmentHeader?: string;
   // Hidden messages are sent to the LLM but not shown in the UI
   hidden?: boolean;
   // Token usage for this turn (assistant messages only)

@@ -100,6 +100,8 @@ export async function runTurn(params: {
   state: AgentState;
   userMessage: string;
   attachments?: Attachment[];
+  /** File-path header injected into the LLM-bound message; not persisted into content. */
+  attachmentHeader?: string;
   apiConfig: { baseUrl: string; apiKey: string };
   system: string;
   model?: string;
@@ -122,6 +124,7 @@ export async function runTurn(params: {
     state,
     userMessage,
     attachments,
+    attachmentHeader,
     apiConfig,
     system,
     model,
@@ -170,6 +173,9 @@ export async function runTurn(params: {
   }
   if (hasAttachments) {
     userMsg.attachments = attachments;
+  }
+  if (attachmentHeader) {
+    userMsg.attachmentHeader = attachmentHeader;
   }
   state.messages.push(userMsg);
   onEvent({
