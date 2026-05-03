@@ -14,7 +14,6 @@
  * - `tool_result` is fire-and-forget (resolves an in-flight promise, no completed event).
  */
 
-import { createInterface } from 'node:readline';
 import { createLogger } from '../logger.js';
 import type { Attachment, Message } from '../api.js';
 import { resolveConfig } from '../config.js';
@@ -132,8 +131,8 @@ export class HeadlessSession {
   // Tool lifecycle management — shared across all nesting depths
   private toolRegistry = new ToolRegistry();
 
-  // IO
-  private readline: ReturnType<typeof createInterface> | null = null;
+  // IO — accumulates stdin bytes between newline boundaries
+  private stdinBuffer = '';
 
   constructor(opts: HeadlessOptions = {}) {
     this.opts = opts;
@@ -182,10 +181,29 @@ export class HeadlessSession {
     // Wire registry events through the same onEvent handler
     this.toolRegistry.onEvent = this.onEvent;
 
-    // Stdin router
-    this.readline = createInterface({ input: process.stdin });
-    this.readline.on('line', this.handleStdinLine);
-    this.readline.on('close', () => {
+    // Stdin router — split on \r?\n only. Node's readline.createInterface
+    // also splits on U+2028/U+2029, which corrupts JSON commands containing
+    // those characters in string values (a real failure mode when users paste
+    // text from Apple Notes etc. that contains LINE SEPARATOR).
+    process.stdin.setEncoding('utf-8');
+    process.stdin.on('data', (chunk: string) => {
+      this.stdinBuffer += chunk;
+      let nlIdx;
+      while ((nlIdx = this.stdinBuffer.indexOf('\n')) !== -1) {
+        const endIdx =
+          nlIdx > 0 && this.stdinBuffer[nlIdx - 1] === '\r' ? nlIdx - 1 : nlIdx;
+        const line = this.stdinBuffer.slice(0, endIdx);
+        this.stdinBuffer = this.stdinBuffer.slice(nlIdx + 1);
+        if (line.length > 0) {
+          void this.handleStdinLine(line);
+        }
+      }
+    });
+    process.stdin.on('end', () => {
+      if (this.stdinBuffer.length > 0) {
+        void this.handleStdinLine(this.stdinBuffer);
+        this.stdinBuffer = '';
+      }
       this.emit('stopping');
       this.emit('stopped');
       process.exit(0);
@@ -839,7 +857,14 @@ export class HeadlessSession {
     let parsed: StdinCommand;
     try {
       parsed = JSON.parse(line);
-    } catch {
+    } catch (err: any) {
+      // Surface to logs as well as the frontend so silent IPC corruption
+      // (e.g. line splitter chopping a command in half) leaves a fingerprint.
+      log.warn('Invalid JSON on stdin', {
+        error: err.message,
+        lineLength: line.length,
+        preview: line.slice(0, 200),
+      });
       this.emit('error', { error: 'Invalid JSON on stdin' });
       return;
     }
