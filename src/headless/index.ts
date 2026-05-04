@@ -12,6 +12,14 @@
  * - Every command ends with exactly one `completed` event:
  *   {event:"completed", requestId, success:true|false, error?:string}
  * - `tool_result` is fire-and-forget (resolves an in-flight promise, no completed event).
+ *
+ * `get_history` is paginated. Request: {action:"get_history", before?:number,
+ * limit?:number, requestId}. `before` is an exclusive upper bound on message
+ * index (defaults to end of array — the most recent messages); `limit` caps
+ * page size (default 500, hard cap 2000). Response: {event:"history",
+ * messages, startIndex, endIndex, totalMessageCount, ...}. Walk backward by
+ * passing the previous response's `startIndex` as the next `before`. When
+ * `startIndex === 0`, no older messages remain.
  */
 
 import { createLogger } from '../logger.js';
@@ -87,6 +95,10 @@ interface BlockUpdate {
  * raising this gets risky, lowering it triggers compaction more often.
  */
 const FORCED_COMPACTION_THRESHOLD_TOKENS = 850_000;
+
+/** Default and hard-cap page sizes for the paginated `get_history` action. */
+const HISTORY_DEFAULT_LIMIT = 500;
+const HISTORY_MAX_LIMIT = 2000;
 
 /**
  * Encapsulates all state and behavior for a headless session. State is
@@ -970,8 +982,31 @@ export class HeadlessSession {
       // (background completions are deferred while a turn is in progress,
       // but callers — e.g., sandbox init frame — need the latest state).
       this.applyPendingBlockUpdates();
+
+      // Paginated. `before` is an exclusive upper bound (default = end of
+      // array, i.e. most recent messages). `limit` caps page size. Cursors
+      // are integer indices into state.messages; the array is append-mostly
+      // (compaction splices at the tail via findSafeInsertionPoint), so
+      // historical indices stay stable across compactions.
+      const total = this.state.messages.length;
+      const rawLimit = parsed.limit;
+      const limit =
+        typeof rawLimit === 'number' && Number.isFinite(rawLimit)
+          ? Math.min(Math.max(1, rawLimit | 0), HISTORY_MAX_LIMIT)
+          : HISTORY_DEFAULT_LIMIT;
+      const rawBefore = parsed.before;
+      const before =
+        typeof rawBefore === 'number' && Number.isFinite(rawBefore)
+          ? Math.max(0, Math.min(rawBefore | 0, total))
+          : total;
+      const startIndex = Math.max(0, before - limit);
+      const endIndex = before;
+
       this.dispatchSimple(requestId, 'history', () => ({
-        messages: this.state.messages,
+        messages: this.state.messages.slice(startIndex, endIndex),
+        startIndex,
+        endIndex,
+        totalMessageCount: total,
         running: this.running,
         ...(this.running && this.currentRequestId
           ? { currentRequestId: this.currentRequestId }
