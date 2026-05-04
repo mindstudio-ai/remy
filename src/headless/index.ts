@@ -21,6 +21,7 @@ import { buildSystemPrompt } from '../prompt/index.js';
 import {
   triggerCompaction,
   getPendingSummaries,
+  setCompactionListener,
 } from '../compaction/trigger.js';
 import { findSafeInsertionPoint } from '../compaction/index.js';
 import { triggerBrandExtraction } from '../brandExtraction/trigger.js';
@@ -78,6 +79,14 @@ interface BlockUpdate {
   result: string;
   subAgentMessages?: Message[];
 }
+
+/**
+ * If the most recent API call's input size exceeds this threshold, the next
+ * turn forces a blocking compaction before proceeding. The 1M-token API cap
+ * leaves ~150k of headroom for tool round-trips inside the upcoming turn —
+ * raising this gets risky, lowering it triggers compaction more often.
+ */
+const FORCED_COMPACTION_THRESHOLD_TOKENS = 850_000;
 
 /**
  * Encapsulates all state and behavior for a headless session. State is
@@ -180,6 +189,28 @@ export class HeadlessSession {
 
     // Wire registry events through the same onEvent handler
     this.toolRegistry.onEvent = this.onEvent;
+
+    // Single listener handles all compaction lifecycle: stdout events for the
+    // frontend + sessionStats updates for `.remy-stats.json`. Callers don't
+    // emit or update stats themselves — they just call triggerCompaction.
+    setCompactionListener((event) => {
+      if (event.type === 'started') {
+        this.emit(
+          'compaction_started',
+          { blocking: event.blocking },
+          event.requestId,
+        );
+        this.sessionStats.compactionInProgress = true;
+        this.persistStats();
+      } else {
+        const data = event.error ? { error: event.error } : {};
+        this.emit('compaction_complete', data, event.requestId);
+        this.sessionStats.compactionInProgress = false;
+        this.sessionStats.lastContextSize = 0;
+        this.sessionStats.messageCount = this.state.messages.length;
+        this.persistStats();
+      }
+    });
 
     // Stdin router — split on \r?\n only. Node's readline.createInterface
     // also splits on U+2028/U+2029, which corrupts JSON commands containing
@@ -311,6 +342,43 @@ export class HeadlessSession {
     }
     // Persist so background completions survive crashes
     saveSession(this.state);
+  }
+
+  /**
+   * Forced compaction gate. If lastContextSize exceeds the threshold, compact
+   * before letting the upcoming turn run. Coalesces with any in-flight
+   * compaction (e.g., one already started by /compact or a tool call). No
+   * timeout — compaction takes as long as it takes.
+   *
+   * Lifecycle events (`compaction_started` / `compaction_complete`) and
+   * stats updates are handled by the listener registered in start(); this
+   * method only awaits the promise and applies the resulting summaries.
+   *
+   * On compaction failure we don't bail — the turn proceeds and surfaces any
+   * downstream overflow through the existing "prompt is too long" path.
+   */
+  private async runForcedCompactionIfNeeded(
+    requestId: string | undefined,
+  ): Promise<void> {
+    if (
+      this.sessionStats.lastContextSize <= FORCED_COMPACTION_THRESHOLD_TOKENS
+    ) {
+      return;
+    }
+    log.info('Forced compaction gate triggered', {
+      contextSize: this.sessionStats.lastContextSize,
+      threshold: FORCED_COMPACTION_THRESHOLD_TOKENS,
+      requestId,
+    });
+    try {
+      await triggerCompaction(this.state, this.config, {
+        blocking: true,
+        requestId,
+      });
+      this.applyPendingSummaries();
+    } catch {
+      // Listener already emitted compaction_complete with the error.
+    }
   }
 
   /** Drain pending compaction summaries and insert at a safe point. */
@@ -584,6 +652,11 @@ export class HeadlessSession {
     this.currentAbort = new AbortController();
     this.completedEmitted = false;
     this.turnStart = Date.now();
+
+    // Forced compaction gate: if the conversation is approaching the API cap,
+    // compact before processing this turn. Coalesces with any in-flight
+    // compaction. No timeout — compaction takes as long as it takes.
+    await this.runForcedCompactionIfNeeded(requestId);
 
     const attachments = parsed.attachments as Attachment[] | undefined;
     if (attachments?.length) {
@@ -964,29 +1037,22 @@ export class HeadlessSession {
     }
 
     if (action === 'compact') {
-      triggerCompaction(this.state, this.config, {
-        onStart: () => {
-          this.sessionStats.compactionInProgress = true;
-          this.persistStats();
-        },
-        onSummariesReady: () => {
-          if (!this.running) {
-            this.applyPendingSummaries();
-          }
-          this.emit('compaction_complete', {}, requestId);
-          this.emit('completed', { success: true }, requestId);
-        },
-        onError: (error) => {
-          this.emit('compaction_complete', { error }, requestId);
-          this.emit('completed', { success: false, error }, requestId);
-        },
-        onFinally: () => {
-          this.sessionStats.compactionInProgress = false;
-          this.sessionStats.lastContextSize = 0;
-          this.sessionStats.messageCount = this.state.messages.length;
-          this.persistStats();
-        },
-      });
+      // Lifecycle events + stats are handled by the registered listener;
+      // here we only await the promise, apply summaries when it's safe, and
+      // emit `completed` for the /compact command itself.
+      try {
+        await triggerCompaction(this.state, this.config, {
+          blocking: false,
+          requestId,
+        });
+        if (!this.running) {
+          this.applyPendingSummaries();
+        }
+        this.emit('completed', { success: true }, requestId);
+      } catch (err: any) {
+        const error = err.message || 'Compaction failed';
+        this.emit('completed', { success: false, error }, requestId);
+      }
       return;
     }
 

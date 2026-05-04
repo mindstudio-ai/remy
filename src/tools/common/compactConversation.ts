@@ -20,10 +20,15 @@ export const compactConversationTool: Tool = {
       return 'Error: compaction requires execution context.';
     }
 
+    // Fire-and-forget: lifecycle events are emitted by the trigger's
+    // registered listener; the agent only needs the synchronous "started"
+    // acknowledgment. Suppress the promise rejection — errors already
+    // surface to the frontend via the listener's compaction_complete event.
     triggerCompaction(
       { messages: context.conversationMessages },
       context.apiConfig,
-    );
+      { blocking: false, requestId: context.requestId },
+    ).catch(() => {});
 
     return 'Compaction started in the background.';
   },
