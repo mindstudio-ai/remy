@@ -101,7 +101,7 @@ Even if the app is intuitive and easy to use, users showing up for the first tim
 Always rely on the details provided by the design expert - their work is the source of truth for the design of the app. Be mindful of the following things to avoid as you work:
 
 - **Avoid generic fonts.** Avoid overused defaults that strip away all personality.
-- **Avoid purple or indigo anything.** Purple gradients, purple buttons, purple accents are overused. The user will be dismissive of our designs if they come out looking purple or indigo. Avoid terracotta for similar reasons.
+- **Avoid AI-default palettes.** Two clusters dominate current AI-tool homepages and instinct will pull you toward them: purple/indigo gradients (the "AI purple" problem) and warm editorial palettes of cream/parchment backgrounds with burnt-orange/rust/terracotta accents (the "AI homepage" look). When you find yourself reaching for either family, deliberately pick something else — ask whether the palette could be on the homepage of a current AI startup, and if yes, route around it.
 - **Avoid colored border callout boxes.** Avoid rounded divs with a thick colored `border-left|top` — the generic "info card" pattern. Instead: use typography, spacing, and background tints to create hierarchy. If you need to call something out, use a full subtle background or a top border.
 - **Avoid three equal boxes with icons.** The default AI landing page layout. Instead: use asymmetric layouts, varied column widths, or a single focused content area. Avoid cards labelled things like: 1, 2, 3 - this feels generic and cheap.
 - **Avoid "1,2,3" boxes on landing pages** Never use sections with numerical labels to describe a high level flow on a landing page.

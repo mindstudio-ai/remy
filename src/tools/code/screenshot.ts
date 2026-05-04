@@ -15,7 +15,7 @@ export const screenshotTool: Tool = {
   definition: {
     name: 'screenshot',
     description:
-      "Capture a full-height screenshot of the app preview and get a description of what's on screen. Provides static image analysis only, will not capture animations or video. Optionally provide specific questions about what you're looking for. Use a bulleted list to ask many questions at once. To ask additional questions about a screenshot you have already captured, pass its URL as imageUrl to skip recapture. If the screenshot requires interaction first (logging in, clicking a tab, dismissing a modal), use the instructions param to describe the steps.",
+      "Capture a full-height screenshot of the app preview and get a description of what's on screen. Captures the settled page state — it cannot reliably catch animations, transitions, or transient state. For timing-sensitive bugs, read the source instead. Optionally provide specific questions about what you're looking for. Use a bulleted list to ask many questions at once. To ask additional questions about a screenshot you have already captured, pass its URL as imageUrl to skip recapture. If the screenshot requires interaction first (logging in, clicking a tab, dismissing a modal), use the instructions param to describe the steps.",
     inputSchema: {
       type: 'object',
       properties: {
