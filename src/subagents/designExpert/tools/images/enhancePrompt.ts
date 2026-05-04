@@ -46,7 +46,17 @@ export async function enhanceImagePrompt(
   const message = `${SYSTEM_PROMPT}\n\n${context}\n\n<brief>\n${brief}\n</brief>`;
 
   const enhanced = await runCli(
-    `mindstudio generate-text --message ${JSON.stringify(message)} --model-override ${JSON.stringify(MODEL_OVERRIDE)} --output-key content --no-meta`,
+    'mindstudio',
+    [
+      'generate-text',
+      '--message',
+      message,
+      '--model-override',
+      JSON.stringify(MODEL_OVERRIDE),
+      '--output-key',
+      'content',
+      '--no-meta',
+    ],
     { timeout: 60_000, onLog },
   );
 

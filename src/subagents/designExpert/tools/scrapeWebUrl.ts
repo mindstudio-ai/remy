@@ -27,7 +27,15 @@ export async function execute(
     pageOptions.screenshot = true;
   }
   return runCli(
-    `mindstudio scrape-url --url ${JSON.stringify(input.url)} --page-options ${JSON.stringify(JSON.stringify(pageOptions))} --no-meta`,
+    'mindstudio',
+    [
+      'scrape-url',
+      '--url',
+      input.url,
+      '--page-options',
+      JSON.stringify(pageOptions),
+      '--no-meta',
+    ],
     { onLog },
   );
 }

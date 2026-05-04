@@ -26,7 +26,19 @@ export async function analyzeImage(params: {
 }): Promise<string> {
   const { prompt, imageUrl, timeout = 200_000, onLog } = params;
   return runCli(
-    `mindstudio analyze-image --prompt ${JSON.stringify(prompt)} --image-url ${JSON.stringify(imageUrl)} --vision-model-override ${JSON.stringify(VISION_MODEL_OVERRIDE)} --output-key analysis --no-meta`,
+    'mindstudio',
+    [
+      'analyze-image',
+      '--prompt',
+      prompt,
+      '--image-url',
+      imageUrl,
+      '--vision-model-override',
+      JSON.stringify(VISION_MODEL_OVERRIDE),
+      '--output-key',
+      'analysis',
+      '--no-meta',
+    ],
     { timeout, onLog },
   );
 }

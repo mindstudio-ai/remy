@@ -63,7 +63,21 @@ export async function execute(
   if (!isImageUrl) {
     // Screenshot the website first
     const ssUrl = await runCli(
-      `mindstudio screenshot-url --url ${JSON.stringify(url)} --mode viewport --width 1440 --delay 2000 --output-key screenshotUrl --no-meta`,
+      'mindstudio',
+      [
+        'screenshot-url',
+        '--url',
+        url,
+        '--mode',
+        'viewport',
+        '--width',
+        '1440',
+        '--delay',
+        '2000',
+        '--output-key',
+        'screenshotUrl',
+        '--no-meta',
+      ],
       { timeout: 120_000, onLog },
     );
     if (ssUrl.startsWith('Error')) {

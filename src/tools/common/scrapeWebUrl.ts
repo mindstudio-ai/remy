@@ -41,7 +41,15 @@ export const scrapeWebUrlTool: Tool = {
     }
 
     return runCli(
-      `mindstudio scrape-url --url ${JSON.stringify(url)} --page-options ${JSON.stringify(JSON.stringify(pageOptions))} --no-meta`,
+      'mindstudio',
+      [
+        'scrape-url',
+        '--url',
+        url,
+        '--page-options',
+        JSON.stringify(pageOptions),
+        '--no-meta',
+      ],
       { onLog: context?.onLog },
     );
   },

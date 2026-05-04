@@ -111,7 +111,8 @@ export const browserAutomationTool: Tool = {
                   },
                 }));
                 const batchResult = await runCli(
-                  `mindstudio batch --no-meta ${JSON.stringify(JSON.stringify(batchInput))}`,
+                  'mindstudio',
+                  ['batch', '--no-meta', JSON.stringify(batchInput)],
                   { timeout: 200_000 },
                 );
                 try {

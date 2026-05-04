@@ -61,7 +61,8 @@ export async function generateImageAssets(
       },
     });
     const url = await runCli(
-      `mindstudio generate-image --output-key imageUrl --no-meta`,
+      'mindstudio',
+      ['generate-image', '--output-key', 'imageUrl', '--no-meta'],
       { jsonLogs: true, timeout: 200_000, onLog, stdin: step },
     );
     imageUrls = [url];
@@ -76,7 +77,7 @@ export async function generateImageAssets(
         },
       },
     }));
-    const batchResult = await runCli(`mindstudio batch --no-meta`, {
+    const batchResult = await runCli('mindstudio', ['batch', '--no-meta'], {
       jsonLogs: true,
       timeout: 200_000,
       onLog,
@@ -100,7 +101,15 @@ export async function generateImageAssets(
           return url;
         }
         const result = await runCli(
-          `mindstudio remove-background-from-image --image-url ${JSON.stringify(url)} --output-key imageUrl --no-meta`,
+          'mindstudio',
+          [
+            'remove-background-from-image',
+            '--image-url',
+            url,
+            '--output-key',
+            'imageUrl',
+            '--no-meta',
+          ],
           { timeout: 200_000, onLog },
         );
         return result.startsWith('Error') ? url : result;

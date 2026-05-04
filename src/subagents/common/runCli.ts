@@ -1,11 +1,16 @@
 /**
- * Shared CLI helper — shells out to the mindstudio CLI and returns
- * the stdout output. Used by design expert tools, SDK consultant,
- * and common tools (scrapeWebUrl, searchGoogle).
+ * Shared CLI helper — spawns the mindstudio CLI directly (no shell) and
+ * returns its stdout. Used by design expert tools, SDK consultant, and
+ * common tools (scrapeWebUrl, searchGoogle).
  *
- * Passes --json-logs so the CLI emits structured progress events on
- * stderr. When an `onLog` callback is provided, log lines are streamed
- * in real-time and omitted from the final result. Without `onLog`,
+ * Args are passed as a string[] to spawn() and never go through `sh -c`,
+ * so user-supplied content (queries, URLs, prompts) is safe regardless of
+ * what shell metacharacters it contains. Backticks, dollar signs, quotes,
+ * etc. are all literal.
+ *
+ * Passes --json-logs (when opted in) so the CLI emits structured progress
+ * events on stderr. When an `onLog` callback is provided, log lines are
+ * streamed in real-time and omitted from the final result. Without `onLog`,
  * logs are accumulated and prepended to the result (legacy behavior).
  */
 
@@ -28,18 +33,25 @@ export interface RunCliOptions {
   stdin?: string;
 }
 
-export function runCli(cmd: string, options?: RunCliOptions): Promise<string> {
+export function runCli(
+  command: string,
+  args: string[],
+  options?: RunCliOptions,
+): Promise<string> {
   return new Promise<string>((resolve) => {
     const timeout = options?.timeout ?? 60_000;
     const maxBuffer = options?.maxBuffer ?? 1024 * 1024;
 
-    // Only inject --json-logs when explicitly opted in
-    const cmdWithLogs =
-      options?.jsonLogs && !cmd.includes('--json-logs')
-        ? cmd.replace(/^(mindstudio\s+\S+)/, '$1 --json-logs')
-        : cmd;
+    // Inject --json-logs right after the subcommand (args[0]) when opted in.
+    let finalArgs = args;
+    if (options?.jsonLogs && !args.includes('--json-logs')) {
+      finalArgs =
+        args.length > 0
+          ? [args[0], '--json-logs', ...args.slice(1)]
+          : ['--json-logs'];
+    }
 
-    const child = spawn('sh', ['-c', cmdWithLogs], {
+    const child = spawn(command, finalArgs, {
       stdio: [options?.stdin ? 'pipe' : 'ignore', 'pipe', 'pipe'],
     });
 

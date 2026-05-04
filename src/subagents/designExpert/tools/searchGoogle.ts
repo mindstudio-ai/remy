@@ -23,7 +23,17 @@ export async function execute(
   onLog?: (line: string) => void,
 ): Promise<string> {
   return runCli(
-    `mindstudio search-google --query ${JSON.stringify(input.query)} --export-type json --output-key results --no-meta`,
+    'mindstudio',
+    [
+      'search-google',
+      '--query',
+      input.query,
+      '--export-type',
+      'json',
+      '--output-key',
+      'results',
+      '--no-meta',
+    ],
     { onLog },
   );
 }
