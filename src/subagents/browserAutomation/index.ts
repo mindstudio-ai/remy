@@ -150,13 +150,14 @@ export const browserAutomationTool: Tool = {
 
       context.subAgentMessages?.set(context.toolCallId, result.messages);
 
+      // Tool result is a plain markdown string — same contract as every other
+      // sub-agent. If a final-state screenshot was captured, append it as a
+      // markdown image so the frontend renders it inline alongside the prose
+      // without needing to unwrap a structured envelope. The styleMap is not
+      // surfaced here; it's only useful inside the sub-agent's own loop.
       const ss = result.artifacts?.screenshotFullPage;
       if (ss?.url) {
-        return JSON.stringify({
-          text: result.text,
-          screenshotUrl: ss.url,
-          ...(ss.styleMap ? { styleMap: ss.styleMap } : {}),
-        });
+        return `${result.text}\n\n![Final state](${ss.url})`;
       }
       return result.text;
     } finally {
