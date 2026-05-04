@@ -699,7 +699,7 @@ export class HeadlessSession {
     if (resolved !== null) {
       userMessage = resolved.message;
     }
-    const isHidden = resolved !== null || !!(parsed.hidden as boolean);
+    const isHidden = !!(parsed.hidden as boolean);
 
     // Update .remy-plan.md before building the system prompt so the
     // injected <pending_plan>/<approved_plan> note reflects the new state.
