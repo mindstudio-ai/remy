@@ -10,10 +10,10 @@ import { runCli } from '../../../common/runCli.js';
 import { readAsset } from '../../../../assets.js';
 
 const ENHANCE_MODEL = 'claude-4-6-sonnet';
-const MODEL_OVERRIDE = JSON.stringify({
+const MODEL_OVERRIDE = {
   model: ENHANCE_MODEL,
   config: { reasoning: 'false' },
-});
+};
 
 const SYSTEM_PROMPT = readAsset(
   'subagents/designExpert/tools/images/enhance-image-prompt.md',

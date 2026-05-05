@@ -17,6 +17,7 @@ import {
   buildScreenshotAnalysisPrompt,
 } from '../../tools/_helpers/screenshot.js';
 import { runCli } from '../common/runCli.js';
+import { VISION_MODEL_OVERRIDE } from '../common/analyzeImage.js';
 import { createLogger } from '../../logger.js';
 
 const log = createLogger('browser-automation');
@@ -26,7 +27,7 @@ export const browserAutomationTool: Tool = {
   definition: {
     name: 'runAutomatedBrowserTest',
     description:
-      'Run an automated browser test against the live preview. Describe what to test — the agent figures out how. Use after meaningful changes to frontend code, to reproduce user-reported issues, or to test end-to-end flows. Reports settled states between steps; it cannot reliably observe transient animation frames. For timing-sensitive bugs, read the source first. Never give it explicit values to use when filling out forms or creating accounts — it will use its own judgement (often it needs specific values to trigger dev-mode bypasses of things like login verification codes).',
+      'Run an automated browser test against the live preview. Describe what to test — the agent figures out how. Use after meaningful changes to frontend code, to reproduce user-reported issues, or to test end-to-end flows. Never give it explicit values to use when filling out forms or creating accounts — it will use its own judgement (often it needs specific values to trigger dev-mode bypasses of things like login verification codes).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -108,6 +109,7 @@ export const browserAutomationTool: Tool = {
                     prompt: buildScreenshotAnalysisPrompt({
                       styleMap: s.result.styleMap,
                     }),
+                    visionModelOverride: VISION_MODEL_OVERRIDE,
                   },
                 }));
                 const batchResult = await runCli(

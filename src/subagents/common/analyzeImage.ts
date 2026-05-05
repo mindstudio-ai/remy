@@ -9,10 +9,16 @@ import { runCli } from './runCli.js';
 
 const VISION_MODEL = 'claude-4-6-sonnet';
 
-const VISION_MODEL_OVERRIDE = JSON.stringify({
+/**
+ * Centralized vision model config. Exported so callers that bypass the
+ * `analyzeImage` helper (e.g., when batching multiple analyses through
+ * `mindstudio batch`) can still apply the same override and stay consistent
+ * with every other vision-analysis path in the codebase.
+ */
+export const VISION_MODEL_OVERRIDE = {
   model: VISION_MODEL,
   config: { thinkingBudget: 'off' },
-});
+};
 
 /**
  * Analyze an image URL with a vision model.

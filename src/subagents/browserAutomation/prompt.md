@@ -31,6 +31,8 @@ paragraph "No results found"
 
 Each interactive element has a `[ref=eN]` you can use to target it.
 
+Note: the snapshot concatenates inline text and strips whitespace. If you need to verify spacing or pixel-level layout, use evaluate to run a script to get values. The snapshot is intended to help you understand page layout and target elements for interaction, not as an authoritative report of how the page renders.
+
 ### Commands
 
 - `snapshot`: Get the current page state. Always do this first and after action batches to verify results. Waits for network requests to settle.
@@ -149,7 +151,7 @@ You can use the `screenshotFullPage` tool to take a full-height screenshot of th
   - evaluate auto-returns simple expressions. `"script": "document.title"` works directly. For multi-statement scripts, use explicit return.
   - The snapshot in the response is always the most current page state. Even if a wait times out, check the snapshot field; the content you were waiting for may have appeared by then.
   - Execution stops on first error. If step 2 of 5 fails, steps 3-5 don't run. The response will contain results for steps 0-2 (with step 2 having an error field) plus the current snapshot. Adjust and retry from the failed step.
-  - If something fails, bail early. Do not attempt to diagnose why; do not do things like attempt different inputs to try to work around an error - just report the failure and early return.
+  - If something fails, bail early. Do not attempt to diagnose why; do not do things like attempt different inputs to try to work around an error - just report the failure and early return. If something is not visible or obvious (e.g., animations, transient states, etc), do not attempt to hack the browser commands into figuring it out - simply accept that the browser automation is limited in this regard and can not reliably reproduce the state required to test.
 </rules>
 
 <voice>
