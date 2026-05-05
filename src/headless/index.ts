@@ -276,7 +276,17 @@ export class HeadlessSession {
     if (requestId) {
       payload.requestId = requestId;
     }
-    process.stdout.write(JSON.stringify(payload) + '\n');
+    const line = JSON.stringify(payload) + '\n';
+    // Diagnostic for the get_history pipeline issue — confirms bytes left
+    // Remy. If this line fires but the frontend renders nothing, the loss is
+    // downstream of stdout (controller, WebSocket, frontend handler).
+    if (event === 'history') {
+      log.info('Wrote history event to stdout', {
+        requestId,
+        bytes: line.length,
+      });
+    }
+    process.stdout.write(line);
   }
 
   /**
@@ -1013,6 +1023,16 @@ export class HeadlessSession {
         startIndex--;
       }
       const endIndex = before;
+
+      log.info('History response', {
+        requestId,
+        startIndex,
+        endIndex,
+        count: endIndex - startIndex,
+        totalMessageCount: total,
+        beforeParam: rawBefore,
+        limitParam: rawLimit,
+      });
 
       this.dispatchSimple(requestId, 'history', () => ({
         messages: this.state.messages.slice(startIndex, endIndex),
