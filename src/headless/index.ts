@@ -999,7 +999,19 @@ export class HeadlessSession {
         typeof rawBefore === 'number' && Number.isFinite(rawBefore)
           ? Math.max(0, Math.min(rawBefore | 0, total))
           : total;
-      const startIndex = Math.max(0, before - limit);
+      // Clamp startIndex backward to a safe group boundary: never start a
+      // page on a tool_result whose matching tool_use is in the previous
+      // page (or absent entirely). Walk back past leading tool_results so
+      // the page begins on the assistant message whose tool_use blocks own
+      // them. May return slightly more than `limit` messages when adjusting.
+      let startIndex = Math.max(0, before - limit);
+      while (
+        startIndex > 0 &&
+        this.state.messages[startIndex].role === 'user' &&
+        this.state.messages[startIndex].toolCallId
+      ) {
+        startIndex--;
+      }
       const endIndex = before;
 
       this.dispatchSimple(requestId, 'history', () => ({
