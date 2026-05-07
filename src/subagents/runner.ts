@@ -17,7 +17,7 @@ import {
   type ToolDefinition,
 } from '../api.js';
 import { createLogger } from '../logger.js';
-import { recordUsage } from '../usageLedger.js';
+import { recordUsage, nanoToDollars } from '../usageLedger.js';
 
 const log = createLogger('sub-agent');
 import type { AgentEvent, ExternalToolResolver } from '../types.js';
@@ -291,7 +291,7 @@ export async function runSubAgent(
                 outputTokens: event.usage.outputTokens,
                 cacheCreationTokens: event.usage.cacheCreationTokens,
                 cacheReadTokens: event.usage.cacheReadTokens,
-                cost: event.cost,
+                cost: nanoToDollars(event.cost),
                 billingEvents: event.billingEvents,
                 durationMs: Date.now() - iterStart,
                 toolNames: contentBlocks

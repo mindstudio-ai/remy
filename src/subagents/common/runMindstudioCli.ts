@@ -44,7 +44,7 @@
  */
 
 import { runCli, type RunCliOptions } from './runCli.js';
-import { recordUsage } from '../../usageLedger.js';
+import { recordUsage, nanoToDollars } from '../../usageLedger.js';
 import type { BillingEvent } from '../../api.js';
 
 export interface RunMindstudioOptions extends RunCliOptions {
@@ -74,8 +74,6 @@ function stripFlags(args: string[]): string[] {
   }
   return out;
 }
-
-const NANO_PER_DOLLAR = 1_000_000_000;
 
 export async function runMindstudioCli(
   args: string[],
@@ -110,7 +108,7 @@ export async function runMindstudioCli(
           ts: Date.now(),
           agentName,
           cliAction: `${cliAction}:${step.stepType ?? 'step'}`,
-          cost: step.billingCost / NANO_PER_DOLLAR,
+          cost: nanoToDollars(step.billingCost),
           inputTokens: 0,
           outputTokens: 0,
           durationMs,
@@ -129,7 +127,7 @@ export async function runMindstudioCli(
       ts: Date.now(),
       agentName,
       cliAction,
-      cost: envelope.$billingCost / NANO_PER_DOLLAR,
+      cost: nanoToDollars(envelope.$billingCost),
       billingEvents: envelope.$billingEvents as BillingEvent[] | undefined,
       // CLI billing isn't expressed as input/output tokens for most actions
       // (image gen is per-image, scrape per-page, etc). `numUnits` inside each

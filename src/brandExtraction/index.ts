@@ -23,7 +23,7 @@ import { createHash } from 'node:crypto';
 import { streamChat } from '../api.js';
 import { readAsset } from '../assets.js';
 import { createLogger } from '../logger.js';
-import { recordUsage } from '../usageLedger.js';
+import { recordUsage, nanoToDollars } from '../usageLedger.js';
 
 const log = createLogger('brandExtraction');
 
@@ -201,7 +201,7 @@ async function extractBrand(apiConfig: {
           outputTokens: event.usage.outputTokens,
           cacheCreationTokens: event.usage.cacheCreationTokens,
           cacheReadTokens: event.usage.cacheReadTokens,
-          cost: event.cost,
+          cost: nanoToDollars(event.cost),
           billingEvents: event.billingEvents,
           durationMs: Date.now() - iterStart,
           toolNames: [],

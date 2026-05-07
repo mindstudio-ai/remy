@@ -32,7 +32,7 @@ import {
 } from './tools/index.js';
 import { saveSession } from './session.js';
 import { createLogger } from './logger.js';
-import { recordUsage } from './usageLedger.js';
+import { recordUsage, nanoToDollars } from './usageLedger.js';
 import type { ApiConfig } from './config.js';
 
 const log = createLogger('agent');
@@ -518,7 +518,7 @@ export async function runTurn(params: {
               outputTokens: event.usage.outputTokens,
               cacheCreationTokens: event.usage.cacheCreationTokens,
               cacheReadTokens: event.usage.cacheReadTokens,
-              cost: event.cost,
+              cost: nanoToDollars(event.cost),
               billingEvents: event.billingEvents,
               durationMs: Date.now() - iterStart,
               toolNames: contentBlocks
