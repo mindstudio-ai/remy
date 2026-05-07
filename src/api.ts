@@ -40,6 +40,13 @@ export type ContentBlock =
       startedAt: number;
       completedAt: number;
     }
+  | {
+      type: 'redacted_thinking';
+      /** Encrypted blob from Anthropic — opaque, must round-trip verbatim. */
+      data: string;
+      startedAt: number;
+      completedAt?: number;
+    }
   | { type: 'text'; text: string; startedAt: number }
   | {
       type: 'tool';
@@ -107,6 +114,14 @@ export type StreamEvent =
       type: 'thinking_complete';
       thinking: string;
       signature: string;
+      ts: number;
+    }
+  | {
+      type: 'redacted_thinking_complete';
+      /** Encrypted blob — opaque to us. Must round-trip back to the platform
+       * (and on to Anthropic) verbatim, in its original position relative to
+       * other thinking blocks, or signature validation fails. */
+      data: string;
       ts: number;
     }
   | {

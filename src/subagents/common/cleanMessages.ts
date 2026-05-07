@@ -178,13 +178,29 @@ export function cleanMessagesForApi(messages: Message[]): Message[] {
         .filter((b): b is ContentBlock & { type: 'tool' } => b.type === 'tool')
         .map((b) => ({ id: b.id, name: b.name, input: b.input }));
 
-      // Extract thinking blocks
+      // Extract thinking blocks (visible + redacted) in their original
+      // relative order — content is sorted by startedAt at message-push
+      // time, so this filter preserves the position the platform needs to
+      // reconstruct on resend. Anthropic's signature validation rejects any
+      // missing/reordered thinking-or-redacted_thinking block, so all of
+      // them must round-trip together.
       const thinking = blocks
         .filter(
-          (b): b is ContentBlock & { type: 'thinking' } =>
-            b.type === 'thinking',
+          (
+            b,
+          ): b is ContentBlock &
+            ({ type: 'thinking' } | { type: 'redacted_thinking' }) =>
+            b.type === 'thinking' || b.type === 'redacted_thinking',
         )
-        .map((b) => ({ thinking: b.thinking, signature: b.signature }));
+        .map((b) =>
+          b.type === 'thinking'
+            ? {
+                type: 'thinking' as const,
+                thinking: b.thinking,
+                signature: b.signature,
+              }
+            : { type: 'redacted_thinking' as const, data: b.data },
+        );
 
       const cleaned: Record<string, any> = {
         role: msg.role,

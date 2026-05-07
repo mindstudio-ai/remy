@@ -170,6 +170,7 @@ export async function runSubAgent(
       const iterStart = Date.now();
       const contentBlocks: ContentBlock[] = [];
       let thinkingStartedAt = 0;
+      let lastThinkingRelatedStartedAt: number | undefined;
       let stopReason = 'end_turn';
       let currentToolNames = '';
       let lastUsage: Message['usage'] | undefined;
@@ -253,8 +254,28 @@ export async function runSubAgent(
                 startedAt: thinkingStartedAt,
                 completedAt: event.ts,
               });
+              lastThinkingRelatedStartedAt = thinkingStartedAt;
               thinkingStartedAt = 0;
               break;
+
+            case 'redacted_thinking_complete': {
+              // No streaming start event for redacted blocks; synthesize a
+              // startedAt that places it just after the most recent thinking
+              // block (preserves relative order among thinking entries) and
+              // before any text/tool block.
+              const startedAt =
+                lastThinkingRelatedStartedAt !== undefined
+                  ? lastThinkingRelatedStartedAt + 1
+                  : event.ts;
+              contentBlocks.push({
+                type: 'redacted_thinking',
+                data: event.data,
+                startedAt,
+                completedAt: event.ts,
+              });
+              lastThinkingRelatedStartedAt = startedAt;
+              break;
+            }
 
             case 'tool_use':
               contentBlocks.push({

@@ -237,6 +237,10 @@ export async function runTurn(params: {
     // rejects on the next request via signature validation.
     const thinkingBlockStartTimes: number[] = [];
     let thinkingCompleteCount = 0;
+    // Tracks the startedAt of the most recent thinking or redacted_thinking
+    // block so a `redacted_thinking_complete` event (which has no streaming
+    // start time) can sort just after it, before any text/tool block.
+    let lastThinkingRelatedStartedAt: number | undefined;
     // True when the most recent block-producing event was a text event with
     // no thinking-block boundary since. New text events merge into the last
     // text block while this is true; cleared at thinking-block starts so
@@ -436,17 +440,43 @@ export async function runTurn(params: {
             onEvent({ type: 'thinking', text: event.text });
             break;
 
-          case 'thinking_complete':
+          case 'thinking_complete': {
+            const startedAt =
+              thinkingBlockStartTimes[thinkingCompleteCount] ?? event.ts;
             contentBlocks.push({
               type: 'thinking',
               thinking: event.thinking,
               signature: event.signature,
-              startedAt:
-                thinkingBlockStartTimes[thinkingCompleteCount] ?? event.ts,
+              startedAt,
               completedAt: event.ts,
             });
             thinkingCompleteCount++;
+            lastThinkingRelatedStartedAt = startedAt;
             break;
+          }
+
+          case 'redacted_thinking_complete': {
+            // Anthropic emits redacted_thinking blocks at specific positions
+            // among thinking/text/tool_use; the platform forwards them at
+            // end-of-stream in original message-content order. We have no
+            // streaming-time start event for these (no visible content to
+            // delta through), so synthesize a startedAt that sorts just
+            // after the most recent thinking-related block — preserves
+            // relative order among thinking entries while still placing
+            // them all before text/tool blocks.
+            const startedAt =
+              lastThinkingRelatedStartedAt !== undefined
+                ? lastThinkingRelatedStartedAt + 1
+                : event.ts;
+            contentBlocks.push({
+              type: 'redacted_thinking',
+              data: event.data,
+              startedAt,
+              completedAt: event.ts,
+            });
+            lastThinkingRelatedStartedAt = startedAt;
+            break;
+          }
 
           case 'tool_input_delta': {
             // Anthropic: raw JSON string fragments
