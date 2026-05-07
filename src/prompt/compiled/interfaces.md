@@ -323,19 +323,43 @@ Accepts any HTTP method. The method receives `{ method, headers, query, body }` 
 
 ## Email
 
-Inbound email triggers.
+Inbound email triggers. An app can register one inbound address that routes all inbound emails to one method.
 
 ### Config (`interface.json`)
 
 ```json
 {
   "email": {
-    "method": "handle-inbound-email"
+    "method": "handle-inbound-email",
+    "approvedSenders": ["billing@vendor.com", "*@trusted-partner.com"]
   }
 }
 ```
 
-Register a custom address (e.g., `invoices@mindstudio-hooks.com`) via the platform. Inbound emails invoke the specified method with the email content as input.
+`approvedSenders` is optional. When set, only senders matching an exact address or `*@domain.com` wildcard reach the method; everything else is rejected by the platform with `400 invalid_sender` before the method runs.
+
+Address pattern: `{custom-name}@mindstudio-hooks.com`.
+
+### Input shape
+
+```ts
+{
+  to: string;            // resolved from the SMTP envelope
+  from: string;          // bare address, extracted from "Name <a@b>" form
+  subject: string;       // 'No Subject' if missing
+  message: string;       // plain text body; 'No Body' if neither text nor html was sent
+  html: string;          // HTML body, or '' when text-only
+  attachments: string[]; // CDN URLs — already uploaded by the platform
+}
+```
+
+### Attachments
+
+`attachments[]` is an array of CDN URLs — the platform has already received and uploaded the files. Fetch them server-side via the URL when you need the bytes; pass them through as URLs to UI or downstream services.
+
+### Auth
+
+Methods invoked through this interface run with `auth.roles: ['system']` (see the system-roles section above). They have no user session and can't impersonate. Use `auth.requireRole('system')` to gate methods that should only be reachable via email.
 
 ## MCP (Model Context Protocol)
 
