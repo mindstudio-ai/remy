@@ -30,6 +30,9 @@ export const askMindStudioSdkTool: Tool = {
 
   async execute(input, context) {
     const query = input.query as string;
+    // `mindstudio ask` returns markdown, not JSON, so runMindstudioCli's
+    // envelope-parsing path doesn't apply. Cost data for this surface is
+    // unavailable until/unless the CLI exposes a metadata format for `ask`.
     return runCli('mindstudio', ['ask', query], {
       timeout: 200_000,
       maxBuffer: 512 * 1024,

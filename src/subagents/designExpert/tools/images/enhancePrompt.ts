@@ -6,7 +6,7 @@
  * knowledge (no hex codes, style-first structure, composition rules, etc.).
  */
 
-import { runCli } from '../../../common/runCli.js';
+import { runMindstudioCli } from '../../../common/runMindstudioCli.js';
 import { readAsset } from '../../../../assets.js';
 
 const ENHANCE_MODEL = 'claude-4-6-sonnet';
@@ -45,19 +45,15 @@ export async function enhanceImagePrompt(
   const context = `<context>\n${contextParts.join('\n')}\n</context>`;
   const message = `${SYSTEM_PROMPT}\n\n${context}\n\n<brief>\n${brief}\n</brief>`;
 
-  const enhanced = await runCli(
-    'mindstudio',
+  const enhanced = await runMindstudioCli(
     [
       'generate-text',
       '--message',
       message,
       '--model-override',
       JSON.stringify(MODEL_OVERRIDE),
-      '--output-key',
-      'content',
-      '--no-meta',
     ],
-    { timeout: 60_000, onLog },
+    { outputKey: 'content', timeout: 60_000, onLog, caller: 'designExpert' },
   );
 
   return enhanced.trim();

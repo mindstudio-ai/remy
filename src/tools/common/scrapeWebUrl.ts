@@ -6,7 +6,7 @@
  */
 
 import type { Tool } from '../index.js';
-import { runCli } from '../../subagents/common/runCli.js';
+import { runMindstudioCli } from '../../subagents/common/runMindstudioCli.js';
 
 export const scrapeWebUrlTool: Tool = {
   clearable: false,
@@ -40,15 +40,13 @@ export const scrapeWebUrlTool: Tool = {
       pageOptions.screenshot = true;
     }
 
-    return runCli(
-      'mindstudio',
+    return runMindstudioCli(
       [
         'scrape-url',
         '--url',
         url,
         '--page-options',
         JSON.stringify(pageOptions),
-        '--no-meta',
       ],
       { onLog: context?.onLog },
     );

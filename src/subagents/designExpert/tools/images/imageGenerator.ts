@@ -5,7 +5,7 @@
  * The underlying model is configured via the MindStudio CLI.
  */
 
-import { runCli } from '../../../common/runCli.js';
+import { runMindstudioCli } from '../../../common/runMindstudioCli.js';
 import { analyzeImage } from '../../../common/analyzeImage.js';
 import { enhanceImagePrompt } from './enhancePrompt.js';
 
@@ -60,11 +60,14 @@ export async function generateImageAssets(
         config,
       },
     });
-    const url = await runCli(
-      'mindstudio',
-      ['generate-image', '--output-key', 'imageUrl', '--no-meta'],
-      { jsonLogs: true, timeout: 200_000, onLog, stdin: step },
-    );
+    const url = await runMindstudioCli(['generate-image'], {
+      outputKey: 'imageUrl',
+      jsonLogs: true,
+      timeout: 200_000,
+      onLog,
+      stdin: step,
+      caller: 'designExpert',
+    });
     imageUrls = [url];
   } else {
     const steps = enhancedPrompts.map((prompt) => ({
@@ -77,11 +80,12 @@ export async function generateImageAssets(
         },
       },
     }));
-    const batchResult = await runCli('mindstudio', ['batch', '--no-meta'], {
+    const batchResult = await runMindstudioCli(['batch'], {
       jsonLogs: true,
       timeout: 200_000,
       onLog,
       stdin: JSON.stringify(steps),
+      caller: 'designExpert',
     });
     try {
       const parsed = JSON.parse(batchResult);
@@ -100,17 +104,14 @@ export async function generateImageAssets(
         if (url.startsWith('Error')) {
           return url;
         }
-        const result = await runCli(
-          'mindstudio',
-          [
-            'remove-background-from-image',
-            '--image-url',
-            url,
-            '--output-key',
-            'imageUrl',
-            '--no-meta',
-          ],
-          { timeout: 200_000, onLog },
+        const result = await runMindstudioCli(
+          ['remove-background-from-image', '--image-url', url],
+          {
+            outputKey: 'imageUrl',
+            timeout: 200_000,
+            onLog,
+            caller: 'designExpert',
+          },
         );
         return result.startsWith('Error') ? url : result;
       }),

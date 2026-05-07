@@ -19,6 +19,7 @@ import { getToolDefinitions } from '../tools/index.js';
 import { createLogger } from '../logger.js';
 import type { AgentState } from '../types.js';
 import type { Message } from '../api.js';
+import type { ApiConfig } from '../config.js';
 
 const log = createLogger('compaction:trigger');
 
@@ -71,7 +72,7 @@ export interface TriggerOptions {
  */
 export function triggerCompaction(
   state: AgentState,
-  apiConfig: { baseUrl: string; apiKey: string },
+  apiConfig: ApiConfig,
   opts: TriggerOptions = {},
 ): Promise<void> {
   if (inflightCompaction) {

@@ -1,14 +1,19 @@
 /**
- * Config resolution — API key and base URL.
+ * Config resolution — API key, base URL, and app id.
  *
  * Shares ~/.mindstudio/config.json with @mindstudio-ai/agent, so
  * `mindstudio login` sets up credentials for both tools.
  *
  * Resolution order (first wins):
  *   1. CLI flags (--api-key, --base-url)
- *   2. Environment variables (MINDSTUDIO_API_KEY, MINDSTUDIO_BASE_URL)
- *   3. Config file (~/.mindstudio/config.json)
- *   4. Default base URL (https://v1.mindstudio-api.com)
+ *   2. Environment variables (MINDSTUDIO_API_KEY, MINDSTUDIO_BASE_URL,
+ *      MINDSTUDIO_APP_ID)
+ *   3. Config file (~/.mindstudio/config.json) — credentials only
+ *   4. Default base URL (https://api.mindstudio.ai)
+ *
+ * `appId` is env-only — there's no CLI flag or config-file fallback. When
+ * unset, requests omit the field and the platform attributes cost to a
+ * shared per-org service-account app.
  */
 
 import fs from 'node:fs';
@@ -47,10 +52,19 @@ function loadConfigFile(): TunnelConfig {
   }
 }
 
-export function resolveConfig(flags?: { apiKey?: string; baseUrl?: string }): {
+export interface ApiConfig {
   apiKey: string;
   baseUrl: string;
-} {
+  /** Owning app for billing attribution. When set, the platform routes
+   * cost to this specific app instead of the shared per-org service-account
+   * app. Optional; absent on the wire when unset. */
+  appId?: string;
+}
+
+export function resolveConfig(flags?: {
+  apiKey?: string;
+  baseUrl?: string;
+}): ApiConfig {
   const file = loadConfigFile();
   const activeEnv = file.environment || 'prod';
   const env = file.environments?.[activeEnv];
@@ -63,6 +77,8 @@ export function resolveConfig(flags?: { apiKey?: string; baseUrl?: string }): {
     process.env.MINDSTUDIO_BASE_URL ||
     env?.apiBaseUrl ||
     DEFAULT_BASE_URL;
+
+  const appId = process.env.MINDSTUDIO_APP_ID || undefined;
 
   if (!apiKey) {
     log.error('No API key found');
@@ -80,7 +96,8 @@ export function resolveConfig(flags?: { apiKey?: string; baseUrl?: string }): {
     baseUrl,
     keySource,
     environment: activeEnv,
+    appId,
   });
 
-  return { apiKey, baseUrl };
+  return { apiKey, baseUrl, appId };
 }

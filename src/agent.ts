@@ -32,6 +32,8 @@ import {
 } from './tools/index.js';
 import { saveSession } from './session.js';
 import { createLogger } from './logger.js';
+import { recordUsage } from './usageLedger.js';
+import type { ApiConfig } from './config.js';
 
 const log = createLogger('agent');
 import { parsePartialJson } from './parsePartialJson.js';
@@ -102,7 +104,7 @@ export async function runTurn(params: {
   attachments?: Attachment[];
   /** File-path header injected into the LLM-bound message; not persisted into content. */
   attachmentHeader?: string;
-  apiConfig: { baseUrl: string; apiKey: string };
+  apiConfig: ApiConfig;
   system: string;
   model?: string;
   onboardingState: string;
@@ -221,6 +223,7 @@ export async function runTurn(params: {
       return;
     }
 
+    const iterStart = Date.now();
     const contentBlocks: ContentBlock[] = [];
     // Start times for each thinking block in arrival order. The platform
     // emits one `thinking` event with `text: ''` per block start, then
@@ -506,6 +509,25 @@ export async function runTurn(params: {
             turnOutputTokens += event.usage.outputTokens;
             turnCacheCreation += lastCallCacheCreation;
             turnCacheRead += lastCallCacheRead;
+            recordUsage({
+              ts: Date.now(),
+              requestId,
+              agentName: 'parent',
+              modelId: event.modelId,
+              inputTokens: event.usage.inputTokens,
+              outputTokens: event.usage.outputTokens,
+              cacheCreationTokens: event.usage.cacheCreationTokens,
+              cacheReadTokens: event.usage.cacheReadTokens,
+              cost: event.cost,
+              billingEvents: event.billingEvents,
+              durationMs: Date.now() - iterStart,
+              toolNames: contentBlocks
+                .filter(
+                  (b): b is ContentBlock & { type: 'tool' } =>
+                    b.type === 'tool',
+                )
+                .map((b) => b.name),
+            });
             break;
 
           case 'error':

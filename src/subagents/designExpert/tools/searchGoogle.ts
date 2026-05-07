@@ -1,5 +1,5 @@
 import type { ToolDefinition } from '../../../api.js';
-import { runCli } from '../../common/runCli.js';
+import { runMindstudioCli } from '../../common/runMindstudioCli.js';
 
 export const definition: ToolDefinition = {
   clearable: false,
@@ -22,18 +22,8 @@ export async function execute(
   input: Record<string, any>,
   onLog?: (line: string) => void,
 ): Promise<string> {
-  return runCli(
-    'mindstudio',
-    [
-      'search-google',
-      '--query',
-      input.query,
-      '--export-type',
-      'json',
-      '--output-key',
-      'results',
-      '--no-meta',
-    ],
-    { onLog },
+  return runMindstudioCli(
+    ['search-google', '--query', input.query, '--export-type', 'json'],
+    { outputKey: 'results', onLog, caller: 'designExpert' },
   );
 }

@@ -25,6 +25,8 @@ import {
 } from '../api.js';
 import { readAsset } from '../assets.js';
 import { createLogger } from '../logger.js';
+import { recordUsage } from '../usageLedger.js';
+import type { ApiConfig } from '../config.js';
 
 const log = createLogger('compaction');
 
@@ -46,7 +48,7 @@ const SUMMARIZABLE_SUBAGENTS = ['visualDesignExpert', 'productVision'];
  */
 export async function compactConversation(
   messages: Message[],
-  apiConfig: { baseUrl: string; apiKey: string },
+  apiConfig: ApiConfig,
   system?: string,
   tools?: ToolDefinition[],
 ): Promise<Message[]> {
@@ -287,7 +289,7 @@ function serializeForSummary(messages: Message[]): string {
 const CHUNK_CHAR_LIMIT = 2_400_000;
 
 async function generateSummary(
-  apiConfig: { baseUrl: string; apiKey: string },
+  apiConfig: ApiConfig,
   name: string,
   compactionPrompt: string,
   messagesToSummarize: Message[],
@@ -354,6 +356,7 @@ async function generateSummary(
     ? `${compactionPrompt}\n\n---\n\nConversation to summarize:\n\n${serialized}`
     : serialized;
 
+  const iterStart = Date.now();
   for await (const event of streamChat({
     ...apiConfig,
     subAgentId: 'conversationSummarizer',
@@ -363,6 +366,20 @@ async function generateSummary(
   })) {
     if (event.type === 'text') {
       summaryText += event.text;
+    } else if (event.type === 'done') {
+      recordUsage({
+        ts: Date.now(),
+        agentName: 'conversationSummarizer',
+        modelId: event.modelId,
+        inputTokens: event.usage.inputTokens,
+        outputTokens: event.usage.outputTokens,
+        cacheCreationTokens: event.usage.cacheCreationTokens,
+        cacheReadTokens: event.usage.cacheReadTokens,
+        cost: event.cost,
+        billingEvents: event.billingEvents,
+        durationMs: Date.now() - iterStart,
+        toolNames: [],
+      });
     } else if (event.type === 'error') {
       log.error('Summary generation failed', { name, error: event.error });
       return null;

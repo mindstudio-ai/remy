@@ -1,5 +1,5 @@
 import type { ToolDefinition } from '../../../api.js';
-import { runCli } from '../../common/runCli.js';
+import { runMindstudioCli } from '../../common/runMindstudioCli.js';
 
 export const definition: ToolDefinition = {
   clearable: false,
@@ -26,16 +26,14 @@ export async function execute(
   if (input.screenshot) {
     pageOptions.screenshot = true;
   }
-  return runCli(
-    'mindstudio',
+  return runMindstudioCli(
     [
       'scrape-url',
       '--url',
       input.url,
       '--page-options',
       JSON.stringify(pageOptions),
-      '--no-meta',
     ],
-    { onLog },
+    { onLog, caller: 'designExpert' },
   );
 }

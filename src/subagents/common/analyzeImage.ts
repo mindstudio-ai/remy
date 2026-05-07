@@ -5,7 +5,7 @@
  * so all call sites use the same model and can be updated in one place.
  */
 
-import { runCli } from './runCli.js';
+import { runMindstudioCli } from './runMindstudioCli.js';
 
 const VISION_MODEL = 'claude-4-6-sonnet';
 
@@ -31,8 +31,7 @@ export async function analyzeImage(params: {
   onLog?: (line: string) => void;
 }): Promise<string> {
   const { prompt, imageUrl, timeout = 200_000, onLog } = params;
-  return runCli(
-    'mindstudio',
+  return runMindstudioCli(
     [
       'analyze-image',
       '--prompt',
@@ -41,10 +40,7 @@ export async function analyzeImage(params: {
       imageUrl,
       '--vision-model-override',
       JSON.stringify(VISION_MODEL_OVERRIDE),
-      '--output-key',
-      'analysis',
-      '--no-meta',
     ],
-    { timeout, onLog },
+    { outputKey: 'analysis', timeout, onLog },
   );
 }

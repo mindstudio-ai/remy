@@ -17,10 +17,12 @@ import {
   type ToolDefinition,
 } from '../api.js';
 import { createLogger } from '../logger.js';
+import { recordUsage } from '../usageLedger.js';
 
 const log = createLogger('sub-agent');
 import type { AgentEvent, ExternalToolResolver } from '../types.js';
 import type { ToolRegistry } from '../toolRegistry.js';
+import type { ApiConfig } from '../config.js';
 import { startStatusWatcher } from '../statusWatcher.js';
 import { cleanMessagesForApi } from './common/cleanMessages.js';
 
@@ -36,7 +38,7 @@ export interface SubAgentConfig {
     onLog?: (line: string) => void,
     subAgentMessages?: Map<string, Message[]>,
   ) => Promise<string>;
-  apiConfig: { baseUrl: string; apiKey: string };
+  apiConfig: ApiConfig;
   model?: string;
   subAgentId?: string;
   signal?: AbortSignal;
@@ -165,10 +167,12 @@ export async function runSubAgent(
         return abortResult([]);
       }
 
+      const iterStart = Date.now();
       const contentBlocks: ContentBlock[] = [];
       let thinkingStartedAt = 0;
       let stopReason = 'end_turn';
       let currentToolNames = '';
+      let lastUsage: Message['usage'] | undefined;
 
       const statusWatcher = startStatusWatcher({
         apiConfig,
@@ -270,6 +274,33 @@ export async function runSubAgent(
 
             case 'done':
               stopReason = event.stopReason;
+              lastUsage = {
+                inputTokens: event.usage.inputTokens,
+                outputTokens: event.usage.outputTokens,
+                cacheCreationTokens: event.usage.cacheCreationTokens,
+                cacheReadTokens: event.usage.cacheReadTokens,
+                llmCalls: 1,
+              };
+              recordUsage({
+                ts: Date.now(),
+                requestId,
+                agentName: subAgentId || 'sub-agent',
+                parentToolId,
+                modelId: event.modelId,
+                inputTokens: event.usage.inputTokens,
+                outputTokens: event.usage.outputTokens,
+                cacheCreationTokens: event.usage.cacheCreationTokens,
+                cacheReadTokens: event.usage.cacheReadTokens,
+                cost: event.cost,
+                billingEvents: event.billingEvents,
+                durationMs: Date.now() - iterStart,
+                toolNames: contentBlocks
+                  .filter(
+                    (b): b is ContentBlock & { type: 'tool' } =>
+                      b.type === 'tool',
+                  )
+                  .map((b) => b.name),
+              });
               break;
 
             case 'error':
@@ -294,6 +325,7 @@ export async function runSubAgent(
       messages.push({
         role: 'assistant',
         content: contentBlocks,
+        ...(lastUsage ? { usage: lastUsage } : {}),
       });
 
       // Extract tool calls from content blocks

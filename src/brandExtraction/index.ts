@@ -23,6 +23,7 @@ import { createHash } from 'node:crypto';
 import { streamChat } from '../api.js';
 import { readAsset } from '../assets.js';
 import { createLogger } from '../logger.js';
+import { recordUsage } from '../usageLedger.js';
 
 const log = createLogger('brandExtraction');
 
@@ -180,6 +181,7 @@ async function extractBrand(apiConfig: {
   }
 
   let responseText = '';
+  const iterStart = Date.now();
   try {
     for await (const event of streamChat({
       ...apiConfig,
@@ -190,6 +192,20 @@ async function extractBrand(apiConfig: {
     })) {
       if (event.type === 'text') {
         responseText += event.text;
+      } else if (event.type === 'done') {
+        recordUsage({
+          ts: Date.now(),
+          agentName: 'brandExtractor',
+          modelId: event.modelId,
+          inputTokens: event.usage.inputTokens,
+          outputTokens: event.usage.outputTokens,
+          cacheCreationTokens: event.usage.cacheCreationTokens,
+          cacheReadTokens: event.usage.cacheReadTokens,
+          cost: event.cost,
+          billingEvents: event.billingEvents,
+          durationMs: Date.now() - iterStart,
+          toolNames: [],
+        });
       } else if (event.type === 'error') {
         log.error('Brand extraction stream error', { error: event.error });
         return null;

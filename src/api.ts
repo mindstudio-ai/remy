@@ -11,6 +11,7 @@
  */
 
 import { createLogger } from './logger.js';
+import type { ApiConfig } from './config.js';
 
 const log = createLogger('api');
 
@@ -138,9 +139,24 @@ export type StreamEvent =
         cacheCreationTokens?: number;
         cacheReadTokens?: number;
       };
+      /** Authoritative model id from the adapter — present when known, may be
+       * absent on older platform builds. Prefer this over the requested model. */
+      modelId?: string;
+      /** Total org-marked-up customer cost in dollars for this LLM call. */
+      cost?: number;
+      /** Per-event billing breakdown (sums to cost). Typically prompt + response;
+       * cache reads/writes may appear as separate entries. */
+      billingEvents?: BillingEvent[];
       ts: number;
     }
   | { type: 'error'; error: string };
+
+export interface BillingEvent {
+  eventType: string;
+  numUnits: number;
+  /** Charge for this event in nano-dollars (1e-9 USD). */
+  billedAmount: number;
+}
 
 /**
  * Stream a single LLM turn via the platform's agent chat endpoint.
@@ -149,22 +165,22 @@ export type StreamEvent =
  * requests, and a final done/error event. The caller (agent loop) decides
  * what to do with tool_use events (execute tools, send results back).
  */
-export async function* streamChat(params: {
-  baseUrl: string;
-  apiKey: string;
-  model?: string;
-  system: string;
-  messages: Message[];
-  tools: ToolDefinition[];
-  maxTokens?: number;
-  temperature?: number;
-  config?: Record<string, any>;
-  /** Tool names whose results should NOT be cleared by server-side context management. */
-  excludeToolsFromClearing?: string[];
-  subAgentId?: string;
-  requestId?: string;
-  signal?: AbortSignal;
-}): AsyncGenerator<StreamEvent> {
+export async function* streamChat(
+  params: ApiConfig & {
+    model?: string;
+    system: string;
+    messages: Message[];
+    tools: ToolDefinition[];
+    maxTokens?: number;
+    temperature?: number;
+    config?: Record<string, any>;
+    /** Tool names whose results should NOT be cleared by server-side context management. */
+    excludeToolsFromClearing?: string[];
+    subAgentId?: string;
+    requestId?: string;
+    signal?: AbortSignal;
+  },
+): AsyncGenerator<StreamEvent> {
   const { baseUrl, apiKey, signal, requestId, ...body } = params;
   const url = `${baseUrl}/_internal/v2/agent/remy/chat`;
   const startTime = Date.now();
@@ -302,8 +318,10 @@ export async function* streamChat(params: {
             ...(subAgentId && { subAgentId }),
             durationMs: elapsed,
             stopReason: event.stopReason,
+            modelId: event.modelId,
             inputTokens: event.usage.inputTokens,
             outputTokens: event.usage.outputTokens,
+            cost: event.cost,
           });
         } else if (event.type === 'error') {
           log.error('SSE error event', {
@@ -431,7 +449,7 @@ const FALLBACK_ACK =
  * Falls back to a generic ack on any failure.
  */
 export async function generateBackgroundAck(params: {
-  apiConfig: { baseUrl: string; apiKey: string };
+  apiConfig: ApiConfig;
   agentName: string;
   task: string;
 }): Promise<string> {
@@ -444,6 +462,7 @@ export async function generateBackgroundAck(params: {
         Authorization: `Bearer ${params.apiConfig.apiKey}`,
       },
       body: JSON.stringify({
+        appId: params.apiConfig.appId,
         agentName: params.agentName,
         task: params.task,
       }),

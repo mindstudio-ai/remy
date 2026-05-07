@@ -16,7 +16,7 @@ import {
   captureAndAnalyzeScreenshot,
   buildScreenshotAnalysisPrompt,
 } from '../../tools/_helpers/screenshot.js';
-import { runCli } from '../common/runCli.js';
+import { runMindstudioCli } from '../common/runMindstudioCli.js';
 import { VISION_MODEL_OVERRIDE } from '../common/analyzeImage.js';
 import { createLogger } from '../../logger.js';
 
@@ -112,10 +112,9 @@ export const browserAutomationTool: Tool = {
                     visionModelOverride: VISION_MODEL_OVERRIDE,
                   },
                 }));
-                const batchResult = await runCli(
-                  'mindstudio',
-                  ['batch', '--no-meta', JSON.stringify(batchInput)],
-                  { timeout: 200_000 },
+                const batchResult = await runMindstudioCli(
+                  ['batch', JSON.stringify(batchInput)],
+                  { timeout: 200_000, caller: 'browserAutomation' },
                 );
                 try {
                   const analyses = JSON.parse(batchResult);

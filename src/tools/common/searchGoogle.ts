@@ -6,7 +6,7 @@
  */
 
 import type { Tool } from '../index.js';
-import { runCli } from '../../subagents/common/runCli.js';
+import { runMindstudioCli } from '../../subagents/common/runMindstudioCli.js';
 
 export const searchGoogleTool: Tool = {
   clearable: false,
@@ -28,19 +28,9 @@ export const searchGoogleTool: Tool = {
 
   async execute(input, context) {
     const query = input.query as string;
-    return runCli(
-      'mindstudio',
-      [
-        'search-google',
-        '--query',
-        query,
-        '--export-type',
-        'json',
-        '--output-key',
-        'results',
-        '--no-meta',
-      ],
-      { maxBuffer: 512 * 1024, onLog: context?.onLog },
+    return runMindstudioCli(
+      ['search-google', '--query', query, '--export-type', 'json'],
+      { outputKey: 'results', maxBuffer: 512 * 1024, onLog: context?.onLog },
     );
   },
 };

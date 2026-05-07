@@ -1,5 +1,5 @@
 import type { ToolDefinition } from '../../../api.js';
-import { runCli } from '../../common/runCli.js';
+import { runMindstudioCli } from '../../common/runMindstudioCli.js';
 import { analyzeImage } from '../../common/analyzeImage.js';
 
 const DESIGN_REFERENCE_PROMPT = `
@@ -62,8 +62,7 @@ export async function execute(
   let imageUrl = url;
   if (!isImageUrl) {
     // Screenshot the website first
-    const ssUrl = await runCli(
-      'mindstudio',
+    const ssUrl = await runMindstudioCli(
       [
         'screenshot-url',
         '--url',
@@ -74,11 +73,13 @@ export async function execute(
         '1440',
         '--delay',
         '2000',
-        '--output-key',
-        'screenshotUrl',
-        '--no-meta',
       ],
-      { timeout: 120_000, onLog },
+      {
+        outputKey: 'screenshotUrl',
+        timeout: 120_000,
+        onLog,
+        caller: 'designExpert',
+      },
     );
     if (ssUrl.startsWith('Error')) {
       return `Could not screenshot ${url}: ${ssUrl}`;

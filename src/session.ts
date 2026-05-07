@@ -7,6 +7,7 @@
  */
 
 import fs from 'node:fs';
+import path from 'node:path';
 import type { Message, ContentBlock } from './api.js';
 import type { AgentState } from './agent.js';
 import { createLogger } from './logger.js';
@@ -14,6 +15,7 @@ import { createLogger } from './logger.js';
 const log = createLogger('session');
 
 const SESSION_FILE = '.remy-session.json';
+const ARCHIVE_DIR = '.logs/sessions';
 
 export function loadSession(state: AgentState): boolean {
   try {
@@ -100,8 +102,19 @@ export function saveSession(state: AgentState): void {
 export function clearSession(state: AgentState): void {
   state.messages = [];
   try {
-    fs.unlinkSync(SESSION_FILE);
-  } catch {
-    // File may not exist — that's fine
+    if (fs.existsSync(SESSION_FILE)) {
+      fs.mkdirSync(ARCHIVE_DIR, { recursive: true });
+      const ts = new Date().toISOString().replace(/[:.]/g, '-');
+      const dest = path.join(ARCHIVE_DIR, `cleared-${ts}.json`);
+      fs.renameSync(SESSION_FILE, dest);
+      log.info('Session archived on clear', { dest });
+    }
+  } catch (err: any) {
+    log.warn('Session archive on clear failed, deleting instead', {
+      error: err.message,
+    });
+    try {
+      fs.unlinkSync(SESSION_FILE);
+    } catch {}
   }
 }

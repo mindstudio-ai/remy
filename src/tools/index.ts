@@ -18,9 +18,10 @@ export interface ToolDefinition {
 import type { AgentEvent, ExternalToolResolver } from '../types.js';
 import type { Message } from '../api.js';
 import type { ToolRegistry } from '../toolRegistry.js';
+import type { ApiConfig } from '../config.js';
 
 export interface ToolExecutionContext {
-  apiConfig: { baseUrl: string; apiKey: string };
+  apiConfig: ApiConfig;
   model?: string;
   signal?: AbortSignal;
   onEvent: (event: AgentEvent) => void;

@@ -11,8 +11,10 @@
  * model's temperature produces natural variation across polls.
  */
 
+import type { ApiConfig } from './config.js';
+
 export interface StatusWatcherConfig {
-  apiConfig: { baseUrl: string; apiKey: string };
+  apiConfig: ApiConfig;
   getContext: () => string;
   onStatus: (label: string) => void;
   interval?: number;
@@ -58,7 +60,7 @@ export function startStatusWatcher(config: StatusWatcherConfig): StatusWatcher {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${apiConfig.apiKey}`,
         },
-        body: JSON.stringify({ context }),
+        body: JSON.stringify({ appId: apiConfig.appId, context }),
         signal,
       });
 
