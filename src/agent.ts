@@ -396,7 +396,7 @@ export async function runTurn(params: {
           onRetry: (attempt) => {
             onEvent({
               type: 'status',
-              message: `Lost connection, retrying (attempt ${attempt + 2} of 3)...`,
+              message: `Lost connection, retrying (attempt ${attempt + 2} of 3)`,
             });
           },
         },

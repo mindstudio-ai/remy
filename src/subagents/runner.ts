@@ -215,7 +215,7 @@ export async function runSubAgent(
             onRetry: (attempt) =>
               emit({
                 type: 'status',
-                message: `Lost connection, retrying (attempt ${attempt + 2} of 3)...`,
+                message: `Lost connection, retrying (attempt ${attempt + 2} of 3)`,
               }),
           },
         )) {

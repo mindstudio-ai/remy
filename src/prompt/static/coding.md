@@ -17,7 +17,6 @@ Aim for confidence that the core happy paths work. If the 80% case is solid, the
 When making mechanical edits as part of iterating with the user (e.g., moving elements, changing labels, small redesigns and refactors), don't screenshot to confirm, simply trust your code. Re-screenshot only when changes are structural enough that the visual outcome is genuinely uncertain (new layout, new component composition, new route), or when the user reports something visible that you can't see in the code. The screenshot tool captures static/settled state - don't try to hack it with different instructions to capture transient states or animations or things like that. If what you need is not avaialble via screenshot, fall back to static analysis by tracing code.
 
 ### Process Logs
-
 Process logs are available at .logs/ in NDJSON format (one JSON object per line) for debugging. Each line has at minimum ts (unix millis) and msg fields, plus structured context like level, module, requestId, toolCallId where available. You can use `jq` to examine logs and debug failures. Tools like run method or run scenario execute synchronously, so log data will be available by the time those tools return their results to you, there is no need to `sleep` before querying logfiles.
   - `.logs/tunnel.ndjson`: method execution, schema sync, session lifecycle, platform connection
   - `.logs/devServer.ndjson`: frontend build errors, HMR, module resolution failures - check this to see if compilation is broken on web frontends.
@@ -32,6 +31,8 @@ For any work involving AI models, external actions (web scraping, email, SMS), o
 For multi-step tasks with branching logic (research, enrichment, content pipelines), use `runTask()` instead of manually chaining SDK actions. It runs an autonomous agent loop that composes actions, retries on failure, and returns structured JSON. See the task agents reference for details.
 
 For methods that take more than a few seconds, use `stream()` from `@mindstudio-ai/agent` to push real-time progress to the frontend. Pipe `onLog` from SDK actions through `stream()` so users see what's happening. The frontend calls the method with `stream: true` and gets updates via `onToken`. See the methods reference for the full pattern.
+
+For counting visitor or funnel activity (signups, page interactions, checkout completions), use `analytics.track()` from `@mindstudio-ai/interface` or rely on auto-tracked pageviews.
 
 When writing `db` filter predicates that reference outer-scope values (`input.*`, `auth.*`, foreign keys collected earlier, etc.), use the bindings form so the filter compiles to SQL — see `tables.md` "Filter Predicates" for patterns and the inline-comment convention.
 
@@ -55,6 +56,7 @@ When writing `db` filter predicates that reference outer-scope values (`input.*`
 
 ### Error Visibility
 - Runtime errors must render visibly on screen, not produce a blank white page. User and agent must be able to visibly debug and spot them.
+- `@mindstudio-ai/interface` automatically reports uncaught errors and unhandled promise rejections to the user's dashboard.
 
 ### State Management
 - Prefer to use a library like Zustand for global state. Load a big data bundle on app start into a Zustand store, then render everything from memory. Navigation between screens should feel instant — no loading spinners for data that's already in the store.

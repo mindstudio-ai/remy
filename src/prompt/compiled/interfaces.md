@@ -92,6 +92,27 @@ The project uses `"jsx": "react-jsx"` (automatic JSX transform) — do not `impo
 
 On deploy, the platform runs `npm install && npm run build` in the web directory and hosts the output on CDN.
 
+#### Error Handling and Analytics
+
+The SDK automatically reports uncaught errors, unhandled promise rejections, and pageviews to a per-app dashboard the owner gets for free. No setup required. The analytics dashboard covers visits, unique visitors, top pages, referrers, UTM breakdowns, country-level geo, device/browser/OS, new vs returning, and live online count.
+
+What this means for code you write:
+
+- **Don't install Sentry, Google Analytics, Plausible, Mixpanel, or similar unless the user specifically asks.** The platform dashboard already covers lay-person observability and analytics.
+- **Caught errors are yours to handle. Uncaught errors are captured automatically** If you `try/catch`, show a toast or render a fallback. Let unexpected errors bubble; a React error boundary can render a fallback while the SDK reports the error.
+- **For custom events**, use `analytics.track(name, props?)`. Props must be flat primitives (`string | number | boolean`); nested objects, arrays, `null`, and `undefined` are stripped. Server caps name ≤200 chars, ≤10 props, ≤50-char keys, ≤500-char values.
+
+```ts
+import { analytics } from '@mindstudio-ai/interface';
+
+analytics.track('vendor_submitted', { vendorType: 'restaurant' });
+analytics.track('checkout_completed', { itemCount: 3, total: 47.99 });
+```
+
+Analytics is **cookie-banner-free by design**: per-app scoping, IP discarded after geo lookup, country-level only, query strings server-scrubbed except for a UTM whitelist (`utm_*`, `ref`, `source`, `gclid`, `fbclid`, `msclkid`), no fingerprinting, no third-party scripts. If a user asks about GDPR cookie consent for analytics, you can explain why it is not needed.
+
+Disabling telemetry is a per-app dashboard setting (platform toggle, not code). Point users there if they ask.
+
 ## API Interface
 
 REST endpoints for external consumers — other services, mobile apps, integrations. This is separate from the web frontend's internal RPC (`@mindstudio-ai/interface` calls `/_/methods` directly and does not use the API interface). The API interface lives at `/_/api/` and exposes only the methods you choose to route.
