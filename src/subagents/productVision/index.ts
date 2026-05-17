@@ -71,7 +71,7 @@ export const productVisionTool: Tool = {
         return executeVisionTool(name, input, childCtx);
       },
       apiConfig: context.apiConfig,
-      model: context.model,
+      model: context.models?.productVision ?? context.model,
       subAgentId: 'productVision',
       signal: context.signal,
       parentToolId: context.toolCallId,

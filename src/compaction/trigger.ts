@@ -56,6 +56,9 @@ export interface TriggerOptions {
   blocking?: boolean;
   /** Correlation id for the lifecycle events surfaced to the listener. */
   requestId?: string;
+  /** Global fallback model from startup-time options. Used when the
+   * session has no `conversationSummarizer` override. */
+  model?: string;
 }
 
 /**
@@ -79,7 +82,7 @@ export function triggerCompaction(
     return inflightCompaction;
   }
 
-  const { blocking = false, requestId } = opts;
+  const { blocking = false, requestId, model } = opts;
   listener?.({ type: 'started', blocking, requestId });
 
   const system = buildSystemPrompt('onboardingFinished');
@@ -90,6 +93,7 @@ export function triggerCompaction(
     apiConfig,
     system,
     tools,
+    state.models?.conversationSummarizer ?? model,
   )
     .then((summaries) => {
       pendingSummaries.push(...summaries);

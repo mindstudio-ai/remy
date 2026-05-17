@@ -189,6 +189,7 @@ export class HeadlessSession {
     if (resumed) {
       this.emit('session_restored', {
         messageCount: this.state.messages.length,
+        ...(this.state.models && { models: this.state.models }),
         ...this.queueFields(),
       });
     }
@@ -197,7 +198,10 @@ export class HeadlessSession {
     // this a no-op when `.remy-brand.json` is already up to date; it covers
     // (a) projects loaded with brand spec but no extracted JSON yet, and
     // (b) spec files edited outside the agent (IDE) since last session.
-    triggerBrandExtraction(this.config);
+    triggerBrandExtraction(
+      this.config,
+      this.state.models?.brandExtractor ?? this.opts.model,
+    );
 
     // Wire registry events through the same onEvent handler
     this.toolRegistry.onEvent = this.onEvent;
@@ -396,6 +400,7 @@ export class HeadlessSession {
       await triggerCompaction(this.state, this.config, {
         blocking: true,
         requestId,
+        model: this.opts.model,
       });
       this.applyPendingSummaries();
     } catch {
@@ -931,6 +936,21 @@ export class HeadlessSession {
     return {};
   }
 
+  /** Archive the current session and seed a fresh one with the given
+   * per-agent model overrides. Models are immutable for the life of a
+   * session — this is the only way to change them. Omitting `models`
+   * (or sending an empty object) resets to "use server defaults for
+   * every agent". */
+  private handleNewSession(
+    models: Record<string, string> | undefined,
+  ): Record<string, unknown> {
+    clearSession(this.state);
+    this.state.models =
+      models && Object.keys(models).length > 0 ? models : undefined;
+    saveSession(this.state);
+    return {};
+  }
+
   /** Cancel the running turn and drain the queue. Returns the drained items. */
   private handleCancel(): QueuedMessage[] {
     if (this.currentAbort) {
@@ -1043,6 +1063,7 @@ export class HeadlessSession {
         ...(this.running && this.currentRequestId
           ? { currentRequestId: this.currentRequestId }
           : {}),
+        ...(this.state.models && { models: this.state.models }),
         ...this.queueFields(),
       }));
       return;
@@ -1051,6 +1072,14 @@ export class HeadlessSession {
     if (action === 'clear') {
       this.dispatchSimple(requestId, 'session_cleared', () =>
         this.handleClear(),
+      );
+      return;
+    }
+
+    if (action === 'newSession') {
+      const models = parsed.models as Record<string, string> | undefined;
+      this.dispatchSimple(requestId, 'session_cleared', () =>
+        this.handleNewSession(models),
       );
       return;
     }
@@ -1111,6 +1140,7 @@ export class HeadlessSession {
         await triggerCompaction(this.state, this.config, {
           blocking: false,
           requestId,
+          model: this.opts.model,
         });
         if (!this.running) {
           this.applyPendingSummaries();

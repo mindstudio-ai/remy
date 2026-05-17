@@ -94,6 +94,11 @@ export interface Message {
     cacheReadTokens?: number;
     llmCalls: number;
   };
+  // Opaque provider state captured at end-of-turn for stateless-reasoning
+  // round-trip (OpenAI Responses encrypted reasoning items, etc.). Must be
+  // echoed back on subsequent requests verbatim — never inspect or mutate.
+  // Anthropic/Gemini may be absent or empty.
+  providerMetadata?: Record<string, any>;
 }
 
 // Tool definition sent to the LLM — vendor-agnostic JSON Schema format
@@ -162,9 +167,22 @@ export type StreamEvent =
       /** Per-event billing breakdown (sums to cost). Typically prompt + response;
        * cache reads/writes may appear as separate entries. */
       billingEvents?: BillingEvent[];
+      /** Opaque provider state (e.g. OpenAI Responses encrypted reasoning
+       * items). Must round-trip verbatim on the next request. Anthropic/
+       * Gemini emit absent or empty. */
+      providerMetadata?: Record<string, any>;
       ts: number;
     }
-  | { type: 'error'; error: string };
+  | {
+      type: 'error';
+      error: string;
+      /** Server-provided error code for structured frontend handling. */
+      code?: string;
+      /** Set when `code === 'invalid_model_override'` — the bad ID the
+       * server rejected, so the frontend can point the user back to
+       * settings. */
+      badModelId?: string;
+    };
 
 export interface BillingEvent {
   eventType: string;
@@ -196,18 +214,21 @@ export async function* streamChat(
     signal?: AbortSignal;
   },
 ): AsyncGenerator<StreamEvent> {
-  const { baseUrl, apiKey, signal, requestId, ...body } = params;
+  const { baseUrl, apiKey, signal, requestId, model, ...rest } = params;
   const url = `${baseUrl}/_internal/v2/agent/remy/chat`;
   const startTime = Date.now();
-  // subAgentId is in body (sent to API) — extract for logging
-  const subAgentId = body.subAgentId;
+  const subAgentId = rest.subAgentId;
+  // Server expects `modelId` on the request body; keep the TS param named
+  // `model` so callers don't have to churn. Omit entirely when undefined
+  // so the server falls back to its default mapping for this agent.
+  const requestBody = { ...rest, ...(model && { modelId: model }) };
 
   log.info('API request', {
     requestId,
     ...(subAgentId && { subAgentId }),
-    model: body.model,
-    messageCount: body.messages.length,
-    toolCount: body.tools.length,
+    model,
+    messageCount: rest.messages.length,
+    toolCount: rest.tools.length,
   });
 
   let res: Response;
@@ -218,7 +239,7 @@ export async function* streamChat(
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(requestBody),
       signal,
     });
   } catch (err: any) {
@@ -248,6 +269,8 @@ export async function* streamChat(
 
   if (!res.ok) {
     let errorMessage = `HTTP ${res.status}`;
+    let errorCode: string | undefined;
+    let badModelId: string | undefined;
     try {
       const body = await res.json();
       if (body.error) {
@@ -256,14 +279,27 @@ export async function* streamChat(
       if (body.errorMessage) {
         errorMessage = body.errorMessage;
       }
+      if (typeof body.code === 'string') {
+        errorCode = body.code;
+      }
+      if (typeof body.modelId === 'string') {
+        badModelId = body.modelId;
+      }
     } catch {}
     log.error('API error', {
       requestId,
       ...(subAgentId && { subAgentId }),
       status: res.status,
       error: errorMessage,
+      ...(errorCode && { code: errorCode }),
+      ...(badModelId && { badModelId }),
     });
-    yield { type: 'error', error: errorMessage };
+    yield {
+      type: 'error',
+      error: errorMessage,
+      ...(errorCode && { code: errorCode }),
+      ...(badModelId && { badModelId }),
+    };
     return;
   }
 

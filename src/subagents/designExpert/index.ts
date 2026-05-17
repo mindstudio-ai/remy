@@ -75,7 +75,7 @@ export const designExpertTool: Tool = {
         );
       },
       apiConfig: context.apiConfig,
-      model: context.model,
+      model: context.models?.visualDesignExpert ?? context.model,
       subAgentId: 'visualDesignExpert',
       signal: context.signal,
       parentToolId: context.toolCallId,

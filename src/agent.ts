@@ -253,6 +253,10 @@ export async function runTurn(params: {
     let textBlockOpen = false;
     const toolInputAccumulators = new Map<string, ToolInputAcc>();
     let stopReason = 'end_turn';
+    // Opaque provider state from this call's `done` event. Round-tripped on
+    // the assistant message so the next request can pass it back verbatim
+    // (required for OpenAI Responses stateless reasoning).
+    let turnProviderMetadata: Record<string, any> | undefined;
 
     // Mutable state for the unified status watcher
     let subAgentText = '';
@@ -379,12 +383,13 @@ export async function runTurn(params: {
       }
     }
 
-    // Stream one LLM turn
+    // Stream one LLM turn. Per-session override beats the global fallback.
+    const parentModel = state.models?.parent ?? model;
     try {
       for await (const event of streamChatWithRetry(
         {
           ...apiConfig,
-          model,
+          model: parentModel,
           requestId,
           system,
           messages: cleanMessagesForApi(state.messages),
@@ -531,6 +536,7 @@ export async function runTurn(params: {
 
           case 'done':
             stopReason = event.stopReason;
+            turnProviderMetadata = event.providerMetadata;
             turnLlmCalls++;
             lastCallInputTokens = event.usage.inputTokens;
             lastCallCacheCreation = event.usage.cacheCreationTokens ?? 0;
@@ -592,6 +598,9 @@ export async function runTurn(params: {
             cacheReadTokens: turnCacheRead || undefined,
             llmCalls: turnLlmCalls,
           },
+          ...(turnProviderMetadata && {
+            providerMetadata: turnProviderMetadata,
+          }),
         });
       }
       onEvent({ type: 'turn_cancelled' });
@@ -611,6 +620,7 @@ export async function runTurn(params: {
           cacheReadTokens: turnCacheRead || undefined,
           llmCalls: turnLlmCalls,
         },
+        ...(turnProviderMetadata && { providerMetadata: turnProviderMetadata }),
       });
     }
 
@@ -725,6 +735,7 @@ export async function runTurn(params: {
               result = await executeTool(tc.name, input, {
                 apiConfig,
                 model,
+                models: state.models,
                 signal: toolAbort.signal,
                 onEvent: wrappedOnEvent,
                 resolveExternalTool,

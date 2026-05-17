@@ -21,9 +21,15 @@ export function loadSession(state: AgentState): boolean {
   try {
     const raw = fs.readFileSync(SESSION_FILE, 'utf-8');
     const data = JSON.parse(raw);
+    if (data.models && typeof data.models === 'object') {
+      state.models = data.models as Record<string, string>;
+    }
     if (Array.isArray(data.messages) && data.messages.length > 0) {
       state.messages = sanitizeMessages(data.messages as Message[]);
-      log.info('Session loaded', { messageCount: state.messages.length });
+      log.info('Session loaded', {
+        messageCount: state.messages.length,
+        ...(state.models && { models: state.models }),
+      });
       return true;
     }
   } catch {
@@ -88,11 +94,11 @@ function sanitizeMessages(messages: Message[]): Message[] {
 
 export function saveSession(state: AgentState): void {
   try {
-    fs.writeFileSync(
-      SESSION_FILE,
-      JSON.stringify({ messages: state.messages }, null, 2),
-      'utf-8',
-    );
+    const payload: Record<string, unknown> = { messages: state.messages };
+    if (state.models && Object.keys(state.models).length > 0) {
+      payload.models = state.models;
+    }
+    fs.writeFileSync(SESSION_FILE, JSON.stringify(payload, null, 2), 'utf-8');
     log.info('Session saved', { messageCount: state.messages.length });
   } catch (err: any) {
     log.warn('Session save failed', { error: err.message });

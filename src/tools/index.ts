@@ -22,7 +22,12 @@ import type { ApiConfig } from '../config.js';
 
 export interface ToolExecutionContext {
   apiConfig: ApiConfig;
+  /** Global fallback model from startup-time options. Used when the
+   * session has no per-agent override for the relevant subAgentId. */
   model?: string;
+  /** Per-agent model overrides snapshotted on the session. Subagent
+   * tools should read `models?.[<theirSubAgentId>] ?? model`. */
+  models?: Record<string, string>;
   signal?: AbortSignal;
   onEvent: (event: AgentEvent) => void;
   resolveExternalTool?: ExternalToolResolver;

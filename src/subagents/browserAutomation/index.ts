@@ -82,7 +82,7 @@ export const browserAutomationTool: Tool = {
           return `Error: unknown local tool "${name}"`;
         },
         apiConfig: context.apiConfig,
-        model: context.model,
+        model: context.models?.browserAutomation ?? context.model,
         subAgentId: 'browserAutomation',
         signal: context.signal,
         parentToolId: context.toolCallId,

@@ -65,10 +65,13 @@ interface CacheRecord {
  * Run an extraction pass. No-op when the gate-input hash matches the cache.
  * Returns the brand object on success, null on failure or no-op skip.
  */
-export async function runExtraction(apiConfig: {
-  baseUrl: string;
-  apiKey: string;
-}): Promise<AppBrand | null> {
+export async function runExtraction(
+  apiConfig: {
+    baseUrl: string;
+    apiKey: string;
+  },
+  model?: string,
+): Promise<AppBrand | null> {
   const inputHash = computeInputHash();
   const cached = readCache();
   if (cached && cached.inputHash === inputHash) {
@@ -77,7 +80,7 @@ export async function runExtraction(apiConfig: {
   }
 
   log.info('Extracting brand', { inputHash });
-  const brand = await extractBrand(apiConfig);
+  const brand = await extractBrand(apiConfig, model);
   if (!brand) {
     log.warn('Brand extraction failed — leaving cache untouched');
     return null;
@@ -170,10 +173,13 @@ function parseFrontmatter(filePath: string): { type: string } {
 // Extraction
 //////////////////////////////////////////////////////////////////////////////
 
-async function extractBrand(apiConfig: {
-  baseUrl: string;
-  apiKey: string;
-}): Promise<AppBrand | null> {
+async function extractBrand(
+  apiConfig: {
+    baseUrl: string;
+    apiKey: string;
+  },
+  model?: string,
+): Promise<AppBrand | null> {
   const corpus = buildCorpus();
   if (!corpus.trim()) {
     log.debug('No spec corpus — emitting empty brand');
@@ -185,6 +191,7 @@ async function extractBrand(apiConfig: {
   try {
     for await (const event of streamChat({
       ...apiConfig,
+      model,
       subAgentId: 'brandExtractor',
       system: EXTRACT_PROMPT,
       messages: [{ role: 'user', content: corpus }],

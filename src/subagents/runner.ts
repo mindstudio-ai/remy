@@ -174,6 +174,7 @@ export async function runSubAgent(
       let stopReason = 'end_turn';
       let currentToolNames = '';
       let lastUsage: Message['usage'] | undefined;
+      let lastProviderMetadata: Record<string, any> | undefined;
 
       const statusWatcher = startStatusWatcher({
         apiConfig,
@@ -302,6 +303,7 @@ export async function runSubAgent(
                 cacheReadTokens: event.usage.cacheReadTokens,
                 llmCalls: 1,
               };
+              lastProviderMetadata = event.providerMetadata;
               recordUsage({
                 ts: Date.now(),
                 requestId,
@@ -347,6 +349,9 @@ export async function runSubAgent(
         role: 'assistant',
         content: contentBlocks,
         ...(lastUsage ? { usage: lastUsage } : {}),
+        ...(lastProviderMetadata
+          ? { providerMetadata: lastProviderMetadata }
+          : {}),
       });
 
       // Extract tool calls from content blocks

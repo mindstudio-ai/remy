@@ -213,6 +213,9 @@ export function cleanMessagesForApi(messages: Message[]): Message[] {
       if (thinking.length > 0) {
         cleaned.thinking = thinking;
       }
+      if (msg.providerMetadata) {
+        cleaned.providerMetadata = msg.providerMetadata;
+      }
       if (msg.hidden) {
         cleaned.hidden = true;
       }

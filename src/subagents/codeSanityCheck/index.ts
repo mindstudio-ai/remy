@@ -54,7 +54,7 @@ export const codeSanityCheckTool: Tool = {
       externalTools: new Set<string>(),
       executeTool: (name, toolInput) => executeTool(name, toolInput, context),
       apiConfig: context.apiConfig,
-      model: context.model,
+      model: context.models?.codeSanityCheck ?? context.model,
       subAgentId: 'codeSanityCheck',
       signal: context.signal,
       parentToolId: context.toolCallId,

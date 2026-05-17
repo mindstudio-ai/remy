@@ -17,16 +17,19 @@ const log = createLogger('brandExtraction:trigger');
 let inflight = false;
 let dirty = false;
 
-export function triggerBrandExtraction(apiConfig: {
-  baseUrl: string;
-  apiKey: string;
-}): void {
+export function triggerBrandExtraction(
+  apiConfig: {
+    baseUrl: string;
+    apiKey: string;
+  },
+  model?: string,
+): void {
   if (inflight) {
     dirty = true;
     return;
   }
   inflight = true;
-  void runExtraction(apiConfig)
+  void runExtraction(apiConfig, model)
     .catch((err: any) => {
       log.error('Brand extraction failed', { error: err?.message });
     })
@@ -34,7 +37,7 @@ export function triggerBrandExtraction(apiConfig: {
       inflight = false;
       if (dirty) {
         dirty = false;
-        triggerBrandExtraction(apiConfig);
+        triggerBrandExtraction(apiConfig, model);
       }
     });
 }

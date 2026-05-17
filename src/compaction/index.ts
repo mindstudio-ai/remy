@@ -51,6 +51,7 @@ export async function compactConversation(
   apiConfig: ApiConfig,
   system?: string,
   tools?: ToolDefinition[],
+  model?: string,
 ): Promise<Message[]> {
   // Snapshot the end of the messages to summarize. The caller will
   // determine the actual insertion point when it's safe to splice.
@@ -73,6 +74,7 @@ export async function compactConversation(
         conversationMessages,
         system,
         tools,
+        model,
       ).then((text) => {
         if (text) {
           summaries.push({ name: 'conversation', text });
@@ -103,6 +105,7 @@ export async function compactConversation(
           subagentMessages,
           system,
           tools,
+          model,
         ).then((text) => {
           if (text) {
             summaries.push({ name, text });
@@ -295,6 +298,7 @@ async function generateSummary(
   messagesToSummarize: Message[],
   mainSystem?: string,
   mainTools?: ToolDefinition[],
+  model?: string,
 ): Promise<string | null> {
   const serialized = serializeForSummary(messagesToSummarize);
   if (!serialized.trim()) {
@@ -320,6 +324,7 @@ async function generateSummary(
         messagesToSummarize.slice(0, mid),
         mainSystem,
         mainTools,
+        model,
       ),
       generateSummary(
         apiConfig,
@@ -328,6 +333,7 @@ async function generateSummary(
         messagesToSummarize.slice(mid),
         mainSystem,
         mainTools,
+        model,
       ),
     ]);
     const parts = [first, second].filter((p): p is string => !!p);
@@ -359,6 +365,7 @@ async function generateSummary(
   const iterStart = Date.now();
   for await (const event of streamChat({
     ...apiConfig,
+    model,
     subAgentId: 'conversationSummarizer',
     system,
     messages: [{ role: 'user', content: userContent }],
