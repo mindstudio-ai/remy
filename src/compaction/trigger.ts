@@ -17,6 +17,7 @@ import { compactConversation } from './index.js';
 import { buildSystemPrompt } from '../prompt/index.js';
 import { getToolDefinitions } from '../tools/index.js';
 import { createLogger } from '../logger.js';
+import { resolveModel } from '../models/surfaces.js';
 import type { AgentState } from '../types.js';
 import type { Message } from '../api.js';
 import type { ApiConfig } from '../config.js';
@@ -56,8 +57,9 @@ export interface TriggerOptions {
   blocking?: boolean;
   /** Correlation id for the lifecycle events surfaced to the listener. */
   requestId?: string;
-  /** Global fallback model from startup-time options. Used when the
-   * session has no `conversationSummarizer` override. */
+  /** Optional global fallback model from startup-time options
+   * (`HeadlessOptions.model` / `--model` CLI flag). The trigger composes
+   * three-tier resolution: session pick > this fallback > registry default. */
   model?: string;
 }
 
@@ -93,7 +95,7 @@ export function triggerCompaction(
     apiConfig,
     system,
     tools,
-    state.models?.conversationSummarizer ?? model,
+    resolveModel('conversationSummarizer', state.models, model),
   )
     .then((summaries) => {
       pendingSummaries.push(...summaries);

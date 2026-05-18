@@ -1,6 +1,8 @@
 import type { ToolDefinition } from '../../../api.js';
+import type { ToolExecutionContext } from '../../../tools/index.js';
 import { analyzeImage } from '../../common/analyzeImage.js';
 import { buildScreenshotAnalysisPrompt } from '../../../tools/_helpers/screenshot.js';
+import { resolveModel } from '../../../models/surfaces.js';
 
 export const definition: ToolDefinition = {
   clearable: true,
@@ -27,6 +29,7 @@ export const definition: ToolDefinition = {
 export async function execute(
   input: Record<string, any>,
   onLog?: (line: string) => void,
+  context?: ToolExecutionContext,
 ): Promise<string> {
   const imageUrl = input.imageUrl as string;
   const prompt = buildScreenshotAnalysisPrompt({
@@ -37,6 +40,7 @@ export async function execute(
     prompt,
     imageUrl,
     onLog,
+    model: resolveModel('imageAnalysis', context?.models, context?.model),
   });
   return JSON.stringify({ url: imageUrl, analysis });
 }

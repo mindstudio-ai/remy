@@ -44,6 +44,7 @@ import { cleanMessagesForApi } from './subagents/common/cleanMessages.js';
 import { CLEARABLE_TOOLS } from './tools/index.js';
 import { parseSentinel } from './automatedActions/sentinel.js';
 import { triggerBrandExtraction } from './brandExtraction/trigger.js';
+import { resolveModel } from './models/surfaces.js';
 
 const BRAND_TRIGGERING_TOOLS = new Set(['writeSpec', 'editSpec']);
 
@@ -383,8 +384,9 @@ export async function runTurn(params: {
       }
     }
 
-    // Stream one LLM turn. Per-session override beats the global fallback.
-    const parentModel = state.models?.parent ?? model;
+    // Stream one LLM turn. Three-tier resolution via the registry:
+    // explicit user pick → opts.model fallback → registry default.
+    const parentModel = resolveModel('parent', state.models, model);
     try {
       for await (const event of streamChatWithRetry(
         {
@@ -809,7 +811,10 @@ export async function runTurn(params: {
           isError: r.isError,
         });
         if (!r.isError && BRAND_TRIGGERING_TOOLS.has(tc.name)) {
-          triggerBrandExtraction(apiConfig);
+          triggerBrandExtraction(
+            apiConfig,
+            resolveModel('brandExtractor', state.models, model),
+          );
         }
         return r;
       }),

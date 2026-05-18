@@ -6,6 +6,7 @@ import {
 } from '../../../tools/_helpers/screenshot.js';
 import { acquireBrowserLock } from '../../../tools/_helpers/browserLock.js';
 import { browserAutomationTool } from '../../browserAutomation/index.js';
+import { resolveModel } from '../../../models/surfaces.js';
 
 export const definition: ToolDefinition = {
   clearable: true,
@@ -68,6 +69,7 @@ export async function execute(
         prompt: input.prompt as string | undefined,
         styleMap,
         onLog,
+        model: resolveModel('imageAnalysis', context?.models, context?.model),
       });
     } catch (err: any) {
       return `Error taking interactive screenshot: ${err.message}`;
@@ -81,6 +83,7 @@ export async function execute(
       prompt: input.prompt as string,
       path: input.path as string | undefined,
       onLog,
+      model: resolveModel('imageAnalysis', context?.models, context?.model),
     });
   } catch (err: any) {
     return `Error taking screenshot: ${err.message}`;

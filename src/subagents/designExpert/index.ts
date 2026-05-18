@@ -16,6 +16,7 @@ import { DESIGN_EXPERT_TOOLS, executeDesignExpertTool } from './tools/index.js';
 import { COMMON_READ_TOOL_NAMES } from '../common/tools.js';
 import { getDesignExpertPrompt } from './prompt.js';
 import { getSubAgentHistory } from '../common/history.js';
+import { resolveModel } from '../../models/surfaces.js';
 
 const DESCRIPTION = `
 Visual design expert. Describe the situation and what you need — the agent decides what to deliver. It reads the spec files automatically. Include relevant user requirements and context it can't get from the spec, but do not list specific deliverables or tell it how to do its job. Do not suggest implementation details or ideas - only relay what is needed.
@@ -75,7 +76,7 @@ export const designExpertTool: Tool = {
         );
       },
       apiConfig: context.apiConfig,
-      model: context.models?.visualDesignExpert ?? context.model,
+      model: resolveModel('visualDesignExpert', context.models, context.model),
       subAgentId: 'visualDesignExpert',
       signal: context.signal,
       parentToolId: context.toolCallId,

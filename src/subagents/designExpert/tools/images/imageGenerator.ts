@@ -20,12 +20,29 @@ export interface ImageGeneratorOptions {
   sourceImages?: string[];
   transparentBackground?: boolean;
   onLog?: (line: string) => void;
+  /** Authoritative image-generation model ID. Resolved via
+   * `resolveModel('imageGeneration', ...)` by the caller. */
+  imageGenerationModel: string;
+  /** Authoritative vision model ID for analyzing generated images.
+   * Resolved via `resolveModel('imageAnalysis', ...)` by the caller. */
+  imageAnalysisModel: string;
+  /** Authoritative model ID for the text LLM that rewrites image briefs.
+   * Resolved via `resolveModel('imagePromptEnhancer', ...)` by the caller. */
+  imagePromptEnhancerModel: string;
 }
 
 export async function generateImageAssets(
   opts: ImageGeneratorOptions,
 ): Promise<string> {
-  const { prompts, sourceImages, transparentBackground, onLog } = opts;
+  const {
+    prompts,
+    sourceImages,
+    transparentBackground,
+    onLog,
+    imageGenerationModel: genModel,
+    imageAnalysisModel,
+    imagePromptEnhancerModel,
+  } = opts;
   const width = opts.width || 2048;
   const height = opts.height || 2048;
 
@@ -46,6 +63,7 @@ export async function generateImageAssets(
             height,
             transparentBackground,
             onLog,
+            model: imagePromptEnhancerModel,
           }),
         ),
       );
@@ -56,7 +74,7 @@ export async function generateImageAssets(
     const step = JSON.stringify({
       prompt: enhancedPrompts[0],
       imageModelOverride: {
-        model: 'seedream-4.5',
+        model: genModel,
         config,
       },
     });
@@ -75,7 +93,7 @@ export async function generateImageAssets(
       step: {
         prompt,
         imageModelOverride: {
-          model: 'seedream-4.5',
+          model: genModel,
           config,
         },
       },
@@ -132,6 +150,7 @@ export async function generateImageAssets(
         prompt: ANALYZE_PROMPT,
         imageUrl: url,
         onLog,
+        model: imageAnalysisModel,
       });
       return {
         url,

@@ -21,6 +21,7 @@ import { COMMON_READ_TOOL_NAMES } from '../common/tools.js';
 import { executeVisionTool } from './executor.js';
 import { getProductVisionPrompt } from './prompt.js';
 import { getSubAgentHistory } from '../common/history.js';
+import { resolveModel } from '../../models/surfaces.js';
 
 export const productVisionTool: Tool = {
   clearable: false,
@@ -71,7 +72,7 @@ export const productVisionTool: Tool = {
         return executeVisionTool(name, input, childCtx);
       },
       apiConfig: context.apiConfig,
-      model: context.models?.productVision ?? context.model,
+      model: resolveModel('productVision', context.models, context.model),
       subAgentId: 'productVision',
       signal: context.signal,
       parentToolId: context.toolCallId,

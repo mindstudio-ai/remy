@@ -41,6 +41,11 @@ import {
   type AgentEvent,
 } from '../agent.js';
 import { loadSession, clearSession, saveSession } from '../session.js';
+import {
+  MODEL_SURFACES,
+  ALLOWED_MODELS_BY_TYPE,
+  resolveModel,
+} from '../models/surfaces.js';
 import type { StdinCommand } from '../types.js';
 import { ToolRegistry } from '../toolRegistry.js';
 import { persistAttachments, buildUploadHeader } from './attachments.js';
@@ -190,6 +195,8 @@ export class HeadlessSession {
       this.emit('session_restored', {
         messageCount: this.state.messages.length,
         ...(this.state.models && { models: this.state.models }),
+        modelSurfaces: MODEL_SURFACES,
+        allowedModelsByType: ALLOWED_MODELS_BY_TYPE,
         ...this.queueFields(),
       });
     }
@@ -200,7 +207,7 @@ export class HeadlessSession {
     // (b) spec files edited outside the agent (IDE) since last session.
     triggerBrandExtraction(
       this.config,
-      this.state.models?.brandExtractor ?? this.opts.model,
+      resolveModel('brandExtractor', this.state.models, this.opts.model),
     );
 
     // Wire registry events through the same onEvent handler
@@ -1064,6 +1071,8 @@ export class HeadlessSession {
           ? { currentRequestId: this.currentRequestId }
           : {}),
         ...(this.state.models && { models: this.state.models }),
+        modelSurfaces: MODEL_SURFACES,
+        allowedModelsByType: ALLOWED_MODELS_BY_TYPE,
         ...this.queueFields(),
       }));
       return;

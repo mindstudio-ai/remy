@@ -17,7 +17,7 @@ import {
   buildScreenshotAnalysisPrompt,
 } from '../../tools/_helpers/screenshot.js';
 import { runMindstudioCli } from '../common/runMindstudioCli.js';
-import { VISION_MODEL_OVERRIDE } from '../common/analyzeImage.js';
+import { resolveModel } from '../../models/surfaces.js';
 import { createLogger } from '../../logger.js';
 
 const log = createLogger('browser-automation');
@@ -74,6 +74,11 @@ export const browserAutomationTool: Tool = {
               return await captureAndAnalyzeScreenshot({
                 path: _input.path as string | undefined,
                 onLog,
+                model: resolveModel(
+                  'imageAnalysis',
+                  context.models,
+                  context.model,
+                ),
               });
             } catch (err: any) {
               return `Error taking screenshot: ${err.message}`;
@@ -82,7 +87,7 @@ export const browserAutomationTool: Tool = {
           return `Error: unknown local tool "${name}"`;
         },
         apiConfig: context.apiConfig,
-        model: context.models?.browserAutomation ?? context.model,
+        model: resolveModel('browserAutomation', context.models, context.model),
         subAgentId: 'browserAutomation',
         signal: context.signal,
         parentToolId: context.toolCallId,
@@ -102,6 +107,13 @@ export const browserAutomationTool: Tool = {
                 (s: any) => s.command === 'screenshotViewport' && s.result?.url,
               );
               if (screenshotSteps.length > 0) {
+                const visionOverride = {
+                  model: resolveModel(
+                    'imageAnalysis',
+                    context.models,
+                    context.model,
+                  ),
+                };
                 const batchInput = screenshotSteps.map((s: any) => ({
                   stepType: 'analyzeImage',
                   step: {
@@ -109,7 +121,7 @@ export const browserAutomationTool: Tool = {
                     prompt: buildScreenshotAnalysisPrompt({
                       styleMap: s.result.styleMap,
                     }),
-                    visionModelOverride: VISION_MODEL_OVERRIDE,
+                    visionModelOverride: visionOverride,
                   },
                 }));
                 const batchResult = await runMindstudioCli(

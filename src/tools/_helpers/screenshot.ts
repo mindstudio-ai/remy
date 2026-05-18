@@ -42,6 +42,10 @@ export interface ScreenshotOptions {
   path?: string;
   /** Called for each log line emitted during CLI execution. */
   onLog?: (line: string) => void;
+  /** Authoritative model ID for the vision analysis. Caller resolves
+   * via `resolveModel('imageAnalysis', ...)` before invoking. Required
+   * when analysis runs; ignored when `prompt === false`. */
+  model?: string;
 }
 
 /**
@@ -59,8 +63,9 @@ export async function streamScreenshotAnalysis(opts: {
   prompt?: string;
   styleMap?: string;
   onLog?: (line: string) => void;
+  model: string;
 }): Promise<string> {
-  const { url, prompt, styleMap, onLog } = opts;
+  const { url, prompt, styleMap, onLog, model } = opts;
 
   // Image-only snapshot before analysis starts — the frontend renders the
   // captured image right away while the analysis sub-agent is still working.
@@ -72,6 +77,7 @@ export async function streamScreenshotAnalysis(opts: {
   const analysis = await analyzeImage({
     prompt: analysisPrompt,
     imageUrl: url,
+    model,
     onLog: (chunk) => {
       accumulated += chunk;
       onLog?.(JSON.stringify({ url, analysis: accumulated }));
@@ -91,6 +97,7 @@ export async function captureAndAnalyzeScreenshot(
   let prompt: string | false | undefined;
   let existingUrl: string | undefined;
   let onLog: ((line: string) => void) | undefined;
+  let model: string | undefined;
 
   let path: string | undefined;
 
@@ -99,6 +106,7 @@ export async function captureAndAnalyzeScreenshot(
     existingUrl = promptOrOptions.imageUrl;
     path = promptOrOptions.path;
     onLog = promptOrOptions.onLog;
+    model = promptOrOptions.model;
   } else {
     prompt = promptOrOptions;
   }
@@ -126,10 +134,16 @@ export async function captureAndAnalyzeScreenshot(
     return url;
   }
 
+  if (!model) {
+    throw new Error(
+      'captureAndAnalyzeScreenshot: `model` is required when analysis is enabled',
+    );
+  }
   return streamScreenshotAnalysis({
     url,
     prompt: prompt || undefined,
     styleMap,
     onLog,
+    model,
   });
 }

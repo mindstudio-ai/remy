@@ -1,24 +1,12 @@
 /**
  * Shared vision analysis helper.
  *
- * Centralizes the model configuration and CLI command for analyze-image
- * so all call sites use the same model and can be updated in one place.
+ * The caller resolves the model via `resolveModel('imageAnalysis', ...)`
+ * before invoking — Remy is authoritative for defaults via the model
+ * surfaces registry, so this helper just trusts whatever it's given.
  */
 
 import { runMindstudioCli } from './runMindstudioCli.js';
-
-const VISION_MODEL = 'claude-4-6-sonnet';
-
-/**
- * Centralized vision model config. Exported so callers that bypass the
- * `analyzeImage` helper (e.g., when batching multiple analyses through
- * `mindstudio batch`) can still apply the same override and stay consistent
- * with every other vision-analysis path in the codebase.
- */
-export const VISION_MODEL_OVERRIDE = {
-  model: VISION_MODEL,
-  config: { thinkingBudget: 'off' },
-};
 
 /**
  * Analyze an image URL with a vision model.
@@ -27,10 +15,13 @@ export const VISION_MODEL_OVERRIDE = {
 export async function analyzeImage(params: {
   prompt: string;
   imageUrl: string;
+  /** Authoritative model ID. Resolve via `resolveModel('imageAnalysis', ...)`
+   * before calling. */
+  model: string;
   timeout?: number;
   onLog?: (line: string) => void;
 }): Promise<string> {
-  const { prompt, imageUrl, timeout = 200_000, onLog } = params;
+  const { prompt, imageUrl, model, timeout = 200_000, onLog } = params;
   return runMindstudioCli(
     [
       'analyze-image',
@@ -39,7 +30,7 @@ export async function analyzeImage(params: {
       '--image-url',
       imageUrl,
       '--vision-model-override',
-      JSON.stringify(VISION_MODEL_OVERRIDE),
+      JSON.stringify({ model }),
     ],
     { outputKey: 'analysis', timeout, onLog },
   );

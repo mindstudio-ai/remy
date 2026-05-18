@@ -22,7 +22,7 @@ export function triggerBrandExtraction(
     baseUrl: string;
     apiKey: string;
   },
-  model?: string,
+  model: string,
 ): void {
   if (inflight) {
     dirty = true;

@@ -1,6 +1,8 @@
 import type { ToolDefinition } from '../../../api.js';
+import type { ToolExecutionContext } from '../../../tools/index.js';
 import { runMindstudioCli } from '../../common/runMindstudioCli.js';
 import { analyzeImage } from '../../common/analyzeImage.js';
+import { resolveModel } from '../../../models/surfaces.js';
 
 const DESIGN_REFERENCE_PROMPT = `
 You are analyzing a screenshot of a real website or app for a designer's personal technique/inspiration reference notes.
@@ -52,6 +54,7 @@ export const definition: ToolDefinition = {
 export async function execute(
   input: Record<string, any>,
   onLog?: (line: string) => void,
+  context?: ToolExecutionContext,
 ): Promise<string> {
   const url = input.url as string;
   const analysisPrompt = input.prompt || DESIGN_REFERENCE_PROMPT;
@@ -91,6 +94,7 @@ export async function execute(
     prompt: analysisPrompt,
     imageUrl,
     onLog,
+    model: resolveModel('imageAnalysis', context?.models, context?.model),
   });
 
   return JSON.stringify({ url: imageUrl, analysis });

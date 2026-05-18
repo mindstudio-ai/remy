@@ -200,7 +200,9 @@ export interface BillingEvent {
  */
 export async function* streamChat(
   params: ApiConfig & {
-    model?: string;
+    /** Authoritative model ID. Required — callers resolve via
+     * `resolveModel(...)` from the model surfaces registry before invoking. */
+    model: string;
     system: string;
     messages: Message[];
     tools: ToolDefinition[];
@@ -218,10 +220,10 @@ export async function* streamChat(
   const url = `${baseUrl}/_internal/v2/agent/remy/chat`;
   const startTime = Date.now();
   const subAgentId = rest.subAgentId;
-  // Server expects `modelId` on the request body; keep the TS param named
-  // `model` so callers don't have to churn. Omit entirely when undefined
-  // so the server falls back to its default mapping for this agent.
-  const requestBody = { ...rest, ...(model && { modelId: model }) };
+  // Server expects `modelId` on the request body; the TS param stays named
+  // `model` so callers don't have to churn. Always sent — Remy is the
+  // single source of truth for which model serves each surface.
+  const requestBody = { ...rest, modelId: model };
 
   log.info('API request', {
     requestId,

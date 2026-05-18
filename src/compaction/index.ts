@@ -49,9 +49,9 @@ const SUMMARIZABLE_SUBAGENTS = ['visualDesignExpert', 'productVision'];
 export async function compactConversation(
   messages: Message[],
   apiConfig: ApiConfig,
-  system?: string,
-  tools?: ToolDefinition[],
-  model?: string,
+  system: string | undefined,
+  tools: ToolDefinition[] | undefined,
+  model: string,
 ): Promise<Message[]> {
   // Snapshot the end of the messages to summarize. The caller will
   // determine the actual insertion point when it's safe to splice.
@@ -296,9 +296,9 @@ async function generateSummary(
   name: string,
   compactionPrompt: string,
   messagesToSummarize: Message[],
-  mainSystem?: string,
-  mainTools?: ToolDefinition[],
-  model?: string,
+  mainSystem: string | undefined,
+  mainTools: ToolDefinition[] | undefined,
+  model: string,
 ): Promise<string | null> {
   const serialized = serializeForSummary(messagesToSummarize);
   if (!serialized.trim()) {

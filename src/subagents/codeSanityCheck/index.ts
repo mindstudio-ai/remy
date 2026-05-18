@@ -12,6 +12,7 @@ import { runSubAgent } from '../runner.js';
 import { loadSpecIndex, loadPlatformBrief } from '../common/context.js';
 import { executeTool } from '../../tools/index.js';
 import { SANITY_CHECK_TOOLS } from './tools.js';
+import { resolveModel } from '../../models/surfaces.js';
 
 const BASE_PROMPT = readAsset('subagents/codeSanityCheck', 'prompt.md');
 
@@ -54,7 +55,7 @@ export const codeSanityCheckTool: Tool = {
       externalTools: new Set<string>(),
       executeTool: (name, toolInput) => executeTool(name, toolInput, context),
       apiConfig: context.apiConfig,
-      model: context.models?.codeSanityCheck ?? context.model,
+      model: resolveModel('codeSanityCheck', context.models, context.model),
       subAgentId: 'codeSanityCheck',
       signal: context.signal,
       parentToolId: context.toolCallId,

@@ -70,7 +70,7 @@ export async function runExtraction(
     baseUrl: string;
     apiKey: string;
   },
-  model?: string,
+  model: string,
 ): Promise<AppBrand | null> {
   const inputHash = computeInputHash();
   const cached = readCache();
@@ -178,7 +178,7 @@ async function extractBrand(
     baseUrl: string;
     apiKey: string;
   },
-  model?: string,
+  model: string,
 ): Promise<AppBrand | null> {
   const corpus = buildCorpus();
   if (!corpus.trim()) {

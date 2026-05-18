@@ -9,6 +9,7 @@ import {
 } from '../_helpers/screenshot.js';
 import { acquireBrowserLock } from '../_helpers/browserLock.js';
 import { browserAutomationTool } from '../../subagents/browserAutomation/index.js';
+import { resolveModel } from '../../models/surfaces.js';
 
 export const screenshotTool: Tool = {
   clearable: true,
@@ -50,6 +51,7 @@ export const screenshotTool: Tool = {
           prompt: input.prompt as string,
           imageUrl: input.imageUrl as string,
           onLog: context?.onLog,
+          model: resolveModel('imageAnalysis', context?.models, context?.model),
         });
       }
 
@@ -81,6 +83,7 @@ export const screenshotTool: Tool = {
           prompt: input.prompt as string | undefined,
           styleMap,
           onLog: context?.onLog,
+          model: resolveModel('imageAnalysis', context?.models, context?.model),
         });
       }
 
@@ -91,6 +94,7 @@ export const screenshotTool: Tool = {
           prompt: input.prompt as string,
           path: input.path as string | undefined,
           onLog: context?.onLog,
+          model: resolveModel('imageAnalysis', context?.models, context?.model),
         });
       } finally {
         release();

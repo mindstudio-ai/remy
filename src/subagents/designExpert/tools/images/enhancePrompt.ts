@@ -9,12 +9,6 @@
 import { runMindstudioCli } from '../../../common/runMindstudioCli.js';
 import { readAsset } from '../../../../assets.js';
 
-const ENHANCE_MODEL = 'claude-4-6-sonnet';
-const MODEL_OVERRIDE = {
-  model: ENHANCE_MODEL,
-  config: { reasoning: 'false' },
-};
-
 const SYSTEM_PROMPT = readAsset(
   'subagents/designExpert/tools/images/enhance-image-prompt.md',
 );
@@ -25,12 +19,15 @@ export interface EnhancePromptParams {
   height: number;
   transparentBackground?: boolean;
   onLog?: (line: string) => void;
+  /** Authoritative model ID for the text LLM that rewrites the brief.
+   * Resolved via `resolveModel('imagePromptEnhancer', ...)` by the caller. */
+  model: string;
 }
 
 export async function enhanceImagePrompt(
   params: EnhancePromptParams,
 ): Promise<string> {
-  const { brief, width, height, transparentBackground, onLog } = params;
+  const { brief, width, height, transparentBackground, onLog, model } = params;
 
   // Build context block so the enhancer knows the generation parameters
   const contextParts: string[] = [
@@ -51,7 +48,7 @@ export async function enhanceImagePrompt(
       '--message',
       message,
       '--model-override',
-      JSON.stringify(MODEL_OVERRIDE),
+      JSON.stringify({ model, config: { reasoning: 'false' } }),
     ],
     { outputKey: 'content', timeout: 60_000, onLog, caller: 'designExpert' },
   );

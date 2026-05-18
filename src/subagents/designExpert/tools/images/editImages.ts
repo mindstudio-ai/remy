@@ -1,5 +1,7 @@
 import type { ToolDefinition } from '../../../../api.js';
+import type { ToolExecutionContext } from '../../../../tools/index.js';
 import { generateImageAssets } from './imageGenerator.js';
+import { resolveModel } from '../../../../models/surfaces.js';
 
 export const definition: ToolDefinition = {
   clearable: false,
@@ -46,6 +48,7 @@ export const definition: ToolDefinition = {
 export async function execute(
   input: Record<string, any>,
   onLog?: (line: string) => void,
+  context?: ToolExecutionContext,
 ): Promise<string> {
   return generateImageAssets({
     prompts: input.prompts as string[],
@@ -54,5 +57,20 @@ export async function execute(
     height: input.height as number | undefined,
     transparentBackground: input.transparentBackground as boolean | undefined,
     onLog,
+    imageGenerationModel: resolveModel(
+      'imageGeneration',
+      context?.models,
+      context?.model,
+    ),
+    imageAnalysisModel: resolveModel(
+      'imageAnalysis',
+      context?.models,
+      context?.model,
+    ),
+    imagePromptEnhancerModel: resolveModel(
+      'imagePromptEnhancer',
+      context?.models,
+      context?.model,
+    ),
   });
 }

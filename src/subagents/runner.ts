@@ -39,7 +39,10 @@ export interface SubAgentConfig {
     subAgentMessages?: Map<string, Message[]>,
   ) => Promise<string>;
   apiConfig: ApiConfig;
-  model?: string;
+  /** Authoritative model ID for this subagent's LLM calls. Resolved by
+   * the caller via `resolveModel(<surfaceId>, ...)` from the model
+   * surfaces registry. */
+  model: string;
   subAgentId?: string;
   signal?: AbortSignal;
   parentToolId: string;
