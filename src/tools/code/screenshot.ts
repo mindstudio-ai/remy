@@ -8,7 +8,7 @@ import {
   streamScreenshotAnalysis,
 } from '../_helpers/screenshot.js';
 import { acquireBrowserLock } from '../_helpers/browserLock.js';
-import { browserAutomationTool } from '../../subagents/browserAutomation/index.js';
+import { runBrowserAutomation } from '../../subagents/browserAutomation/index.js';
 import { resolveModel } from '../../models/surfaces.js';
 
 export const screenshotTool: Tool = {
@@ -61,27 +61,16 @@ export const screenshotTool: Tool = {
           ? `Navigate to "${input.path}", then: ${input.instructions}. After completing these steps, take a full-page screenshot.`
           : `${input.instructions}. After completing these steps, take a full-page screenshot.`;
 
-        const result = await browserAutomationTool.execute({ task }, context);
-        const resultStr = result as string;
-
-        let url: string | undefined;
-        let styleMap: string | undefined;
-
-        try {
-          const parsed = JSON.parse(resultStr);
-          url = parsed.screenshotUrl;
-          styleMap = parsed.styleMap;
-        } catch {
-          // Not JSON — browser automation returned prose without a screenshot
-        }
-
-        if (!url) {
-          return `Error: browser navigation completed but no screenshot URL was returned. Agent output: ${resultStr}`;
+        const result = await runBrowserAutomation(task, context);
+        // No final screenshot — return the sub-agent's prose so the model
+        // still sees its report.
+        if (!result.screenshot) {
+          return result.text;
         }
         return await streamScreenshotAnalysis({
-          url,
+          url: result.screenshot.url,
           prompt: input.prompt as string | undefined,
-          styleMap,
+          styleMap: result.screenshot.styleMap,
           onLog: context?.onLog,
           model: resolveModel('imageAnalysis', context?.models, context?.model),
         });

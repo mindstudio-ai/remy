@@ -22,6 +22,155 @@ import { createLogger } from '../../logger.js';
 
 const log = createLogger('browser-automation');
 
+/**
+ * Structured result from running the browser automation sub-agent.
+ *
+ * Programmatic callers (e.g. the screenshot tool) read `screenshot` directly
+ * instead of parsing prose. The public `browserAutomationTool` wrapper
+ * synthesizes a markdown string from this for the model.
+ */
+export interface BrowserAutomationResult {
+  text: string;
+  screenshot?: { url: string; styleMap?: string };
+}
+
+/**
+ * Run the browser automation sub-agent and return its structured output.
+ * Acquires the shared browser lock for the duration of the run.
+ */
+export async function runBrowserAutomation(
+  task: string,
+  context: ToolExecutionContext,
+): Promise<BrowserAutomationResult> {
+  const release = await acquireBrowserLock();
+  try {
+    const result = await runSubAgent({
+      system: getBrowserAutomationPrompt(),
+      task,
+      tools: BROWSER_TOOLS,
+      externalTools: BROWSER_EXTERNAL_TOOLS,
+      executeTool: async (name, _input, _toolCallId, onLog) => {
+        if (name === 'setupBrowser') {
+          try {
+            const result = await sidecarRequest(
+              '/setup-browser',
+              {
+                auth: _input.auth,
+                path: _input.path,
+              },
+              { timeout: 15000 },
+            );
+            return JSON.stringify(result);
+          } catch (err: any) {
+            return `Error setting up browser: ${err.message}`;
+          }
+        }
+        if (name === 'screenshotFullPage') {
+          try {
+            return await captureAndAnalyzeScreenshot({
+              path: _input.path as string | undefined,
+              onLog,
+              model: resolveModel(
+                'imageAnalysis',
+                context.models,
+                context.model,
+              ),
+            });
+          } catch (err: any) {
+            return `Error taking screenshot: ${err.message}`;
+          }
+        }
+        return `Error: unknown local tool "${name}"`;
+      },
+      apiConfig: context.apiConfig,
+      model: resolveModel('browserAutomation', context.models, context.model),
+      subAgentId: 'browserAutomation',
+      signal: context.signal,
+      parentToolId: context.toolCallId,
+      requestId: context.requestId,
+      onEvent: context.onEvent,
+      resolveExternalTool: async (id, name, input) => {
+        if (!context.resolveExternalTool) {
+          return 'Error: no external tool resolver';
+        }
+        const result = await context.resolveExternalTool(id, name, input);
+
+        // Auto-analyze screenshotViewport results in browserCommand results
+        if (name === 'browserCommand') {
+          try {
+            const parsed = JSON.parse(result);
+            const screenshotSteps = (parsed.steps || []).filter(
+              (s: any) => s.command === 'screenshotViewport' && s.result?.url,
+            );
+            if (screenshotSteps.length > 0) {
+              const visionOverride = {
+                model: resolveModel(
+                  'imageAnalysis',
+                  context.models,
+                  context.model,
+                ),
+              };
+              const batchInput = screenshotSteps.map((s: any) => ({
+                stepType: 'analyzeImage',
+                step: {
+                  imageUrl: s.result.url,
+                  prompt: buildScreenshotAnalysisPrompt({
+                    styleMap: s.result.styleMap,
+                  }),
+                  visionModelOverride: visionOverride,
+                },
+              }));
+              const batchResult = await runMindstudioCli(
+                ['batch', JSON.stringify(batchInput)],
+                { timeout: 200_000, caller: 'browserAutomation' },
+              );
+              try {
+                const analyses = JSON.parse(batchResult);
+                let ai = 0;
+                for (const step of parsed.steps) {
+                  if (
+                    step.command === 'screenshotViewport' &&
+                    step.result?.url &&
+                    ai < analyses.length
+                  ) {
+                    step.result.analysis =
+                      analyses[ai]?.output?.analysis ||
+                      analyses[ai]?.output ||
+                      '';
+                    ai++;
+                  }
+                }
+              } catch {
+                log.debug('Failed to parse batch analysis result', {
+                  batchResult,
+                });
+              }
+              return JSON.stringify(parsed);
+            }
+          } catch {
+            // Not JSON or no screenshots — return as-is
+          }
+        }
+        return result;
+      },
+      toolRegistry: context.toolRegistry,
+      captureArtifacts: ['screenshotFullPage'],
+    });
+
+    context.subAgentMessages?.set(context.toolCallId, result.messages);
+
+    const ss = result.artifacts?.screenshotFullPage;
+    return {
+      text: result.text,
+      ...(ss?.url
+        ? { screenshot: { url: ss.url, styleMap: ss.styleMap } }
+        : {}),
+    };
+  } finally {
+    release();
+  }
+}
+
 export const browserAutomationTool: Tool = {
   clearable: true,
   definition: {
@@ -45,136 +194,12 @@ export const browserAutomationTool: Tool = {
     if (!context) {
       return 'Error: browser automation requires execution context (only available in headless mode)';
     }
-
-    const release = await acquireBrowserLock();
-    try {
-      const result = await runSubAgent({
-        system: getBrowserAutomationPrompt(),
-        task: input.task,
-        tools: BROWSER_TOOLS,
-        externalTools: BROWSER_EXTERNAL_TOOLS,
-        executeTool: async (name, _input, _toolCallId, onLog) => {
-          if (name === 'setupBrowser') {
-            try {
-              const result = await sidecarRequest(
-                '/setup-browser',
-                {
-                  auth: _input.auth,
-                  path: _input.path,
-                },
-                { timeout: 15000 },
-              );
-              return JSON.stringify(result);
-            } catch (err: any) {
-              return `Error setting up browser: ${err.message}`;
-            }
-          }
-          if (name === 'screenshotFullPage') {
-            try {
-              return await captureAndAnalyzeScreenshot({
-                path: _input.path as string | undefined,
-                onLog,
-                model: resolveModel(
-                  'imageAnalysis',
-                  context.models,
-                  context.model,
-                ),
-              });
-            } catch (err: any) {
-              return `Error taking screenshot: ${err.message}`;
-            }
-          }
-          return `Error: unknown local tool "${name}"`;
-        },
-        apiConfig: context.apiConfig,
-        model: resolveModel('browserAutomation', context.models, context.model),
-        subAgentId: 'browserAutomation',
-        signal: context.signal,
-        parentToolId: context.toolCallId,
-        requestId: context.requestId,
-        onEvent: context.onEvent,
-        resolveExternalTool: async (id, name, input) => {
-          if (!context.resolveExternalTool) {
-            return 'Error: no external tool resolver';
-          }
-          const result = await context.resolveExternalTool(id, name, input);
-
-          // Auto-analyze screenshotViewport results in browserCommand results
-          if (name === 'browserCommand') {
-            try {
-              const parsed = JSON.parse(result);
-              const screenshotSteps = (parsed.steps || []).filter(
-                (s: any) => s.command === 'screenshotViewport' && s.result?.url,
-              );
-              if (screenshotSteps.length > 0) {
-                const visionOverride = {
-                  model: resolveModel(
-                    'imageAnalysis',
-                    context.models,
-                    context.model,
-                  ),
-                };
-                const batchInput = screenshotSteps.map((s: any) => ({
-                  stepType: 'analyzeImage',
-                  step: {
-                    imageUrl: s.result.url,
-                    prompt: buildScreenshotAnalysisPrompt({
-                      styleMap: s.result.styleMap,
-                    }),
-                    visionModelOverride: visionOverride,
-                  },
-                }));
-                const batchResult = await runMindstudioCli(
-                  ['batch', JSON.stringify(batchInput)],
-                  { timeout: 200_000, caller: 'browserAutomation' },
-                );
-                try {
-                  const analyses = JSON.parse(batchResult);
-                  let ai = 0;
-                  for (const step of parsed.steps) {
-                    if (
-                      step.command === 'screenshotViewport' &&
-                      step.result?.url &&
-                      ai < analyses.length
-                    ) {
-                      step.result.analysis =
-                        analyses[ai]?.output?.analysis ||
-                        analyses[ai]?.output ||
-                        '';
-                      ai++;
-                    }
-                  }
-                } catch {
-                  log.debug('Failed to parse batch analysis result', {
-                    batchResult,
-                  });
-                }
-                return JSON.stringify(parsed);
-              }
-            } catch {
-              // Not JSON or no screenshots — return as-is
-            }
-          }
-          return result;
-        },
-        toolRegistry: context.toolRegistry,
-        captureArtifacts: ['screenshotFullPage'],
-      });
-
-      context.subAgentMessages?.set(context.toolCallId, result.messages);
-
-      // Tool result is a plain markdown string — same contract as every other
-      // sub-agent. If a final-state screenshot was captured, append it as a
-      // markdown image so the frontend renders it inline alongside the prose
-      // without needing to unwrap a structured envelope. The styleMap is not
-      // surfaced here; it's only useful inside the sub-agent's own loop.
-      const ss = result.artifacts?.screenshotFullPage;
-      if (ss?.url) {
-        return `${result.text}\n\n![Final state](${ss.url})`;
-      }
-      return result.text;
-    } finally {
-      release();
+    const result = await runBrowserAutomation(input.task as string, context);
+    // When a final-state screenshot was captured, append it as a markdown
+    // image so the frontend renders it inline alongside the prose.
+    if (result.screenshot) {
+      return `${result.text}\n\n![Final state](${result.screenshot.url})`;
     }
+    return result.text;
   },
 };
