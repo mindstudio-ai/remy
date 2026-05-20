@@ -338,7 +338,7 @@ Inbound HTTP endpoints that invoke methods.
 }
 ```
 
-Endpoint URL: `https://{app-subdomain}.mindstudio.ai/_/webhook/{secret}`
+Endpoint URL: `https://{app-host}/_/webhook/{secret}` — `{app-host}` is any hostname the app is served on (default `<uuid>.msagent.ai`, a custom platform subdomain, or a custom domain).
 
 Accepts any HTTP method. The method receives `{ method, headers, query, body }` as input.
 
