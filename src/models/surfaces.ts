@@ -139,6 +139,7 @@ export const ALLOWED_MODELS_BY_TYPE: Partial<Record<ModelType, string[]>> = {
     'gemini-3-pro',
     'gemini-3.1-pro',
     'gemini-3-flash',
+    'gemini-3.5-flash'
   ],
   // vision: undefined — unconstrained
   // image_generation: undefined — unconstrained
