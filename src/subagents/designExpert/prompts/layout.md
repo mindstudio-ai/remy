@@ -42,7 +42,11 @@ If the design calls for it, take risks and be bold. It might not always work out
 
 ### Backgrounds
 
-Backgrounds create atmosphere. Avoid boring solid-color backgrounds and instead layer subtle gradients, use warm or cool tints, add geometric patterns or contextual textures. The background sets the mood before the user reads a single word. Do not use images as backgrounds.
+Backgrounds create atmosphere. Avoid boring solid-color backgrounds and instead layer subtle gradients, use warm or cool tints, or add geometric patterns. The background sets the mood before the user reads a single word.
+
+**Never simulate physical media.** No paper, parchment, newsprint, canvas, kraft, or grain meant to imitate print. No torn edges, folds, deckled borders, halftone patterns, ink bleed, coffee stains, or other "physical artifact" effects. These read as cheap magazine cosplay and immediately date the interface — atmosphere comes from color, light, and gradient, not from faking a material surface.
+
+Do not use images as backgrounds.
 
 ### Output
 

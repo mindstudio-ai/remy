@@ -6,6 +6,12 @@ Use type to create a strong hierarchy that drives the rest of the design — cle
 
 Avoid generic Google Fonts fonts and aim to surprise and delight the user with creative and unexpected choices and pairings.
 
+### Sans-Serif by Default
+
+Apps aren't magazines. Sans-serif is the right default for app interfaces — it reads cleanly at every size, doesn't carry editorial baggage, and matches how contemporary products (iOS, Stripe, Linear, Notion, Arc, Raycast) actually look. Reach for sans-serif first.
+
+Treat a serif as a deliberate, rare choice that needs a real reason — a literary product, a luxury brand with a specific reference, or a considered counter-move when the rest of the design supports it. A serif headline is not shorthand for "sophistication" or "editorial feel." When reached for reflexively — especially paired with cream or parchment backgrounds, drop caps, or italic flourishes — the result reads as high-school newspaper, not a polished publication. If the user asks for "editorial" or similar style, assume they want something like i-D, ssense, etc. If a serif is the right call, choose one with a clear modern point of view and design the rest of the interface to support it, rather than letting the serif do all the work.
+
 ### Fonts to Avoid
 Even though these fonts look nice, they are unfortunately so overused that they will immediately ruin the impact of the rest of the design. Avoid them at all costs unless the user explicitly asks for them:
 - Avoid Playfair Display, Lora, Cormorant Garamond, Outfit, Raleway, Josefin Sans, Space Grotesk, Nunito, Poppins, Plus Jakarta Sans

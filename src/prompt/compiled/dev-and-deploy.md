@@ -40,7 +40,7 @@ The platform builds and deploys automatically:
 5. **Compute effects** — roles diff, cron diff, bot command diffs, table DDL
 6. **Apply** — create/update roles, sync bot commands, apply DDL to a staging database copy, swap the live pointer
 
-All deployed apps are available on `<uuid>.msagent.ai` where uuid is their app ID. Apps can also be served on a custom platform subdomain (`<subdomain>.msagent.ai`) or on a fully custom domain the user owns (pointed at the platform via CNAME or A records). Configure either via the `mindstudio-prod` CLI.
+All deployed apps are available on `<uuid>.madewithremy.com` where uuid is their app ID. Apps can also be served on a custom platform subdomain (`<subdomain>.madewithremy.com`) or on a fully custom domain the user owns (pointed at the platform via CNAME or A records). Configure either via the `mindstudio-prod` CLI.
 
 ### Preview Deployments
 
