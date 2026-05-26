@@ -1,0 +1,921 @@
+Welcome to the open alpha for Remy. We
+0:03
+are excited to have you here. I'm
+0:04
+excited for all of the bugs you're going
+0:06
+to find and excited to see what you
+0:09
+build with this. Everything is pretty
+0:11
+self-explanatory for the most part and
+0:13
+you can just kind of click around and
+0:14
+chat and try and figure it out. That's
+0:16
+actually what would be most valuable to
+0:17
+us early on. But I wanted to make a
+0:20
+quick video to kind of orient you to all
+0:24
+the different pieces here and hopefully
+0:26
+make the interface a little bit more
+0:27
+familiar before you dive in and kind of
+0:29
+get lost in what's happening. So, we
+0:30
+just created a new app here and what
+0:32
+we're looking at is basically like a
+0:34
+little quick start page. You can kind of
+0:35
+think of this like the Google I'm
+0:38
+feeling lucky button if you want to just
+0:39
+click something and you know work with
+0:42
+Remy to scaffold up an idea if you don't
+0:44
+already have something in mind.
+0:45
+Otherwise, you can click in the chat
+0:47
+here and start typing. Or you can either
+0:50
+click this record voice or hold down the
+0:52
+back tick key on the top left of your
+0:54
+keyboard and that becomes kind of a push
+0:56
+to talk. And we've actually found this
+0:58
+to be a really effective way to build
+0:59
+with Remy because Remy is not like other
+1:02
+vibe coding or coding agent tools that
+1:04
+you've might have used in the past. Remy
+1:07
+is much more of a fullervice thought
+1:09
+partner and architect. And so kind of
+1:12
+the more context you can provide and the
+1:14
+more you can kind of ramble and describe
+1:16
+your idea in natural language including
+1:18
+kind of all of the edges, all the things
+1:20
+you haven't quite figured out, the
+1:21
+better your build will actually be as
+1:23
+opposed to trying to be super specific
+1:25
+and give it a very specific product
+1:27
+spec. If you do that, if you have one of
+1:29
+those, like that's great. It'll work
+1:30
+with that. But if you don't actually
+1:31
+know 100% of what you want, it's in your
+1:34
+best interest to kind of be ambiguous as
+1:36
+you describe it and describe it as best
+1:38
+you can and work with Remy to align and
+1:40
+build something compelling because if
+1:42
+you show up and start saying a bunch of
+1:44
+very specific things, it's going to
+1:45
+interpret your specificity as stated
+1:48
+preference and you're going to miss out
+1:50
+on a lot of the magic that comes from it
+1:52
+working with you to align on what it is
+1:54
+you want to build. So that's getting
+1:56
+started. And then once you get started
+1:58
+and you've aligned on it with Remy,
+1:59
+it'll kick off a bunch of processes and
+2:02
+start calling a bunch of other agents to
+2:04
+build you an initial spec. And when
+2:06
+that's happening, you'll see this agents
+2:08
+tab over here. And each of these
+2:10
+different items, you won't have as many
+2:11
+cuz it'll just be starting. This is from
+2:12
+a finished project is a different thing
+2:14
+that Remy is doing. So it might be, you
+2:16
+know, looking at code. It might be
+2:18
+editing files. It might be running
+2:19
+commands. It also might be consulting to
+2:21
+other agents. And you can kind of see
+2:22
+this little inbox view of what's
+2:24
+happening. And you can see the thinking
+2:25
+that the agent does and then the results
+2:28
+that come back. And this whole process,
+2:30
+the initial spec build, depending on
+2:32
+what it is you're building, if you're
+2:33
+building something super simple, it
+2:34
+might take a minute. If you're building
+2:36
+something really complex, it might take
+2:37
+10, 15 minutes, something like that. So
+2:39
+like you can sit and watch it if you
+2:41
+want. It's often fun, but like it it
+2:43
+does take a while to get going. Uh it's
+2:45
+doing a lot of work and you can always
+2:47
+close the tab and come back later and
+2:49
+it'll save where it's finished, anything
+2:52
+like that. So you don't need to um sit
+2:53
+and babysit, but it can be fun to watch
+2:55
+it. And occasionally the network
+2:57
+connection might get dropped. So like if
+2:58
+it is sitting there for 10 minutes, you
+3:00
+know, it's always safe to refresh the
+3:02
+page and reload it and make sure that
+3:04
+you know you haven't missed something.
+3:05
+So keep that in mind as you're building.
+3:06
+And then once it's finished that initial
+3:08
+spec, you'll see the spec here, which is
+3:10
+the source of truth for the application.
+3:12
+And this is editable by you. You know,
+3:14
+you can type in here. You can also see
+3:16
+over here on the right, these are the
+3:18
+Mind Studio flavored markdown
+3:20
+annotations that Remy will use to apply
+3:22
+precision to the spec. And if you want
+3:24
+to edit these, you can also edit these
+3:26
+inline. So there's a couple different
+3:27
+ways you can edit all of this. You can
+3:29
+type, you can chat with Remy and say,
+3:31
+"Change this or use your voice to send a
+3:33
+voice note and change it." You can also
+3:35
+highlight things and revise them kind of
+3:37
+Google Docs style. And you can also
+3:40
+create a batch of revisions and do, you
+3:42
+know, many revisions at once and then
+3:45
+send them all off and have it go through
+3:46
+and rewrite based on your revisions. So
+3:48
+that can be a really compelling way to
+3:49
+work with it. There's also the color
+3:50
+scheme. You know, if you want to change
+3:52
+this, you can. Uh you can also chat with
+3:54
+Remy to change it. As with everything
+3:55
+else, same thing with typography, all
+3:58
+the visual identity stuff. Um these that
+4:00
+you're looking at are HTML wireframes
+4:02
+that it's written in the spec when it
+4:03
+needs something that's, you know, really
+4:04
+precise and reproducible. And then once
+4:06
+you're ready to build, you'll see a
+4:08
+little card over here in the bottom left
+4:09
+that says build now. And you can just
+4:10
+click that and it'll start building. And
+4:12
+again, that depending on what it is that
+4:14
+you're trying to build, could take
+4:15
+anywhere from 2 minutes to 20 minutes,
+4:17
+30 minutes, something like that. You can
+4:18
+watch it all happening in here. And then
+4:20
+once it's written all the code, it'll
+4:22
+kick off a test process. And you'll see
+4:24
+this little browser appear over here in
+4:26
+the corner. And you'll see its cursor
+4:28
+start to take over and start working on
+4:29
+things and doing stuff. It's kind of fun
+4:31
+to watch. You can expand this out if you
+4:33
+want to make it bigger. And then once
+4:34
+it's done with all of that, then you
+4:37
+will have access to all of these top bar
+4:39
+tabs up here. So you'll have access to
+4:41
+the agent history to see what it's
+4:43
+doing. You'll have access to this
+4:44
+preview which is either in full screen,
+4:47
+desktop aspect ratio, or mobile aspect
+4:49
+ratio. You can also scan a QR code here
+4:52
+to preview it on your phone and that'll
+4:54
+actually mirror it in here. Or you can
+4:56
+open it in a new tab if you want to open
+4:57
+it in a new tab. uh this add notes
+5:00
+button down here. If you click that,
+5:02
+then you'll see my cursor changed over
+5:03
+here and I can highlight things and I
+5:05
+can say, you know, change this to green
+5:07
+or whatever. I can also click and add
+5:10
+point notes. And then I just click when
+5:12
+I'm done, I click send to agent and
+5:13
+that's going to take a screenshot of all
+5:14
+of this and send it off to Remy and
+5:16
+request the fixes. So that can be really
+5:17
+useful if you're trying to communicate,
+5:19
+you know, specific visual changes that
+5:22
+might be difficult to express in words
+5:24
+or natural language. The spec tab
+5:26
+obviously is here and by the time the
+5:27
+build is done, you'll have both the road
+5:29
+map here which is a list of lanes that
+5:32
+it has created with additional features
+5:34
+that you can choose to build. So this is
+5:36
+kind of the product narrative for
+5:37
+evolving your project. And you can click
+5:40
+on any of these to see basically the
+5:42
+full spec for the road map item as well
+5:44
+as edit it if you want to and then click
+5:45
+build now if you want to build it or you
+5:47
+can just click build directly from here
+5:49
+to kick off a build. You'll also see it
+5:51
+has created a pitch deck basically for
+5:53
+the product. And this is kind of the
+5:55
+highle narrative vision for what it is
+5:57
+you're building. And this is a fun asset
+5:59
+to both align with the agent on what
+6:02
+you're building to kind of inspire you,
+6:04
+inspire it, work together. And it's also
+6:06
+sharable. So you can click share and
+6:08
+this will open it on as a Mind Studio
+6:10
+asset. This URL is not public. Assets in
+6:12
+Mine Studio are not public by default.
+6:14
+You have to click this little share icon
+6:15
+down here and then you can toggle on
+6:17
+public access and then now this link is
+6:19
+sharable to anybody. You have access to
+6:22
+all of the code in a code editor here.
+6:24
+So we can see you know the actual raw
+6:26
+spec files are in here as well if we
+6:28
+wanted to see them in code for some
+6:29
+reason. Uh this mine studio.json is the
+6:32
+only sort of requirement here. It's the
+6:33
+actual manifest for the project. You can
+6:35
+see all of the backend routes. You can
+6:38
+see all of the tables in the database.
+6:41
+any O stuff that you have, users, all of
+6:42
+that will also be defined in here. And
+6:44
+then you can see these, you know, web
+6:46
+frontends that it's built as well in
+6:48
+here. And this is all, you know,
+6:49
+editable. You can edit it if you want to
+6:51
+edit it or ask it to do things if you
+6:54
+want to do that. You mostly don't need
+6:55
+to spend time in here unless you want
+6:57
+to. The databases tab allows you to
+6:59
+query the databases that are in the app.
+7:03
+Uh these are all SQL databases. You can
+7:05
+edit these if you want to edit them. Uh
+7:07
+you can run any query that you want to
+7:09
+run up here. and you know do whatever it
+7:12
+is you want to type in here and this
+7:15
+runs queries on the app database and you
+7:17
+can add rows if you want if you want to
+7:19
+manually manage it or at least view it
+7:21
+this is in here. This is the development
+7:22
+database so your apps always have a dev
+7:25
+database and a production database so
+7:27
+you can test kind of anything you want
+7:28
+in development without affecting any of
+7:30
+your production code. Scenarios are test
+7:33
+cases that the agent builds as part of
+7:35
+making your app. Um they're just code.
+7:37
+You can click view code and see them if
+7:39
+you want to see what they do. They uh
+7:41
+depending on what you've built, it might
+7:42
+make a few. It might make a handful.
+7:45
+That really depends on how complex it
+7:47
+is. This, for example, has an empty
+7:49
+state that's clean and nothing. And it
+7:51
+has a sample game inside of it. So you
+7:53
+can so you and the agent actually can
+7:56
+test out kind of everything that's
+7:58
+happening in here with some real
+7:59
+synthetic data to play with. And if you
+8:02
+run these, be aware that running these
+8:04
+clears out your development database. So
+8:05
+it's like a fresh start basically. So
+8:07
+just be aware of that as you're testing.
+8:09
+Roles over here. If your app has
+8:11
+authentication and it defines user
+8:12
+roles, this allows you to you can click
+8:14
+on these and easily change the role of
+8:16
+the user inside of the preview so that
+8:18
+you can preview it as you know an admin
+8:20
+or a limited scope user or whatever it
+8:23
+is you need to do. this button down
+8:25
+here, reset draft. This is how you can
+8:27
+clear out all of the data from your
+8:29
+development database. Or if you want to,
+8:31
+if you've published the app and you want
+8:32
+to sync down data from the production
+8:34
+database, so that your development
+8:36
+database is a snapshot of real
+8:38
+production data, you can click this
+8:39
+reset from production button and that
+8:41
+will overwrite the development database
+8:42
+with production data. This processes tab
+8:45
+is kind of just for debugging. Uh it's
+8:48
+interesting to see sometimes the most
+8:50
+useful things here are the methods tab
+8:52
+where you can see these are all of the
+8:54
+backend requests that the app has made.
+8:56
+You can see information about them you
+8:58
+know timing all this stuff. The browser
+9:00
+console is a snapshot of the preview
+9:02
+browser. This is the agents log itself
+9:04
+where you can see some stats on some of
+9:06
+this stuff. Uh the live preview server
+9:08
+is the front-end web server. The
+9:10
+language server handles code syntax
+9:12
+error checking. The platform tunnel is
+9:14
+the bridge between this development
+9:16
+environment and the platform. So when
+9:17
+you're building in development, you're
+9:18
+actually running everything through
+9:20
+production endpoints. So you know, if it
+9:22
+works in development, it's going to work
+9:23
+in production. This is a basically just
+9:24
+the receiver for those methods in
+9:27
+development. And then sandbox system is
+9:29
+the full sandbox log that can be useful
+9:31
+in just figuring out everything that's
+9:32
+going on. You also have a terminal in
+9:34
+here. If you want to, you know, do
+9:36
+anything inside of a terminal, you can
+9:37
+do that. And Remy, the agent has access
+9:40
+to all of these logs itself. So like
+9:42
+these are here for you to see, but also
+9:43
+it can look at, you know, recently run
+9:46
+methods and get all of this and debug
+9:48
+errors. And that's a really useful way
+9:50
+to work is you can be you can just be
+9:51
+like, I tried to click this and it
+9:53
+didn't work and it'll look at the errors
+9:54
+and see what happened and it can fix it
+9:56
+without you needing to go off and find a
+9:58
+bunch of stuff. It's really cool to see
+9:59
+that all working. It shortens debugging
+10:01
+time dramatically. A few more things.
+10:03
+The sync button will kick off a plan for
+10:07
+Remy to either update the spec with
+10:10
+changes you've made in the code or
+10:11
+update the code with changes you've made
+10:13
+in the spec. So that's your kind of easy
+10:15
+way to basically checkpoint your
+10:17
+progress. Like a lot of times you'll
+10:19
+build something and then you'll keep
+10:20
+chatting with it and write a bunch of
+10:22
+code, change a bunch of code, and then
+10:23
+the spec is stale. That allows you to
+10:25
+keep the spec in sync with what you've
+10:26
+done. Or if you change a bunch of things
+10:28
+in the spec and you want to update the
+10:30
+code to match, that's the way to do it.
+10:31
+publish does what it says. It will Remy
+10:34
+will check the git status of the project
+10:37
+and put together a change log and a
+10:39
+bunch of information for you and then
+10:41
+you can approve it and that'll kick off
+10:42
+a build. Uh, a few more things. One is
+10:44
+you can paste screenshots into this
+10:46
+chat. You can attach files, documents,
+10:48
+anything you want in here. There's a few
+10:50
+slash commands. We try not to rely on
+10:52
+these overly. I think a lot of times
+10:54
+they are just a crutch to be honest.
+10:56
+Remy doesn't need them in the way that a
+10:57
+lot of other coding agents do. There's a
+10:59
+few that might be useful though.
+11:00
+Specifically, SLC clear if you want to
+11:02
+wipe the conversation history and
+11:03
+reclaim all the context or slash compact
+11:06
+which will summarize the conversation,
+11:07
+clear out all the context and then you
+11:08
+can keep going. So, those are both
+11:10
+useful especially in long builds. Uh
+11:11
+sometimes it compacts automatically,
+11:13
+especially after a bunch of work, but
+11:14
+those two are available if you need
+11:16
+them. And then perhaps most importantly,
+11:18
+if you run into any bugs or anything
+11:20
+else, this little connected icon up here
+11:22
+next to the app name, if you click it
+11:24
+and you click send feedback, this will
+11:26
+collect all of the logs from the sandbox
+11:28
+and then you can just either send this
+11:30
+directly to me or describe what's
+11:33
+happening and you can use voice if you
+11:35
+want to do that. Uh, this is super
+11:37
+useful. If if just anything weird
+11:39
+happens or anything breaks or whatever,
+11:40
+like please reach for this. This is the
+11:42
+easiest way for us to continue improving
+11:44
+the product and figuring everything out.
+11:46
+So, please use this liberally. It goes
+11:48
+directly to my email inbox. So, please
+11:50
+spam away with it. It's it's very useful
+11:52
+to us. Now, once you've published, you
+11:54
+have, if you click this little back
+11:55
+arrow here, you'll have the dashboard.
+11:57
+And the dashboard shows you this is the
+12:00
+place where Alpha is least polished. So,
+12:03
+there are a lot of things that still
+12:04
+aren't wired up correctly and still not
+12:06
+intuitive to use. There's a few things
+12:08
+that you're probably going to want to do
+12:09
+here. One is to set a domain for your
+12:11
+published app. And to do that, you click
+12:13
+on interfaces and you click on web. And
+12:15
+then you can set the custom subdomain
+12:16
+for the app and then it's available on
+12:18
+that domain. So that's how you do that
+12:20
+once it's done. You can also look at
+12:21
+builds. This is your live build if you
+12:24
+have one. You can see previous builds as
+12:25
+well here. And this is where you can
+12:28
+kind of debug, you know, issues with
+12:30
+compiling and deploying the application
+12:31
+and also see to make sure that it's
+12:33
+ready. Users, if you have users in your
+12:35
+app, they'll appear here. You can manage
+12:36
+their roles here as well as generate API
+12:39
+keys if that's something that's
+12:40
+available inside the app. if it has a
+12:42
+REST API. The database you will have
+12:44
+your production database in here if you
+12:46
+need to manage that directly. Secrets
+12:47
+are where you put things like stripe
+12:49
+keys and other things like that. And
+12:51
+then this overview will have logs that
+12:53
+you can debug you know you can see
+12:55
+errors that happened like you know
+12:58
+things that broke what the error is
+13:00
+methods all of this stuff in here. Uh
+13:02
+and the most important thing is that
+13:03
+Remy also has access to all of this. So
+13:05
+in the editor environment it can manage
+13:09
+production as well. So it's able to
+13:10
+query production errors. It's able to
+13:12
+query the production database. It can
+13:14
+set the domain for you. It can manage
+13:15
+secrets for you. So it can do all of
+13:17
+that. So you don't, you know, if you
+13:19
+want to, you can do it manually. It can
+13:21
+be easier sometimes to do it manually,
+13:22
+but you can also just chat with Remy
+13:24
+here and ask it to do whatever it is you
+13:26
+want to do. And then I think the last
+13:28
+thing to pay attention to is how billing
+13:30
+works for this. So we're not charging
+13:33
+anything for this in alpha. We just want
+13:35
+people to test it and give us feedback.
+13:38
+However, you are responsible for all of
+13:39
+the inference cost and this, you know, a
+13:42
+typical app might cost
+13:45
+30 40 bucks to build a full end to end,
+13:48
+you know, front end, back end, full
+13:50
+stack application like this. And so,
+13:52
+just to avoid disruption, like
+13:54
+everything flows through the M studio
+13:55
+service router. So, you can see all the
+13:56
+costs and all of that. And then if you
+13:57
+click up here in the top right, you can
+13:59
+top up your balance or you can go into
+14:02
+settings and go into auto recharge and
+14:05
+enable automatic recharge on your
+14:07
+balance just so it'll automatically stay
+14:09
+topped up and your sessions won't get
+14:10
+interrupted. If you do run out of
+14:11
+credits, it'll, you know, show a little
+14:13
+error in here and you can top up in
+14:14
+here. But in general, it's good to have
+14:16
+a buffer because when it's running a
+14:18
+giant tool loop, you don't want to
+14:20
+interrupt it with needing to top up your
+14:22
+balance. And yeah, that's kind of a full
+14:24
+overview of the interface in here.
+14:26
+There's still a bunch of stuff that I
+14:28
+probably didn't get to, but hopefully
+14:30
+that's enough to help you get started
+14:31
+and feel oriented. And I'm really
+14:33
+excited that you are here and can't wait
+14:35
+to see what you make and all of the
+14:37
+weird bugs that you find that I never
+14:40
+even considered. So thank you in
+14:41
+advance.
