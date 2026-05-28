@@ -1,5 +1,11 @@
 # Remy Alpha: How We Talk About It
 
+## Note on positioning vs. long-term ICP
+
+This positioning ("a new way to program," "spec-driven development," "not no-code") speaks deliberately to the semi-technical early adopter — the technical PM, the operator comfortable iterating on a structured artifact, the audience reading Lenny's / Hacker News / AI tooling Discords. That's the wedge Phase 1 GTM is built around and the audience the alpha is converting today.
+
+As the product matures and the conversational UX absorbs more of the cognitive load, the positioning will evolve toward the broader non-technical operator base described in the diligence notes. The two are connected by a wedge → expansion arc, not a single static buyer. See [`diligence/06_risks-and-downside.md` → Risk #6](../diligence/06_risks-and-downside.md) for the full framing.
+
 ## What Remy Is
 
 Remy is the next step in how software gets made. Programming has always moved up in abstraction. Punch cards to assembly to C to TypeScript. Each step let you express more intent in less code. Remy takes the next step: the source language is annotated prose.

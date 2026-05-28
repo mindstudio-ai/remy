@@ -86,4 +86,10 @@ The serviceable addressable market narrows to US mid-market and SMB companies (1
 
 ### SOM
 
-SOM is scenario-based given Remy's pre-commercial pricing, and a specific trajectory will develop with post-funding commercial data. The shape of the opportunity is two parallel legs: a direct-to-SMB motion where sales and marketing convert the ICP, and platform-licensing deals where a single contract with a major SaaS incumbent pulls forward tens of thousands of end-customer seats. Both paths will be pursued in parallel, and neither needs to succeed in isolation for the SOM to be meaningful.
+SOM is scenario-based, and the relevant story is the wedge vs. destination distinction across the buyer segment.
+
+**Near-term reachable (12-24 months): the technical-PM and semi-technical-operator segment.** ~500K-1M US technical PMs and operators, addressable via PLG self-serve, no sales motion required to convert the first wave. At $50-150/seat/month and 5% penetration into this segment, the near-term SOM lands in the **$50-200M ARR range**. This is the wedge — venture-scale on its own.
+
+**Long-term reachable (24-60 months): the broader non-technical operator base** where the full $15-25B SAM lives. Reached through (a) org-level expansion from technical-PM beachheads and (b) UX maturity that lowers the entry barrier for the operator who doesn't currently think of themselves as technical. SOM into this base is sales-motion-dependent and develops with post-Seed commercial data.
+
+The primary acquisition motion is direct PLG into technical PMs (above). Platform-licensing deals into SaaS incumbents run alongside as an upside amplifier — each closed deal pulls forward thousands or tens of thousands of end-customer seats inside the incumbent's user base, compounding the primary motion materially when one lands. See [Strategy → What wins](./07_strategy-and-gtm.md#what-wins-the-conviction) for the conviction framing.

@@ -1,8 +1,22 @@
 # Strategy, GTM, and Milestones
 
-Strategic context (acquirer landscape and consolidation dynamics), the three-motion GTM plan, and the near-term milestone framework post-Seed.
+What we're convicted on, how we get there, and what the near-term milestone framework looks like post-Seed.
 
 This is one of eight sections of the diligence material. See [`docs/README.md`](../README.md#diligence--investor-facing-material) for the full index.
+
+---
+
+## What wins (the conviction)
+
+Remy wins by becoming the dominant product agent for the business-software market.
+
+**The acquisition motion is PLG into the technical-PM wedge.** Technical PMs and semi-technical operators are the immediately-reachable segment (see [Product & Traction → Who it's for](./02_product-and-traction.md#who-its-for)), they convert without a sales motion, and they bring Remy into their organizations.
+
+**The growth motion is org-level expansion from those PMs into the broader operator base they work alongside.** Once a PM ships something useful inside an org, the operations / finance / HR / RevOps leaders on adjacent teams become reachable on a faster timeline than cold-call sales could produce.
+
+**That's the bet.** It's a wedge → expansion arc into the largest and most underserved segment of business application development, with the technical-PM beachhead as the entry point and the broader operator base as the destination.
+
+Everything else in this section — platform licensing into SaaS incumbents, the strategic-acquirer landscape, the institutional reference customer — compounds the primary motion when it hits. These aren't fallbacks for if the primary stalls; they're amplifiers on the primary thesis. The materials are honest that the asset has range-of-outcomes optionality (see [Range of outcomes](./06_risks-and-downside.md#range-of-outcomes) in Risks), but the operating thesis is sharp: *this motion wins, and the rest makes it bigger when they land.*
 
 ---
 
@@ -16,22 +30,22 @@ Market dynamics favor consolidation in this space. Enterprise buyers consistentl
 
 ## Go-to-Market
 
-Three parallel motions, each addressing a different buyer.
+The primary motion is PLG into technical PMs, expanding org-by-org into the broader operator base. One amplifier — platform licensing into SaaS incumbents — runs alongside.
 
-**Phase 1: Self-serve, product-led adoption among technical PMs.**
+**Phase 1 (primary acquisition motion): self-serve PLG among technical PMs.**
 - PMs sign up and convert without sales contact, ship internal tools inside their organizations, and generate org-level pull through what they produce.
-- Lowest-cost acquisition channel and the fastest evidence generator for what Remy actually builds.
+- Lowest-cost acquisition channel and the fastest evidence generator for what Remy actually builds. This is the converting segment in the alpha today.
 - Supporting team: a PM-relations and community lead embedded in technical-PM communities (Lenny's, Reforge, AI tooling Slacks, Discord communities for product practitioners), content marketing focused on real-build case studies rather than category claims, and customer success aligned to the moment a single PM's success becomes organization-level interest.
 
-**Phase 2: Top-down enterprise sales into the operator base.**
+**Phase 2 (primary growth motion): org-level expansion into the operator base around the PM beachheads.**
 - Mid-market AE-led motion, with sales engineers paired in on more complex workflows.
-- ICP: operations, finance, HR, and revenue operations leaders at 100-1,000 employee companies.
+- Buyer: operations, finance, HR, and revenue operations leaders at 100-1,000 employee companies — reached *through* the technical-PM champion who's already shipping inside that org.
 - The predecessor platform's user base is a warm channel. Employees at TikTok, Microsoft, Adobe, Oracle, Intel, Meta, Booking.com, Novo Nordisk, and others have used the underlying substrate in production, and several of those organizations are exploring Remy at alpha. Account expansion inside those accounts is the first wave of Phase 2 revenue, well before any cold-call motion has to fire.
 
-**Platform licensing into the SaaS incumbent layer.** A separate motion that runs in parallel with Phases 1 and 2, not after them.
+**Platform licensing into the SaaS incumbent layer (amplifier).** Runs alongside the primary motion, compounds it when deals land.
 - B2B2C deals with horizontal SaaS platforms (CRM, ERP, HRIS, PM, data) whose customers are asking for application-building capability they cannot deliver internally.
-- Enterprise contracts: longer cycle, higher contract value, stickier.
-- A small partnerships team works a named-incumbent list. Each closed deal pulls forward thousands or tens of thousands of end-customer seats and produces revenue that does not depend on the direct motion succeeding at the same pace.
+- Each closed deal pulls forward thousands or tens of thousands of end-customer seats inside the incumbent's user base — accelerating the primary motion by orders of magnitude when it hits.
+- A small partnerships team works a named-incumbent list. Treated as upside on the central thesis, not insurance against the central thesis stalling.
 
 **Brand and marketing as a strategic lever.** The AI software creation space is the noisiest, best-funded category in software right now. Lovable, Bolt, Replit, and others are running aggressive paid acquisition and producing viral demo content. Cursor, Claude Code, and the major labs dominate developer mindshare in adjacent categories. Even with a meaningfully better product, Remy's differentiation does not get heard by default. Standing out is part of the GTM motion. The category is too noisy for a wait-and-see approach to brand.
 

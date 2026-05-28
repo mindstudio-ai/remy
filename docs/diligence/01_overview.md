@@ -10,9 +10,9 @@ This is one of eight sections of the diligence material. See [`docs/README.md`](
 
 Remy is an AI product agent that produces polished, production-grade business applications from plain-language descriptions and conversations. Remy fills the commercially-underserved middle of the AI software creation market. On one side are prototype generators like Lovable and Bolt, which produce frontends and demos but struggle to build real applications with any sort of depth or production-readiness. On the other are engineering-focused coding agents like Claude Code and Codex, which accelerate and empower existing engineering teams and require developer fluency.
 
-The ICP is the non-technical business operator at mid-market and SMB companies (ops, finance, HR, revenue operations), a buyer for whom no other platform today produces real, owned, full-stack applications on demand. The US SAM is estimated at $15-25B. During Remy's alpha, an institutional customer has built a full fund-management application on Remy that is set to run that organization's fund operations — a direct proof point for what Remy can produce in a live institutional context.
+The ICP is the non-technical business operator at mid-market and SMB companies (ops, finance, HR, revenue operations), a buyer for whom no other platform today produces real, owned, full-stack applications on demand. The US SAM is estimated at $15-25B. During Remy's alpha, an institutional customer has used Remy to build a full fund-management application set to run that organization's fund operations — one concrete example among hundreds of alpha builds, included here as a depth signal for the kind of serious software alpha users can produce on the platform.
 
-Remy works. The category question has shifted from "can this be built" to "who captures this segment." The combined asset — Remy and the platform substrate it compiles against (200+ AI models, 1,000+ integrations, managed database, authentication, and deployment) — has multiple commercial paths to value: direct GTM to business operators, B2B2C licensing to incumbent SaaS, and strategic acquisition. No single path needs to work in isolation for the underlying thesis to hold.
+Remy works. The category question has shifted from "can this be built" to "who captures this segment." The bet: Remy becomes the dominant product agent for the business-software market, reached via PLG into the technical-PM wedge and org-level expansion from there into the broader operator base. Platform licensing into SaaS incumbents and strategic exit optionality are amplifiers that compound the primary motion when they land — not fallback paths. See [Strategy → What wins](./07_strategy-and-gtm.md#what-wins-the-conviction) for the conviction case.
 
 ---
 
@@ -22,7 +22,9 @@ Remy is the brand and product. The legal entity is **Wooster Labs, Inc.**, forme
 
 The spinout absorbed the engineering team and the relevant platform infrastructure — 200+ AI models, 1,000+ integrations, sandbox execution, managed databases, authentication, deployment. The predecessor product, **MindStudio**, is being sunset. Its product form was a drag-and-drop visual workflow builder — a category being made structurally obsolete by stronger models and agents — but the substrate underneath was always the durable asset, and that's what's coming forward into Remy. (See [Risks → Predecessor product history](./06_risks-and-downside.md#5-predecessor-product-history) for the full answer to "why didn't MindStudio scale" — it's the load-bearing diligence question and the docs engage it directly.) The substrate has been in production use by major enterprises for years — useful as a credibility signal for the maturity of the infrastructure Remy compiles against, though those users are not transferring as Remy revenue. **Remy is an alpha product and is pre-revenue.**
 
-Existing GoMeta investors converted into Wooster Labs via a pre-seed SAFE at spinout. The Seed round being raised sits on top of that SAFE on an otherwise clean cap table.
+Existing GoMeta investors converted into Wooster Labs via a pre-seed SAFE at spinout. The Seed round being raised sits on top of that SAFE on an otherwise clean cap table. 
+
+We are happy to go into more detail about this to fill in all the context!
 
 ---
 
