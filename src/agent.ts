@@ -45,6 +45,7 @@ import { CLEARABLE_TOOLS } from './tools/index.js';
 import { parseSentinel } from './automatedActions/sentinel.js';
 import { triggerBrandExtraction } from './brandExtraction/trigger.js';
 import { resolveModel } from './models/surfaces.js';
+import { USER_CANCELLED_RESULT } from './toolRegistry.js';
 
 const BRAND_TRIGGERING_TOOLS = new Set(['writeSpec', 'editSpec']);
 
@@ -675,7 +676,7 @@ export async function runTurn(params: {
     const results = await Promise.all(
       toolCalls.map(async (tc) => {
         if (signal?.aborted) {
-          return { id: tc.id, result: 'Error: cancelled', isError: true };
+          return { id: tc.id, result: USER_CANCELLED_RESULT, isError: true };
         }
 
         const toolStart = Date.now();
@@ -707,7 +708,7 @@ export async function runTurn(params: {
         const cascadeAbort = () => {
           toolAbort.abort();
           // Force-settle the tool so Promise.all doesn't hang
-          safeSettle('Error: cancelled', true);
+          safeSettle(USER_CANCELLED_RESULT, true);
         };
         signal?.addEventListener('abort', cascadeAbort, { once: true });
 

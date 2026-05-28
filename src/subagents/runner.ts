@@ -21,7 +21,7 @@ import { recordUsage, nanoToDollars } from '../usageLedger.js';
 
 const log = createLogger('sub-agent');
 import type { AgentEvent, ExternalToolResolver } from '../types.js';
-import type { ToolRegistry } from '../toolRegistry.js';
+import { type ToolRegistry, USER_CANCELLED_RESULT } from '../toolRegistry.js';
 import type { ApiConfig } from '../config.js';
 import { startStatusWatcher } from '../statusWatcher.js';
 import { cleanMessagesForApi } from './common/cleanMessages.js';
@@ -159,7 +159,7 @@ export async function runSubAgent(
           messages: thisInvocation(),
         };
       }
-      return { text: 'Error: cancelled', messages: thisInvocation() };
+      return { text: USER_CANCELLED_RESULT, messages: thisInvocation() };
     }
 
     let lastToolResult = '';
@@ -386,7 +386,7 @@ export async function runSubAgent(
       const results = await Promise.all(
         toolCalls.map(async (tc) => {
           if (signal?.aborted) {
-            return { id: tc.id, result: 'Error: cancelled', isError: true };
+            return { id: tc.id, result: USER_CANCELLED_RESULT, isError: true };
           }
 
           // Per-tool controllable promise + abort

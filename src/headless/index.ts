@@ -47,7 +47,7 @@ import {
   resolveModel,
 } from '../models/surfaces.js';
 import type { StdinCommand } from '../types.js';
-import { ToolRegistry } from '../toolRegistry.js';
+import { ToolRegistry, USER_CANCELLED_RESULT } from '../toolRegistry.js';
 import { persistAttachments, buildUploadHeader } from './attachments.js';
 import { applyPlanFileSideEffect } from './planFile.js';
 import {
@@ -969,7 +969,7 @@ export class HeadlessSession {
     }
     for (const [id, pending] of this.pendingTools) {
       clearTimeout(pending.timeout);
-      pending.resolve('Error: cancelled');
+      pending.resolve(USER_CANCELLED_RESULT);
       this.pendingTools.delete(id);
     }
     return this.queue.drain();

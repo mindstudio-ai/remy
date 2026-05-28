@@ -15,6 +15,15 @@ import { createLogger } from './logger.js';
 
 const log = createLogger('tool-registry');
 
+/**
+ * Tool-result string for user-initiated cancellations (hard stop_tool,
+ * whole-turn cancel, signal-aborted sub-agent runs). Prescriptive so the
+ * model doesn't pattern-match this to a transient error and auto-retry —
+ * the user pressed stop on purpose, wait for their next message.
+ */
+export const USER_CANCELLED_RESULT =
+  '[USER CANCELLED] The user manually cancelled this tool. Do not retry it automatically — wait for the user’s next message for direction.';
+
 export interface ToolRegistryEntry {
   id: string;
   name: string;
@@ -70,7 +79,7 @@ export class ToolRegistry {
         : '[INTERRUPTED] Tool execution was stopped.';
       entry.settle(result, false);
     } else {
-      entry.settle('Error: tool was cancelled', true);
+      entry.settle(USER_CANCELLED_RESULT, true);
     }
 
     this.onEvent?.({
