@@ -40,7 +40,7 @@ You write the logic. The platform handles the rest.
 
 ### Managed Databases
 
-SQLite with typed schemas defined as TypeScript interfaces. No connection strings, no migrations to run manually. Push a schema change and the platform diffs it, clones the database, applies DDL, and promotes atomically. In development, reset to live data or truncate to empty tables with a single command.
+SQL databases with typed schemas defined as TypeScript interfaces. No connection strings, no migrations to run manually. Push a schema change and the platform diffs it, clones the database, applies DDL, and promotes atomically. In development, reset to live data or truncate to empty tables with a single command.
 
 ### Built-in Auth
 
