@@ -69,9 +69,13 @@ The platform substrate beneath Remy:
 
 None of it was built in the last twelve months — it's the product of years of platform engineering, hardened by real production traffic.
 
-## Production credibility
+## Traction and production credibility
 
-The platform substrate underneath Remy has been in production use for years. It powers hundreds of applications at organizations including **The New York Times, Advance Local, ServiceNow, and His Majesty's Revenue & Customs**. Individual employees at **TikTok, Microsoft, Adobe, Oracle, Intel, Meta, Booking.com, Novo Nordisk** and others have been paying users of the same substrate. (Note: those users are not Remy revenue — Remy itself is pre-revenue in open alpha — but the production maturity of what Remy compiles against is real.)
+Two distinct signals, worth keeping separate:
+
+**Remy alpha (the product itself).** Open alpha. Hundreds of apps built on Remy by real users — the live gallery is at [debut.msagent.ai](https://debut.msagent.ai), and live builds (founders and customers walking through their own projects) are on YouTube at [@MindStudio_ai/videos](https://www.youtube.com/@MindStudio_ai/videos). An institutional customer has built a full fund-management application on Remy at alpha, set to run that organization's fund operations. Remy itself is pre-revenue.
+
+**The substrate underneath Remy (the production hardening).** Not a new system. Years of enterprise production traffic underneath the predecessor product. The substrate powers hundreds of applications at organizations including **The New York Times, Advance Local, ServiceNow, and His Majesty's Revenue & Customs**. Individual employees at **TikTok, Microsoft, Adobe, Oracle, Intel, Meta, Booking.com, Novo Nordisk** and others have been paying users of the same substrate. Those users are not Remy revenue — but the production hardening of what Remy compiles against (multi-tenant isolation, audit logging, scale tested by real workloads) is real and would take a competitor years to reproduce.
 
 **SOC 2 Type 1 & Type 2. GDPR compliant.**
 
