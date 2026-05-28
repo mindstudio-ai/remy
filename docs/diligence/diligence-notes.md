@@ -32,25 +32,25 @@ Existing GoMeta investors converted into Wooster Labs via a pre-seed SAFE at spi
 
 ### Round mechanics
 
-> *[Private — Seed round terms, pricing, and structure available on request under NDA]*
+> *[Private — Seed round terms, pricing, and structure available on request]*
 
 ### Use of proceeds
 
-> *[Private — use of proceeds available on request under NDA]*
+> *[Private — use of proceeds available on request]*
 
 ### Post-Seed runway
 
-> *[Private — Seed-stage runway projections available on request under NDA]*
+> *[Private — Seed-stage runway projections available on request]*
 
 ### Governance
 
-> *[Private — board composition and governance terms available on request under NDA]*
+> *[Private — board composition and governance terms available on request]*
 
 ### Current investors
 
 The cap table entering the Seed consists of founder common, an employee option pool, and a pre-seed SAFE held by investors who rolled in at spinout (see Corporate Structure above). Specific names and terms are redacted below.
 
-> *[Private — pre-seed SAFE investor list and terms available on request under NDA]*
+> *[Private — pre-seed SAFE investor list and terms available on request]*
 
 ---
 
@@ -233,7 +233,7 @@ Internal business applications are the primary commercial focus. They're not the
 
 ### Current runway
 
-> *[Private — Seed-stage cash position and runway available on request under NDA]*
+> *[Private — Seed-stage cash position and runway available on request]*
 
 ---
 
@@ -410,7 +410,7 @@ Acquiring a working platform is different from building one. The incumbents unli
 
 ### 3. Entry pricing
 
-> *[Private — entry pricing and valuation detail available on request under NDA]*
+> *[Private — entry pricing and valuation detail available on request]*
 
 ### 4. The asset has real value even without direct commercial breakout
 
@@ -465,7 +465,7 @@ The company is moving at the pace the Remy opportunity demands.
 
 ### Capital
 
-> *[Private — capital timing and round path available on request under NDA]*
+> *[Private — capital timing and round path available on request]*
 
 ### Product
 
@@ -497,7 +497,7 @@ Bones:
 - Baseline: pre-revenue. Alpha usage is generating the data that will inform pricing.
 - Forward projections: not modeled in this document.
 
-> *[Private — specific projections and assumptions available under NDA]*
+> *[Private — specific projections and assumptions available]*
 
 ---
 
@@ -511,7 +511,7 @@ Anchors worth looking at:
 
 - Public: ServiceNow, Monday.com, Asana, UIPath, Atlassian, Workday. Vercel and Supabase for developer-platform infrastructure markers.
 - Private: Retool, Airtable, Bubble, Zapier, n8n.
-- 2026 AI-era Seed valuation context: *[Private — specific valuation anchors available on request under NDA]*
+- 2026 AI-era Seed valuation context: *[Private — specific valuation anchors available on request]*
 
 ---
 
@@ -523,7 +523,7 @@ Bones:
 - Platform-licensing revenue timing (could pull forward year-one revenue materially; also the variable most subject to deal-cycle delay).
 - GTM motion weighting between direct SMB and platform-licensing (affects ARR trajectory, sales-team requirements, ownership at Series A).
 
-> *[Private — specific scenarios and quantitative ranges available under NDA]*
+> *[Private — specific scenarios and quantitative ranges available]*
 
 ---
 
@@ -535,4 +535,4 @@ Bones:
 - Platform licensing as the floor case — produces enterprise-quality ARR attractive to strategic acquirers.
 - The asset includes Remy plus the underlying platform substrate, valued in any acquisition independent of direct-GTM outcome.
 
-> *[Private — return modeling and scenarios available under NDA]*
+> *[Private — return modeling and scenarios available]*
