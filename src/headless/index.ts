@@ -955,7 +955,11 @@ export class HeadlessSession {
     this.state.models =
       models && Object.keys(models).length > 0 ? models : undefined;
     saveSession(this.state);
-    return {};
+    return {
+      ...(this.state.models && { models: this.state.models }),
+      modelSurfaces: MODEL_SURFACES,
+      allowedModelsByType: ALLOWED_MODELS_BY_TYPE,
+    };
   }
 
   /** Cancel the running turn and drain the queue. Returns the drained items. */
