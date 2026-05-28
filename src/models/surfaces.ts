@@ -36,7 +36,7 @@ export interface ModelSurface {
 // Object key order is preserved by JS — match the frontend's picker order.
 export const MODEL_SURFACES = {
   parent: {
-    default: 'claude-4-7-opus',
+    default: 'claude-4-8-opus',
     label: 'Remy',
     description:
       'The main Remy agent you chat with about your product. Writes code and manages delegation to other agents.',
@@ -44,7 +44,7 @@ export const MODEL_SURFACES = {
     userPickable: true,
   },
   visualDesignExpert: {
-    default: 'claude-4-7-opus',
+    default: 'claude-4-8-opus',
     label: 'Design Agent',
     description:
       "Designs your product's interfaces, including components, layouts, typography, color, and visual identity.",
@@ -132,6 +132,7 @@ export type SurfaceId = keyof typeof MODEL_SURFACES;
  */
 export const ALLOWED_MODELS_BY_TYPE: Partial<Record<ModelType, string[]>> = {
   text: [
+    'claude-4-8-opus',
     'claude-4-7-opus',
     'claude-4-6-opus',
     'claude-4-6-sonnet',
@@ -139,7 +140,7 @@ export const ALLOWED_MODELS_BY_TYPE: Partial<Record<ModelType, string[]>> = {
     'gemini-3-pro',
     'gemini-3.1-pro',
     'gemini-3-flash',
-    'gemini-3.5-flash'
+    'gemini-3.5-flash',
   ],
   // vision: undefined — unconstrained
   // image_generation: undefined — unconstrained
