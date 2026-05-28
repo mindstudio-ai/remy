@@ -1,6 +1,6 @@
 # Executive Summary: Remy
 
-> The short version. This is the seed deck condensed to text — a fast read for investors who want the narrative before the longer-form material elsewhere in the repo. For deeper context: [`diligence-notes.md`](./diligence-notes.md), [`landing-page.md`](./landing-page.md), and the [whitepaper](https://goremy.ai/whitepaper).
+> The short version. This is the seed deck condensed to text — a fast read for investors who want the narrative before the longer-form material elsewhere in the repo. For deeper context: the eight numbered diligence files in this folder (start with [`05_moat.md`](./05_moat.md) or [`06_risks-and-downside.md`](./06_risks-and-downside.md), or see the [docs README](../README.md#diligence--investor-facing-material) for the full index), [`landing-page.md`](./landing-page.md), and the [whitepaper](https://goremy.ai/whitepaper).
 
 ---
 
@@ -124,7 +124,7 @@ The same invitation extends to this repo. Point an AI at it and ask.
 - **Try Remy** — open alpha at [mindstudio.ai/pricing](https://www.mindstudio.ai/pricing).
 - **See what people are building** — [debut.msagent.ai](https://debut.msagent.ai).
 - **Read the whitepaper** — [goremy.ai/whitepaper](https://goremy.ai/whitepaper).
-- **Diligence material in this repo** — [`diligence-notes.md`](./diligence-notes.md) (the longer-form investor-facing notes), [`landing-page.md`](./landing-page.md) (the public site, in MD).
+- **Diligence material in this repo** — the eight numbered files in this folder (`01_overview.md` through `08_deal-and-financials.md`) for the longer-form investor-facing notes; [`landing-page.md`](./landing-page.md) for the public site in markdown. The [docs README](../README.md#diligence--investor-facing-material) has the full index with one-line summaries.
 
 ---
 

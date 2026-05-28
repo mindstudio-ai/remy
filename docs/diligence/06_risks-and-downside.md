@@ -1,0 +1,87 @@
+# Risks & Downside Protection
+
+The honest-look-at-what-could-go-wrong section, paired with the structural-paths-to-returns section that mitigates downside scenarios.
+
+This is one of eight sections of the diligence material. See [`docs/README.md`](../README.md#diligence--investor-facing-material) for the full index.
+
+---
+
+## Risks & Mitigation
+
+### 1. Large AI incumbents building a competing platform
+
+- **Risk:** The obvious question on any AI deal at this stage: what happens if Anthropic, OpenAI, or Google decides to build an AI-native application platform targeting the same segment? Their resources, distribution, and model access dwarf Remy's.
+- **Mitigation:** Four structural factors make this risk less acute than it sounds.
+  - **Remy isn't in the code-writing business.** The bigger version of this risk is "what stops the foundation models from eating this entire category?" — and the Moat section addresses it head-on. Remy is built on a bet that the bottleneck for non-technical people building real software was never code generation, but everything around the code: the structured artifact the enterprise approves, the runtime it governs, and the curated knowledge that gives the agent taste the model doesn't have on its own. Every improvement in frontier code generation makes the code-writing part cheaper and the everything-around-the-code part more obviously the actual product. The bet gets stronger as the models improve, not weaker. (See [Moat](./05_moat.md).)
+  - **Remy's surface area is bigger than what the labs would plausibly absorb.** It's believable that Claude or ChatGPT extends into deployment tooling, code review, or test generation — those are code-adjacent and the labs already touch them. It's not believable that they natively ship social media post generation, A/B test design, marketing email sequences, customer support documentation, or production analytics. Remy is "builds, ships, *and runs* products" — see [What Remy does after the build](./02_product-and-traction.md#what-remy-does-after-the-build) — and the everything-after-the-build is outside the product surface a model company is realistically going to claim. The broader Remy gets across the actual stack of running a modern business (ops, marketing, data, support, ongoing iteration), the weaker the foundation-models-eat-this argument becomes, not stronger.
+  - **The market is not winner-take-all.** Shopify has coexisted with Amazon for over a decade, and Vercel has done the same with AWS. Focused products serving defined customer segments coexist with horizontal platforms indefinitely. "Incumbent builds it" is not the same as "incumbent wins it," and this is a market with room for a category leader serving a specific buyer alongside whatever the incumbents choose to ship.
+  - **Model-agnostic routing is a feature buyers actively want.** Remy uses every major model (Claude, GPT, Gemini, and many more) and picks the right one per task. An incumbent-built platform would lock customers into a single vendor, which is the last thing a serious enterprise buyer wants when model performance is shifting month over month. Each time the frontier lead changes hands, Remy captures the improvement, while a single-vendor platform cannot.
+
+### 2. Competitive noise and attention capture
+
+- **Risk:** The AI software creation space is noisy and well-funded, with every startup in the category claiming a step change. Even with a genuinely superior product, Remy faces a real risk of getting lost in the attention market. The same dynamic applies to hiring, where top AI-native talent is aggressively recruited across the space and the noise raises the cost of standing out as an employer.
+- **Mitigation:** Customer proof points cut through marketing noise in a way claims do not. Production institutional use of Remy is exactly that kind of proof point, and a ready-made case study for the broader enterprise vertical. The narrow ICP focus (mid-market and SMB business operators) is also a segment where what a product can actually produce matters more than what its marketing claims, and that is where Remy wins. On talent, the company has a substantive technical story rather than a promotional one, and that matters to the candidates worth hiring.
+
+### 3. Commercial model and go-to-market are both unvalidated
+
+- **Risk:** Remy is pre-commercial. Pricing, unit economics, and sales motion are not yet proven. Both the direct SMB motion and the platform-licensing B2B2C motion are in early conversations, and neither has been run at scale. A reader notes the absence of paying customers and flags it as a gap that needs to close fast.
+- **Mitigation:** Three things to put alongside the risk before drawing conclusions.
+  - **Timeline.** Remy entered open alpha in late April 2026. By the time most readers are looking at these notes, the product has been publicly available for roughly four to six weeks. The absence of paid customers is a function of *timeline and deliberate sequencing*, not absence of demand. The team focused on product depth during the alpha window; pricing, sales motion, and commercial validation are downstream of the Seed close, not concurrent with it. The traction numbers (hundreds of apps built, institutional customer building production tooling, organic LinkedIn testimonials) were produced in that same short window — that's the signal worth weighing, not the absence of a sales motion that hasn't been run yet.
+  - **Resource constraints made this the right sequence.** The current team is two founders and a small support crew, operating off a pre-seed SAFE rolled in from the predecessor entity. Standing up a real commercial motion (head of sales, AEs, marketing leadership, paid acquisition) requires capital the alpha window doesn't carry. The Seed is the gate to running that motion at all — particularly against category competitors who are running $100M+ rounds with dozens of GTM hires already on payroll (Lovable, Bolt, Cursor, Claude Code, and others). Validating pricing and sales motion at scale before the Seed would have been operationally impossible at this team size; the alpha is generating the data that informs pricing post-Seed.
+  - **Two parallel commercial paths post-Seed.** Direct SMB (Phase 1 self-serve adoption among technical PMs, Phase 2 mid-market AE-led) and platform-licensing into SaaS incumbents are both planned to run in parallel after the Seed close, not sequentially. The company doesn't need both to succeed to reach Series A; either path on its own produces enough commercial signal. See the [Go-to-Market](./07_strategy-and-gtm.md) section for the specifics.
+
+### 4. Execution risk scaling the team
+
+- **Risk:** The current team is a lean crew. Scaling from founder-driven execution to a company with real GTM, engineering, and operational functions is a different discipline than building on a skeleton budget, and the current labor market for AI-native talent is competitive and expensive.
+- **Mitigation:** The current round refreshes founder incentives, and Use of Proceeds explicitly allocates to GTM team buildout and engineering backfill. The founders ran lean and disciplined through the predecessor platform's evolution, and that operational posture is what should be preserved as Remy scales.
+
+### 5. Predecessor product history
+
+- **Risk:** Remy emerges from a predecessor product whose own commercial trajectory was different. A skeptical reader asks why this is different.
+- **Mitigation:** The spinout is the structural answer. The predecessor's platform-engineering work — the model integrations, the databases, the authentication, the deployment layer — is what Remy compiles against today, and absorbing it was the point of the spinout. A tool like Remy can exist in this team's hands rather than requiring a new one built from scratch precisely because that platform substrate already exists. The new entity is clean, the cap table is fresh, and the founders are focused on Remy as their primary mandate. The spinout is the explicit acknowledgment that the company-form needed to change for Remy to scale.
+
+### 6. ICP / "no-man's-land" audience concern
+
+- **Risk:** A skeptical reader frames the ICP as caught in the middle — non-technical users want pure visual builders (Lovable, Bubble), professional engineers want code-first tools (Cursor, Claude Code), and Remy is neither. The implication: nobody actually wants a product-building agent that targets non-technical business operators who need real applications.
+- **Mitigation:** The audience question rests on the assumption that the market splits cleanly into "people who want visual demos" and "people who want code editors." It doesn't. The 2x2 in the seed deck (technical-skills-required by power-of-applications-produced) explicitly stakes out the upper-left quadrant — non-technical users who need *production-grade* applications, not prototypes. That quadrant exists, it's populated by every operations / finance / HR / RevOps lead at a mid-market company who has a real workflow they can't solve with off-the-shelf SaaS, and it's not served by the named alternatives. The GTM section's Phase 1 (technical PMs as self-serve adopters who become org-level pull) and the institutional fund-management deployment in Traction are concrete evidence that the buyer exists. The "no-man's-land" framing tends to come from analysts who have only seen the developer-guide primitives (`defineTable<T>()`, MSFM, etc.) and concluded users hand-write them — see [README: Common misreadings](../README.md#common-misreadings) for that confusion. The buyer is the person who describes a workflow in conversation and receives a deployed production app at the end. That's the upper-left quadrant.
+
+### 7. Platform / runtime lock-in concern
+
+- **Risk:** A reader of the architecture documentation notes that Remy-built applications depend on Remy's runtime services (the platform API, the execution service, the platform-managed database, the backend SDK). The natural question for an enterprise buyer: is this proprietary-PaaS lock-in that limits long-term portability?
+- **Mitigation:** Runtime infrastructure dependency is real, and it's the same shape as any managed cloud service. The honest breakdown:
+  - **What's dependent on the platform:** Remy apps use the platform's runtime to execute. Each app's database is SQLite stored in platform-managed S3, accessed through the backend SDK (which routes operations via HTTP to the platform API). The execution runtime is platform-managed. Model and integration access flows through the same SDK. To run an app entirely elsewhere, the data-access layer would be rewritten and the data migrated. **This is the same shape of dependency as using DynamoDB on AWS, Firestore on GCP, or Supabase as a service** — and none of those are considered toxic lock-in by enterprise procurement.
+  - **What's not dependent on the platform:** The application code is standard TypeScript in a standard Git repo, owned by the customer from day one. The database is SQLite, an open and portable file format — export is a download, and any SQLite client can read it. The interface code is standard. Model providers are user-configurable (200+ supported, BYO supported).
+  - **What naming says and doesn't say:** Internal service names (`youai-api` and others) are the platform's runtime infrastructure, not lock-in markers in any meaningful sense. Every cloud has internal services named after the company; nobody calls Next.js proprietary because Vercel runs it.
+  - **For enterprise customers whose procurement requires it,** the platform supports on-premise deployment.
+
+### 8. Database architecture and per-tenant scaling
+
+- **Risk:** A reader sees that Remy apps use SQLite stored on S3 as the default database and concludes this is a ceiling — that enterprise data volumes won't fit, complex transactions will be slow, or specific data-residency requirements won't be met. The pattern-matched conclusion: this is a 2015-era choice that limits the addressable market.
+- **Mitigation:** Multiple parts, because the concern blends a real engineering question with an outdated mental model.
+  - **The "SQLite is a toy" framing is from a different era.** Cloudflare runs D1 on SQLite. Fly.io runs LiteFS in production for distributed SQLite. Notion stores per-workspace data in SQLite. Tailscale's control plane runs on SQLite. The combination of per-tenant isolation, simple operations, strong consistency, and high single-node performance has made SQLite the default for an entire generation of multi-tenant platforms. The combination of per-tenant SQLite plus object-storage durability is now a recognized architectural pattern, not a curiosity.
+  - **The operational reality isn't "S3 read per query."** Each app's database is loaded into memory during active use; S3 is the durability and sync layer, not the query path. Reads come from the in-memory working set; writes go to memory and persist to S3. The working set is hot during active use and goes cold on inactivity. This is the same shape as the patterns above.
+  - **The architecture is horizontally scalable.** Each tenant gets its own SQLite file. More apps = more files, not one larger central database. Per-tenant isolation is automatic, backups are file-level, and data residency can be controlled per-bucket. This is a much cleaner story for the "thousands of small-to-mid-sized apps" shape that Remy actually produces than a shared central Postgres would be.
+  - **There's an escape hatch for legitimately bigger needs.** For applications whose requirements exceed what the managed SQLite path is built for — very large data volumes, complex multi-table transactions across hundreds of GB, dedicated database tier, specific cloud-vendor residency mandates — nothing structural prevents a customer from connecting an external database. Remy-generated apps are standard TypeScript and can call any database client a Node.js app can call. The managed SQLite-on-S3 path is the off-the-shelf default that most apps need, not an architectural ceiling.
+  - **For full data residency control,** on-premise deployment is supported (see [Moat](./05_moat.md) and Risk #7).
+
+---
+
+## Downside Protection
+
+The downside on this opportunity is protected by structural paths to returns, each of which stands independently of the others.
+
+### 1. Platform licensing is an independent commercial motion
+
+Offering end-customers the ability to build custom applications on top of the platform is rapidly becoming table stakes across horizontal SaaS (CRM, ERP, HRIS, PM, data, and productivity). The incumbents face pressure from their own customers to provide that capability, and most do not have a credible internal answer. Remy together with its underlying platform substrate is the most credible AI-native application platform available today for an incumbent to embed. The resulting licensing revenue has the shape of enterprise contracts (longer, stickier, higher-dollar) and does not depend on winning the direct-SMB market. A handful of incumbent deals produces meaningful revenue on its own.
+
+### 2. The strategic buyer universe is wide
+
+Acquiring a working platform is different from building one. The incumbents unlikely to build an AI-native application platform from scratch (see Risk #1) are natural acquirers once one exists. The credible buyer field spans horizontal SaaS (each with a customer base that wants custom apps on their data), cloud providers like AWS, GCP, and Azure (with incentives to add application-layer capability, particularly through acquisition), and enterprise automation and workflow companies like UIPath and ServiceNow. A buyer universe that broad produces real pricing leverage in any sale process.
+
+### 3. Entry pricing
+
+> *[Private — entry pricing and valuation detail available on request]*
+
+### 4. The asset has real value even without direct commercial breakout
+
+Remy and the platform substrate it compiles against together represent a substantial engineering asset: 200+ AI models, 1,000+ integrations, managed databases, authentication, deployment, and multi-interface compilation, all in production use. A buyer could construct an acquisition thesis around any of those pieces (the integrations alone, the customer relationships, the engineering already completed, or the infrastructure itself) without requiring that Remy's direct GTM be the winning story. The opportunity does not depend on one commercial outcome.

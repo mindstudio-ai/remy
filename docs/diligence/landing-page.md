@@ -2,7 +2,7 @@
 
 > This is a markdown mirror of [goremy.ai](https://goremy.ai/) — the public landing page for Remy — included in the repo as a diligence resource. The live page has imagery, animations, and a live product gallery (Debut, at [debut.msagent.ai](https://debut.msagent.ai)) that this document doesn't fully capture; everything textual is preserved here.
 >
-> Treat the live site as authoritative; this snapshot is for repo-context reading (human or AI). See also [`diligence-notes.md`](./diligence-notes.md) for the broader investor-facing material.
+> Treat the live site as authoritative; this snapshot is for repo-context reading (human or AI). For the broader investor-facing material, see the eight numbered diligence files in this folder, indexed at [`docs/README.md`](../README.md#diligence--investor-facing-material).
 
 ---
 
