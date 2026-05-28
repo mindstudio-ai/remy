@@ -225,6 +225,8 @@ Internal business applications are the primary commercial focus. They're not the
 
 ### Alpha usage
 
+**Timeline context, worth knowing up front:** Remy entered open alpha in late April 2026. The traction below reflects roughly four to six weeks of public availability. The team has been heads-down on product depth during this window — commercial motion (pricing, sales, paid customers) is deliberately downstream of the Seed close, not running in parallel. Read everything below with that timeline in mind.
+
 - **Hundreds of apps have been built on Remy during open alpha.** A live, continuously-updating gallery of alpha builds is at [debut.msagent.ai](https://debut.msagent.ai) — the breadth across internal tools, AI agents, consumer apps, games, and vertical SaaS is itself a signal of what the agent can produce. Live builds, both from the founders and from real alpha users walking through their own projects, are on YouTube at [@MindStudio_ai/videos](https://www.youtube.com/@MindStudio_ai/videos). Investors who want to see what the product actually outputs — without taking the founders' word for it — should spend time in those two places.
 
 - **An institutional customer has gone deep on a pre-GA build.** A full fund-management application has been built on Remy during alpha, set to run that organization's fund operations, with ongoing rollout underway. The application was produced without engineering support beyond the two founders. A real institutional deployment on a pre-GA platform is unusual at this stage and is the load-bearing depth signal sitting alongside the volume above.
@@ -383,8 +385,11 @@ SOM is scenario-based given Remy's pre-commercial pricing, and a specific trajec
 
 ### 3. Commercial model and go-to-market are both unvalidated
 
-- **Risk:** Remy is pre-commercial. Pricing, unit economics, and sales motion are not yet proven. Both the direct SMB motion and the platform-licensing B2B2C motion are in early conversations, and neither has been run at scale.
-- **Mitigation:** The current round is priced accordingly because commercial validation has not happened yet. Alpha usage is generating the data that will inform pricing and packaging, and post-funding capital funds the GTM experiments needed to confirm the commercial model. Specific commitments are laid out in the Milestones section. Platform licensing provides a parallel commercial path if direct SMB is slower than expected, and the company does not need both paths to succeed to reach Series A.
+- **Risk:** Remy is pre-commercial. Pricing, unit economics, and sales motion are not yet proven. Both the direct SMB motion and the platform-licensing B2B2C motion are in early conversations, and neither has been run at scale. A reader notes the absence of paying customers and flags it as a gap that needs to close fast.
+- **Mitigation:** Three things to put alongside the risk before drawing conclusions.
+  - **Timeline.** Remy entered open alpha in late April 2026. By the time most readers are looking at these notes, the product has been publicly available for roughly four to six weeks. The absence of paid customers is a function of *timeline and deliberate sequencing*, not absence of demand. The team focused on product depth during the alpha window; pricing, sales motion, and commercial validation are downstream of the Seed close, not concurrent with it. The traction numbers (hundreds of apps built, institutional customer building production tooling, organic LinkedIn testimonials) were produced in that same short window — that's the signal worth weighing, not the absence of a sales motion that hasn't been run yet.
+  - **Resource constraints made this the right sequence.** The current team is two founders and a small support crew, operating off a pre-seed SAFE rolled in from the predecessor entity. Standing up a real commercial motion (head of sales, AEs, marketing leadership, paid acquisition) requires capital the alpha window doesn't carry. The Seed is the gate to running that motion at all — particularly against category competitors who are running $100M+ rounds with dozens of GTM hires already on payroll (Lovable, Bolt, Cursor, Claude Code, and others). Validating pricing and sales motion at scale before the Seed would have been operationally impossible at this team size; the alpha is generating the data that informs pricing post-Seed.
+  - **Two parallel commercial paths post-Seed.** Direct SMB (Phase 1 self-serve adoption among technical PMs, Phase 2 mid-market AE-led) and platform-licensing into SaaS incumbents are both planned to run in parallel after the Seed close, not sequentially. The company doesn't need both to succeed to reach Series A; either path on its own produces enough commercial signal. See the Go-to-Market section for the specifics.
 
 ### 4. Execution risk scaling the team
 
@@ -410,9 +415,15 @@ SOM is scenario-based given Remy's pre-commercial pricing, and a specific trajec
   - **What naming says and doesn't say:** Internal service names (`youai-api` and others) are the platform's runtime infrastructure, not lock-in markers in any meaningful sense. Every cloud has internal services named after the company; nobody calls Next.js proprietary because Vercel runs it.
   - **For enterprise customers whose procurement requires it,** the platform supports on-premise deployment.
 
----
+### 8. Database architecture and per-tenant scaling
 
-## Downside Protection
+- **Risk:** A reader sees that Remy apps use SQLite stored on S3 as the default database and concludes this is a ceiling — that enterprise data volumes won't fit, complex transactions will be slow, or specific data-residency requirements won't be met. The pattern-matched conclusion: this is a 2015-era choice that limits the addressable market.
+- **Mitigation:** Multiple parts, because the concern blends a real engineering question with an outdated mental model.
+  - **The "SQLite is a toy" framing is from a different era.** Cloudflare runs D1 on SQLite. Fly.io runs LiteFS in production for distributed SQLite. Notion stores per-workspace data in SQLite. Tailscale's control plane runs on SQLite. The combination of per-tenant isolation, simple operations, strong consistency, and high single-node performance has made SQLite the default for an entire generation of multi-tenant platforms. The combination of per-tenant SQLite plus object-storage durability is now a recognized architectural pattern, not a curiosity.
+  - **The operational reality isn't "S3 read per query."** Each app's database is loaded into memory during active use; S3 is the durability and sync layer, not the query path. Reads come from the in-memory working set; writes go to memory and persist to S3. The working set is hot during active use and goes cold on inactivity. This is the same shape as the patterns above.
+  - **The architecture is horizontally scalable.** Each tenant gets its own SQLite file. More apps = more files, not one larger central database. Per-tenant isolation is automatic, backups are file-level, and data residency can be controlled per-bucket. This is a much cleaner story for the "thousands of small-to-mid-sized apps" shape that Remy actually produces than a shared central Postgres would be.
+  - **There's an escape hatch for legitimately bigger needs.** For applications whose requirements exceed what the managed SQLite path is built for — very large data volumes, complex multi-table transactions across hundreds of GB, dedicated database tier, specific cloud-vendor residency mandates — nothing structural prevents a customer from connecting an external database. Remy-generated apps are standard TypeScript and can call any database client a Node.js app can call. The managed SQLite-on-S3 path is the off-the-shelf default that most apps need, not an architectural ceiling.
+  - **For full data residency control,** on-premise deployment is supported (see [Moat](#moat) and Risk #7).
 
 The downside on this opportunity is protected by structural paths to returns, each of which stands independently of the others.
 

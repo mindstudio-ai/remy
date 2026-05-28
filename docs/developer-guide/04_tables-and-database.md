@@ -305,3 +305,22 @@ Both operations preserve IDs, so the frontend and SDK can continue using existin
 ## User Type Handling
 
 Columns of type `User` (the branded type from the SDK) store values with a `@@user@@` prefix in SQLite. The SDK handles this transparently. Your code works with clean UUID strings. You never see the prefix.
+
+---
+
+## Architecture and Scaling
+
+Each app gets its own SQLite database. The database is loaded into memory during active use; S3 is the durability and sync layer, not the query path. Reads come from the in-memory working set; writes go to memory and persist to S3. The working set is hot during active use and goes cold on inactivity. This is the same architectural pattern Cloudflare uses for D1, Fly.io uses for LiteFS, Notion uses for per-workspace storage, and Tailscale uses for its control plane — per-tenant SQLite backed by durable object storage.
+
+A few practical consequences:
+
+- **Per-app isolation is automatic.** Each app's data lives in its own file. There's no shared schema, no cross-tenant query surface, no row-level security to misconfigure.
+- **Scaling is horizontal.** More apps means more SQLite files, not one larger central database. This matches the shape of what Remy actually produces — many small-to-mid-sized internal applications — better than a shared central database would.
+- **Backups, residency, and migration are file-level.** Each app's `.db` file is a single, portable artifact. Exporting is a download. Region-specific storage gives region-specific residency.
+- **The schema sync layer is the agent's compiler step.** When you change a table interface, the platform diffs against the live schema and generates DDL automatically. There are no migration files to write by hand. (See "Migrations" above.)
+
+### When the managed SQLite path isn't the right fit
+
+For applications that need a different database engine — very large data volumes, complex cross-table transactions on huge datasets, dedicated database tier, or specific cloud-residency mandates that don't match the managed path — there's nothing structural in the platform stopping you from connecting an external database. Remy-generated app code is standard TypeScript and can call any database client a Node.js app can call.
+
+The managed SQLite-on-S3 path is the off-the-shelf default that fits the majority of applications Remy is built to produce. It isn't an architectural ceiling.
