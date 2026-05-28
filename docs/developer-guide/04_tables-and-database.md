@@ -312,15 +312,25 @@ Columns of type `User` (the branded type from the SDK) store values with a `@@us
 
 Each app gets its own SQLite database. The database is loaded into memory during active use; S3 is the durability and sync layer, not the query path. Reads come from the in-memory working set; writes go to memory and persist to S3. The working set is hot during active use and goes cold on inactivity. This is the same architectural pattern Cloudflare uses for D1, Fly.io uses for LiteFS, Notion uses for per-workspace storage, and Tailscale uses for its control plane — per-tenant SQLite backed by durable object storage.
 
-A few practical consequences:
+### Modern SQLite is a production-grade RDBMS
+
+If your mental model of SQLite is "small embedded library suitable only for prototypes," update it. Modern SQLite is a serious database engine:
+
+- **WAL mode (enabled by default in Remy) gives concurrent multi-reader / single-writer behavior** that handles the workload shape most business applications produce. The single-writer aspect is far less of a bottleneck than it sounds, because SQLite's write path is fast — for typical Remy apps (workflow systems, internal tools, dashboards, customer-facing apps), write throughput is bounded by user actions, not by the engine.
+- **Per-tenant databases routinely run at 1GB+** without operational stress. The SQLite engine supports databases up to 281 TB; the practical ceiling is operational (backup, migration, residency), not engine-side.
+- **It's a full RDBMS.** ACID transactions, a query planner, indexes (including covering and partial indexes), full-text search, JSON1 support, common table expressions, window functions, all of it. The "just a file" framing is a category error — Postgres is also files on a disk, as is every other database. What matters is the engine, and SQLite's engine has been hardened for decades.
+- **A serious ecosystem is investing in cloud-scale SQLite.** Turso has raised meaningful capital specifically to bulletproof SQLite for multi-tenant cloud deployment. Cloudflare runs D1 on SQLite across their global edge network. Fly.io runs LiteFS for replicated SQLite in production. The "is SQLite production-ready?" question was settled around 2020-2022; the question now is which deployment pattern fits which workload.
+
+### Practical consequences of per-tenant SQLite + S3 durability
 
 - **Per-app isolation is automatic.** Each app's data lives in its own file. There's no shared schema, no cross-tenant query surface, no row-level security to misconfigure.
-- **Scaling is horizontal.** More apps means more SQLite files, not one larger central database. This matches the shape of what Remy actually produces — many small-to-mid-sized internal applications — better than a shared central database would.
+- **Scaling is horizontal.** More apps means more SQLite files, not one larger central database.
 - **Backups, residency, and migration are file-level.** Each app's `.db` file is a single, portable artifact. Exporting is a download. Region-specific storage gives region-specific residency.
 - **The schema sync layer is the agent's compiler step.** When you change a table interface, the platform diffs against the live schema and generates DDL automatically. There are no migration files to write by hand. (See "Migrations" above.)
+- **The database is a portable artifact.** Any SQLite client can read it. Migrating off the platform is a download and a re-pointing of your data-access layer; it's not a months-long data extraction project.
 
 ### When the managed SQLite path isn't the right fit
 
-For applications that need a different database engine — very large data volumes, complex cross-table transactions on huge datasets, dedicated database tier, or specific cloud-residency mandates that don't match the managed path — there's nothing structural in the platform stopping you from connecting an external database. Remy-generated app code is standard TypeScript and can call any database client a Node.js app can call.
+For workloads that legitimately need a different engine — extreme data volumes, complex cross-table transactions on hundreds-of-GB datasets, dedicated database tier, specific cloud-residency mandates outside what the managed path supports — there's nothing structural stopping you from connecting an external database. Remy-generated app code is standard TypeScript and can call any database client a Node.js app can call.
 
-The managed SQLite-on-S3 path is the off-the-shelf default that fits the majority of applications Remy is built to produce. It isn't an architectural ceiling.
+The managed SQLite-on-S3 path covers most business-application workloads cleanly. The escape hatch exists for the genuinely unusual cases, not because SQLite-on-S3 is itself a bottleneck.
