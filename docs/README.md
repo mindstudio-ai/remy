@@ -4,7 +4,7 @@ Long-form materials about Remy. This folder is the resource layer for everyone w
 
 ## Before you go deeper: try it
 
-> *"tbh if I had my way, everyone would just play with Remy first and then come back to evaluate it. Everything is much more exciting and credible once you're actually gotten your hands dirty and seen what it can done."*
+> *"tbh if I had my way, everyone would just play with Remy first and then come back to evaluate it. Everything is much more exciting and credible once you've actually gotten your hands dirty and seen what it can do."*
 >
 > — Sean Thielen, co-founder
 
