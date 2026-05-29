@@ -72,7 +72,7 @@ This is one of eight sections of the diligence material. See [`docs/README.md`](
   - **The operational reality isn't "S3 read per query."** Each app's database is loaded into memory during active use; S3 is the durability and sync layer, not the query path. Reads come from the in-memory working set; writes go to memory and persist to S3. The working set is hot during active use and goes cold on inactivity.
   - **The architecture is horizontally scalable.** Each tenant gets its own SQLite file. More apps = more files, not one larger central database. Per-tenant isolation is automatic, backups are file-level, and data residency can be controlled per-bucket.
   - **For workloads that legitimately exceed the managed path,** customers can connect an external database. Remy-generated apps are standard TypeScript and can call any database client a Node.js app can call. The managed SQLite-on-S3 path covers most business-application workloads cleanly; the escape hatch exists for the genuinely unusual cases.
-  - **For full data residency control,** on-premise deployment is supported (see [Moat](./05_moat.md) and Risk #7).
+  - **For full data residency control,** on-premise deployment is supported (see [Moat](./05_moat.md) and Risk #7). Similarly, enterprises have adjusted to SQLite's advancements in their procurement as well. We have seen first-hand with MindStudio that this is not a blocker to enterprise workloads in the modern day.
 
 ---
 
