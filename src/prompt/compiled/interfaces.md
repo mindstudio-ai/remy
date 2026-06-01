@@ -344,7 +344,19 @@ Accepts any HTTP method. The method receives `{ method, headers, query, body }` 
 
 ## Email
 
-Inbound email triggers. An app can register one inbound address that routes all inbound emails to one method.
+Inbound email triggers. Each app has one email-handler method; the platform routes all inbound mail destined for the app — across any of its address tiers — to that method.
+
+### Address tiers
+
+Three tiers, all delivered to the same handler method. The new tiers are catchall (no localpart registration); the legacy tier is specific-localpart and frozen for new apps.
+
+| Tier | Address | How it's set up |
+|---|---|---|
+| Platform subdomain (default) | `*@<custom_subdomain>.madewithremy.com` | Automatic the moment the app has a `custom_subdomain` set. Every address on that subdomain delivers to the handler. |
+| Custom domain | `*@<their-domain>` | The user adds a domain in the dashboard's email-domains settings and points one MX record at `mx.msagent.ai`. Not something the agent provisions. |
+| Legacy `mindstudio-hooks.com` | `<name>@mindstudio-hooks.com` | Existing apps only — frozen for new apps. Don't recommend it; treat as read-only history. |
+
+Because the new tiers are catchall, `to` carries an arbitrary localpart. Methods that need to branch on it should read `input.to` (e.g. `if (input.to.startsWith('support@')) ...`).
 
 ### Config (`interface.json`)
 
@@ -357,26 +369,26 @@ Inbound email triggers. An app can register one inbound address that routes all 
 }
 ```
 
-`approvedSenders` is optional. When set, only senders matching an exact address or `*@domain.com` wildcard reach the method; everything else is rejected by the platform with `400 invalid_sender` before the method runs.
-
-Address pattern: `{custom-name}@mindstudio-hooks.com`.
+`approvedSenders` is optional. When set, only senders matching an exact address or `*@domain.com` wildcard reach the method; everything else is rejected by the platform with `400 invalid_sender` before the method runs (silently — the sender isn't bounced). Matching is case-insensitive. The same list applies uniformly across all three address tiers.
 
 ### Input shape
 
 ```ts
 {
-  to: string;            // resolved from the SMTP envelope
+  to: string;            // full recipient address; localpart is arbitrary on catchall tiers
   from: string;          // bare address, extracted from "Name <a@b>" form
   subject: string;       // 'No Subject' if missing
-  message: string;       // plain text body; 'No Body' if neither text nor html was sent
+  message: string;       // plain text body, falls back to HTML if text is missing; 'No Body' if neither was sent
   html: string;          // HTML body, or '' when text-only
   attachments: string[]; // CDN URLs — already uploaded by the platform
 }
 ```
 
-### Attachments
+### Attachments and size limits
 
 `attachments[]` is an array of CDN URLs — the platform has already received and uploaded the files. Fetch them server-side via the URL when you need the bytes; pass them through as URLs to UI or downstream services.
+
+Max inbound message size is 25 MB total (including all attachments). Oversized messages are rejected by the platform before the method runs.
 
 ### Auth
 

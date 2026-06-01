@@ -341,28 +341,47 @@ Accepts any HTTP method. The method receives `{ method, headers, query, body }` 
 
 ## Email
 
-Inbound email triggers.
+Inbound email triggers. Each app has one email-handler method; the platform routes all inbound mail destined for the app — across any of its address tiers — to that method.
 
-### Setup
+### Address tiers
 
-Register a custom email address:
+Apps can receive mail at three different kinds of addresses, all delivered to the same handler:
 
-```
-POST /email/register
-{ name: "invoices" }
-```
+| Tier | Address | Setup |
+|---|---|---|
+| Platform subdomain (default) | `*@<custom_subdomain>.madewithremy.com` | Automatic once the app has a custom subdomain set. Catchall — every address delivers to your method. |
+| Custom domain | `*@<your-domain>` | Add the domain in the dashboard's email-domains settings; paste one MX record (`mx.msagent.ai`) at your DNS provider. Catchall. |
+| Legacy `mindstudio-hooks.com` | `<name>@mindstudio-hooks.com` | Existing apps only. Frozen for new apps. |
 
-Creates `invoices@mindstudio-hooks.com`.
+The new tiers are catchall, so `to` carries an arbitrary localpart. If your method needs to branch on it, read `input.to` (e.g. `if (input.to.startsWith('support@')) ...`).
 
 ### Config (`interface.json`)
 
 ```json
 {
-  "method": "handle-inbound-email"
+  "email": {
+    "method": "handle-inbound-email",
+    "approvedSenders": ["billing@vendor.com", "*@trusted-partner.com"]
+  }
 }
 ```
 
-Inbound emails invoke the specified method with the email content as input.
+`approvedSenders` is optional. When set, only senders matching an exact address or `*@domain.com` wildcard reach the method; everything else is rejected by the platform with `400 invalid_sender` before the method runs. Matching is case-insensitive. Applies uniformly across all three tiers.
+
+### Input shape
+
+```ts
+{
+  to: string;            // full recipient address; localpart is arbitrary on catchall tiers
+  from: string;          // bare address, extracted from "Name <a@b>" form
+  subject: string;       // 'No Subject' if missing
+  message: string;       // plain text body, falls back to HTML if text is missing; 'No Body' if neither was sent
+  html: string;          // HTML body, or '' when text-only
+  attachments: string[]; // CDN URLs — already uploaded by the platform
+}
+```
+
+Max inbound size is 25 MB total. Oversized messages are rejected by the platform before the method runs.
 
 ---
 
