@@ -28,7 +28,7 @@ To match this, every competitor has to re-architect their agent loop and retrain
 
 The apps Remy builds don't call OpenAI, Anthropic, Slack, and HubSpot directly the way a Lovable-generated app does. They call into Remy's runtime, which already has 120+ enterprise-grade actions wired up with managed credentials, rate limits, billing pass-through, audit logs, and SOC 2 controls. The runtime supports BYO models (any of 200+ supported providers) and on-premise deployment for customers whose procurement requires it. Every app a New York Times or HMRC employee builds is automatically governed from the moment it exists. The CIO sees every model call, every external API call, every dollar of spend, in one place. Competitors generate raw code that talks to a dozen vendors directly, and the enterprise has no visibility into any of it.
 
-The runtime wasn't built for Remy. It matured over years underneath the predecessor product, and Remy is what happens when you put a great agent on top of a runtime that was already enterprise-grade. A new entrant cannot replicate this without spending several years building integrations and getting them certified.
+The runtime wasn't built for Remy. It matured over years underneath MindStudio, and Remy is what happens when you put a great agent on top of a runtime that was already enterprise-grade. A new entrant cannot replicate this without spending several years building integrations and getting them certified.
 
 ### 3. Curated assets the model doesn't have
 

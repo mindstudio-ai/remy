@@ -75,7 +75,7 @@ Two distinct signals, worth keeping separate:
 
 **Remy alpha (the product itself).** Open alpha, launched in late April 2026 — roughly four to six weeks of public availability at the time of writing. In that window: hundreds of apps built on Remy by real users (live gallery: [debut.msagent.ai](https://debut.msagent.ai); live builds on YouTube: [@MindStudio_ai/videos](https://www.youtube.com/@MindStudio_ai/videos)), and an institutional customer has built a full fund-management application on Remy at alpha, set to run that organization's fund operations. Remy itself is pre-revenue — pricing and sales motion are deliberately downstream of the Seed close.
 
-**The substrate underneath Remy (the production hardening).** Not a new system. Years of enterprise production traffic underneath the predecessor product. The substrate powers hundreds of applications at organizations including **The New York Times, Advance Local, ServiceNow, and His Majesty's Revenue & Customs**. Individual employees at **TikTok, Microsoft, Adobe, Oracle, Intel, Meta, Booking.com, Novo Nordisk** and others have been paying users of the same substrate. Those users are not Remy revenue — but the production hardening of what Remy compiles against (multi-tenant isolation, audit logging, scale tested by real workloads) is real and would take a competitor years to reproduce.
+**The substrate underneath Remy (the production hardening).** Not a new system. Years of enterprise production traffic underneath MindStudio, the prior product the team built inside GoMeta. The substrate powers hundreds of applications at organizations including **The New York Times, Advance Local, ServiceNow, and His Majesty's Revenue & Customs**. Individual employees at **TikTok, Microsoft, Adobe, Oracle, Intel, Meta, Booking.com, Novo Nordisk** and others have been paying users of the same substrate. Those users are not Remy revenue — but the production hardening of what Remy compiles against (multi-tenant isolation, audit logging, scale tested by real workloads) is real and would take a competitor years to reproduce.
 
 **SOC 2 Type 1 & Type 2. GDPR compliant.**
 
@@ -115,9 +115,9 @@ The same invitation extends to this repo. Point an AI at it and ask.
 
 ## Team
 
-**Dmitry Shapiro** — Co-founder. Previously Product @ Google, CTO @ MySpace, Founder of Veoh Networks and Akonix Systems.
+**Dmitry Shapiro** — Co-founder. Co-founder and CEO of GoMeta, leading the company across Koji (link-in-bio platform, ~700k creators, acquired by Linktree in December 2023) and MindStudio. Previously Product Manager @ Google, CTO @ MySpace, founder of Veoh Networks and Akonix Systems.
 
-**Sean Thielen** — Co-founder. Previously CTO @ MindStudio, CTO @ Koji. Built the current state of Remy directly alongside Dmitry, without engineering staff.
+**Sean Thielen** — Co-founder. Co-founder of GoMeta alongside Dmitry; CTO across Koji and MindStudio. Built the current state of Remy directly alongside Dmitry, without engineering staff.
 
 ## What you can do next
 

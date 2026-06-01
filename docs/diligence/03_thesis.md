@@ -50,10 +50,10 @@ This is one of eight sections of the diligence material. See [`docs/README.md`](
 
 ## 5. Thesis: A known-quantity founding team
 
-- **Dmitry and Sean are long-tenured, prudent operators.** They have years of platform-engineering execution behind them — work that has now consolidated into Remy through the spinout.
+- **Dmitry and Sean are long-tenured operators.** Eight years together at GoMeta across two product chapters — Koji (~$36M raised, ~700k creators, acquired by Linktree in December 2023) and MindStudio (the period that produced the substrate Remy is built on). Remy is the next chapter; the team's tenure together is the durable underlying asset, and the prior chapters' details are engaged directly in [Corporate Structure](./01_overview.md#corporate-structure) and [Risks → Predecessor history](./06_risks-and-downside.md#5-predecessor-history).
 
 - **They have shipped software at real scale.** The founders' prior ventures include products used by tens of millions of people. Whatever the commercial arc of any one of those products, the ability of this team to build software that reaches meaningful scale is a proven capability, not a speculative one.
 
-- **Capital stewarded with restraint.** The team ran lean and focused through the predecessor platform's evolution, rather than burning capital to maintain headcount or appearances. That discipline is a significant part of why Remy exists at all.
+- **Remy is the bet they're raising on, and they're raising on this one specifically.** From the Koji acquisition through to Remy's alpha — roughly two years — the team operated on GoMeta's remaining cash without raising additional capital. Remy is the first product where the team thinks the answer to "is this venture-scale" is clearly yes. That's why we're raising now.
 
 - **Appetite for genuinely big ideas.** Each product direction the team has pursued has aimed at a meaningful category shift, not an incremental improvement on an existing playbook. Remy is the deepest technical expression of that instinct yet, and the one most likely to land.

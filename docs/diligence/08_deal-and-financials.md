@@ -26,7 +26,7 @@ This is one of eight sections of the diligence material. See [`docs/README.md`](
 
 ### Current investors
 
-The cap table entering the Seed consists of founder common, an employee option pool, and a pre-seed SAFE held by investors who rolled in at spinout (see [Corporate Structure](./01_overview.md#corporate-structure)). Specific names and terms are redacted below.
+The Wooster Labs cap table entering the Seed consists of founder common, an employee option pool, and a pre-seed SAFE held by prior GoMeta investors who rolled forward at spinout (see [Corporate Structure](./01_overview.md#corporate-structure)). Specific names and terms are redacted below.
 
 > *[Private — pre-seed SAFE investor list and terms available on request]*
 
