@@ -36,11 +36,42 @@ The Wooster Labs cap table entering the Seed consists of founder common, an empl
 
 Bones:
 
-- Revenue model: per-workspace subscription (see SAM math in [TAM-SAM-SOM](./04_market-and-competition.md#tam-sam-som-analysis)) plus platform-licensing into SaaS incumbents (see [Go-to-Market](./07_strategy-and-gtm.md#go-to-market)).
-- Baseline: pre-revenue. Alpha usage is generating the data that will inform pricing.
+- Revenue model: subscription + inference pass-through (alpha pricing model detailed below) plus platform-licensing into SaaS incumbents (see [Go-to-Market](./07_strategy-and-gtm.md#go-to-market)).
+- Baseline: pre-revenue. Remy is currently free to use during alpha (users pay only for inference at provider rates). The pricing model below is the planned alpha-to-GA pricing structure; it will go live in the near term and generate the willingness-to-pay data that informs post-Seed pricing.
 - Forward projections: not modeled in this document.
 
 > *[Private — specific projections and assumptions available]*
+
+### Current pricing thinking (alpha PLG wedge)
+
+The pricing structure planned for alpha is set for the product-enthusiast and AI-builder PLG segment — not the post-Seed ICP commercial motion. Deliberately simple, deliberately self-serve, deliberately priced to filter for serious users.
+
+**The model:**
+
+- **$99/month** (or **$79/month with annual billing** — 20% off, equivalent to two months free).
+- **7-day free trial**, full product, no feature limits during trial.
+- **Inference is pass-through at provider rates with no markup.** Users either fund an inference balance via auto-billing or connect their own provider API keys (Anthropic, OpenAI, Google).
+- **One tier.** No per-seat. No team plan. No enterprise tier card on the page — a "for organizations, get in touch" footer link only.
+- **Unlimited projects, unlimited deploys.** Hosting absorbed at any realistic alpha-customer scale.
+
+**Why this shape today:**
+
+- **Signals "more than a vibe-coder."** The AI app-builder comp cluster (Lovable, Bolt, Replit Core, v0, Cursor Pro) sits at $20–25 entry tiers. Remy does meaningfully more — full post-launch loop, six-specialist agent team, production-grade substrate — and $99 reflects that without being inaccessible to an individual buyer with a card.
+- **Inference cost is the qualification filter.** A typical MVP costs ~$100 in inference; serious alpha builders are spending $1,000+/mo in inference. Anyone willing to fund an inference balance to even try the product is self-selecting as a serious user.
+- **Pass-through inference is a trust-buying differentiator.** The comp set all wraps inference in opaque credits with markup baked in; Remy doesn't.
+- **One-tier simplicity fits alpha PLG.** Team and per-seat complexity should come with a real sales motion to back it up — a post-Seed move, not an alpha move.
+
+**Why this isn't the long-term commercial motion:**
+
+The Phase 1 alpha buyer (technical PMs, product enthusiasts, AI-tooling-aware operators converting through organic self-serve) is a different segment from the Phase 2 destination ICP (ops, finance, HR, RevOps leaders at 100–1,000 employee orgs reached via AE-led motion — see [Go-to-Market](./07_strategy-and-gtm.md#go-to-market)). The pricing for Phase 2 will be different.
+
+Post-Seed commercial structure will likely include: real team and enterprise tiers with a sales motion behind them, per-seat or per-org pricing for the team motion, custom SLAs and on-prem for enterprise, and platform-licensing arrangements for the SaaS-incumbent amplifier. Once the alpha pricing is live, it will generate the willingness-to-pay signals, feature-tier preferences, and churn shapes that inform that structure.
+
+**Revenue arithmetic for reference:**
+
+At $99/mo, $1M ARR ≈ 850 paying users. With team and enterprise tiers added post-Seed, per-customer ACV scales materially and the user-count needed for the same ARR drops.
+
+> *[Private — specific projections, willingness-to-pay data from alpha, and post-Seed pricing scenarios available on request]*
 
 ---
 
