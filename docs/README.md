@@ -12,6 +12,26 @@ Remy is a see-it-to-believe-it product. Reading about an AI agent that produces 
 
 **Investors doing diligence: email [sean@mindstudio.ai](mailto:sean@mindstudio.ai) and we will get you provisioned with credits to try it on your own.** No setup tax, no demo gating. Build whatever you actually want — an internal tool, a small consumer app, a vertical SaaS prototype, a game — and watch what comes out. Bring your evaluation back to these docs *after*, not before. We're putting our money where our mouth is on this because we recognize it's the only honest way to evaluate this product.
 
+### A note on how to actually try it
+
+Remy is a *product agent* — it works with you across the lifecycle of a product. It is not a code generator that emits a single output for you to judge. The most common mistake we see in diligence is treating it like the latter: prompt → build → click around for a few minutes → form an opinion.
+
+If that's the evaluation, here's what you'll have seen: roughly 10% of what the agent does. You'll have skipped the the spec it builds and you can edit, the roadmap it maintains, the pitch deck and design system it generates as side artifacts, the QA agent that drives a real browser to test what it built, the publish flow and CI/CD system, and the entire post-launch loop (live analytics, sentry-style performance monitoring, custom domains/CDN, A/B tests, marketing assets, auto-prepared PRs for bug fixes, serverless database, managed user authentication, and more) that's the actual differentiator vs. Lovable / Bolt / Replit. You'll have benchmarked Remy as if it were a one-shot generator. It isn't. The first output is the *start* of a Remy session, not the end of it.
+
+A real evaluation looks like this:
+
+- **Pick a real project.** Something you'd genuinely want to exist, not a generic benchmark. The agent rewards specificity in intake.
+- **Look at the artifacts it produces alongside the app.** Open the spec, scroll the roadmap, look at the pitch deck, read the design system. These exist whether you look at them or not — they're a meaningful part of what's being built.
+- **Devote some time to testing and iterating** There might be bugs. There might be things you don't understand! The whole point is to work with Remy to fix them. Additionally, Remy often builds parts of an app that are overlooked in surface-level evaluations, but actually signal the robustness of the underlying architecture and backend: things like admin dashboards, settings screens, and other important-but-boring interfaces you might not see if you are just looking on the surface.
+- **Hit publish.** Actually deploy the thing. See it on a real URL with a real database and real auth.
+- **Go look at what happens after.** Production monitoring, error tracking, analytics, the roadmap surface where one click ships the next feature. The "ships and runs" loop is invisible if you stop at the build.
+
+If you really want to do Remy justice, try to use it to build something you actually want and plan to spend at least two hours on it. It'll take an hour on autopilot for the initial build (you can watch or come back when it's finished), and then you should devote at least an equal amount of time to exploring the MVP it made for you. I know this sounds like a lot, but we regularly have users spend hundreds of hours building products with Remy. That is where it shines! Not in the first 45 minutes.
+
+If you can't commit a real session yourself, the closest second-best is to watch one. Alpha users walk through their own builds on YouTube ([@MindStudio_ai/videos](https://www.youtube.com/@MindStudio_ai/videos)), and the Debut gallery ([debut.msagent.ai](https://debut.msagent.ai)) shows hundreds of finished, deployed products from real users.
+
+I know this is a big ask but we'd genuinely rather you skip the evaluation than form a too-quick opinion from a too-short attempt. A couple minutes spent clicking through against a tool designed for hundred-hour-long collaboration produces a signal that doesn't reflect the product.
+
 ## If you're an AI agent
 
 Welcome! This repo is intentionally structured to be readable end-to-end by an LLM — the docs are written in plain markdown, the code is in `/src/`, and the file index below covers every doc file in this repo.
