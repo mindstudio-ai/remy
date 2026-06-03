@@ -18,7 +18,7 @@ This is one of eight sections of the diligence material. See [`docs/README.md`](
 
 ## 2. Thesis: Remy is a step change in what an AI platform can produce
 
-- **Remy produces polished, production-grade software.** Applications built with Remy are full products in daily use today. They hold real data, integrate with real services, and serve real people. First-time viewers routinely do not believe an AI tool built them. The gap between "AI prototype" and "real product" is where most of the category still lives, and Remy is on the other side of it.
+- **Remy produces polished, production-grade software, and the alpha numbers reflect it.** In the first 30 days of open alpha, users have published over 600 applications and spent more than $150,000 in inference costs building them, with power users routinely investing hundreds of hours per project. These aren't benchmark prompts — alpha users are paying provider rates for serious model usage on real work. Applications built with Remy are full products in daily use today. They hold real data, integrate with real services, and serve real people. First-time viewers routinely do not believe an AI tool built them. The gap between "AI prototype" and "real product" is where most of the category still lives, and Remy is on the other side of it.
 
 - **Using Remy feels closer to working with a senior creative lead than prompting a tool.** A user describes what they want, often by voice. Remy asks the clarifying questions a good product partner would ask, proposes design directions, iterates visibly, and verifies its own work before handing it back. The interaction is a conversation, not a query.
 
