@@ -92,6 +92,16 @@ Remy sits alone in the upper-left quadrant: the only product that combines low t
 
 **Ideal customer:** non-technical business users and the organizations they work inside. Not professional developers (Claude / Cursor / Codex serve them). Not consumers and prosumers (Lovable / Bolt / Replit serve them). The middle.
 
+## The bigger story behind the wedge
+
+The immediate Remy story is the AI app builder market — a defensible $15–25B SAM, with Remy producing real, production-grade applications for a non-technical business buyer no other tool serves today. That's what the Seed is for.
+
+The longer-arc story is what the wedge becomes. About half of the code committed to GitHub today is written with AI assistance, and that share keeps growing. Orders of magnitude more software is being created than three years ago. The cloud infrastructure underneath was designed for human developers writing code on human timescales: console UI for a person, IAM model for a team, deployment review for a human commit, pricing for human-bounded usage. None of those assumptions hold up well when agents are doing most of the writing.
+
+If you were building cloud infrastructure now, you'd build it differently. The incumbents can't easily redesign their abstraction stacks without breaking trillions in customer deployments; the newer infrastructure-primitive players are each building pieces of what a modern cloud would look like, but none of them have an agent at the center of the developer experience. Remy does. The platform underneath is designed around what the agent needs.
+
+That's the long-arc thesis: not "an AI tool that builds apps," but the cloud platform for the agent era of software. The wedge is what the Seed funds. The platform thesis is what the company becomes if it works. (See [Thesis #3](./03_thesis.md#3-thesis-remy-is-building-the-cloud-the-agent-era-needs) for the full argument.)
+
 ## What real users are saying
 
 From open-alpha LinkedIn posts by independent users (selected; full set in the deck):

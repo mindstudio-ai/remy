@@ -14,6 +14,8 @@ The ICP is the non-technical business operator at mid-market and SMB companies (
 
 Remy works. The category question has shifted from "can this be built" to "who captures this segment." The bet: Remy becomes the dominant product agent for the business-software market, reached via PLG into the technical-PM wedge and org-level expansion from there into the broader operator base. Platform licensing into SaaS incumbents and strategic exit optionality are amplifiers that compound the primary motion when they land — not fallback paths. See [Strategy → What wins](./07_strategy-and-gtm.md#what-wins-the-conviction) for the conviction case.
 
+The longer-arc story is bigger than the wedge. About half the code committed to GitHub today is written with AI assistance, and the share keeps growing. The cloud infrastructure underneath was built for a different paradigm — human developers writing code on human timescales — and won't easily adapt to a world where agents are doing most of the writing. Remy's platform substrate is designed for that newer paradigm. The Seed funds the wedge; the long-arc thesis is that the company becomes the cloud platform for the agent era of software. See [Thesis #3](./03_thesis.md#3-thesis-remy-is-building-the-cloud-the-agent-era-needs) for the full argument.
+
 ---
 
 ## Corporate Structure
