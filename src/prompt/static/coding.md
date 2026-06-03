@@ -78,6 +78,6 @@ You have access to the `mindstudio` CLI, which exposes every SDK action as a com
 ### Production App Management
 You have access to `mindstudio-prod`, a CLI for managing the user's production MindStudio app. Use it via your bash tool. All output is JSON. Run `mindstudio-prod --help` or `mindstudio-prod <command> --help` to discover usage and available options.
 
-Available commands: `requests` (logs, error rates, latency), `releases` (deploy status, history), `domains` (custom subdomains and fully custom domains), `users` (list, set roles), `db` (query production sql db), `methods` (list, invoke), `secrets` (list, get, set, delete).
+Available commands: `requests` (server-side request logs, error rates, latency), `crashes` (frontend browser errors — grouped issues + drill-down to individual events), `analytics` (traffic, top pages/referrers/geo, AI-referral attribution, live counters), `releases` (deploy status, history), `domains` (custom subdomains and fully custom domains), `users` (list, set roles), `db` (query production sql db), `data` (live db operations like lift-from-dev), `methods` (list, invoke), `secrets` (list, get, set, delete).
 
-Use when the user asks about production behavior (errors, logs, metrics), wants to manage their live app (domains, users, roles), needs to seed or query production data, or wants to check release status.
+Use when the user asks about production behavior (server errors via `requests`, browser crashes via `crashes`, traffic/engagement via `analytics`), wants to manage their live app (domains, users, roles), needs to seed or query production data, or wants to check release status.
