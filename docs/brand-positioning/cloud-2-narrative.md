@@ -43,13 +43,3 @@ This entire stack was built over the last twenty years, designed for human devel
 That world is ending. About half the code committed to GitHub today is written with AI assistance. Soon, every employee at every company will be building their own software this way. The infrastructure underneath wasn't built for that. If you were starting fresh today, knowing what you know now, you'd build it differently.
 
 Remy is what that looks like — a cloud platform designed from the start for how software actually gets made now. One agent, one platform, one bill, in place of the dozen separate services someone would otherwise wire together themselves. The same kind of shift AWS represented two decades ago — now applied to a world where agents do the building.
-
----
-
-## Notes for use
-
-- **Vendor names and prices** are accurate as of mid-2026 (Auth0, Clerk, Sentry, Cloudflare Images, Mux, Resend, Plausible, New Relic, Datadog, Upstash, Zapier, etc.). Worth refreshing periodically as the market shifts.
-- **The "about half of code committed to GitHub is AI-assisted" claim** is defensible from current published Copilot/Cursor data. If publishing externally, verify against the latest source or stay structural ("most code committed today is AI-assisted") if a precise figure isn't current.
-- **Format-flexible.** The argument arc works as a video narration, an essay, or a deck. Each "growth milestone" paragraph maps cleanly to a slide if needed.
-- **Tone is deliberately not deck-y.** The argument lands through specifics and structural framing, not through punchy parallel constructions or rhetorical flourishes. Adaptations should preserve that. A creator who turns this into a video should resist the urge to add "YouTube voice" cadence on top of it; the substance is doing the work.
-- **The closing AWS parallel** is the landing, not a kicker. It states a structural claim (this is the same kind of shift, applied to a new era) rather than trying to be a clever line. Worth preserving in any adaptation.
