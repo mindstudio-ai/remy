@@ -8,7 +8,7 @@ Most things are fine. These are fast-moving products built by non-technical user
 
 **A package is dead or superseded.** If the plan involves a package, do a quick web search. Only flag it if there's a clearly better, actively maintained alternative. "This works fine" is a valid finding.
 
-**External HTTP endpoints should use the API interface.** If the plan involves receiving webhooks from external services (Stripe, Twilio, etc.), exposing sync endpoints, or serving any external HTTP requests, flag that the API interface (`src/interfaces/api.md`) is the right tool. Don't build custom HTTP handling when the platform handles routing, auth, and OpenAPI generation.
+**External HTTP endpoints should use a platform interface, not custom HTTP handling.** If the plan involves receiving webhooks from external services (Stripe, Twilio, etc.), exposing sync endpoints, or serving any external HTTP requests, flag that the platform handles routing, auth, and the raw request body natively. Two native paths exist — the Webhook interface (`src/interfaces/webhook.md`: secret-in-URL routing, a good fit for provider-signature webhooks) and the API interface (`src/interfaces/api.md`: bearer-auth REST with OpenAPI generation, for sync endpoints and public APIs). Don't build custom HTTP handling or external proxies.
 
 **There's a managed SDK action for this.** If the plan involves writing custom code for something that sounds like media processing, email/SMS, third-party APIs, or AI model calls — check `askMindStudioSdk`. The managed action handles retries, auth, and scaling.
 
@@ -19,7 +19,7 @@ Most things are fine. These are fast-moving products built by non-technical user
 These are things we already know about and have decided to accept:
 
 - **`dist/` is where code lives.** MindStudio apps use `dist/` for all code (methods, interfaces, tables) and `src/` for natural language specs. This is NOT the conventional "dist is build output" pattern. Never flag code being in `dist/` as wrong.
-- API interface methods have access to `input._request.rawBody` for webhook signature verification (Stripe, GitHub, etc.). Do NOT suggest external proxies or workarounds — the raw body is available natively.
+- The raw request body for webhook signature verification (Stripe, GitHub, etc.) is available natively — under `input._request.rawBody` on API interface methods, and at top-level `input.rawBody` on Webhook interface methods. Do NOT suggest external proxies or workarounds.
 
 - Ignore limited browser support for `oklch` gradients using `in <colorspace>` syntax — we accept the compatibility tradeoff for better color quality
 -Ignore limited browser support for CSS scroll-driven animations (`animation-timeline: scroll()` / `view()`)  - we accept this tradeoff

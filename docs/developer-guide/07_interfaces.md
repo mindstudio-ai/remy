@@ -317,25 +317,53 @@ Standard cron expression format. Jobs are synced to the platform on deploy.
 
 ## Webhook
 
-Inbound HTTP endpoints that invoke methods.
+Inbound HTTP endpoints that invoke a method directly and synchronously — the caller waits for the method to finish and gets its output back. Use for receiving webhooks from external services (Stripe, GitHub, Shopify, Slack, Twilio). Direct inbound webhooks with signature verification work natively; don't build confirmation-token or polling workarounds.
 
 ### Config (`interface.json`)
 
+The config file's top-level key must match the interface type (`webhook`):
+
 ```json
 {
-  "endpoints": [
-    {
-      "method": "handle-payment-webhook",
-      "description": "Stripe payment notifications",
-      "secret": "whk_abc123..."
-    }
-  ]
+  "webhook": {
+    "endpoints": [
+      {
+        "method": "handle-payment-webhook",
+        "secret": "whsec_pick_a_long_random_token",
+        "description": "Stripe events"
+      }
+    ]
+  }
 }
 ```
 
-Endpoint URL: `https://{app-subdomain}.mindstudio.ai/_/webhook/{secret}`
+- `method` — the id of a method in `methods[]` to invoke.
+- `secret` — a developer-chosen opaque token that is both the routing key and the access guard. It is stable across deploys (compilation is a passthrough — redeploying never rotates it), so a URL you register with Stripe/GitHub stays valid. Generate one long random value per endpoint and keep it constant.
+- You can declare multiple endpoints; each `secret` maps to one method.
 
-Accepts any HTTP method. The method receives `{ method, headers, query, body }` as input.
+### Endpoint URL
+
+Register this URL with the external service: `https://{app-host}/_/webhook/{secret}` — `{app-host}` is any host the app is served on: its `custom_subdomain` host (e.g. `myapp.madewithremy.com`), a custom domain if configured, or the UUID host (`<appId>.madewithremy.com` / `.msagent.ai`). All HTTP verbs are accepted.
+
+### Input
+
+The method receives:
+
+```ts
+{
+  method: string;                  // HTTP method
+  headers: Record<string, string>; // request headers
+  query: Record<string, string>;   // query params
+  body: any;                       // parsed JSON / form body
+  rawBody: string;                 // exact raw request bytes (UTF-8), pre-parse
+}
+```
+
+For signature verification, always use `rawBody`, never `body` — providers (Stripe, GitHub, Shopify, Slack) HMAC the raw payload, and a re-serialized `body` will not match. Example: `stripe.webhooks.constructEvent(input.rawBody, input.headers['stripe-signature'], endpointSecret)`. `rawBody` is populated for `application/json` and `application/x-www-form-urlencoded` request bodies (what those providers send).
+
+### Response
+
+Whatever the method returns as output is sent back as JSON to the caller; if it returns no output, the platform responds `204`. A wrong/unknown secret returns `401`; an app with no live release returns `404`.
 
 ---
 
