@@ -100,7 +100,7 @@ The longer-arc story is what the wedge becomes. About half of the code committed
 
 If you were building cloud infrastructure now, you'd build it differently. The incumbents can't easily redesign their abstraction stacks without breaking trillions in customer deployments; the newer infrastructure-primitive players are each building pieces of what a modern cloud would look like, but none of them have an agent at the center of the developer experience. Remy does. The platform underneath is designed around what the agent needs.
 
-That's the long-arc thesis: not "an AI tool that builds apps," but the cloud platform for the agent era of software. The wedge is what the Seed funds. The platform thesis is what the company becomes if it works. (See [Thesis #3](./03_thesis.md#3-thesis-remy-is-building-the-cloud-the-agent-era-needs) for the full argument.)
+That's the long-arc thesis: not "an AI tool that builds apps," but the cloud platform for the agent era of software. The wedge is what the Seed funds. The platform thesis is what the company becomes if it works. (See [Thesis #3](./03_thesis.md#3-thesis-remy-is-building-the-cloud-the-agent-era-needs) for the full argument, or the [Cloud 2.0 narrative](../brand-positioning/cloud-2-narrative.md) for a plain-language articulation aimed at broader audiences.)
 
 ## What real users are saying
 

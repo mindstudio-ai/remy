@@ -40,7 +40,7 @@ This is one of eight sections of the diligence material. See [`docs/README.md`](
 
 - **This is built, not on a roadmap.** The platform substrate Remy compiles against has been in production for years, including by employees at major enterprises. Competitors in the AI software creation space are quoting similar feature lists as goals; the same things are already running here.
 
-- **The Seed is for the wedge. The longer-arc story is what the company becomes if it works.** The AI app builder segment is a defensible $15–25B SAM in its own right (see [Market & Competition](./04_market-and-competition.md)). If the company works the way we think it will, what it becomes is the cloud platform for the agent era of software.
+- **The Seed is for the wedge. The longer-arc story is what the company becomes if it works.** The AI app builder segment is a defensible $15–25B SAM in its own right (see [Market & Competition](./04_market-and-competition.md)). If the company works the way we think it will, what it becomes is the cloud platform for the agent era of software. For a plain-language articulation of this same thesis aimed at non-diligence audiences, see the [Cloud 2.0 narrative](../brand-positioning/cloud-2-narrative.md).
 
 ## 4. Thesis: A structurally wide exit field
 
