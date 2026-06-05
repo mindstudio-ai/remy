@@ -98,7 +98,7 @@ For developers writing apps that run on Remy. The three-layer model (spec → co
 |---|---|
 | [`messaging.md`](./brand-positioning/messaging.md) | The canonical positioning document. How Remy talks about itself externally. |
 | [`faq.md`](./brand-positioning/faq.md) | Alpha-user FAQ — billing, ownership, scope, common questions. |
-| [`cloud-2-narrative.md`](./brand-positioning/cloud-2-narrative.md) | The long-arc thesis ("AWS for the agent era") as a ~4-minute explainer narration. Source material for creators making explainer content and for team members learning to articulate the broader framing. |
+| [`agent-era-narrative.md`](./brand-positioning/agent-era-narrative.md) | The long-arc thesis as a ~4-minute explainer narration. Source material for creators making explainer content and for team members learning to articulate the broader framing. |
 
 ## Other places worth poking around
 

@@ -1,4 +1,4 @@
-# Cloud 2.0 Narrative
+# Agent Era Narrative
 
 A roughly four-minute explainer narration that contextualizes Remy in its long-arc thesis — what it is, why now, what it becomes if it works. Written as source material for creators making explainer content and as a teaching tool for team members who need to internalize the broader framing.
 
