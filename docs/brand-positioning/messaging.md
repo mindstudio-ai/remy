@@ -14,15 +14,15 @@ You describe your application in a spec, which is a markdown document with two l
 
 This isn't "AI writes code for you." It's a shift in what programming looks like. Nobody hand-writes assembly anymore, but it's still running underneath. Same idea here. The next generation of software won't start from TypeScript. It'll start from a spec that both humans and agents can read, write, and reason about.
 
-## Remy and MindStudio
+## Remy and the platform underneath
 
-Remy is made by MindStudio.
+Remy is built by Wooster Labs and runs on a platform we've been building for years: 200+ AI models, 1000+ integrations, managed databases, auth, deployment, SOC 2 / GDPR, production hardening. Remy is what happens when you put a great agent on top of that.
 
-We built MindStudio as a platform for AI-powered applications: 200+ AI models, 1000+ integrations, managed databases, auth, deployment, years of production infrastructure. Along the way, we realized the right abstraction wasn't better tooling for writing code. It was a new source format that both humans and AI could work with. Remy came out of that realization. It runs on the infrastructure we've spent years building, but the approach is entirely new. It's where we're putting our focus going forward.
+The platform predates Remy. It matured under our prior product, MindStudio — now being sunset, with its substrate carried forward into Remy. That history is why Remy has the integration surface and production hardening it does on day one. We didn't bolt any of it on last month.
 
-**When to mention MindStudio:** When the question is about infrastructure, security, or why the platform capabilities are so broad. "This runs on infrastructure we've been building and running for years" is credibility. It explains why there are 200+ models and 1000+ integrations available out of the box. We didn't bolt those on last month.
+**When to bring up the platform history:** When the question is about infrastructure, security, or why the platform capabilities are so broad. "This runs on infrastructure we've been building and running for years" is real credibility — it explains why there are 200+ models and 1000+ integrations available out of the box.
 
-**When to just say Remy:** Almost everywhere else. The product is Remy. The idea is spec-driven development. MindStudio is the foundation, not the headline.
+**When to just say Remy:** Almost everywhere else. The product is Remy. The idea is spec-driven development. The platform underneath is the foundation, not the headline.
 
 ## How to Talk About It
 

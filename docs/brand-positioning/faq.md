@@ -2,7 +2,9 @@
 
 ## Do I need a paid account?
 
-Yes, during the alpha you need a MindStudio account on the Starter plan ($20/mo). This is mainly to prevent abuse while we're in early access. For specific promos (like the Show HN launch), we can issue codes that activate alpha access on free accounts. For VIPs we can also give them direct invite links with pre-loaded inference credits so they don't need to go through the hassle of topping up.
+Yes. Remy is **$99/month**, or **$79/month with annual billing** (about two months free). There's a **7-day free trial** — full product, no feature limits during the trial — so you can build something real before deciding.
+
+For specific promos (like the Show HN launch), we can issue codes that activate the trial without a card. For VIPs we sometimes provide direct invite links with pre-loaded inference credits so they don't need to top up before getting started.
 
 ## How do I report bugs or give feedback?
 
@@ -38,7 +40,11 @@ Yes. Apps deploy on push to the main branch and are live on a real URL. You can 
 
 ## What does it cost?
 
-During the alpha, there are no platform fees. You pay for inference costs (the raw AI model usage - no markup). Eventually Remy will have real pricing, but for now we want people building, not worrying about bills.
+$99/month, or $79/month with annual billing.
+
+Inference (the raw AI model usage Remy runs on your behalf) is **pass-through at provider rates with no markup**. You either fund an inference balance via auto-billing, or connect your own provider API keys (Anthropic, OpenAI, Google). A typical MVP costs around $100 in inference to build; power users building seriously spend $1,000+/month.
+
+One tier during alpha. No per-seat pricing. No team plan. For organizations with SSO, SAML, on-prem, audit log, or other enterprise requirements, get in touch — sean@mindstudio.ai.
 
 ## Are custom domains supported?
 
