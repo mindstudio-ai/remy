@@ -40,6 +40,10 @@ export interface ScreenshotOptions {
   imageUrl?: string;
   /** Navigate to this path before capturing (e.g. "/settings"). */
   path?: string;
+  /** Capture the full page height (default) vs. just the visible viewport.
+   * Viewport captures skip the pre-roll scroll and tall stitch, so they're
+   * faster and far less failure-prone for long pages. */
+  fullPage?: boolean;
   /** Called for each log line emitted during CLI execution. */
   onLog?: (line: string) => void;
   /** Authoritative model ID for the vision analysis. Caller resolves
@@ -100,11 +104,15 @@ export async function captureAndAnalyzeScreenshot(
   let model: string | undefined;
 
   let path: string | undefined;
+  let fullPage = true;
 
   if (typeof promptOrOptions === 'object' && promptOrOptions !== null) {
     prompt = promptOrOptions.prompt;
     existingUrl = promptOrOptions.imageUrl;
     path = promptOrOptions.path;
+    if (promptOrOptions.fullPage !== undefined) {
+      fullPage = promptOrOptions.fullPage;
+    }
     onLog = promptOrOptions.onLog;
     model = promptOrOptions.model;
   } else {
@@ -117,9 +125,9 @@ export async function captureAndAnalyzeScreenshot(
     url = existingUrl;
   } else {
     const ssResult = await sidecarRequest(
-      '/screenshot-full-page',
+      fullPage ? '/screenshot-full-page' : '/screenshot-viewport',
       path ? { path } : undefined,
-      { timeout: 120000 },
+      { timeout: fullPage ? 120000 : 30000 },
     );
     url = ssResult?.url || ssResult?.screenshotUrl;
     if (!url) {

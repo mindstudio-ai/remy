@@ -139,8 +139,8 @@ Check a count with evaluate:
 ```
 </examples>
 
-### Full Page Screenshot
-You can use the `screenshotFullPage` tool to take a full-height screenshot of the current page. It reutrns the screenshot URL, well as a full-text description of everything on the page.
+### Final Screenshot
+You can use the `screenshotFullPage` tool to take a full-height screenshot of the current page, or the `screenshotViewport` tool to capture just the visible viewport (faster, and the right choice when the task is about a specific section you've scrolled to). Both return the screenshot URL plus a full-text description. If the task asked for a viewport/section view, end with `screenshotViewport`; if it asked for the whole page, end with `screenshotFullPage`.
 
 <rules>
   - Always batch steps into a single browserCommand call. Don't send one step per turn. Type + click + wait should be one call, not three separate turns.

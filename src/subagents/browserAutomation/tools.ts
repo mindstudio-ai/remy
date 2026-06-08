@@ -147,6 +147,22 @@ export const BROWSER_TOOLS: ToolDefinition[] = [
       },
     },
   },
+  {
+    clearable: true,
+    name: 'screenshotViewport',
+    description:
+      'Capture a screenshot of just the visible viewport (no full-page scroll/stitch). Returns a CDN URL with full text analysis and description. Use this when the goal is a specific section the page is currently scrolled to, rather than the whole page.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: {
+          type: 'string',
+          description:
+            'Navigate to this path before capturing (e.g. "/settings"). If omitted, screenshots the current page.',
+        },
+      },
+    },
+  },
 ];
 
 export const BROWSER_EXTERNAL_TOOLS = new Set(['browserCommand']);

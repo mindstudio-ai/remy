@@ -37,10 +37,16 @@ export interface BrowserAutomationResult {
 /**
  * Run the browser automation sub-agent and return its structured output.
  * Acquires the shared browser lock for the duration of the run.
+ *
+ * `opts.capture` selects which final screenshot the programmatic caller
+ * (the screenshot tool) wants surfaced — viewport or full-page. The
+ * sub-agent may take either kind along the way; this picks the one the
+ * caller asked for, falling back to whichever was actually captured.
  */
 export async function runBrowserAutomation(
   task: string,
   context: ToolExecutionContext,
+  opts?: { capture?: 'viewport' | 'fullPage' },
 ): Promise<BrowserAutomationResult> {
   const release = await acquireBrowserLock();
   try {
@@ -65,10 +71,11 @@ export async function runBrowserAutomation(
             return `Error setting up browser: ${err.message}`;
           }
         }
-        if (name === 'screenshotFullPage') {
+        if (name === 'screenshotFullPage' || name === 'screenshotViewport') {
           try {
             return await captureAndAnalyzeScreenshot({
               path: _input.path as string | undefined,
+              fullPage: name === 'screenshotFullPage',
               onLog,
               model: resolveModel(
                 'imageAnalysis',
@@ -154,16 +161,23 @@ export async function runBrowserAutomation(
         return result;
       },
       toolRegistry: context.toolRegistry,
-      captureArtifacts: ['screenshotFullPage'],
+      captureArtifacts: ['screenshotFullPage', 'screenshotViewport'],
     });
 
     context.subAgentMessages?.set(context.toolCallId, result.messages);
 
-    const ss = result.artifacts?.screenshotFullPage;
+    // Surface the screenshot the caller asked for; fall back to whichever
+    // kind the sub-agent actually captured so a result is never dropped.
+    const viewport = result.artifacts?.screenshotViewport;
+    const fullPage = result.artifacts?.screenshotFullPage;
+    const preferred =
+      opts?.capture === 'viewport'
+        ? (viewport ?? fullPage)
+        : (fullPage ?? viewport);
     return {
       text: result.text,
-      ...(ss?.url
-        ? { screenshot: { url: ss.url, styleMap: ss.styleMap } }
+      ...(preferred?.url
+        ? { screenshot: { url: preferred.url, styleMap: preferred.styleMap } }
         : {}),
     };
   } finally {
