@@ -132,11 +132,11 @@ export type SurfaceId = keyof typeof MODEL_SURFACES;
  */
 export const ALLOWED_MODELS_BY_TYPE: Partial<Record<ModelType, string[]>> = {
   text: [
-    'claude-fable-5',
     'claude-4-8-opus',
     'claude-4-7-opus',
     'claude-4-6-opus',
     'claude-4-6-sonnet',
+    'claude-fable-5',
     'gpt-5.5',
     'gemini-3-pro',
     'gemini-3.1-pro',
