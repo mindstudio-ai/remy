@@ -50,6 +50,12 @@ export async function runBrowserAutomation(
 ): Promise<BrowserAutomationResult> {
   const release = await acquireBrowserLock();
   try {
+    // Viewport captures happen as `screenshotViewport` steps inside
+    // `browserCommand` results (an external tool), which the runner can't stash
+    // as an artifact. Harvest the last one here so it can be surfaced below.
+    let lastBrowserCommandViewport:
+      | { url: string; styleMap?: string }
+      | undefined;
     const result = await runSubAgent({
       system: getBrowserAutomationPrompt(),
       task,
@@ -71,11 +77,11 @@ export async function runBrowserAutomation(
             return `Error setting up browser: ${err.message}`;
           }
         }
-        if (name === 'screenshotFullPage' || name === 'screenshotViewport') {
+        if (name === 'screenshotFullPage') {
           try {
             return await captureAndAnalyzeScreenshot({
               path: _input.path as string | undefined,
-              fullPage: name === 'screenshotFullPage',
+              fullPage: true,
               onLog,
               model: resolveModel(
                 'imageAnalysis',
@@ -110,6 +116,13 @@ export async function runBrowserAutomation(
               (s: any) => s.command === 'screenshotViewport' && s.result?.url,
             );
             if (screenshotSteps.length > 0) {
+              // Surface the last viewport capture from this batch (last write
+              // wins across batches) — this is what runBrowserAutomation returns.
+              const lastStep = screenshotSteps[screenshotSteps.length - 1];
+              lastBrowserCommandViewport = {
+                url: lastStep.result.url,
+                styleMap: lastStep.result.styleMap,
+              };
               const visionOverride = {
                 model: resolveModel(
                   'imageAnalysis',
@@ -161,15 +174,17 @@ export async function runBrowserAutomation(
         return result;
       },
       toolRegistry: context.toolRegistry,
-      captureArtifacts: ['screenshotFullPage', 'screenshotViewport'],
+      captureArtifacts: ['screenshotFullPage'],
     });
 
     context.subAgentMessages?.set(context.toolCallId, result.messages);
 
     // Surface the screenshot the caller asked for; fall back to whichever
     // kind the sub-agent actually captured so a result is never dropped.
-    const viewport = result.artifacts?.screenshotViewport;
+    // Full-page comes from the standalone-tool artifact; viewport is harvested
+    // from the browserCommand screenshotViewport step above.
     const fullPage = result.artifacts?.screenshotFullPage;
+    const viewport = lastBrowserCommandViewport;
     const preferred =
       opts?.capture === 'viewport'
         ? (viewport ?? fullPage)

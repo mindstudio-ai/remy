@@ -70,7 +70,7 @@ export const BROWSER_TOOLS: ToolDefinition[] = [
                   'screenshotViewport',
                 ],
                 description:
-                  'snapshot: accessibility tree of the page (waits for network to settle). click: click an element (animated cursor, full event sequence). type: type text into input (one char at a time, works with React/Vue/Svelte). select: select a dropdown option by text. wait: wait for an element to appear (polls 100ms, waits for network). navigate: navigate to a URL within the app (waits for load, subsequent steps run on new page). evaluate: run JS in the page. styles: read computed CSS styles from elements (pass properties array with camelCase names, or omit for defaults). screenshotFullPage: full-page viewport-stitched screenshot (returns CDN url with dimensions). screenshotViewport: screenshot of just the visible viewport.',
+                  'snapshot: accessibility tree of the page (waits for network to settle). click: click an element (animated cursor, full event sequence). type: type text into input (one char at a time, works with React/Vue/Svelte). select: select a dropdown option by text. wait: wait for an element to appear (polls 100ms, waits for network). navigate: navigate to a URL within the app (waits for load, subsequent steps run on new page). evaluate: run JS in the page. styles: read computed CSS styles from elements (pass properties array with camelCase names, or omit for defaults). screenshotFullPage: full-page viewport-stitched screenshot (returns CDN url with dimensions). screenshotViewport: screenshot of just the visible viewport — pass `scrollToSelector` (or `scrollY`) on this step to scroll a section into view and capture it in one atomic step (no separate scroll needed).',
               },
               ref: {
                 type: 'string',
@@ -123,6 +123,16 @@ export const BROWSER_TOOLS: ToolDefinition[] = [
                 description:
                   'For styles: camelCase CSS property names to read (e.g., ["backgroundColor", "borderRadius", "fontSize"]). Omit for a default set.',
               },
+              scrollToSelector: {
+                type: 'string',
+                description:
+                  'For screenshotViewport: a CSS selector to scroll into view (via the capture’s own context) immediately before the shot, so scroll + capture are atomic. Prefer this over a separate evaluate-scroll step when capturing a specific section.',
+              },
+              scrollY: {
+                type: 'number',
+                description:
+                  'For screenshotViewport: absolute Y offset to scroll to before the shot, when no selector is available.',
+              },
             },
             required: ['command'],
           },
@@ -136,22 +146,6 @@ export const BROWSER_TOOLS: ToolDefinition[] = [
     name: 'screenshotFullPage',
     description:
       'Capture a full-height screenshot of the current page. Returns a CDN URL with full text analysis and description.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        path: {
-          type: 'string',
-          description:
-            'Navigate to this path before capturing (e.g. "/settings"). If omitted, screenshots the current page.',
-        },
-      },
-    },
-  },
-  {
-    clearable: true,
-    name: 'screenshotViewport',
-    description:
-      'Capture a screenshot of just the visible viewport (no full-page scroll/stitch). Returns a CDN URL with full text analysis and description. Use this when the goal is a specific section the page is currently scrolled to, rather than the whole page.',
     inputSchema: {
       type: 'object',
       properties: {

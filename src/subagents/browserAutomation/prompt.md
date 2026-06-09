@@ -43,7 +43,7 @@ Note: the snapshot concatenates inline text and strips whitespace. If you need t
 - `navigate`: Navigate to a new URL within the app. Waits for the new page to load before continuing with subsequent steps. Use this instead of evaluate with `window.location.href` when you need to navigate and then continue interacting with the new page. Steps after navigate execute on the new page automatically.
 - `evaluate`: Run arbitrary JavaScript in the page and return the result.
 - `styles`: Read computed CSS styles from page elements. Pass a `properties` array with camelCase CSS property names (e.g., `["backgroundColor", "borderRadius", "fontSize"]`). Omit `properties` for a default set covering colors, typography, spacing, borders, shadows, dimensions, and layout. Uses the same targeting as click/type (ref, text, role, label, selector). Omit the target to get styles for all elements from the last snapshot.
-- `screenshotViewport`: Take a screenshot of the current viewport. Returns CDN url with full text analysis and dimensions. Useful at the end of an action batch to visually see things like layout shift or overflow. Do not use if you can get what you need with other tools - only use when you need to visually see the viewport.
+- `screenshotViewport`: Take a screenshot of the visible viewport. Returns CDN url with full text analysis and dimensions. To capture a specific section, set `scrollToSelector` (a CSS selector) — or `scrollY` (an absolute offset) — on this same step; it scrolls the target into view and captures it atomically, so you do NOT need a separate scroll step. Do not use if you can get what you need with other tools - only use when you need to visually see the viewport.
 
 ### Element targeting (tried in order)
 
@@ -109,6 +109,15 @@ Select a dropdown option and screenshot the result:
 }
 ```
 
+Capture a specific below-the-fold section (scroll + capture in one atomic step):
+```json
+{
+  "steps": [
+    { "command": "screenshotViewport", "scrollToSelector": "#pricing" }
+  ]
+}
+```
+
 Navigate to a sub-page and interact with it:
 ```json
 {
@@ -140,7 +149,9 @@ Check a count with evaluate:
 </examples>
 
 ### Final Screenshot
-You can use the `screenshotFullPage` tool to take a full-height screenshot of the current page, or the `screenshotViewport` tool to capture just the visible viewport (faster, and the right choice when the task is about a specific section you've scrolled to). Both return the screenshot URL plus a full-text description. If the task asked for a viewport/section view, end with `screenshotViewport`; if it asked for the whole page, end with `screenshotFullPage`.
+How you take the final screenshot depends on what the task asked for:
+- **Whole page** → use the standalone `screenshotFullPage` tool. It takes a full-height screenshot of the current page and returns the URL plus a full-text description.
+- **A specific section / viewport** → use a `browserCommand` batch ending in a `screenshotViewport` step with `scrollToSelector` set to the section (e.g. `{ "command": "screenshotViewport", "scrollToSelector": "#pricing" }`). This scrolls the section into view and captures it in one atomic step. Do this rather than a separate scroll step followed by a capture — capturing the viewport is only reliable when the scroll and the shot are in the same step.
 
 <rules>
   - Always batch steps into a single browserCommand call. Don't send one step per turn. Type + click + wait should be one call, not three separate turns.
