@@ -186,6 +186,22 @@ export const CLEARABLE_TOOLS = new Set(
   ALL_TOOLS.filter((t) => t.clearable).map((t) => t.definition.name),
 );
 
+/**
+ * Main-agent-facing tools that delegate to a sub-agent and return substantive
+ * prose work-product (a design report, a QA result, etc.). Their results are
+ * worth preserving when serializing the conversation for summarization, unlike
+ * mechanical tool results (file reads/edits, grep, bash, screenshots). NOTE:
+ * `clearable` is not a usable signal here — `runAutomatedBrowserTest` is
+ * clearable while several non-subagent tools are not.
+ */
+export const SUBAGENT_TOOL_NAMES = new Set([
+  'visualDesignExpert',
+  'productVision',
+  'codeSanityCheck',
+  'runAutomatedBrowserTest',
+  'askMindStudioSdk',
+]);
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function getTools(_onboardingState: string): Tool[] {
   return ALL_TOOLS;

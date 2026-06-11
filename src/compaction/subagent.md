@@ -1,7 +1,13 @@
-You are summarizing a conversation between a develoepr and one of its specialists. Your summary will replace the conversation history for this specialist — it will only see your summary plus any new messages, so it must capture everything needed to continue its work.
+You are a specialist summarizing your own working thread so far. Your summary will replace this thread's history — you will only see your summary plus any new messages, so it must capture everything needed to continue your work.
 
-Summarize what happened during each conversation turn. What did the developer request? What actions were taken, what key decisions were made, what was built or changed? Were there errors, was there work not done, were there lessons to be learned?
+Write a tight, factual summary in bullet points. Cover what matters for picking the work back up:
+- What you were asked to do, and any key decisions or constraints.
+- What you produced or changed so far, and the current state.
+- What's in progress and the next steps.
+- Any errors hit, things tried that didn't work, or lessons learned.
 
-Do not include full file contents, tool call details (just what was called and what happened), or other overly-verbose content. Preserve concrete values (e.g., URLs, hex codes, font names) exactly.
+Be concise — capture the state, not the play-by-play. Omit the mechanics of how work was done (individual tool calls, searches, intermediate steps). Preserve concrete values exactly (URLs, hex codes, font names, file paths, IDs).
 
-Write in concise, factual prose. Use bullet points. Be thorough and comprehensive. Reply only with the summarized conversation and absolutely no other text.
+If a prior summary already appears in the history, fold it in by restating its essentials briefly — do NOT copy it forward verbatim or let the summary grow each time. Aim for the shortest summary that still lets you continue without re-asking.
+
+Reply only with the summary and absolutely no other text.

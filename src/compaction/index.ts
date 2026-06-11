@@ -24,6 +24,7 @@ import {
   type ToolDefinition,
 } from '../api.js';
 import { readAsset } from '../assets.js';
+import { SUBAGENT_TOOL_NAMES } from '../tools/index.js';
 import { createLogger } from '../logger.js';
 import { recordUsage, nanoToDollars } from '../usageLedger.js';
 import type { ApiConfig } from '../config.js';
@@ -250,32 +251,87 @@ function getSubAgentMessagesForSummary(
 
 /**
  * Serialize messages into a readable format for the summarizer.
+ *
+ * We deliberately strip the mechanics of the tool loop, which otherwise
+ * dominate the input (untruncated tool-result messages are ~70% of it):
+ * - Assistant tool calls collapse to a `[used N tools]` marker so the
+ *   summarizer still senses the scale of the loop, without the args/results.
+ * - Tool-result messages are dropped UNLESS they came from a sub-agent
+ *   (`SUBAGENT_TOOL_NAMES`) — a design report, QA result, etc. is real
+ *   work-product worth carrying into the summary; a file read or grep is not.
+ * Narrative text (real user/assistant turns) is kept verbatim.
  */
 function serializeForSummary(messages: Message[]): string {
-  return messages
-    .map((msg) => {
-      if (typeof msg.content === 'string') {
-        return `[${msg.role}]: ${msg.content}`;
+  // Tool name lives on the assistant tool block, not on the result message —
+  // map id → name so we can classify each tool result.
+  const toolNameById = new Map<string, string>();
+  for (const msg of messages) {
+    if (!Array.isArray(msg.content)) {
+      continue;
+    }
+    for (const block of msg.content as ContentBlock[]) {
+      if (block.type === 'tool') {
+        toolNameById.set(block.id, block.name);
       }
-      if (!Array.isArray(msg.content)) {
-        return `[${msg.role}]: (empty)`;
-      }
-      const blocks = msg.content as ContentBlock[];
-      const parts: string[] = [];
-      for (const block of blocks) {
-        if (block.type === 'text') {
-          parts.push(block.text);
-        } else if (block.type === 'tool') {
-          parts.push(
-            `[tool: ${block.name}(${JSON.stringify(block.input).slice(0, 200)})] → ${(block.result ?? '').slice(0, 500)}`,
-          );
+    }
+  }
+
+  const lines: string[] = [];
+  for (const msg of messages) {
+    // Tool-result message: keep only sub-agent work-product, drop mechanics.
+    if (msg.role === 'user' && msg.toolCallId) {
+      const toolName = toolNameById.get(msg.toolCallId);
+      if (toolName && SUBAGENT_TOOL_NAMES.has(toolName)) {
+        const content =
+          typeof msg.content === 'string'
+            ? msg.content
+            : Array.isArray(msg.content)
+              ? (msg.content as ContentBlock[])
+                  .filter(
+                    (b): b is ContentBlock & { type: 'text' } =>
+                      b.type === 'text',
+                  )
+                  .map((b) => b.text)
+                  .join('\n')
+              : '';
+        if (content.trim()) {
+          lines.push(`[${toolName} result]: ${content}`);
         }
-        // Skip thinking blocks — ephemeral
-        // Skip summary blocks — meta
       }
-      return `[${msg.role}]: ${parts.join('\n')}`;
-    })
-    .join('\n\n');
+      continue;
+    }
+
+    if (typeof msg.content === 'string') {
+      if (msg.content.trim()) {
+        lines.push(`[${msg.role}]: ${msg.content}`);
+      }
+      continue;
+    }
+    if (!Array.isArray(msg.content)) {
+      continue;
+    }
+
+    const blocks = msg.content as ContentBlock[];
+    const parts: string[] = [];
+    let toolCount = 0;
+    for (const block of blocks) {
+      if (block.type === 'text') {
+        parts.push(block.text);
+      } else if (block.type === 'tool') {
+        toolCount++;
+      }
+      // Skip thinking blocks — ephemeral. Skip summary blocks — meta.
+    }
+    if (toolCount > 0) {
+      parts.push(`[used ${toolCount} tool${toolCount === 1 ? '' : 's'}]`);
+    }
+    const body = parts.join('\n').trim();
+    if (body) {
+      lines.push(`[${msg.role}]: ${body}`);
+    }
+  }
+
+  return lines.join('\n\n');
 }
 
 /**
