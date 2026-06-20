@@ -6,7 +6,7 @@ Apps can store encrypted secrets (API keys, database URLs, tokens) that get inje
 
 ## When to Use Secrets
 
-Secrets are for third-party services that you manage your own connection to — services that aren't covered by the MindStudio SDK or built-in platform integrations. If MindStudio already provides a way to do something (AI models, sending SMS, web search, image generation, etc.), use the SDK instead. It handles auth, billing, and key management automatically.
+Secrets are for third-party services that you manage your own connection to — services that aren't covered by the MindStudio SDK or built-in platform integrations. If Remy already provides a way to do something (AI models, sending SMS, web search, image generation, etc.), use the SDK instead. It handles auth, billing, and key management automatically.
 
 Use secrets for:
 - **Third-party API keys**: Stripe, GitHub, Shopify, etc.
@@ -93,7 +93,7 @@ Both values are optional. If only one is set, the other environment falls back t
 
 ### Dashboard
 
-Settings → Secrets in the MindStudio app editor. Each secret shows its key, whether dev and prod values are set, and controls to edit or delete.
+Settings → Secrets in the Remy app editor. Each secret shows its key, whether dev and prod values are set, and controls to edit or delete.
 
 ### CLI
 
@@ -129,6 +129,6 @@ mindstudio-prod secrets delete STRIPE_SECRET_KEY
 
 - **AI model API keys** (OpenAI, Anthropic, Google) — use the MindStudio SDK, which handles model access and billing automatically
 - **Keys for platform-provided integrations** (SMS, email, web search, image generation, text-to-speech, transcription) — these are available through the SDK's built-in actions and handle auth automatically
-- **MindStudio platform credentials** — handled automatically
+- **Remy platform credentials** — handled automatically
 - **Non-sensitive values** — use method input parameters or database tables instead
 - **Large values** (certificates, key files) — secrets are designed for short string values

@@ -6,7 +6,7 @@ There is a huge amount of capability here: hundreds of text generation models (O
 
 ## Usage in Methods
 
-Inside a MindStudio app method, use the `mindstudio` singleton — credentials come from the execution environment automatically:
+Inside an app method, use the `mindstudio` singleton — credentials come from the execution environment automatically:
 
 ```typescript
 import { mindstudio } from '@mindstudio-ai/agent';
@@ -90,7 +90,7 @@ result.$billingCost;         // cost in credits (if applicable)
 
 ### Third-Party Integrations (OAuth Connectors)
 
-850+ additional actions from the MindStudio Connector Registry, covering services like HubSpot, Salesforce, Airtable, Google Workspace, Notion, Coda, and many more. These require OAuth connections set up by the user in MindStudio.
+850+ additional actions from the MindStudio Connector Registry, covering services like HubSpot, Salesforce, Airtable, Google Workspace, Notion, Coda, and many more. These require OAuth connections set up by the user in Remy.
 
 Built-in connector methods include: ActiveCampaign, Airtable, Apollo, Coda, Facebook, Gmail, Google Docs/Sheets/Calendar/Drive, HubSpot, Hunter.io, Instagram, LinkedIn, Notion, X (Twitter), YouTube.
 

@@ -1,8 +1,8 @@
 # Remy
 
-A spec-building and coding agent for MindStudio apps.
+A spec-building and coding agent for building apps.
 
-Remy helps users design, spec, build, and iterate on MindStudio projects. It runs locally in a terminal or as a headless subprocess in the MindStudio sandbox. It has tools for reading/writing specs and code, running shell commands, searching code, prompting users with structured forms, and (in the sandbox) TypeScript language server integration. LLM calls are routed through the MindStudio platform for billing and model routing.
+Remy helps users design, spec, build, and iterate on app projects. It runs locally in a terminal or as a headless subprocess in the sandbox. It has tools for reading/writing specs and code, running shell commands, searching code, prompting users with structured forms, and (in the sandbox) TypeScript language server integration. LLM calls are routed through the Remy platform for billing and model routing.
 
 ## Quick Start
 
@@ -11,7 +11,7 @@ Remy helps users design, spec, build, and iterate on MindStudio projects. It run
 mindstudio login
 
 # Navigate to your project
-cd my-mindstudio-app
+cd my-app
 
 # Run remy
 npx remy

@@ -1,10 +1,10 @@
-# MindStudio Apps: Developer Guide
+# Remy Apps: Developer Guide
 
 > **Note on audience.** This guide documents the platform's primitives — the spec format, the manifest, tables, methods, roles, interfaces. It's written for developers who want to build directly on the platform, or for anyone reading the code Remy generates and wanting to understand how the pieces fit together. **It is not a description of how end-users of Remy interact with the product.** A Remy user describes what they want in plain language (voice, text, or pasted documents), and the agent generates everything described in this guide on their behalf. The user doesn't write MSFM, define tables, or author methods by hand — the agent does, after a conversation that turns intent into a spec. Read this guide if you want to know *what gets generated*; read the [diligence material](../README.md#diligence--investor-facing-material) and [landing page](../diligence/landing-page.md) for *how the user experiences it*.
 
-## What is a MindStudio App?
+## What is a Remy App?
 
-A MindStudio app is a code project with a clear structure. You define the logic (data models, business rules, user experiences) and the platform handles databases, auth, deployment, and every way users interact with your app.
+A Remy app is a code project with a clear structure. You define the logic (data models, business rules, user experiences) and the platform handles databases, auth, deployment, and every way users interact with your app.
 
 An app has three layers:
 

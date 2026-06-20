@@ -1,7 +1,7 @@
 {
   "name": "@mindstudio-ai/remy",
   "version": "0.1.199",
-  "description": "MindStudio coding agent",
+  "description": "Remy coding agent",
   "repository": {
     "type": "git",
     "url": "https://github.com/mindstudio-ai/remy"

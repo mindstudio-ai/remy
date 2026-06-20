@@ -1,6 +1,6 @@
 # Auth & Roles
 
-MindStudio apps can have and manage their own users. Auth is opt-in: configure it in the manifest, define a user table, and build your own login UI. The platform handles verification codes (email/SMS), cookie-based sessions, and role enforcement.
+Remy apps can have and manage their own users. Auth is opt-in: configure it in the manifest, define a user table, and build your own login UI. The platform handles verification codes (email/SMS), cookie-based sessions, and role enforcement.
 
 Apps without auth config use anonymous guest sessions. Auth is optional — only add it when the app needs to identify users or restrict access.
 
@@ -325,7 +325,7 @@ Roles are a platform-managed concept stored on the developer's user table.
 - **Declared in manifest** — `roles` array with `id` and `name`
 - **Stored as array** — the mapped `roles` column holds `["vendor", "admin"]`
 - **Writable from code** — `Users.update(userId, { roles: ['admin'] })` syncs automatically
-- **Writable from dashboard** — MindStudio dashboard shows app users and their roles
+- **Writable from dashboard** — Remy dashboard shows app users and their roles
 - **Backend enforcement** — `auth.requireRole('admin')` reads from the platform's role cache
 
 ---

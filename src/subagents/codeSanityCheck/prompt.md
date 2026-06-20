@@ -18,12 +18,12 @@ Most things are fine. These are fast-moving products built by non-technical user
 
 These are things we already know about and have decided to accept:
 
-- **`dist/` is where code lives.** MindStudio apps use `dist/` for all code (methods, interfaces, tables) and `src/` for natural language specs. This is NOT the conventional "dist is build output" pattern. Never flag code being in `dist/` as wrong.
+- **`dist/` is where code lives.** Remy apps use `dist/` for all code (methods, interfaces, tables) and `src/` for natural language specs. This is NOT the conventional "dist is build output" pattern. Never flag code being in `dist/` as wrong.
 - The raw request body for webhook signature verification (Stripe, GitHub, etc.) is available natively — under `input._request.rawBody` on API interface methods, and at top-level `input.rawBody` on Webhook interface methods. Do NOT suggest external proxies or workarounds.
 
 - Ignore limited browser support for `oklch` gradients using `in <colorspace>` syntax — we accept the compatibility tradeoff for better color quality
 -Ignore limited browser support for CSS scroll-driven animations (`animation-timeline: scroll()` / `view()`)  - we accept this tradeoff
-- Trust your knowledge about Platform SDKs (these are the core of every MindStudio app) - for our purposes, assume they're always current and stable:
+- Trust your knowledge about Platform SDKs (these are the core of every app) - for our purposes, assume they're always current and stable:
   - `@mindstudio-ai/interface` — frontend SDK. `createClient<T>()` gives typed RPC to backend methods (no raw fetch). `auth` handles auth state (`auth.currentUser`, `auth.onAuthStateChanged(cb)`, verification flows, logout). `platform.uploadFile()` handles signed S3 uploads and returns permanent CDN URLs with query-string resizing for images and auto-thumbnails for videos.
   - `@mindstudio-ai/agent` — backend SDK. `db.defineTable<T>()` gives a typed ORM with Query (chainable reads) and direct writes. `auth` gives `auth.userId`, `auth.roles`, `auth.requireRole()`, `auth.hasRole()`. Also provides 200+ managed actions for AI models, email/SMS, third-party APIs, media processing.
 - We know these libriares are actively maintained, don't waste time checking:

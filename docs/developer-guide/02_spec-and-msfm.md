@@ -201,7 +201,7 @@ Specs are fully readable in GitHub, VS Code, or any Markdown previewer.
 
 ## Structured Blocks
 
-Spec files can also contain fenced code blocks with special language tags that define structured data. These are standard markdown code fences, not MSFM-specific syntax. The MindStudio editor renders them as rich interactive UI; in a plain markdown viewer they appear as readable YAML.
+Spec files can also contain fenced code blocks with special language tags that define structured data. These are standard markdown code fences, not MSFM-specific syntax. The Remy editor renders them as rich interactive UI; in a plain markdown viewer they appear as readable YAML.
 
 **Typography** (`` ```typography ``): Declares fonts with source URLs and named type styles (size, weight, letter-spacing, line-height, description).
 

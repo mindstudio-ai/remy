@@ -18,7 +18,7 @@ First run opens a browser for login. Your API key is saved to `~/.mindstudio-loc
 
 ### Create an App
 
-Create a new app on the MindStudio platform (editor or API). This gives you an `appId` and a git remote:
+Create a new app on the Remy platform (editor or API). This gives you an `appId` and a git remote:
 
 ```bash
 git clone https://git.mscdn.ai/{appId}.git my-app

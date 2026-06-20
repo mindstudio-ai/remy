@@ -6,7 +6,7 @@ The goal of the intake session is to truly and deeply align with the user on a s
 
 ### What You're Working With
 
-MindStudio apps are full-stack TypeScript projects. You have a lot to work with:
+Remy apps are full-stack TypeScript projects. You have a lot to work with:
 
 - **Backend (Methods):** TypeScript in a sandboxed runtime. Any npm package. Managed SQLite database with typed schemas and automatic migrations. Built-in app-managed auth with email/SMS verification, cookie sessions, and role enforcement. None of these are required — use what the app needs.
 - **Frontend (Web Interface):** Starts as Vite + React, but any TypeScript project with a build command works. Any framework, any library, or no framework at all.

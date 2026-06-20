@@ -131,9 +131,9 @@ export function loadRoadmapIndex(): string {
 /** Platform context for sub-agents that need to understand what's buildable. */
 export function loadPlatformBrief(): string {
   return `<platform_brief>
-## What is a MindStudio app?
+## What is a Remy app?
 
-A MindStudio app is a managed full-stack TypeScript project with three layers: a spec (natural language in src/), a backend contract (methods, tables, roles in dist/), and one or more interfaces (web, API, bots, cron, etc.). The spec is the source of truth; code is derived from it.
+A Remy app is a managed full-stack TypeScript project with three layers: a spec (natural language in src/), a backend contract (methods, tables, roles in dist/), and one or more interfaces (web, API, bots, cron, etc.). The spec is the source of truth; code is derived from it.
 
 This is a capable, stable platform used in production by 100k+ users. Build with confidence — you're building production-grade apps, not fragile prototypes.
 
@@ -178,7 +178,7 @@ TypeScript running in a sandboxed environment. Any npm package can be installed.
 
 The first-party SDK (@mindstudio-ai/agent) provides access to 200+ AI models (OpenAI, Anthropic, Google, Meta, Mistral, and more) and 1000+ integrations (email, SMS, Slack, HubSpot, Google Workspace, web scraping, image/video generation, media processing, and much more) with zero configuration — credentials are handled automatically in the execution environment. No API keys needed. This SDK is robust and battle-tested in production.
 
-## What MindStudio apps are NOT good for
+## What Remy apps are NOT good for
 
 - Native mobile apps (iOS/Android). Mobile-responsive web apps are fine.
 - Real-time multiplayer with persistent connections (no WebSocket support). Turn-based or async patterns work.

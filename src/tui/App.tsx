@@ -186,7 +186,7 @@ export function App({ apiConfig, model }: Props) {
   return (
     <Box flexDirection="column" gap={1}>
       <Text bold color="magenta">
-        Remy <Text dimColor>v0.1.0 — MindStudio coding agent</Text>
+        Remy <Text dimColor>v0.1.0 — AI coding agent</Text>
       </Text>
       {sessionRestored && (
         <Text dimColor>

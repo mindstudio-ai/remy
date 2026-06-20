@@ -2,7 +2,7 @@
 
 Interfaces are projections of the backend contract into different modalities. The same methods power all of them. An interface can be as complex and polished as you want, but it's always safe — the backend contract is where anything real happens. The interface can't break business logic or corrupt data.
 
-All external service connections (Discord bot tokens, Telegram bot setup, webhook secrets, email addresses) are configured at the project level by the user through the MindStudio platform. The agent's job is to write the config files and the methods that handle the requests — not to manage API keys, OAuth flows, or service registration.
+All external service connections (Discord bot tokens, Telegram bot setup, webhook secrets, email addresses) are configured at the project level by the user through the Remy platform. The agent's job is to write the config files and the methods that handle the requests — not to manage API keys, OAuth flows, or service registration.
 
 ## Web Interface
 

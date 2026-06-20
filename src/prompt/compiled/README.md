@@ -18,7 +18,7 @@ instructions:
 ---
 
 **You will compile source docs into prompt fragments for Remy, a coding agent
-that builds MindStudio apps. The compiled fragments go in `src/prompt/compiled/`
+that builds apps. The compiled fragments go in `src/prompt/compiled/`
 and are loaded into the agent's system prompt at runtime.**
 
 **Work through this one source file at a time, sequentially.** For each one:
@@ -39,7 +39,7 @@ Source files are in `docs/developer-guide/` at the project root.
 
 **Your audience is an LLM acting as a coding agent.** It needs to produce
 correct code, not learn concepts. Everything you write should be optimized
-for an agent that is actively building a MindStudio app and needs to get
+for an agent that is actively building an app and needs to get
 the details right.
 
 ### What to keep

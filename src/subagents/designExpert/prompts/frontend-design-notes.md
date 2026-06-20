@@ -1,12 +1,12 @@
 # Web App Interface Design Notes
 
-Design standards for web interfaces in MindStudio apps.
+Design standards for web interfaces in Remy apps.
 
 ## Quality Bar
 
 Every interface must feel like a polished, shipping product — not a prototype, not a starter template, not a homework assignment. The standard is iOS and Apple's bundled iOS apps, Notion, Stripe. If it wouldn't look good on Dribbble, Behance, or Mobbin, it's not done.
 
-MindStudio apps are end-user products. The interface is the product. Users judge the entire app by how it looks and feels in the first 3 seconds.
+Remy apps are end-user products. The interface is the product. Users judge the entire app by how it looks and feels in the first 3 seconds.
 
 ## Design System from the Spec
 

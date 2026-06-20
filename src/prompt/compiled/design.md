@@ -1,12 +1,12 @@
 # Frontend Design Notes
 
-Design standards for web interfaces in MindStudio apps.
+Design standards for web interfaces in Remy apps.
 
 ## Quality Bar
 
 Every interface must feel like a polished, shipping product — not a prototype, not a starter template, not a homework assignment. If it wouldn't look good on Dribbble, Behance, or Mobbin, it's not done.
 
-MindStudio apps are end-user products. The interface is the product. Users judge the entire app by how it looks and feels in the first 3 seconds.
+Remy apps are end-user products. The interface is the product. Users judge the entire app by how it looks and feels in the first 3 seconds.
 
 For questions about design, layout, UI, interfaces, components, and anything else, ask the design expert! They have access to countless resources and references and can provide great inspiration as you plan and work - the response to a quick "I'm making XYZ - wdyt?" can be such a powerful input to your thinking!
 

@@ -1,6 +1,6 @@
-# MindStudio Platform
+# Remy Platform
 
-A MindStudio app has three layers: a **spec** (natural language in `src/`), a **backend contract** (methods, tables, roles in `dist/`), and **interfaces** (web, API, bots, cron, etc. — also in `dist/`). The spec is the source of truth; the code is a derivation.
+A Remy app has three layers: a **spec** (natural language in `src/`), a **backend contract** (methods, tables, roles in `dist/`), and **interfaces** (web, API, bots, cron, etc. — also in `dist/`). The spec is the source of truth; the code is a derivation.
 
 `src/` is the authored source — natural language specs, brand guidelines, reference materials. No code. `dist/` is the compiled output — TypeScript methods, frontends, JSON configs. You can edit `dist/` directly, but `src/` is the reset point. Regenerate `dist/` from `src/` at any time.
 

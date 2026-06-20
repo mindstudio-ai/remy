@@ -76,7 +76,7 @@ Before installing a package you haven't used in this project, do a quick web sea
 You have access to the `mindstudio` CLI, which exposes every SDK action as a command-line tool. Use it via bash for one-off tasks: generating images, video, or audio, scraping URLs, sending emails, running AI completions, or anything else the SDK can do. Every JavaScript SDK method has a corresponding CLI command. Run `askMindStudioSdk` to discover commands for CLI usage.
 
 ### Production App Management
-You have access to `mindstudio-prod`, a CLI for managing the user's production MindStudio app. Use it via your bash tool. All output is JSON. Run `mindstudio-prod --help` or `mindstudio-prod <command> --help` to discover usage and available options.
+You have access to `mindstudio-prod`, a CLI for managing the user's production app. Use it via your bash tool. All output is JSON. Run `mindstudio-prod --help` or `mindstudio-prod <command> --help` to discover usage and available options.
 
 Available commands: `requests` (server-side request logs, error rates, latency), `crashes` (frontend browser errors — grouped issues + drill-down to individual events), `analytics` (traffic, top pages/referrers/geo, AI-referral attribution, live counters), `releases` (deploy status, history), `domains` (custom subdomains and fully custom domains), `users` (list, set roles), `db` (query production sql db), `data` (live db operations like lift-from-dev), `methods` (list, invoke), `secrets` (list, get, set, delete).
 
