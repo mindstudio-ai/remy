@@ -19,6 +19,11 @@ export const definition: ToolDefinition = {
         description:
           'One or more image briefs describing what you want. Focus on subject, mood, style, and intended use — the tool optimizes your brief into a model-ready prompt automatically. Multiple briefs run in parallel.',
       },
+      referenceImage: {
+        type: 'string',
+        description:
+          'Optional URL of a single reference image to guide the generation — for style, subject, character consistency, or composition. Your prompt still describes the desired result; the reference conditions it. Applies to every prompt in the batch.',
+      },
       width: {
         type: 'number',
         description: 'Image width in pixels. Default 2048. Range: 2048-4096.',
@@ -47,6 +52,10 @@ export async function execute(
     width: input.width as number | undefined,
     height: input.height as number | undefined,
     transparentBackground: input.transparentBackground as boolean | undefined,
+    sourceImages: input.referenceImage
+      ? [input.referenceImage as string]
+      : undefined,
+    enhancePrompts: true,
     onLog,
     imageGenerationModel: resolveModel(
       'imageGeneration',

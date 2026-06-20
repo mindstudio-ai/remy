@@ -16,7 +16,9 @@ export interface ImageGeneratorOptions {
   prompts: string[];
   width?: number;
   height?: number;
-  /** Source/reference image URLs for image-to-image editing. */
+  /** Source images for editing (`editImages`) or a single reference image
+   * for generation (`generateImages`, passed as `[referenceImage]`). Mapped
+   * onto the chosen model's declared image input(s). */
   sourceImages?: string[];
   transparentBackground?: boolean;
   onLog?: (line: string) => void;
@@ -29,6 +31,10 @@ export interface ImageGeneratorOptions {
   /** Authoritative model ID for the text LLM that rewrites image briefs.
    * Resolved via `resolveModel('imagePromptEnhancer', ...)` by the caller. */
   imagePromptEnhancerModel: string;
+  /** Whether to rewrite each brief via the prompt enhancer before
+   * generation. True for `generateImages` (briefs are creative); false for
+   * `editImages` (prompts are edit instructions). */
+  enhancePrompts: boolean;
 }
 
 export async function generateImageAssets(
@@ -38,6 +44,7 @@ export async function generateImageAssets(
     prompts,
     sourceImages,
     transparentBackground,
+    enhancePrompts,
     onLog,
     imageGenerationModel: genModel,
     imageAnalysisModel,
@@ -67,22 +74,26 @@ export async function generateImageAssets(
     config.source = firstImage;
   }
 
-  // Enhance prompts via LLM before generation (generate only, not edits)
-  const isEdit = !!sourceImages?.length;
-  const enhancedPrompts = isEdit
-    ? prompts
-    : await Promise.all(
+  // Enhance briefs via LLM before generation. On for generate (briefs are
+  // creative); off for edit (prompts are edit instructions). When a reference
+  // image is present, tell the enhancer so it complements it rather than
+  // re-describing it.
+  const hasReference = !!sourceImages?.length;
+  const enhancedPrompts = enhancePrompts
+    ? await Promise.all(
         prompts.map((brief) =>
           enhanceImagePrompt({
             brief,
             width,
             height,
             transparentBackground,
+            hasReferenceImage: hasReference,
             onLog,
             model: imagePromptEnhancerModel,
           }),
         ),
-      );
+      )
+    : prompts;
 
   // Generate all images
   let imageUrls: string[];
@@ -158,7 +169,7 @@ export async function generateImageAssets(
       if (url.startsWith('Error')) {
         return {
           prompt: prompts[i],
-          ...(!isEdit && { enhancedPrompt: enhancedPrompts[i] }),
+          ...(enhancePrompts && { enhancedPrompt: enhancedPrompts[i] }),
           error: url,
         };
       }
@@ -171,7 +182,7 @@ export async function generateImageAssets(
       return {
         url,
         prompt: prompts[i],
-        ...(!isEdit && { enhancedPrompt: enhancedPrompts[i] }),
+        ...(enhancePrompts && { enhancedPrompt: enhancedPrompts[i] }),
         analysis,
         width,
         height,

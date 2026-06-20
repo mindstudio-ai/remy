@@ -56,6 +56,7 @@ export async function execute(
     width: input.width as number | undefined,
     height: input.height as number | undefined,
     transparentBackground: input.transparentBackground as boolean | undefined,
+    enhancePrompts: false,
     onLog,
     imageGenerationModel: resolveModel(
       'imageGeneration',

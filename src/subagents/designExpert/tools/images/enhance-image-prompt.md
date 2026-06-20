@@ -41,6 +41,7 @@ You'll receive context about the generation parameters. Use them:
 
 - **Dimensions**: If the image is wide (landscape), compose horizontally. If tall (portrait), compose vertically. If square, center the subject.
 - **Transparent background**: The background will be removed after generation and the image will be trimmed to the subject bounds (no extra padding). Don't describe elaborate backgrounds — focus on the subject. Describe it as an isolated element.
+- **Reference image**: When a reference image is provided, the generation model receives it alongside your prompt to guide style, subject, or composition. Write the prompt to *complement* the reference, not duplicate it: describe the scene, action, and anything new or changed, and lean on the reference for what it already establishes (a specific face, product, logo, or art style). Don't exhaustively re-describe those — over-specifying competes with the reference image and can distort it.
 
 ## Photography prompts
 

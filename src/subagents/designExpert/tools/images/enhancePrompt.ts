@@ -18,6 +18,10 @@ export interface EnhancePromptParams {
   width: number;
   height: number;
   transparentBackground?: boolean;
+  /** Whether a reference image is provided to the generation model alongside
+   * the prompt. When true, the enhancer is told to complement it rather than
+   * re-describe it. */
+  hasReferenceImage?: boolean;
   onLog?: (line: string) => void;
   /** Authoritative model ID for the text LLM that rewrites the brief.
    * Resolved via `resolveModel('imagePromptEnhancer', ...)` by the caller. */
@@ -27,7 +31,15 @@ export interface EnhancePromptParams {
 export async function enhanceImagePrompt(
   params: EnhancePromptParams,
 ): Promise<string> {
-  const { brief, width, height, transparentBackground, onLog, model } = params;
+  const {
+    brief,
+    width,
+    height,
+    transparentBackground,
+    hasReferenceImage,
+    onLog,
+    model,
+  } = params;
 
   // Build context block so the enhancer knows the generation parameters
   const contextParts: string[] = [
@@ -36,6 +48,11 @@ export async function enhanceImagePrompt(
   if (transparentBackground) {
     contextParts.push(
       'Transparent background: yes — the background will be removed. Focus on the subject as an isolated element.',
+    );
+  }
+  if (hasReferenceImage) {
+    contextParts.push(
+      "Reference image: yes — a reference image is provided to the generation model alongside this prompt to guide style, subject, or composition. Complement it; don't re-describe what it already carries.",
     );
   }
 
