@@ -15,12 +15,19 @@ Examples of good density:
 These are non-negotiable. Violating them produces bad output.
 
 - **No hex codes.** The model renders hex codes as visible text in the image. Describe colors by name and relationship: "deep emerald green with a smooth satin finish" or "warm sand beige fading into pale desaturated blue" — never "#7C3AED".
-- **No quoted strings.** Any single or double quoted string gets rendered as literal text in the image.
 - **No physical object framing.** Words like "artwork", "painting", "canvas", "print", "app icon", "square digital artwork" produce photorealistic mockups of a painting in a frame or an icon inset on a background. Describe the visual content directly.
-- **No text triggers.** Words like "poster", "magazine cover", "editorial spread", "sign", or brand names risk rendering literal text, mastheads, or mockup layouts. If you want an editorial photography *style*, describe the photographic qualities — not the format.
 - **Describe what you want, not what you don't want.** Negation doesn't work — "street with no cars" activates "cars." Say "empty street" instead.
 - **No body part positioning.** Don't describe specific arrangements of arms, legs, or limbs.
-- **No brand names.** Things like "Apple style" or "Nintendo style" will generate literal logos in the output.
+- **No other brands as a style shortcut.** Don't borrow another company's identity as shorthand — "Apple style", "Nintendo style" — it renders that company's literal logo. (A brand's *own* name or wordmark on its *own* asset is intended text, not this — see Text & wordmarks below.)
+
+## Text & wordmarks
+
+The model renders text well — but only the text you tell it to, so quotation marks mean "render this literally." Use them deliberately.
+
+- **Reproduce intended text exactly.** When the brief names a wordmark, brand name, label, sign, headline, or UI copy, carry the exact string through in quotes — e.g. a wordmark reading "Solid Credit". Never drop it, paraphrase it, or genericize it to "a wordmark": the literal text is usually the whole point of the asset, and if you omit it the model fills the space with an invented placeholder.
+- **Direct the typography and placement.** Specify weight, case, color, and position so the text lands where the designer wants it — "a near-black grotesque sans-serif wordmark reading 'Solid Credit', centered directly below the mark."
+- **Keep it short.** Wordmarks, labels, and short taglines render reliably; full sentences and paragraphs degrade into garbled glyphs. Trim long copy to the few words that matter, or leave it out.
+- **Don't summon text you don't want.** When the image should have no text, don't quote stray descriptive phrases, and avoid format words that imply copy — "poster", "magazine cover", "sign", "billboard" — which can produce spurious text or mastheads. For an editorial *style*, describe the photographic qualities, not the format.
 
 ## Composition
 

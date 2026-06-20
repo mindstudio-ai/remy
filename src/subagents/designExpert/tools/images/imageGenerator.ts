@@ -48,7 +48,23 @@ export async function generateImageAssets(
 
   const config: Record<string, any> = { width, height };
   if (sourceImages?.length) {
+    // Image models accept source images under different config keys (and
+    // different shapes). The platform whitelists config against the chosen
+    // model's declared inputs and drops the rest, so we set every known key
+    // and let the selected model keep the one it declares. Shape matters:
+    // array inputs (imageUrlArray) take all URLs; single inputs (imageUrl)
+    // take the first. `image_prompt` (flux-pro-1.1-ultra) is intentionally
+    // omitted, and `mask_image` is excluded (it's an inpainting mask).
+    const [firstImage] = sourceImages;
+    // Array inputs (imageUrlArray)
     config.images = sourceImages;
+    config.source_images = sourceImages;
+    config.image_ref = sourceImages;
+    // Single inputs (imageUrl / text)
+    config.image = firstImage;
+    config.image_url = firstImage;
+    config.source_image = firstImage;
+    config.source = firstImage;
   }
 
   // Enhance prompts via LLM before generation (generate only, not edits)
