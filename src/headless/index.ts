@@ -943,15 +943,13 @@ export class HeadlessSession {
     return {};
   }
 
-  /** Archive the current session and seed a fresh one with the given
-   * per-agent model overrides. Models are immutable for the life of a
-   * session — this is the only way to change them. Omitting `models`
-   * (or sending an empty object) resets to "use server defaults for
-   * every agent". */
-  private handleNewSession(
+  /** Change per-agent model picks without clearing history. Takes effect on
+   * the next turn — the model is resolved live, per LLM call, from
+   * `state.models`. Omitting `models` (or sending an empty object) resets
+   * every agent to "use server defaults". */
+  private handleChangeModels(
     models: Record<string, string> | undefined,
   ): Record<string, unknown> {
-    clearSession(this.state);
     this.state.models =
       models && Object.keys(models).length > 0 ? models : undefined;
     saveSession(this.state);
@@ -1089,10 +1087,25 @@ export class HeadlessSession {
       return;
     }
 
-    if (action === 'newSession') {
+    if (action === 'changeModels') {
+      // Mutating state.models mid-turn would swap models within a single
+      // in-flight reasoning/tool chain — reject while running (mirrors the
+      // `resume` guard). The model is resolved live per call, so the new
+      // picks take effect on the next turn.
+      if (this.running) {
+        this.emit(
+          'completed',
+          {
+            success: false,
+            error: 'cannot change models while a turn is running',
+          },
+          requestId,
+        );
+        return;
+      }
       const models = parsed.models as Record<string, string> | undefined;
-      this.dispatchSimple(requestId, 'session_cleared', () =>
-        this.handleNewSession(models),
+      this.dispatchSimple(requestId, 'models_changed', () =>
+        this.handleChangeModels(models),
       );
       return;
     }

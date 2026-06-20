@@ -323,6 +323,14 @@ Clear conversation history and delete the session file.
 {"action": "clear", "requestId": "r4"}
 ```
 
+#### `changeModels`
+
+Change per-agent model picks **without** clearing history. `models` is a sparse map keyed by agent identifier (`parent`, `visualDesignExpert`, …); omit it (or send `{}`) to reset every agent to server defaults. Takes effect on the next turn. Rejected with `completed(success:false, error:"cannot change models while a turn is running")` if a turn is in flight — cancel first, then retry. Responds with `models_changed`. To start a fresh conversation on a different model, send `clear` then `changeModels`.
+
+```json
+{"action": "changeModels", "requestId": "r5", "models": {"parent": "gemini-3.1-pro"}}
+```
+
 ### Output Events (stdout)
 
 Events are emitted as newline-delimited JSON. Command responses include `requestId`; system events do not.
@@ -351,6 +359,7 @@ All command responses include the `requestId` from the originating command.
 | `error` | `error` | Error message (may precede `completed`) |
 | `history` | `messages` | Response to `get_history` |
 | `session_cleared` | | Response to `clear` |
+| `models_changed` | `models?`, `modelSurfaces`, `allowedModelsByType` | Response to `changeModels` |
 | `completed` | `success`, `error?` | Terminal event — exactly one per command |
 
 #### Example Session

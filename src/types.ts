@@ -78,12 +78,13 @@ export type AgentEvent =
 // Conversation state persisted across turns
 export interface AgentState {
   messages: Message[];
-  /** Per-agent model overrides snapshotted at session creation. Keys are
-   * agent identifiers (`parent`, `visualDesignExpert`, etc.); values are
-   * server-side model IDs. A missing key means "use the server default
-   * for this agent" — we omit `modelId` on those requests. Immutable for
-   * the life of the session; changed only via the `newSession` stdin
-   * command, which archives the current session and starts a fresh one. */
+  /** Per-agent model overrides. Keys are agent identifiers (`parent`,
+   * `visualDesignExpert`, etc.); values are server-side model IDs. A
+   * missing key means "use the server default for this agent" — we omit
+   * `modelId` on those requests. Mutable mid-session via the `changeModels`
+   * stdin command (preserves history; resolved live per call, so it takes
+   * effect on the next turn); empty/omitted resets to defaults. To also
+   * wipe history, the caller issues `clear` then `changeModels`. */
   models?: Record<string, string>;
 }
 

@@ -2,8 +2,11 @@
  * Convert our internal message format back to what the platform API expects.
  *
  * Internally we use ContentBlock[] on assistant messages with timestamps
- * and metadata. The platform expects the original format: content as string,
- * toolCalls as a separate array, thinking as a separate array.
+ * and metadata. The platform expects the original format: content as string
+ * and toolCalls as a separate array. Reasoning round-trips via
+ * `providerMetadata` (the platform's verbatim per-vendor replay path);
+ * thinking blocks are kept in `state.messages` for display but are NOT sent
+ * to the API, so a vendor-specific signature can't leak across a model switch.
  *
  * Also handles conversation compaction: if a summary checkpoint exists,
  * only messages after the last checkpoint are sent to the model.
@@ -178,30 +181,6 @@ export function cleanMessagesForApi(messages: Message[]): Message[] {
         .filter((b): b is ContentBlock & { type: 'tool' } => b.type === 'tool')
         .map((b) => ({ id: b.id, name: b.name, input: b.input }));
 
-      // Extract thinking blocks (visible + redacted) in their original
-      // relative order — content is sorted by startedAt at message-push
-      // time, so this filter preserves the position the platform needs to
-      // reconstruct on resend. Anthropic's signature validation rejects any
-      // missing/reordered thinking-or-redacted_thinking block, so all of
-      // them must round-trip together.
-      const thinking = blocks
-        .filter(
-          (
-            b,
-          ): b is ContentBlock &
-            ({ type: 'thinking' } | { type: 'redacted_thinking' }) =>
-            b.type === 'thinking' || b.type === 'redacted_thinking',
-        )
-        .map((b) =>
-          b.type === 'thinking'
-            ? {
-                type: 'thinking' as const,
-                thinking: b.thinking,
-                signature: b.signature,
-              }
-            : { type: 'redacted_thinking' as const, data: b.data },
-        );
-
       const cleaned: Record<string, any> = {
         role: msg.role,
         content: text,
@@ -209,9 +188,6 @@ export function cleanMessagesForApi(messages: Message[]): Message[] {
 
       if (toolCalls.length > 0) {
         cleaned.toolCalls = toolCalls;
-      }
-      if (thinking.length > 0) {
-        cleaned.thinking = thinking;
       }
       if (msg.providerMetadata) {
         cleaned.providerMetadata = msg.providerMetadata;
