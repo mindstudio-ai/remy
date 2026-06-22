@@ -136,7 +136,7 @@ import { designExpertTool } from '../subagents/designExpert/index.js';
 import { productVisionTool } from '../subagents/productVision/index.js';
 import { codeSanityCheckTool } from '../subagents/codeSanityCheck/index.js';
 import { scrapeWebUrlTool } from './common/scrapeWebUrl.js';
-import { buildOverviewTool } from './overview/writeBuildOverview.js';
+import { buildOverviewTool } from './spec/writeBuildOverview.js';
 
 /** All tools — static set sent to every request regardless of onboarding state.
  * Keeping the tool set identical across all sessions enables prompt cache
