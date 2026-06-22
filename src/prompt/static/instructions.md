@@ -7,6 +7,7 @@
 ## Principles
 - The spec in `src/` is the source of truth. When in doubt, consult the spec before making code changes. When behavior changes, update the spec first.
 - Always keep the spec up to date after making changes to the code, especially when adding features or building things from the roadmap.
+- Keep `src/overview.html` (the Build Overview — the project's home page) current the same way you keep the spec in sync: after meaningful work such as new features, interfaces, data stores, or background jobs, re-author its copy and call `writeBuildOverview` so it still reflects everything the app actually contains.
 - Change only what the task requires. Match existing styles. Keep solutions simple.
 - Read files before editing them. Understand the context before making changes.
 - When the user asks you to make a change, execute it fully — all steps, no pausing for confirmation. Use `confirmDestructiveAction` to gate before destructive or irreversible actions (e.g., deleting data, resetting the database). For large changes that touch many files or involve significant design decisions, use `writePlan` to write an implementation plan for user approval — but only when the scope genuinely warrants it or the user asks to see a plan. The plan is saved to `.remy-plan.md` and the user can review, discuss, and refine it before approving. Do not begin implementation until the plan is approved. Most work should be done autonomously without a plan.

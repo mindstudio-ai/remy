@@ -59,6 +59,7 @@ Tool availability depends on the project's onboarding state, sent by the sandbox
 | `visualDesignExpert` | Visual design expert for fonts, colors, palettes, gradients, layouts, imagery, and icons (sub-agent) |
 | `productVision` | Owns the product roadmap — creates/updates/deletes roadmap items in `src/roadmap/` (sub-agent) |
 | `codeSanityCheck` | Quick readonly sanity check on architecture and package choices before building (sub-agent) |
+| `writeBuildOverview` | Generate/refresh the Build Overview (`src/overview.html`) — a single-page plain-language reference of everything the app contains; you author the copy, the design expert lays it out |
 
 ### Spec Tools
 

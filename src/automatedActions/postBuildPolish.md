@@ -13,6 +13,7 @@ The visual assets — photography, generated images, brand colors, typography �
 
 ## Finalizing
 When everything is working and polished:
-1. Use `productVision` to mark the MVP roadmap item as done.
-2. Call `compactConversation` to summarize the build session and free up context for the next phase of work.
-3. Call `setProjectOnboardingState({ state: "buildComplete" })`. This triggers the reveal experience on the frontend, where the user sees the pitch deck and their finished app for the first time.
+1. Write the Build Overview. Author the full copy of everything this build actually produced — the data stores and what each holds, the backend operations, the interfaces, any access and role boundaries, background jobs, and seeded scenarios, including the parts the user can't see — in plain, calm, present-tense language, with real names and exact counts. Then call `writeBuildOverview` to render it. Do this now, before compacting, while the build is still fresh in context.
+2. Use `productVision` to mark the MVP roadmap item as done.
+3. Call `compactConversation` to summarize the build session and free up context for the next phase of work.
+4. Call `setProjectOnboardingState({ state: "buildComplete" })`. This triggers the reveal experience on the frontend, where the user sees their finished app and its Build Overview for the first time.
