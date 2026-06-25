@@ -57,7 +57,7 @@ import {
   type SessionStats,
 } from './stats.js';
 import { MessageQueue, type QueuedMessage } from './messageQueue.js';
-import { resolveAction } from '../automatedActions/resolve.js';
+import { resolveAction, getActionChain } from '../automatedActions/resolve.js';
 import {
   sentinel,
   buildBackgroundResultsMessage,
@@ -671,6 +671,7 @@ export class HeadlessSession {
   private async runSingleTurn(
     parsed: StdinCommand,
     requestId: string | undefined,
+    fromChain = false,
   ): Promise<void> {
     this.currentRequestId = requestId;
     this.currentAbort = new AbortController();
@@ -737,19 +738,23 @@ export class HeadlessSession {
       parsed.viewContext as any,
     );
 
-    // If this resolved action has a `next`, enqueue it now so it runs after
-    // this turn completes. Snapshot the current onboardingState into the
-    // queued command so it travels with the chain.
-    if (resolved?.next) {
-      this.queue.push({
-        command: {
-          action: 'message',
-          text: sentinel(resolved.next),
-          onboardingState,
-        } as StdinCommand,
-        source: 'chain',
-        enqueuedAt: Date.now(),
-      });
+    // Pre-enqueue the whole chain at the head so the full pipeline is visible
+    // up front and user messages queue behind it. Only the head expands the
+    // chain; continuation steps (fromChain) skip this to avoid double-enqueueing
+    // — and double-running — steps the head already laid down. onboardingState
+    // is snapshotted onto each queued command so it travels with the chain.
+    if (resolved?.next && !fromChain) {
+      for (const step of getActionChain(resolved.next)) {
+        this.queue.push({
+          command: {
+            action: 'message',
+            text: sentinel(step),
+            onboardingState,
+          } as StdinCommand,
+          source: 'chain',
+          enqueuedAt: Date.now(),
+        });
+      }
     }
 
     try {
@@ -885,7 +890,7 @@ export class HeadlessSession {
       const nextRid =
         (next.command.requestId as string | undefined) ??
         `${next.source}-${Date.now()}`;
-      await this.runSingleTurn(next.command, nextRid);
+      await this.runSingleTurn(next.command, nextRid, next.source === 'chain');
     }
   }
 

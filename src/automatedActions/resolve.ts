@@ -66,3 +66,27 @@ export function resolveAction(text: string): ResolvedAction | null {
     next,
   };
 }
+
+/**
+ * Walk the static `next:` chain from `startName` (inclusive), returning the
+ * ordered trigger names. Reads frontmatter only; guards against cycles and
+ * stops if an action file is missing.
+ */
+export function getActionChain(startName: string): string[] {
+  const chain: string[] = [];
+  const seen = new Set<string>();
+  let name: string | undefined = startName;
+  while (name && !seen.has(name)) {
+    seen.add(name);
+    chain.push(name);
+    let body: string;
+    try {
+      body = readAsset('automatedActions', `${name}.md`);
+    } catch {
+      break;
+    }
+    const fm = body.match(/^---\s*\n([\s\S]*?)\n---/);
+    name = fm?.[1].match(/^\s*next:\s*(\w+)\s*$/m)?.[1];
+  }
+  return chain;
+}
