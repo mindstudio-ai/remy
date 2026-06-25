@@ -188,8 +188,13 @@ export class HeadlessSession {
 
     const resumed = loadSession(this.state);
 
-    // Rehydrate the queue from disk — persisted on every change
-    this.queue = new MessageQueue(loadQueue(), () => this.persistStats());
+    // Rehydrate the queue from disk — persisted on every change. Every
+    // mutation also emits `queue_changed`, the single source of truth for
+    // queue state (snapshot always included, even when empty).
+    this.queue = new MessageQueue(loadQueue(), () => {
+      this.persistStats();
+      this.emit('queue_changed', { queuedMessages: this.queue.snapshot() });
+    });
 
     if (resumed) {
       this.emit('session_restored', {
@@ -197,7 +202,6 @@ export class HeadlessSession {
         ...(this.state.models && { models: this.state.models }),
         modelSurfaces: MODEL_SURFACES,
         allowedModelsByType: ALLOWED_MODELS_BY_TYPE,
-        ...this.queueFields(),
       });
     }
 
@@ -266,7 +270,7 @@ export class HeadlessSession {
     process.on('SIGTERM', this.shutdown);
     process.on('SIGINT', this.shutdown);
 
-    this.emit('ready', this.queueFields());
+    this.emit('ready');
   }
 
   private shutdown = (): void => {
@@ -300,24 +304,14 @@ export class HeadlessSession {
     process.stdout.write(line);
   }
 
-  /**
-   * Emit a `completed` event and mark completedEmitted. Includes
-   * `queuedMessages` if the queue has items (sandbox uses this to know the
-   * agent is still busy with pipeline work).
-   */
+  /** Emit a `completed` event and mark completedEmitted. Queue state is
+   * surfaced separately via the `queue_changed` event, not on `completed`. */
   private emitCompleted(
     rid: string | undefined,
     data: Record<string, unknown>,
   ): void {
-    this.emit('completed', { ...data, ...this.queueFields() }, rid);
+    this.emit('completed', { ...data }, rid);
     this.completedEmitted = true;
-  }
-
-  /** Returns `{ queuedMessages }` when the queue is non-empty, else empty object. */
-  private queueFields(): Record<string, unknown> {
-    return this.queue.length > 0
-      ? { queuedMessages: this.queue.snapshot() }
-      : {};
   }
 
   /** Dispatch a simple (non-streaming) command: call handler, emit response + completed. */
@@ -547,11 +541,7 @@ export class HeadlessSession {
       case 'turn_cancelled': {
         // Cancel drains the queue (pipeline interrupted) — surfaced on the
         // cancel command's completed event for resume/discard UX.
-        this.emit(
-          'completed',
-          { success: false, error: 'cancelled', ...this.queueFields() },
-          rid,
-        );
+        this.emit('completed', { success: false, error: 'cancelled' }, rid);
         this.completedEmitted = true;
         return;
       }
@@ -833,11 +823,8 @@ export class HeadlessSession {
         source: 'user',
         enqueuedAt: Date.now(),
       });
-      this.emit(
-        'queued',
-        { position: this.queue.length, ...this.queueFields() },
-        requestId,
-      );
+      // The push fires `queue_changed`; the message's eventual `completed`
+      // (when it drains and runs) is its terminal.
       return;
     }
 
@@ -973,6 +960,20 @@ export class HeadlessSession {
     return this.queue.drain();
   }
 
+  /**
+   * Remove pending queued messages — all user messages, or one by id.
+   * Only `source: 'user'` items are removable; chained and background
+   * messages are part of a system chain and are never cancellable. Does
+   * not affect the in-flight turn (use `cancel` for that).
+   */
+  private handleCancelQueued(id?: string): QueuedMessage[] {
+    return this.queue.removeWhere(
+      (item) =>
+        item.source === 'user' &&
+        (id === undefined || item.command.requestId === id),
+    );
+  }
+
   //////////////////////////////////////////////////////////////////////////////
   // Stdin router
   //////////////////////////////////////////////////////////////////////////////
@@ -1075,7 +1076,11 @@ export class HeadlessSession {
         ...(this.state.models && { models: this.state.models }),
         modelSurfaces: MODEL_SURFACES,
         allowedModelsByType: ALLOWED_MODELS_BY_TYPE,
-        ...this.queueFields(),
+        // Current queue snapshot for connect/reconnect — get_history is the
+        // on-demand "current state" query. Always an array (possibly empty),
+        // matching the queue_changed convention so the client reconciles the
+        // same way from both; live mutations are pushed via queue_changed.
+        queuedMessages: this.queue.snapshot(),
       }));
       return;
     }
@@ -1121,6 +1126,19 @@ export class HeadlessSession {
           success: true,
           ...(cancelled.length > 0 && { cancelledMessages: cancelled }),
         },
+        requestId,
+      );
+      return;
+    }
+
+    if (action === 'cancelQueued') {
+      // Cancel pending queued messages without touching the in-flight turn.
+      // Only user messages are cancellable; chain/background are protected.
+      const id = parsed.id as string | undefined;
+      const removed = this.handleCancelQueued(id);
+      this.emit(
+        'completed',
+        { success: true, cancelledQueued: removed },
         requestId,
       );
       return;

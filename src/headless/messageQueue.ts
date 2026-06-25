@@ -56,6 +56,25 @@ export class MessageQueue {
     return all;
   }
 
+  /**
+   * Remove all items matching `predicate`. Fires onChange only if something
+   * was removed. Returns the removed items.
+   */
+  removeWhere(predicate: (item: QueuedMessage) => boolean): QueuedMessage[] {
+    const removed: QueuedMessage[] = [];
+    this.items = this.items.filter((item) => {
+      if (predicate(item)) {
+        removed.push(item);
+        return false;
+      }
+      return true;
+    });
+    if (removed.length > 0) {
+      this.onChange?.();
+    }
+    return removed;
+  }
+
   /** Copy of current queue contents (for surfacing on events). */
   snapshot(): QueuedMessage[] {
     return [...this.items];
