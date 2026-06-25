@@ -1,6 +1,6 @@
 # Methods
 
-A method is a named async function that runs on the platform. It's the universal unit of backend logic — every interface (web, API, Discord, cron, webhook) invokes methods. One file per method, one named export.
+A method is a named async function that runs on the platform. It's the universal unit of backend logic — every interface (web, API, cron, webhook) invokes methods. One file per method, one named export.
 
 ## Writing a Method
 

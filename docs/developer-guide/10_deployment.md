@@ -12,7 +12,7 @@ The platform builds and deploys automatically:
 2. **Create release** — record in Postgres with status `building`
 3. **Mirror files** — copy repo files to S3 for instant editor access
 4. **Compile methods** — esbuild bundles each method into a single JS file, extracts npm package dependencies
-5. **Compile interfaces** — build the web interface (`npm install && npm run build`), generate configs for API/Discord/Telegram/cron/etc.
+5. **Compile interfaces** — build the web interface (`npm install && npm run build`), generate configs for API/cron/webhook/etc.
 6. **Parse table schemas** — TypeScript AST → column definitions, diff against live database
 7. **Compute pending effects** — roles diff, cron diff, bot command diffs, webhook/email diffs, table DDL
 8. **Apply** — create/update roles, sync bot commands, apply DDL to a staging database copy, swap the live pointer
@@ -101,7 +101,6 @@ Every release has a detailed build log:
 ✓ Roles diff: 2 to create, 0 to delete
 ✓ Tables diff: 4 to create, 0 to alter
 ✓ Cron diff: 2 jobs
-✓ Discord diff: 1 command
 ✓ Release promoted to live (12.4s)
 ```
 
@@ -123,8 +122,6 @@ When a release is promoted to live, the platform applies all pending effects com
 |--------|-------------|
 | **Roles** | Create new roles, update descriptions, delete removed roles |
 | **Cron** | Upsert scheduled jobs (create/update/remove) |
-| **Discord** | Sync slash commands via Discord API |
-| **Telegram** | Sync bot commands via Telegram API |
 | **Webhooks** | Update endpoint registrations |
 | **Email** | Update email trigger routing |
 | **Tables** | Clone database, apply DDL, promote |

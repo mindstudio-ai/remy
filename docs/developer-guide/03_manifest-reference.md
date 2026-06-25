@@ -42,8 +42,7 @@ The manifest declares everything the platform needs to know about your app: meth
   "interfaces": [
     { "type": "web", "path": "dist/interfaces/web/web.json" },
     { "type": "api", "path": "dist/interfaces/api/api.json" },
-    { "type": "cron", "path": "dist/interfaces/cron/interface.json" },
-    { "type": "discord", "path": "dist/interfaces/discord/interface.json" }
+    { "type": "cron", "path": "dist/interfaces/cron/interface.json" }
   ],
 
   "scenarios": [
@@ -152,7 +151,7 @@ Declares how users interact with the app. Each entry:
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `type` | `string` | Yes | One of: `web`, `api`, `discord`, `telegram`, `cron`, `webhook`, `email`, `mcp`, `agent` |
+| `type` | `string` | Yes | One of: `web`, `api`, `cron`, `webhook`, `email`, `mcp`, `agent` |
 | `path` | `string` | No | Path to the interface config file |
 | `config` | `object` | No | Inline config (alternative to a file) |
 | `enabled` | `boolean` | No | Default `true`. Set `false` to skip during build. |

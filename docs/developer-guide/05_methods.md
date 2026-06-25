@@ -2,7 +2,7 @@
 
 ## What is a Method?
 
-A method is a named async function that runs on the platform. It's the universal unit of backend logic. Every interface (web, API, Discord, cron, webhook) is just a different way to invoke a method.
+A method is a named async function that runs on the platform. It's the universal unit of backend logic. Every interface (web, API, cron, webhook) is just a different way to invoke a method.
 
 Methods run in isolated sandboxes. No servers to manage, no runtimes to configure. Write the function, declare it in the manifest, push to git.
 
@@ -198,7 +198,7 @@ export async function approveVendor(input: { vendorId: string }) {
 
 ### Production
 
-1. Interface invokes method (web app, API key, Discord command, etc.)
+1. Interface invokes method (web app, API key, cron, etc.)
 2. Platform resolves the live release
 3. Loads compiled JavaScript from S3 (cached)
 4. Dispatches to an isolated sandbox container

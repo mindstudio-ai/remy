@@ -12,7 +12,7 @@ An app has three layers:
 
 **A backend contract.** Methods, tables, and roles. Methods are TypeScript functions that implement the logic. Tables define the data model. Roles define who can do what. This lives in `dist/`. In the same way `.js` is a compiled derivation of `.ts`, the backend code is a compiled derivation of the spec.
 
-**Interfaces.** Ways for users to interact with the contract. A web app, a REST API, a Discord bot, a Telegram bot, a cron job, a webhook, an email trigger, an MCP tool server. The same methods power all of them. Interfaces can be as complex and polished as you want, but they're always safe, because the backend contract is where anything real happens. The interface can't break business logic or corrupt data.
+**Interfaces.** Ways for users to interact with the contract. A web app, a REST API, a cron job, a webhook, an email trigger, an MCP tool server. The same methods power all of them. Interfaces can be as complex and polished as you want, but they're always safe, because the backend contract is where anything real happens. The interface can't break business logic or corrupt data.
 
 ```
 my-app/
@@ -28,7 +28,6 @@ my-app/
     interfaces/            ← projections of the contract
       web/                   React SPA
       api/                   REST API config
-      discord/               bot config
       ...
 ```
 
@@ -54,8 +53,6 @@ The same backend methods power every interface:
 |-----------|-------------|
 | **Web** | React/Vite SPA hosted on CDN |
 | **API** | REST endpoint with API key auth |
-| **Discord** | Slash commands that invoke methods |
-| **Telegram** | Bot commands + message handling |
 | **Cron** | Scheduled method execution |
 | **Webhook** | Inbound HTTP → method invocation |
 | **Email** | Inbound email → method invocation |

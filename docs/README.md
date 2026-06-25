@@ -86,7 +86,7 @@ For developers writing apps that run on Remy. The three-layer model (spec → co
 | [`04_tables-and-database.md`](./developer-guide/04_tables-and-database.md) | `defineTable<T>()`, typed schemas, the query layer. |
 | [`05_methods.md`](./developer-guide/05_methods.md) | Methods as the universal unit of backend logic. Every interface invokes methods. |
 | [`06_roles-and-auth.md`](./developer-guide/06_roles-and-auth.md) | Opt-in auth: email/SMS verification codes, cookie sessions, role enforcement. |
-| [`07_interfaces.md`](./developer-guide/07_interfaces.md) | The interface modalities: web, REST API, Discord, Telegram, cron, email, MCP, agent. All powered by the same methods. |
+| [`07_interfaces.md`](./developer-guide/07_interfaces.md) | The interface modalities: web, REST API, cron, email, MCP, agent. All powered by the same methods. |
 | [`08_scenarios.md`](./developer-guide/08_scenarios.md) | Seed scripts that put the dev database into a specific repeatable state. |
 | [`09_local-development.md`](./developer-guide/09_local-development.md) | Local dev workflow with the CLI. |
 | [`09_secrets.md`](./developer-guide/09_secrets.md) | Encrypted secrets injected as `process.env`, with separate dev and prod values. |

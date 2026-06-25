@@ -41,12 +41,14 @@ my-app/
         package.json
         src/
       api/api.json                       REST API config
-      discord/interface.json             Discord bot config
-      telegram/interface.json            Telegram bot config
       cron/interface.json                cron config
       webhook/interface.json             webhook config
       email/interface.json               email config
-      mcp/interface.json                 MCP config
+      mcp/                               MCP interface
+        interface.json                     MCP config
+        instructions.md                    server instructions
+        tools/                             tool descriptions (one .md per method)
+        prompts/                           prompt templates (one .md per prompt)
       agent/                             agent interface
         agent.json                         agent config
         system.md                          compiled system prompt
@@ -93,7 +95,7 @@ const { vendor } = await api.approveVendor({ vendorId: '...' });
 
 - **Managed databases.** SQLite with typed schemas. Push a schema change and the platform diffs, migrates, and promotes atomically.
 - **Built-in auth.** Opt-in via manifest. Developer builds login UI, platform handles verification codes (email/SMS), cookie sessions, and role enforcement. Backend methods use `auth.requireRole('admin')` for access control.
-- **Multiple interfaces, one codebase.** Web, API, Discord, Telegram, Cron, Webhook, Email, MCP — all invoke the same methods. Methods don't know which interface called them.
+- **Multiple interfaces, one codebase.** Web, API, Cron, Webhook, Email, MCP — all invoke the same methods. Methods don't know which interface called them.
 - **Sandboxed execution.** Each method invocation runs in its own isolated execution context with npm packages pre-installed.
 - **Git-native deployment.** Push to default branch to deploy. Push to feature branch for preview. Rollback is a git revert.
 - **Secrets.** Encrypted environment variables with separate dev/prod values. Injected as `process.env` in methods. For third-party service credentials not covered by the SDK.

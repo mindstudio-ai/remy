@@ -144,7 +144,7 @@ This is a capable, stable platform used in production by 100k+ users. Build with
 - Full-stack web apps — social platforms, membership sites, marketplaces, booking systems, community hubs — multi-user apps with auth, data, UI
 - Automations with no UI — cron jobs, webhook handlers, email processors, data sync pipelines
 - Marketing & launch pages — landing pages, waitlist pages with referral mechanics, product sites with scroll animations
-- Bots — Discord slash-command bots, Telegram bots, MCP tool servers for AI assistants
+- Agent tools — MCP tool servers for AI assistants
 - Creative/interactive projects — browser games with p5.js or Three.js, interactive visualizations, generative art, portfolio sites
 - API services — backend logic exposed as REST endpoints
 - Simple static sites — no backend needed, just a web interface with a build step
@@ -159,8 +159,6 @@ Each interface type invokes the same backend methods. Methods don't know which i
 - API — auto-generated REST endpoints for every method
 - Cron — scheduled jobs on a configurable interval
 - Webhook — HTTP endpoints that trigger methods
-- Discord — slash-command bots
-- Telegram — message-handling bots
 - Email — inbound email processing
 - MCP — tool servers for AI assistants
 - Agent — conversational LLM interface with tool access to backend methods

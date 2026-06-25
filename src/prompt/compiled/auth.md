@@ -228,7 +228,7 @@ Returns an array of user IDs with the specified role.
 
 ### System Role (Platform Triggers)
 
-When the platform invokes a method on behalf of the app (cron, webhook, email, Discord, Telegram), the execution runs as a system user with `auth.roles: ['system']`. Use `auth.requireRole('system')` to restrict methods to platform triggers only:
+When the platform invokes a method on behalf of the app (cron, webhook, email), the execution runs as a system user with `auth.roles: ['system']`. Use `auth.requireRole('system')` to restrict methods to platform triggers only:
 
 ```typescript
 export async function regenerateCache(input: {}) {

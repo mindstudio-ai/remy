@@ -2,7 +2,7 @@
 
 Interfaces are projections of the backend contract into different modalities. The same methods power all of them. An interface can be as complex and polished as you want, but it's always safe — the backend contract is where anything real happens. The interface can't break business logic or corrupt data.
 
-All external service connections (Discord bot tokens, Telegram bot setup, webhook secrets, email addresses) are configured at the project level by the user through the Remy platform. The agent's job is to write the config files and the methods that handle the requests — not to manage API keys, OAuth flows, or service registration.
+All external service connections (webhook secrets, email addresses) are configured at the project level by the user through the Remy platform. The agent's job is to write the config files and the methods that handle the requests — not to manage API keys, OAuth flows, or service registration.
 
 ## Web Interface
 
@@ -243,53 +243,7 @@ Routes are mounted at `/_/api{path}` (e.g. `DELETE /_/api/vendors/abc123`).
 
 ## Platform-Triggered Interfaces
 
-Discord, Telegram, Cron, Webhook, and Email interfaces are invoked by the platform, not by a user session. Methods called through these interfaces run with `auth.roles: ['system']`. Use `auth.requireRole('system')` to restrict a method to platform triggers only.
-
-## Discord Bot
-
-Slash commands that invoke methods.
-
-### Config (`interface.json`)
-
-```json
-{
-  "discord": {
-    "commands": [
-      {
-        "name": "submit-vendor",
-        "description": "Request a new vendor",
-        "method": "submit-vendor-request"
-      }
-    ],
-    "loadingMessage": "Processing your request..."
-  }
-}
-```
-
-Commands are synced to Discord on deploy.
-
-## Telegram Bot
-
-Bot commands and message handling.
-
-### Config (`interface.json`)
-
-```json
-{
-  "telegram": {
-    "commands": [
-      {
-        "command": "/submit",
-        "description": "Submit a vendor request",
-        "method": "submit-vendor-request"
-      }
-    ],
-    "defaultMethod": "handle-message"
-  }
-}
-```
-
-`defaultMethod` handles free-text messages that don't match a command.
+Cron, Webhook, and Email interfaces are invoked by the platform, not by a user session. Methods called through these interfaces run with `auth.roles: ['system']`. Use `auth.requireRole('system')` to restrict a method to platform triggers only.
 
 ## Cron
 
@@ -422,19 +376,156 @@ Methods invoked through this interface run with `auth.roles: ['system']` (see th
 
 ## MCP (Model Context Protocol)
 
-Expose methods as AI tools.
+Expose the app to *external* AI agents — Claude Desktop, Cursor, other people's agents, anything that speaks MCP. Unlike the agent interface (which *is* an agent — its own LLM, personality, and chat UI), MCP has no model of its own; it's the app projected as an MCP server for an outside AI to drive.
+
+It supports the full MCP surface:
+- **Tools** — methods the agent can call (rich descriptions + machine-readable annotations).
+- **Resources** — read-only app data the agent can pull into context, addressable by URI.
+- **Prompts** — reusable, parameterized prompt templates the server offers.
+- **Instructions** — server-level guidance shown to the calling agent (the toolset's "system prompt").
+
+The platform hosts the server, handles auth like the API interface (optional — keyed or anonymous), and derives every tool's input schema from the method contract. Because the consumer is an external agent with no knowledge of your app, **the descriptions are the product** — see "Building MCP Interfaces" for how to write them.
+
+### Spec: `src/interfaces/mcp.md`
+
+Frontmatter declares the server. The body's intro prose becomes the server `instructions`; `## Tools`, `## Resources`, and `## Prompts` sections declare the rest.
+
+```yaml
+---
+name: Vendor Management
+description: Tools and data for managing vendors and purchase orders.
+type: interface/mcp
+---
+```
+
+```markdown
+This server manages vendors and purchase orders. Read a vendor before updating it; submitted
+requests go through approval before they become active.
+
+## Tools
+
+### Submit a vendor request
+method: submit-vendor-request
+~~~
+Submit a new vendor for approval. Use when the caller wants to add a vendor.
+Do NOT use to modify an existing vendor — that's update-vendor.
+- name: the vendor's legal name
+- contactEmail: billing contact; required for approval routing
+Returns the created vendor's id and its initial "pending" status.
+~~~
+
+### List vendors
+method: list-vendors
+annotations: readOnly
+~~~
+List all vendors, newest first. Read-only.
+~~~
+
+## Resources
+
+- list-vendors → app://vendors — "Vendors" — all vendors (application/json)
+- get-vendor → app://vendors/{id} — "Vendor" — a single vendor by id (application/json)
+
+## Prompts
+
+### draft_vendor_email
+description: Draft an outreach email to a vendor.
+arguments: vendorId (required) — the vendor to contact
+~~~
+Write a warm outreach email to vendor {{vendorId}} introducing our procurement process.
+~~~
+```
+
+Don't hand-author input schemas — the platform derives them. For a resource template, `{param}` in the URI maps to the backing method's input.
+
+### Compiled Output: `dist/interfaces/mcp/`
+
+```
+dist/interfaces/mcp/
+├── interface.json      ← config the platform reads
+├── instructions.md     ← server-level guidance (returned in `initialize`)
+├── tools/
+│   ├── submitVendorRequest.md   ← rich description, one per tool
+│   └── listVendors.md
+└── prompts/
+    └── draftVendorEmail.md      ← prompt template body, one per prompt
+```
+
+Resources carry inline metadata only — no per-resource file.
 
 ### Config (`interface.json`)
 
 ```json
 {
   "mcp": {
-    "methods": ["submit-vendor-request", "list-vendors"]
+    "name": "Vendor Management",
+    "description": "Tools and data for managing vendors and purchase orders.",
+    "instructions": "instructions.md",
+    "tools": [
+      {
+        "method": "submit-vendor-request",
+        "name": "submit_vendor_request",
+        "title": "Submit Vendor Request",
+        "description": "tools/submitVendorRequest.md",
+        "annotations": { "readOnly": false, "destructive": false, "idempotent": false, "openWorld": false }
+      },
+      {
+        "method": "list-vendors",
+        "title": "List Vendors",
+        "description": "tools/listVendors.md",
+        "annotations": { "readOnly": true }
+      }
+    ],
+    "resources": [
+      { "method": "list-vendors", "uri": "app://vendors", "name": "Vendors", "description": "All vendors.", "mimeType": "application/json" },
+      { "method": "get-vendor", "uriTemplate": "app://vendors/{id}", "name": "Vendor", "description": "A single vendor by id.", "mimeType": "application/json" }
+    ],
+    "prompts": [
+      {
+        "name": "draft_vendor_email",
+        "title": "Draft vendor email",
+        "description": "Draft an outreach email to a vendor.",
+        "arguments": [ { "name": "vendorId", "description": "The vendor to contact", "required": true } ],
+        "template": "prompts/draftVendorEmail.md"
+      }
+    ]
   }
 }
 ```
 
-Each listed method becomes an MCP tool. Method names and descriptions from the manifest are used as tool names and descriptions.
+| Field | Description |
+|-------|-------------|
+| `name`, `description` | Server display name + registry metadata (not shown to the calling agent) |
+| `instructions` | Relative path to the server-level guidance returned in `initialize` |
+| `tools[].method` | Method `id` from the manifest (kebab-case) |
+| `tools[].name` | Tool name exposed to clients. Optional — defaults to the method `id`. Must match `[a-zA-Z0-9_-]` and be unique within the server |
+| `tools[].title` | Optional human-friendly display name |
+| `tools[].description` | Relative path to the tool's markdown description |
+| `tools[].annotations` | Optional client hints (auto-call vs. confirm): `readOnly`, `destructive`, `idempotent`, `openWorld` — map to MCP's `readOnlyHint` etc. |
+| `resources[].method` | The read method invoked when the resource is read |
+| `resources[].uri` / `uriTemplate` | A static URI, or a template whose `{param}` maps to the method's input |
+| `resources[].name`, `description`, `mimeType` | Resource metadata |
+| `prompts[].name`, `title`, `description` | Prompt identity + metadata |
+| `prompts[].arguments` | `[{ name, description?, required? }]` |
+| `prompts[].template` | Relative path to the template body (`{{arg}}` placeholders) |
+
+There is no `inputSchema` field — the platform derives each tool's schema from the method's input contract.
+
+### Platform Behavior
+
+- The platform hosts the MCP server and exposes it to external clients.
+- **Auth is optional**, identical to the API interface: a `Bearer` key resolves to a user with full RBAC; with no key, calls run anonymously (no user, no roles). The method is the boundary — gate sensitive tools with `auth.requireRole`/`requireUser`; a public (keyless) server exposes only the un-gated tools.
+- Input schemas are derived automatically from each method's input contract.
+- `tools/list` is static; access is enforced per-method at call time (a gated tool is listed but rejects an unauthorized call).
+- A resource read invokes the backing method (template `{param}`s come from the URI) and returns its output as the resource contents.
+- `prompts/get` fills the template with the provided arguments.
+- `instructions` is returned in the `initialize` response.
+
+### Manifest
+
+```json
+{ "type": "mcp", "path": "dist/interfaces/mcp/interface.json" }
+```
 
 ## Agent (Conversational Interface)
 
@@ -514,8 +605,6 @@ Each interface is declared in `mindstudio.json`:
     { "type": "web", "path": "dist/interfaces/web/web.json" },
     { "type": "api" },
     { "type": "cron", "path": "dist/interfaces/cron/interface.json" },
-    { "type": "discord", "path": "dist/interfaces/discord/interface.json" },
-    { "type": "telegram", "path": "dist/interfaces/telegram/interface.json" },
     { "type": "webhook", "path": "dist/interfaces/webhook/interface.json" },
     { "type": "email", "path": "dist/interfaces/email/interface.json" },
     { "type": "mcp", "path": "dist/interfaces/mcp/interface.json" },

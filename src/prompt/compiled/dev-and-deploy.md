@@ -35,7 +35,7 @@ The platform builds and deploys automatically:
 
 1. **Parse manifest** — read `mindstudio.json` from the commit
 2. **Compile methods** — esbuild bundles each method into a single JS file
-3. **Compile interfaces** — build web SPA (`npm install && npm run build`), generate configs for API/Discord/Telegram/cron/etc.
+3. **Compile interfaces** — build web SPA (`npm install && npm run build`), generate configs for API/cron/webhook/etc.
 4. **Parse table schemas** — TypeScript AST to column definitions, diff against live database
 5. **Compute effects** — roles diff, cron diff, bot command diffs, table DDL
 6. **Apply** — create/update roles, sync bot commands, apply DDL to a staging database copy, swap the live pointer

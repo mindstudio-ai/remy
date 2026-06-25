@@ -95,6 +95,10 @@ Current date: ${now}
   {{compiled/agent-interfaces.md}}
   </building_agent_interfaces>
 
+  <building_mcp_interfaces>
+  {{compiled/mcp-interfaces.md}}
+  </building_mcp_interfaces>
+
   <media_cdn>
   {{compiled/media-cdn.md}}
   </media_cdn>

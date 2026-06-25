@@ -1,6 +1,6 @@
 # Interfaces
 
-Interfaces are how users interact with your app. The same methods power all of them. A web frontend, a Discord bot, and a cron job can all invoke the same backend logic. Interfaces can be as complex and polished as you want, but they're always safe, because the backend is where anything real happens. They're projections of the backend contract into different modalities.
+Interfaces are how users interact with your app. The same methods power all of them. A web frontend, a REST API, and a cron job can all invoke the same backend logic. Interfaces can be as complex and polished as you want, but they're always safe, because the backend is where anything real happens. They're projections of the backend contract into different modalities.
 
 ---
 
@@ -223,71 +223,6 @@ curl -X DELETE https://{app-subdomain}.mindstudio.ai/_/api/vendors/abc123 \
 
 ---
 
-## Discord Bot
-
-Slash commands that invoke methods.
-
-### Setup
-
-1. Create a Discord application at discord.com/developers
-2. Register via the platform:
-   ```
-   POST /discord/register
-   { applicationId, botToken, publicKey }
-   ```
-3. The platform returns a webhook URL and invite URL
-
-### Config (`interface.json`)
-
-```json
-{
-  "commands": [
-    {
-      "name": "submit-vendor",
-      "description": "Request a new vendor",
-      "method": "submit-vendor-request"
-    }
-  ],
-  "loadingMessage": "Processing your request..."
-}
-```
-
-Commands are synced to Discord on deploy.
-
----
-
-## Telegram Bot
-
-Bot commands and message handling.
-
-### Setup
-
-1. Create a bot via @BotFather
-2. Register via the platform:
-   ```
-   POST /telegram/register
-   { botId, token }
-   ```
-
-### Config (`interface.json`)
-
-```json
-{
-  "commands": [
-    {
-      "command": "/submit",
-      "description": "Submit a vendor request",
-      "method": "submit-vendor-request"
-    }
-  ],
-  "defaultMethod": "handle-message"
-}
-```
-
-`defaultMethod` handles free-text messages that don't match a command.
-
----
-
 ## Cron
 
 Scheduled method execution.
@@ -415,17 +350,117 @@ Max inbound size is 25 MB total. Oversized messages are rejected by the platform
 
 ## MCP (Model Context Protocol)
 
-Expose methods as AI tools.
+Expose the app to *external* AI agents — Claude Desktop, Cursor, anything that speaks MCP. Unlike the agent interface (which *is* an agent, with its own LLM and chat UI), MCP has no model of its own; it's the app projected as an MCP server for an outside AI to drive. It supports the full MCP surface: **tools** (methods the agent calls), **resources** (read-only data the agent reads into context), **prompts** (reusable templates), and server **instructions** (toolset-level guidance shown to the calling agent).
+
+The platform hosts the server, handles auth like the API interface (optional — a `Bearer` key resolves to a user with full RBAC, or calls run anonymously), and derives each tool's input schema from the method contract. The descriptions are the product: the calling agent has nothing but them to decide what to invoke, so write them self-contained for a stranger with no app context.
+
+### Spec File: `src/interfaces/mcp.md`
+
+Frontmatter declares the server. The body's intro prose becomes the server `instructions`; `## Tools`, `## Resources`, and `## Prompts` sections declare the rest.
+
+```yaml
+---
+name: Vendor Management
+description: Tools and data for managing vendors and purchase orders.
+type: interface/mcp
+---
+```
+
+```markdown
+This server manages vendors and purchase orders. Read a vendor before updating it.
+
+## Tools
+
+### List vendors
+method: list-vendors
+annotations: readOnly
+~~~
+List all vendors, newest first. Read-only.
+~~~
+
+## Resources
+
+- list-vendors → app://vendors — "Vendors" — all vendors (application/json)
+- get-vendor → app://vendors/{id} — "Vendor" — a single vendor by id (application/json)
+
+## Prompts
+
+### draft_vendor_email
+description: Draft an outreach email to a vendor.
+arguments: vendorId (required) — the vendor to contact
+~~~
+Write a warm outreach email to vendor {{vendorId}}.
+~~~
+```
+
+### Compiled Output: `dist/interfaces/mcp/`
+
+```
+dist/interfaces/mcp/
+├── interface.json      ← config the platform reads
+├── instructions.md     ← server-level guidance (returned in `initialize`)
+├── tools/
+│   └── listVendors.md  ← rich description, one per tool
+└── prompts/
+    └── draftVendorEmail.md   ← prompt template body, one per prompt
+```
+
+Resources carry inline metadata only — no per-resource file. Don't hand-author input schemas; the platform derives them from the method contract.
 
 ### Config (`interface.json`)
 
 ```json
 {
-  "methods": ["submit-vendor-request", "list-vendors"]
+  "mcp": {
+    "name": "Vendor Management",
+    "description": "Tools and data for managing vendors and purchase orders.",
+    "instructions": "instructions.md",
+    "tools": [
+      {
+        "method": "list-vendors",
+        "title": "List Vendors",
+        "description": "tools/listVendors.md",
+        "annotations": { "readOnly": true }
+      }
+    ],
+    "resources": [
+      { "method": "list-vendors", "uri": "app://vendors", "name": "Vendors", "description": "All vendors.", "mimeType": "application/json" },
+      { "method": "get-vendor", "uriTemplate": "app://vendors/{id}", "name": "Vendor", "description": "A single vendor by id.", "mimeType": "application/json" }
+    ],
+    "prompts": [
+      {
+        "name": "draft_vendor_email",
+        "title": "Draft vendor email",
+        "description": "Draft an outreach email to a vendor.",
+        "arguments": [ { "name": "vendorId", "description": "The vendor to contact", "required": true } ],
+        "template": "prompts/draftVendorEmail.md"
+      }
+    ]
+  }
 }
 ```
 
-Each listed method becomes an MCP tool. Method names and descriptions from the manifest are used as tool names and descriptions.
+| Field | Description |
+|-------|-------------|
+| `name`, `description` | Server display name + registry metadata (not shown to the calling agent) |
+| `instructions` | Relative path to the server-level guidance returned in `initialize` |
+| `tools[].method` | Method `id` from `mindstudio.json` (kebab-case) |
+| `tools[].name` | Tool name exposed to clients. Optional — defaults to the method `id`; must match `[a-zA-Z0-9_-]` and be unique |
+| `tools[].title` | Optional human-friendly display name |
+| `tools[].description` | Relative path to the tool's markdown description |
+| `tools[].annotations` | Optional client hints (auto-call vs. confirm): `readOnly`, `destructive`, `idempotent`, `openWorld` (map to MCP's `readOnlyHint` etc.) |
+| `resources[].method` | The read method invoked when the resource is read |
+| `resources[].uri` / `uriTemplate` | A static URI, or a template whose `{param}` maps to the method's input |
+| `resources[].name`, `description`, `mimeType` | Resource metadata |
+| `prompts[]` | `name`, `title`, `description`, `arguments` (`[{ name, description?, required? }]`), and `template` (path to the body, with `{{arg}}` placeholders) |
+
+**Behavior:** `tools/list` is static; access is enforced per-method at call time (a gated tool is listed but rejects an unauthorized call). A resource read invokes the backing method (template `{param}`s come from the URI). `prompts/get` fills the template with the supplied arguments. There is no `inputSchema` field — the platform derives it from the method contract.
+
+### Manifest
+
+```json
+{ "type": "mcp", "path": "dist/interfaces/mcp/interface.json" }
+```
 
 ---
 
@@ -517,8 +552,6 @@ Each interface is declared in `mindstudio.json`:
     { "type": "web", "path": "dist/interfaces/web/web.json" },
     { "type": "api" },
     { "type": "cron", "path": "dist/interfaces/cron/interface.json" },
-    { "type": "discord", "path": "dist/interfaces/discord/interface.json" },
-    { "type": "telegram", "path": "dist/interfaces/telegram/interface.json" },
     { "type": "webhook", "path": "dist/interfaces/webhook/interface.json" },
     { "type": "email", "path": "dist/interfaces/email/interface.json" },
     { "type": "mcp", "path": "dist/interfaces/mcp/interface.json" },

@@ -93,8 +93,6 @@ my-app/
           pages/
           components/
       api/api.json                       API config
-      discord/interface.json             Discord bot config
-      telegram/interface.json            Telegram bot config
       cron/interface.json                cron config
       webhook/interface.json             webhook config
       email/interface.json               email config
