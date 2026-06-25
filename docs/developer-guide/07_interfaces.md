@@ -352,7 +352,7 @@ Max inbound size is 25 MB total. Oversized messages are rejected by the platform
 
 Expose the app to *external* AI agents — Claude Desktop, Cursor, anything that speaks MCP. Unlike the agent interface (which *is* an agent, with its own LLM and chat UI), MCP has no model of its own; it's the app projected as an MCP server for an outside AI to drive. It supports the full MCP surface: **tools** (methods the agent calls), **resources** (read-only data the agent reads into context), **prompts** (reusable templates), and server **instructions** (toolset-level guidance shown to the calling agent).
 
-The platform hosts the server, handles auth like the API interface (optional — a `Bearer` key resolves to a user with full RBAC, or calls run anonymously), and derives each tool's input schema from the method contract. The descriptions are the product: the calling agent has nothing but them to decide what to invoke, so write them self-contained for a stranger with no app context.
+The platform hosts the server at `POST https://{app-host}/_/mcp` (where MCP clients connect), handles auth like the API interface (optional — a `Bearer` key resolves to a user with full RBAC, or calls run anonymously), and derives each tool's input schema from the method contract. The descriptions are the product: the calling agent has nothing but them to decide what to invoke, so write them self-contained for a stranger with no app context.
 
 ### Spec File: `src/interfaces/mcp.md`
 

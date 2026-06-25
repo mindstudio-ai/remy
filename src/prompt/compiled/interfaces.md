@@ -513,7 +513,7 @@ There is no `inputSchema` field — the platform derives each tool's schema from
 
 ### Platform Behavior
 
-- The platform hosts the MCP server and exposes it to external clients.
+- The platform hosts the MCP server and exposes it to external clients. Clients connect at `POST https://{app-host}/_/mcp`.
 - **Auth is optional**, identical to the API interface: a `Bearer` key resolves to a user with full RBAC; with no key, calls run anonymously (no user, no roles). The method is the boundary — gate sensitive tools with `auth.requireRole`/`requireUser`; a public (keyless) server exposes only the un-gated tools.
 - Input schemas are derived automatically from each method's input contract.
 - `tools/list` is static; access is enforced per-method at call time (a gated tool is listed but rejects an unauthorized call).
