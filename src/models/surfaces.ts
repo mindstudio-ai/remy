@@ -75,6 +75,14 @@ export const MODEL_SURFACES = {
     modelType: 'text',
     userPickable: true,
   },
+  copyEditor: {
+    default: 'claude-4-6-sonnet',
+    label: 'Copy Agent',
+    description:
+      'Tightens prose and copy across your app and its launch materials so it reads sharp and human, never machine-made.',
+    modelType: 'text',
+    userPickable: true,
+  },
   imageGeneration: {
     default: 'seedream-4.5',
     label: 'Image Generation',

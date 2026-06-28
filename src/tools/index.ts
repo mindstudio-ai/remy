@@ -135,6 +135,7 @@ import { browserAutomationTool } from '../subagents/browserAutomation/index.js';
 import { designExpertTool } from '../subagents/designExpert/index.js';
 import { productVisionTool } from '../subagents/productVision/index.js';
 import { codeSanityCheckTool } from '../subagents/codeSanityCheck/index.js';
+import { copyEditorTool } from '../subagents/copyEditor/index.js';
 import { scrapeWebUrlTool } from './common/scrapeWebUrl.js';
 import { buildOverviewTool } from './spec/writeBuildOverview.js';
 
@@ -153,6 +154,7 @@ const ALL_TOOLS: Tool[] = [
   designExpertTool,
   productVisionTool,
   codeSanityCheckTool,
+  copyEditorTool,
   buildOverviewTool,
   compactConversationTool,
   // Post-onboarding
@@ -200,6 +202,7 @@ export const SUBAGENT_TOOL_NAMES = new Set([
   'visualDesignExpert',
   'productVision',
   'codeSanityCheck',
+  'copyEditor',
   'runAutomatedBrowserTest',
   'askMindStudioSdk',
 ]);

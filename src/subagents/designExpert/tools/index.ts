@@ -16,6 +16,7 @@ import * as analyzeImage from './analyzeImage.js';
 import * as screenshot from './screenshot.js';
 import * as generateImages from './images/generateImages.js';
 import * as editImages from './images/editImages.js';
+import * as polishCopy from './polishCopy.js';
 
 const tools = {
   searchGoogle,
@@ -25,6 +26,7 @@ const tools = {
   screenshot,
   generateImages,
   editImages,
+  polishCopy,
 } as const;
 
 export const DESIGN_EXPERT_TOOLS: ToolDefinition[] = [
