@@ -4,7 +4,8 @@
  * Remy authors the full plain-language copy of everything the build
  * produced — it just built the app, so it knows what is true — and this
  * tool hands that copy to the design expert, which lays it out and skins it
- * to the app's brand WITHOUT altering any fact, then writes the result to
+ * to the app's brand WITHOUT changing the copy (verbatim — it typesets the
+ * words, it does not rewrite them), then writes the result to
  * src/overview.html (the project's home page in the Spec tab).
  *
  * Mirrors the pitch-deck flow (src/subagents/productVision/executor.ts ::
@@ -25,7 +26,7 @@ const DESIGN_BRIEF = `We are building the Build Overview for this app — the ho
 Take the plain-language copy in <overview_copy> and lay it out and skin it into a single, beautiful, self-contained HTML document in the app's own brand. If <current_overview> is non-empty, use it as your starting point and preserve its established skin, updating only what the copy changed.
 
 ### The single hard rule
-Preserve every fact in <overview_copy> exactly — every number, name, label, and claim. Do not add, drop, soften, reword, or invent any fact. You own layout, typography, and visual design only; the substance and the words are fixed. A single wrong number breaks this document's entire purpose.
+The copy in <overview_copy> is final — it was authored and edited before it reached you. Treat it as locked content to typeset, not a draft to improve. Reproduce the words exactly: do not rewrite, rephrase, shorten, expand, reorder, or "polish" them, and do not run them through any copy tool. This is the opposite of your usual role — here you own layout, typography, and visual design only, and the words (every number, name, label, claim, and sentence) are fixed. A single changed word or wrong number breaks this document's purpose.
 
 ### What it is (and is not)
 - A typeset reference dossier: composed, dense, a little cool — substantial at a glance, then readable. Density communicates substance; sparse and airy reads as "not much here."
@@ -71,14 +72,14 @@ export const buildOverviewTool: Tool = {
   definition: {
     name: 'writeBuildOverview',
     description:
-      "Generate or refresh the Build Overview — the project's home page in the Spec tab: a single-page, plain-language reference of everything the app actually contains, including the parts the user can't see (data stores, backend operations, access and roles, background jobs, seeded scenarios, the design system). You author the full copy: read the manifest and spec and state, plainly and exactly, what genuinely exists — real names and accurate counts — in calm, declarative, present-tense outcome language, with no persuasion or hype. Describe only what exists. Pass the complete copy as `content`; the design expert lays it out and skins it to the app's brand without altering any of your facts. Generate it at the end of a build and refresh it after meaningful work.",
+      "Generate or refresh the Build Overview — the project's home page in the Spec tab: a single-page, plain-language reference of everything the app actually contains, including the parts the user can't see (data stores, backend operations, access and roles, background jobs, seeded scenarios, the design system). You author the full copy: read the manifest and spec and state, plainly and exactly, what genuinely exists — real names and accurate counts — in calm, declarative, present-tense outcome language, with no persuasion or hype. Describe only what exists. Pass the complete copy as `content`; the design expert lays it out and skins it to the app's brand using your copy verbatim — it typesets your words, it does not rewrite them, so polish the copy before you pass it. Generate it at the end of a build and refresh it after meaningful work.",
     inputSchema: {
       type: 'object',
       properties: {
         content: {
           type: 'string',
           description:
-            'The full Build Overview copy you authored: everything the app contains, in plain present-tense outcome language, with real names and exact counts. The design expert lays this out and skins it to the brand without changing any fact.',
+            'The full Build Overview copy you authored: everything the app contains, in plain present-tense outcome language, with real names and exact counts. The design expert lays this out and skins it to the brand verbatim — it styles your words, it does not rewrite them — so this should be the final copy.',
         },
       },
       required: ['content'],
