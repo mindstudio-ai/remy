@@ -653,7 +653,11 @@ export class HeadlessSession {
         );
         return;
       case 'error':
-        this.emit('error', { error: e.error }, rid);
+        this.emit(
+          'error',
+          { error: e.error, ...(e.code ? { code: e.code } : {}) },
+          rid,
+        );
         return;
     }
   };

@@ -73,7 +73,7 @@ export type AgentEvent =
     }
   | { type: 'turn_cancelled' }
   | { type: 'status'; message: string; parentToolId?: string }
-  | { type: 'error'; error: string };
+  | { type: 'error'; error: string; code?: string };
 
 // Conversation state persisted across turns
 export interface AgentState {

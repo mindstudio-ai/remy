@@ -570,7 +570,14 @@ export async function runTurn(params: {
             break;
 
           case 'error':
-            onEvent({ type: 'error', error: friendlyError(event.error) });
+            // `friendlyError` rewrites the human-readable string; the machine
+            // `code` (e.g. `insufficient_credits/balance`) passes through
+            // untouched so the frontend can drive interactive recovery.
+            onEvent({
+              type: 'error',
+              error: friendlyError(event.error),
+              ...(event.code ? { code: event.code } : {}),
+            });
             return;
         }
       }
