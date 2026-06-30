@@ -52,7 +52,7 @@ export const MODEL_SURFACES = {
     userPickable: true,
   },
   productVision: {
-    default: 'claude-4-6-sonnet',
+    default: 'claude-5-sonnet',
     label: 'Roadmap Agent',
     description:
       "Owns your product's roadmap and pitch deck. Helps decide what to build next and how to frame the big picture.",
@@ -60,7 +60,7 @@ export const MODEL_SURFACES = {
     userPickable: true,
   },
   browserAutomation: {
-    default: 'claude-4-6-sonnet',
+    default: 'claude-5-sonnet',
     label: 'QA Agent',
     description:
       'Tests features and UI flows in an automated browser to verify they work end to end.',
@@ -68,7 +68,7 @@ export const MODEL_SURFACES = {
     userPickable: true,
   },
   codeSanityCheck: {
-    default: 'claude-4-6-sonnet',
+    default: 'claude-5-sonnet',
     label: 'Architecture Agent',
     description:
       'Reviews the architecture and structure of code changes to avoid technical debt.',
@@ -76,7 +76,7 @@ export const MODEL_SURFACES = {
     userPickable: true,
   },
   copyEditor: {
-    default: 'claude-4-6-sonnet',
+    default: 'claude-5-sonnet',
     label: 'Copy Agent',
     description:
       'Tightens prose and copy across your app and its launch materials so it reads sharp and human, never machine-made.',
@@ -92,7 +92,7 @@ export const MODEL_SURFACES = {
     userPickable: true,
   },
   imageAnalysis: {
-    default: 'claude-4-6-sonnet',
+    default: 'claude-5-sonnet',
     label: 'Image Analysis',
     description:
       'Reads screenshots taken by the QA agent during automated browser tests. Other agents use their own built-in image analysis when they need to read images.',
@@ -100,7 +100,7 @@ export const MODEL_SURFACES = {
     userPickable: true,
   },
   conversationSummarizer: {
-    default: 'claude-4-6-sonnet',
+    default: 'claude-5-sonnet',
     label: 'Compaction Utility',
     description:
       'Compresses long conversations into summaries to keep things responsive.',
@@ -108,7 +108,7 @@ export const MODEL_SURFACES = {
     userPickable: true,
   },
   brandExtractor: {
-    default: 'claude-4-6-sonnet',
+    default: 'claude-5-sonnet',
     label: 'Brand Utility',
     description:
       "Extracts your product's name, colors, and fonts from your spec for use in branded documents.",
@@ -118,7 +118,7 @@ export const MODEL_SURFACES = {
   // Internal surface — not user-pickable. Remy uses this to rewrite design
   // briefs into model-optimized image prompts before image generation.
   imagePromptEnhancer: {
-    default: 'claude-4-6-sonnet',
+    default: 'claude-5-sonnet',
     label: 'Image Prompt Enhancer',
     description:
       'Rewrites image briefs into model-optimized prompts before image generation.',
