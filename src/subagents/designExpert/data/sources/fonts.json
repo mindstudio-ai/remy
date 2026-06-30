@@ -96,23 +96,6 @@
       "description": "This serif typeface exhibits moderate stroke contrast with a vertical stress and features sturdy, bracketed serifs with a slight wedge quality. The apertures are moderately open in letters like 'e' and 'a', while the x-height is relatively generous in proportion to the cap height, contributing to strong readability. The construction shows rational, contemporary proportions with a single-story 'g' and regular width, combining traditional serif elements with modern refinement in details like the ball terminals visible in characters such as 'a' and 'c'."
     },
     {
-      "name": "Boska",
-      "slug": "boska",
-      "category": "Serif, Display",
-      "variable": true,
-      "weights": [
-        200,
-        300,
-        400,
-        500,
-        700,
-        900
-      ],
-      "italics": true,
-      "source": "fontshare",
-      "description": "This serif typeface exhibits high stroke contrast with a vertical stress axis and features unbracketed, wedge-shaped serifs that are sharply cut and geometric in construction. The letterforms show moderate apertures in characters like 'e' and 'a', with a medium x-height relative to the cap height and regular width proportions. Notable details include a single-story 'a', ball terminals on some curved strokes, and distinctively sharp, angular serifs that create a modern, rationalist appearance rather than a traditional calligraphic one."
-    },
-    {
       "name": "Switzer",
       "slug": "switzer",
       "category": "Sans",
@@ -1880,18 +1863,6 @@
     },
     {
       "heading": {
-        "font": "Boska",
-        "slug": "boska",
-        "weight": 300
-      },
-      "body": {
-        "font": "General Sans",
-        "slug": "general-sans",
-        "weight": 300
-      }
-    },
-    {
-      "heading": {
         "font": "Sharpie",
         "slug": "sharpie",
         "weight": 800
@@ -2128,18 +2099,6 @@
         "font": "Sentient",
         "slug": "sentient",
         "weight": 300
-      }
-    },
-    {
-      "heading": {
-        "font": "Boska",
-        "slug": "boska",
-        "weight": 500
-      },
-      "body": {
-        "font": "Switzer",
-        "slug": "switzer",
-        "weight": 400
       }
     },
     {
