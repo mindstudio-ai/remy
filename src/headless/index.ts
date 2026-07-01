@@ -25,6 +25,7 @@
 import { createLogger } from '../logger.js';
 import type { Attachment, Message } from '../api.js';
 import { resolveConfig } from '../config.js';
+import { initOrgContext } from '../orgContext.js';
 import { buildSystemPrompt } from '../prompt/index.js';
 import {
   triggerCompaction,
@@ -185,6 +186,10 @@ export class HeadlessSession {
       apiKey: this.opts.apiKey,
       baseUrl: this.opts.baseUrl,
     });
+
+    // Warm the build-time org context before any buildSystemPrompt call
+    // (per-message / compaction). Best-effort — never blocks or throws.
+    await initOrgContext(this.config);
 
     const resumed = loadSession(this.state);
 

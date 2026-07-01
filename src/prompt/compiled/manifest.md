@@ -71,7 +71,7 @@
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `enabled` | `boolean` | Yes | `true` to enable auth |
-| `methods` | `string[]` | Yes | Auth methods: `"email-code"`, `"sms-code"`, `"api-key"`. At least one required. |
+| `methods` | `string[]` | Yes | Auth methods: `"email-code"`, `"sms-code"`, `"api-key"`, `"remy"` (platform-delegated sign-in, org-owned apps). At least one required. |
 | `table.name` | `string` | Yes | Name of the `defineTable` table holding user records |
 | `table.columns.email` | `string` | If email-code | Column name for email (platform-managed, read-only from code) |
 | `table.columns.phone` | `string` | If sms-code | Column name for phone (platform-managed, read-only from code) |

@@ -81,6 +81,8 @@ auth.sendEmailCode(email)           // → { verificationId }
 auth.verifyEmailCode(verId, code)   // → AppUser (sets session)
 auth.sendSmsCode(phone)             // → { verificationId }
 auth.verifySmsCode(verId, code)     // → AppUser (sets session)
+auth.signInWithRemy(options?)       // → AppUser|null; "Continue with {Org}" delegated sign-in (redirect top-level, popup embedded)
+auth.handleRemyRedirect()           // call once on load; completes delegated sign-in, no-op if no code
 auth.logout()                       // clears session
 ```
 

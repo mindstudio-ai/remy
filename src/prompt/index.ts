@@ -17,6 +17,7 @@ import {
   loadSpecFileMetadata,
   loadPlanStatus,
 } from './static/projectContext.js';
+import { renderOrgContextBlock } from '../orgContext.js';
 
 /** Replace all {{path/to/file.md}} with the file contents. */
 function resolveIncludes(template: string): string {
@@ -172,6 +173,8 @@ New projects progress through three onboarding states. The user might skip this 
 <project_context>
 ${projectContext}
 </project_context>
+
+${renderOrgContextBlock()}
 
 <view_context>
 The user is currently in ${viewContext?.mode ?? 'code'} mode.

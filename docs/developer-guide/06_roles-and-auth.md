@@ -35,7 +35,7 @@ Apps without auth config use anonymous guest sessions. Auth is optional — only
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `auth.enabled` | `boolean` | Yes | `true` to enable auth |
-| `auth.methods` | `string[]` | Yes | `"email-code"` and/or `"sms-code"`. At least one. |
+| `auth.methods` | `string[]` | Yes | `"email-code"`, `"sms-code"`, and/or `"remy"` (platform-delegated sign-in — see below). At least one. |
 | `auth.table.name` | `string` | Yes | Name of the `defineTable` table for user records |
 | `auth.table.columns.email` | `string` | If email-code | Column name for email (read-only from code) |
 | `auth.table.columns.phone` | `string` | If sms-code | Column name for phone (read-only from code) |
@@ -96,6 +96,7 @@ interface AppUser {
   email: string | null;
   phone: string | null;
   roles: string[];
+  provider?: 'remy' | null;  // 'remy' = delegated sign-in (platform-managed); null/absent = app-verified
   createdAt: string;
 }
 ```
@@ -138,6 +139,25 @@ const { verificationId } = await auth.sendSmsCode('+15551234567');
 // Phone must be E.164 format
 const user = await auth.verifySmsCode(verificationId, '123456');
 ```
+
+### Sign in with Remy (delegated)
+
+If the app is owned by an organization that has delegated sign-in enabled, add `"remy"` to `auth.methods` and offer a **"Continue with {Org}"** button. The platform resolves who the user is (like "Sign in with Google") and whether they're allowed; the app just starts the flow and reads the result. When the organization *requires* delegated sign-in, `remy` is the only permitted human method (email/SMS are blocked at the platform edge for its apps).
+
+```typescript
+// "Continue with {Org}" button — must be triggered by a user gesture (click).
+<button onClick={() => auth.signInWithRemy()}>Continue with Acme</button>
+
+// Call once on app load — completes sign-in on return from the handshake, or
+// when the app is opened from the Remy dashboard. No-op when there's no code
+// to redeem, so it's safe on every mount.
+useEffect(() => { auth.handleRemyRedirect(); }, []);
+useEffect(() => auth.onAuthStateChanged(setUser), []);
+```
+
+- `auth.signInWithRemy(options?)` → `Promise<AppUser | null>`. Top-level apps redirect to the platform and back — the page navigates away, so the promise never settles; drive UI off `onAuthStateChanged`, not the return value. Apps embedded in a cross-origin iframe (the dev IDE preview) use a popup and the promise resolves. Options: `redirectUri` (default current URL), `state` (CSRF, auto-generated), `mode: 'auto' | 'popup' | 'redirect'` (default `'auto'`).
+- `auth.handleRemyRedirect()` → `Promise<AppUser | null>`. Call once on load; handles both the button return and the dashboard-launch entry, updates the session in-place (fires `onAuthStateChanged`), and cleans the URL.
+- Delegated users have `provider: 'remy'`; their roles and email are platform-managed — enforce with `requireRole`/`hasRole`, but don't assign roles from app code.
 
 ### Email/Phone Changes (must be authenticated)
 

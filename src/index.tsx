@@ -14,6 +14,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { App } from './tui/App.js';
 import { resolveConfig } from './config.js';
+import { initOrgContext } from './orgContext.js';
 import {
   createLogger,
   initLoggerHeadless,
@@ -97,6 +98,10 @@ if (headless) {
     });
 
     printDebugInfo(config);
+
+    // Warm the build-time org context before the first (synchronous)
+    // buildSystemPrompt call in <App>. Best-effort — never blocks or throws.
+    await initOrgContext(config);
 
     const { waitUntilExit } = render(
       <App

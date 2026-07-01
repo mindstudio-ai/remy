@@ -530,3 +530,49 @@ export async function generateBackgroundAck(params: {
     return FALLBACK_ACK;
   }
 }
+
+/**
+ * Build-time context for the app Remy is working on. Fetched once at startup
+ * from the platform's agent-context helper. Fields are best-effort — absent /
+ * false means "not available", and callers must tolerate a null result.
+ */
+export interface RemyContext {
+  org: { name?: string };
+  auth: { delegatedAvailable: boolean; requireDelegatedOnly?: boolean };
+}
+
+/**
+ * Fetch the owning org's build-time context for the current app (org name +
+ * delegated-auth availability). Best-effort: returns null when appId is unset,
+ * the request fails, or the body doesn't parse — callers treat null as "no
+ * context" and build exactly as they did before.
+ */
+export async function fetchRemyContext(
+  config: ApiConfig,
+): Promise<RemyContext | null> {
+  if (!config.appId) {
+    return null;
+  }
+  const url = `${config.baseUrl}/developer/v2/helpers/remy-context?appId=${encodeURIComponent(config.appId)}`;
+  try {
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${config.apiKey}`,
+      },
+      signal: AbortSignal.timeout(20000),
+    });
+    if (!res.ok) {
+      log.debug('remy-context fetch non-OK', { status: res.status });
+      return null;
+    }
+    const data = (await res.json()) as RemyContext;
+    if (!data || typeof data !== 'object' || typeof data.auth !== 'object') {
+      return null;
+    }
+    return data;
+  } catch (err: any) {
+    log.debug('remy-context fetch failed', { error: err.message });
+    return null;
+  }
+}

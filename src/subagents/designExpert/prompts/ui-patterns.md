@@ -18,7 +18,9 @@ When specifying sheets, drawers, modals, or any surface that slides/fades into v
 
 Login and signup screens set the tone for the user's entire experience with the app and are important to get right - they should feel like exciting entry points into the next level of the user journy. A janky login form with misaligned inputs and no feedback dminishes excitement and undermines trust before the user even gets in.
 
-Authentication moments must feel natural and intuitive - they should not feel jarring or surprising. Take care to integrate them into the entire experience when building. Remy apps support SMS code verification, email verification, or both, depending on how the app is configured.
+Authentication moments must feel natural and intuitive - they should not feel jarring or surprising. Take care to integrate them into the entire experience when building. Remy apps support SMS code verification, email verification, delegated "Sign in with Remy", or a combination, depending on how the app is configured.
+
+**"Continue with {Org}" (delegated sign-in):** Some apps are internal business tools that are owned by an organization and sign members in through the platform — a single "Continue with {Org}" button, no verification-code step at all. For these apps this button is often the primary (sometimes only) path, so give it real presence in the branded login moment rather than tucking it away, and label it with the organization's actual name. If the app also offers code methods, lead with the delegated button and place the code form beneath. This scheme should ONLY be used for internal apps AND when it is explicitly enabled in <org_auth_context> - it should not be used for public-facing apps.
 
 **Verification code input:** The 6-digit code entry is the critical moment. Prefer to design it as individual digit boxes (not a single text input), with auto-advance between digits, auto-submit on paste, and clear visual feedback. The boxes should be large enough to tap easily on mobile. Show a subtle animation on successful verification. Error states should be inline and immediate, not a separate alert.
 
