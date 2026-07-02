@@ -99,9 +99,12 @@ interface AppUser {
 auth.getCurrentUser()         // AppUser | null
 auth.currentUser              // AppUser | null (sync getter, same as getCurrentUser())
 auth.isAuthenticated()        // boolean
-auth.onAuthStateChanged(cb)   // fires immediately with current user, then on every
-                              // auth transition (verify, confirm, logout).
-                              // Returns an unsubscribe function.
+auth.authStatus               // 'authenticating' | 'authenticated' | 'unauthenticated' (sync getter)
+auth.onAuthStateChanged(cb)   // fires immediately with current user, then on every transition —
+                              // verify/confirm/logout AND each authStatus change (a Sign in with Remy
+                              // handshake starting or settling). During 'authenticating' it may fire
+                              // null; that's expected — read authStatus to tell it apart from
+                              // logged-out. Returns an unsubscribe function.
 ```
 
 Use `onAuthStateChanged` in React instead of reading `currentUser` once at render time:
@@ -143,15 +146,22 @@ When no `<org_auth_context>` block is present — the common case — do not bui
 // "Continue with {Org}" button — must be triggered by a user gesture (click).
 <button onClick={() => auth.signInWithRemy()}>Continue with Acme</button>
 
-// Call once on app load — completes sign-in when the user returns from the
-// handshake, or when the app is opened from the Remy dashboard. No-op when
-// there's no code to redeem, so it's safe to run on every mount.
-useEffect(() => { auth.handleRemyRedirect(); }, []);
-useEffect(() => auth.onAuthStateChanged(setUser), []);
+// On return from the handshake (or when opened from the Remy dashboard), the app
+// cold-loads with sign-in still completing. Track authStatus and render a
+// "Completing sign-in…" state — NOT the login screen — while it's 'authenticating'.
+const [user, setUser] = useState(auth.currentUser);
+const [status, setStatus] = useState(auth.authStatus);
+useEffect(() => auth.onAuthStateChanged(() => {
+  setUser(auth.currentUser);
+  setStatus(auth.authStatus);
+}), []);
+useEffect(() => { auth.handleRemyRedirect().catch(() => {}); }, []); // no-op if nothing to redeem
+// status === 'authenticating' → <CompletingSignIn/>;  user → app;  else → login
 ```
 
 - `auth.signInWithRemy(options?)` → `Promise<AppUser | null>`. Auto-detects context: a top-level app redirects to the platform and back — **the page navigates away, so the promise never settles; don't await it to gate UI**. An app embedded in a cross-origin iframe (the dev IDE preview) uses a popup and the promise resolves with the user (or `null` if the popup is closed). Options: `redirectUri` (default current URL), `state` (CSRF, auto-generated), `mode: 'auto' | 'popup' | 'redirect'` (default `'auto'` — leave it). Because of the redirect case, **drive UI off `onAuthStateChanged`, not the return value.**
 - `auth.handleRemyRedirect()` → `Promise<AppUser | null>`. Call once on load. Handles both the "Continue with {Org}" return and being opened from the Remy dashboard; on success it updates the session in-place (fires `onAuthStateChanged`) and cleans the URL.
+- **Render the completing state, not the login screen, on return.** A redirect return (or dashboard launch) cold-loads with `auth.authStatus === 'authenticating'` — set *before first paint* and held until the exchange settles. Gate the UI on `authStatus`: `'authenticating'` → a brief "Completing sign-in…" state; a user → the app; `'unauthenticated'` → the login screen. Don't infer this from the URL `?code` (it's stripped when redemption starts) or treat the initial `null` user as logged-out — that flashes the login screen over a successful sign-in.
 - Delegated users have `provider: 'remy'`. Their **roles and email are platform-managed** (like `email`/`phone` for code users) — enforce access with `requireRole`/`hasRole` on the backend as usual, but don't assign roles from app code; the platform owns them.
 
 ### Email/Phone Changes (must be authenticated)
@@ -201,6 +211,9 @@ All auth methods throw on failure with a `code` property:
 | `not_authenticated` | 401 | No active session |
 | `invalid_session` | 401 | Session expired or invalid |
 | `not_supported` | 400 | Feature not enabled for this app (e.g. API keys without `api-key` in methods) |
+| `invalid_state` | 400 | Sign in with Remy: returned CSRF state didn't match (stale/replayed redirect) |
+| `popup_blocked` | — | Sign in with Remy (embedded): popup was blocked — prompt to allow popups and retry |
+| `signin_timeout` | — | Sign in with Remy (embedded): popup didn't complete in time |
 
 ### Phone Helpers
 
@@ -386,7 +399,7 @@ Consult the `visualDesignExpert` to help you work through authentication at a hi
 ### Rules for Building Auth Screens
 **Auth modes:** Think about which mode(s) makes the most sense for the type of app you are building. Consumer apps likely to be used on mobile should probably tend toward SMS auth as the default - business apps used on desktop make more sense to use email verification - or allow both, there's no harm in giving the user choice!
 
-**"Continue with {Org}" (delegated):** When `<org_auth_context>` says delegated sign-in is available, a single "Continue with {Org}" button is the primary path — often the *only* one — and there's no verification-code step to design at all (the platform handles it). Give the button real weight in the branded login moment rather than treating it as a secondary option, and use the exact organization name. If the org also allows code methods, delegated goes first with the code form beneath.
+**"Continue with {Org}" (delegated):** When `<org_auth_context>` says delegated sign-in is available, a single "Continue with {Org}" button is the primary path — often the *only* one — and there's no verification-code step to design at all (the platform handles it). Give the button real weight in the branded login moment rather than treating it as a secondary option, and use the exact organization name. If the org also allows code methods, delegated goes first with the code form beneath. On return from the handshake (and on dashboard launch), render a brief "Completing sign-in…" state driven by `auth.authStatus === 'authenticating'` — never the login form — so a successful sign-in doesn't flash the logged-out screen.
 
 **Verification code input:** The 6-digit code entry is the critical moment. Prefer to design it as individual digit boxes (not a single text input), with auto-advance between digits, a beautiful animation and auto-submit on paste, and clear visual feedback. The boxes should be large enough to tap easily on mobile. Show a subtle animation on successful verification. Error states should be inline and immediate, not a separate alert. Make sure there is no layout shift when loading in the success/error states - loading spinners must never pop in below the input and shift the content, for example.
 
