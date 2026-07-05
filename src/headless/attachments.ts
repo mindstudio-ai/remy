@@ -134,14 +134,14 @@ export function buildUploadHeader(results: PersistResult[]): string {
   }
   if (succeeded.length === 1) {
     const r = succeeded[0];
-    const parts = [`[Uploaded file: ${r.localPath} (CDN: ${r.remoteUrl})`];
+    const parts = [`[Uploaded file: ${r.localPath}`];
     if (r.extractedTextPath) {
       parts.push(`extracted text: ${r.extractedTextPath}`);
     }
     return parts.join(' — ') + ']';
   }
   const lines = succeeded.map((r) => {
-    const parts = [`- ${r.localPath} (CDN: ${r.remoteUrl})`];
+    const parts = [`- ${r.localPath}`];
     if (r.extractedTextPath) {
       parts.push(`  extracted text: ${r.extractedTextPath}`);
     }

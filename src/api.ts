@@ -18,7 +18,12 @@ const log = createLogger('api');
 // Normalized message format — matches the platform's ChatMessage type.
 // The platform translates to/from provider-specific formats.
 export interface Attachment {
+  /** Transient signed GET URL for the one-time download to disk (or a legacy
+   * public CDN URL). Always present so persistAttachments can fetch. */
   url: string;
+  /** Private object key (`s3://youai-appdata-private/<appId>/…`) for private
+   * attachments. Durable — the platform re-signs it for vision each turn. */
+  key?: string;
   extractedTextUrl?: string;
   /** Original filename of the uploaded file (provided by the platform). */
   filename?: string;
