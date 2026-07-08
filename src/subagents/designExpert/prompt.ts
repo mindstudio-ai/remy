@@ -11,6 +11,7 @@
 import fs from 'node:fs';
 import { readAsset } from '../../assets.js';
 import { loadSpecIndex } from '../common/context.js';
+import { getOrgContext } from '../../orgContext.js';
 import { getSampleIndices } from './data/sampleCache.js';
 import { getFontLibrarySample, fontData } from './data/getFontLibrarySample.js';
 import {
@@ -44,6 +45,23 @@ const PROMPT_TEMPLATE = readAsset(SUBAGENT, 'prompt.md')
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
+
+/**
+ * Render the org-level design-system block for the prompt tail, when the org
+ * has one set. Facts plus soft framing: it's a foundational reference to orient
+ * toward (fetched on demand with scrapeWebUrl), not a rulebook. Returns '' when
+ * no design system is set.
+ */
+export function renderDesignSystemBlock(designSystem?: string): string {
+  if (!designSystem) {
+    return '';
+  }
+  return [
+    '<design_system>',
+    `The organization that owns this app publishes a design system at ${designSystem}. Treat it as the primary reference for this app's foundational visual language — palette, type, spacing, and the core component patterns that should feel consistent with the org's other products. Consult it for foundational decisions and fetch it with scrapeWebUrl when you need specifics (it's usually a hosted doc such as an llms.txt). It's a resource to orient toward, not a rulebook: you don't need to ground every detail in it, and app-specific or expressive choices are still yours to make.`,
+    '</design_system>',
+  ].join('\n');
+}
 
 /**
  * Build the design research prompt with session-stable samples.
@@ -82,6 +100,13 @@ export function getDesignExpertPrompt(onboardingState?: string): string {
   prompt += '\n\n<!-- cache_breakpoint -->';
   if (specContext) {
     prompt += `\n\n${specContext}`;
+  }
+
+  const designSystemBlock = renderDesignSystemBlock(
+    getOrgContext()?.designSystem,
+  );
+  if (designSystemBlock) {
+    prompt += `\n\n${designSystemBlock}`;
   }
 
   const state = onboardingState ?? 'onboardingFinished';

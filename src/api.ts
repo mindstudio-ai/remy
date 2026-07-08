@@ -544,6 +544,10 @@ export async function generateBackgroundAck(params: {
 export interface RemyContext {
   org: { name?: string };
   auth: { delegatedAvailable: boolean; requireDelegatedOnly?: boolean };
+  /** Org-level design system, present only when the org has one set — almost
+   * always a URL to a hosted resource (e.g. an llms.txt). Surfaced to the
+   * design agent, not the main agent. */
+  designSystem?: string;
 }
 
 /**
