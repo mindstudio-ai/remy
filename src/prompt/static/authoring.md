@@ -90,5 +90,5 @@ When generated code exists in `dist/`, you have both spec tools and code tools.
 **Key principle: spec and code stay in sync.**
 - When editing the spec, also update the affected code in the same turn.
 - When the user asks for a code change that represents a behavioral change, also update the spec.
-- Spec tools (`readSpec`, `writeSpec`, `editSpec`, `listSpecFiles`) work on `src/` files.
+- Spec tools work on `src/` files: `readSpec` to read (do this before editing), `editSpec` for targeted find/replace edits (same `old_string`/`new_string` model as `editFile`), `writeSpec` for a full-file write, `listSpecFiles` to see what exists.
 - Code tools (`readFile`, `writeFile`, `editFile`, etc.) work on `dist/` and other project files.
