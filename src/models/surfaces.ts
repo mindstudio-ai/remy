@@ -154,6 +154,7 @@ export const ALLOWED_MODELS_BY_TYPE: Partial<Record<ModelType, string[]>> = {
     'grok-build-0.1',
     'grok-4.5',
     'glm-5.2',
+    'muse-spark-1.1',
   ],
   // vision: undefined — unconstrained
   // image_generation: undefined — unconstrained
