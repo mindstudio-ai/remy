@@ -22,7 +22,10 @@ import {
  * Find the index of the last summary checkpoint for a given name.
  * Returns -1 if no checkpoint exists.
  */
-function findLastSummaryCheckpoint(messages: Message[], name: string): number {
+export function findLastSummaryCheckpoint(
+  messages: Message[],
+  name: string,
+): number {
   for (let i = messages.length - 1; i >= 0; i--) {
     const msg = messages[i];
     if (!Array.isArray(msg.content)) {

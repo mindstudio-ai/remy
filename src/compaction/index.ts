@@ -136,12 +136,16 @@ export async function compactConversation(
 }
 
 /**
- * Find a safe insertion point at or before the end of the messages array.
- * Walks backward from the end to find a boundary that isn't between an
- * assistant message with tool_use blocks and its tool_result messages.
+ * Find a safe boundary at or before `fromIndex` (default: end of the array).
+ * Walks backward to a point that isn't between an assistant message with
+ * tool_use blocks and its tool_result messages — used both to insert a
+ * summary checkpoint (compaction) and to cut the session for rotation.
  */
-export function findSafeInsertionPoint(messages: Message[]): number {
-  let idx = messages.length;
+export function findSafeInsertionPoint(
+  messages: Message[],
+  fromIndex: number = messages.length,
+): number {
+  let idx = fromIndex;
 
   // Walk backward past any trailing tool_result messages
   while (idx > 0) {
@@ -156,7 +160,7 @@ export function findSafeInsertionPoint(messages: Message[]): number {
 
   // If we walked back past tool_results, also skip the assistant message
   // that contains the matching tool_use blocks
-  if (idx < messages.length && idx > 0) {
+  if (idx < fromIndex && idx > 0) {
     const msg = messages[idx - 1];
     if (msg.role === 'assistant' && Array.isArray(msg.content)) {
       const hasToolUse = (msg.content as ContentBlock[]).some(
