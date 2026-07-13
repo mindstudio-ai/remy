@@ -1100,6 +1100,12 @@ export class HeadlessSession {
     }
 
     if (action === 'clear') {
+      // Reset the transient activity label before clearing. The status watcher
+      // is skipped on the first message of a fresh session (see isFirstMessage
+      // in agent.ts), so without this the just-cleared conversation's last
+      // status line lingers and reappears as the "reasoning" of the next
+      // question — looking like the old chat leaked into context when it hasn't.
+      this.emit('status', { message: '' });
       this.dispatchSimple(requestId, 'session_cleared', () =>
         this.handleClear(),
       );
