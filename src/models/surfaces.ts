@@ -156,6 +156,7 @@ export const ALLOWED_MODELS_BY_TYPE: Partial<Record<ModelType, string[]>> = {
     'glm-5.2',
     'muse-spark-1.1',
     'kimi-k2-7-code',
+    'kimi-k3',
   ],
   // vision: undefined — unconstrained
   // image_generation: undefined — unconstrained
