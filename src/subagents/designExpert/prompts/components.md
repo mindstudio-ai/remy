@@ -44,4 +44,4 @@ Forms should feel like interactions, not paperwork.
 
 ### Outdated Component Patterns to Avoid
 
-- Avoid rounded cards with a single side colored border (e.g., border-radius + a blue border-left for a draggable card) as it looks dated and generic. Consider different ways to make cards appear stateful - like icons, shadows, and colors.
+- Never make a rounded card look stateful, selected, or draggable with a colored border on one side — or any subset of sides. No `border-left`, `border-right`, `border-top`, or `border-bottom` accent, in any combination — there are no exceptions. This "rounded card + single-side colored border" look is dated, generic slop. Show state with icons, background-tint shifts, elevation/shadow, or the content's own color.
