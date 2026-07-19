@@ -544,8 +544,8 @@ export class HeadlessSession {
         });
         return;
       case 'turn_cancelled': {
-        // Cancel drains the queue (pipeline interrupted) — surfaced on the
-        // cancel command's completed event for resume/discard UX.
+        // Cancel flushes this run's chain/background follow-ups (in
+        // handleCancel) while preserving queued user messages, which run next.
         this.emit('completed', { success: false, error: 'cancelled' }, rid);
         this.completedEmitted = true;
         return;
@@ -961,7 +961,14 @@ export class HeadlessSession {
     };
   }
 
-  /** Cancel the running turn and drain the queue. Returns the drained items. */
+  /**
+   * Cancel the running turn and flush the follow-ups that belonged to it
+   * (`chain`/`background`), while preserving `source: 'user'` items — those are
+   * independent user intent, not tied to the aborted run. The preserved user
+   * messages run next: `runSingleTurn` swallows the abort, so `handleMessage`
+   * falls through to `drainQueueLoop` with `running` still held. Returns the
+   * flushed items (for the cancel command's resume/discard UX).
+   */
   private handleCancel(): QueuedMessage[] {
     if (this.currentAbort) {
       this.currentAbort.abort();
@@ -971,7 +978,7 @@ export class HeadlessSession {
       pending.resolve(USER_CANCELLED_RESULT);
       this.pendingTools.delete(id);
     }
-    return this.queue.drain();
+    return this.queue.removeWhere((item) => item.source !== 'user');
   }
 
   /**
@@ -1139,7 +1146,8 @@ export class HeadlessSession {
       const cancelled = this.handleCancel();
       // The in-flight message's completed(success:false, error:"cancelled")
       // is handled by onEvent when turn_cancelled fires. The cancel's own
-      // completed reports what was drained so the sandbox can offer resume.
+      // completed reports the flushed chain/background follow-ups (not the
+      // preserved user messages, which run next) so the sandbox can offer resume.
       this.emit(
         'completed',
         {
