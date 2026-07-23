@@ -22,6 +22,7 @@ import type { AgentState } from './agent.js';
 import { createLogger } from './logger.js';
 import { findSafeInsertionPoint } from './compaction/index.js';
 import { findLastSummaryCheckpoint } from './subagents/common/cleanMessages.js';
+import { capToolResult } from './toolResultCap.js';
 
 const log = createLogger('session');
 
@@ -65,19 +66,47 @@ export function loadSession(state: AgentState): boolean {
 }
 
 /**
- * Ensure every tool_use has a matching tool_result.
+ * Cap oversized tool results already stored in a loaded session, in place.
+ *
+ * Heals sessions poisoned before the ingestion cap existed (toolResultCap):
+ * an assistant tool block's `result` and its paired tool-result user message
+ * `content` can each hold a multi-MB blob that makes every subsequent request
+ * body exceed the gateway limit (HTTP 413). Capping on load shrinks them so the
+ * session sends again; it only trims context that was never successfully sent
+ * (the oversized turn 413'd every time), so nothing the model used is lost.
+ */
+function capOversizedResults(msg: Message): void {
+  if (msg.role === 'assistant' && Array.isArray(msg.content)) {
+    for (const block of msg.content as ContentBlock[]) {
+      if (block.type === 'tool' && typeof block.result === 'string') {
+        block.result = capToolResult(block.result);
+      }
+    }
+  } else if (
+    msg.role === 'user' &&
+    msg.toolCallId &&
+    typeof msg.content === 'string'
+  ) {
+    msg.content = capToolResult(msg.content);
+  }
+}
+
+/**
+ * Ensure every tool_use has a matching tool_result, and cap oversized results.
  *
  * If an assistant message has tool blocks in its content but the
  * following messages don't include matching tool_result entries
  * (e.g., due to a crash or cancellation bug), inject synthetic
- * error results so the API doesn't reject the conversation.
+ * error results so the API doesn't reject the conversation. Also caps any
+ * oversized tool result already in history (see capOversizedResults).
  */
 function sanitizeMessages(messages: Message[]): Message[] {
   const result: Message[] = [];
 
   for (let i = 0; i < messages.length; i++) {
-    result.push(messages[i]);
     const msg = messages[i];
+    capOversizedResults(msg);
+    result.push(msg);
 
     if (msg.role !== 'assistant' || !Array.isArray(msg.content)) {
       continue;

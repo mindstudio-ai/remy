@@ -14,7 +14,8 @@
  *   - any src/**\/*.md whose frontmatter `type` starts with design/color or design/typography
  *   - mindstudio.json
  *
- * Generation reads the full src/ tree — the gate only decides when to fire.
+ * Generation reads the full src/ tree (brand-relevant files first, capped at a
+ * char budget) — the gate only decides when to fire.
  */
 
 import fs from 'node:fs';
@@ -95,19 +96,26 @@ export async function runExtraction(
 // Gate hashing
 //////////////////////////////////////////////////////////////////////////////
 
+/**
+ * A file carries brand signal (name / color / typography) if it is the app's
+ * `src/app.md` or a `design/color*` / `design/typography*` spec. Shared by the
+ * gate hash and the corpus builder so both agree on what "brand-relevant" means.
+ */
+function isBrandRelevant(filePath: string): boolean {
+  if (filePath === path.join('src', 'app.md')) {
+    return true;
+  }
+  const { type } = parseFrontmatter(filePath);
+  return (
+    type.startsWith('design/color') || type.startsWith('design/typography')
+  );
+}
+
 function computeInputHash(): string {
   const entries: Array<{ path: string; content: string }> = [];
 
   for (const filePath of walkMdFiles('src')) {
-    if (filePath === path.join('src', 'app.md')) {
-      entries.push({ path: filePath, content: readSafe(filePath) });
-      continue;
-    }
-    const fm = parseFrontmatter(filePath);
-    if (
-      fm.type.startsWith('design/color') ||
-      fm.type.startsWith('design/typography')
-    ) {
+    if (isBrandRelevant(filePath)) {
       entries.push({ path: filePath, content: readSafe(filePath) });
     }
   }
@@ -234,19 +242,59 @@ async function extractBrand(
   return validateBrand(parsed);
 }
 
+// Max chars in the extraction corpus. The model gateway rejects prompts over
+// 1M tokens; at ~4 chars/token (the compaction heuristic) this leaves generous
+// headroom for the system prompt + JSON output. Well above a typical app's full
+// spec tree, so most corpora aren't truncated at all — the cap only guards the
+// pathological case (a mature app whose whole tree overflows the token limit),
+// which previously made brand extraction fail silently on every run.
+const BRAND_CORPUS_CHAR_LIMIT = 2_400_000;
+
+/**
+ * Assemble the full `src/` markdown tree (plus the manifest) into one corpus,
+ * ordered so brand-relevant files come first and capped at
+ * BRAND_CORPUS_CHAR_LIMIT. Prioritizing brand files guarantees the name/color/
+ * typography signal is always present even when a huge tree forces truncation —
+ * the extra files are the ones dropped, never the brand-bearing ones.
+ */
 function buildCorpus(): string {
-  const sections: string[] = [];
+  const all = walkMdFiles('src');
+  const ordered = [
+    ...all.filter(isBrandRelevant),
+    ...all.filter((f) => !isBrandRelevant(f)),
+  ];
+
+  const files: Array<{ path: string; content: string }> = [];
   const manifest = readSafe('mindstudio.json');
   if (manifest) {
-    sections.push(`## File: mindstudio.json\n\n${manifest}`);
+    files.push({ path: 'mindstudio.json', content: manifest });
   }
-  for (const filePath of walkMdFiles('src')) {
+  for (const filePath of ordered) {
     const content = readSafe(filePath);
     if (content) {
-      sections.push(`## File: ${filePath}\n\n${content}`);
+      files.push({ path: filePath, content });
     }
   }
-  return sections.join('\n\n---\n\n');
+
+  const sep = '\n\n---\n\n';
+  const sections: string[] = [];
+  let usedChars = 0;
+  for (const { path: p, content } of files) {
+    const section = `## File: ${p}\n\n${content}`;
+    const added = section.length + (sections.length > 0 ? sep.length : 0);
+    // Always include at least the top-priority file; truncate once the budget
+    // would be exceeded.
+    if (sections.length > 0 && usedChars + added > BRAND_CORPUS_CHAR_LIMIT) {
+      sections.push(
+        `(brand corpus truncated: included ${sections.length} of ${files.length} files, ` +
+          `~${(usedChars / 1024).toFixed(0)}KB; brand-relevant files were prioritized.)`,
+      );
+      break;
+    }
+    sections.push(section);
+    usedChars += added;
+  }
+  return sections.join(sep);
 }
 
 function parseJsonResponse(text: string): unknown {

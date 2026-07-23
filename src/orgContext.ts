@@ -15,6 +15,7 @@
 
 import { fetchRemyContext, type RemyContext } from './api.js';
 import type { ApiConfig } from './config.js';
+import { filterModelPicks, setOrgDefaultModels } from './models/surfaces.js';
 import { createLogger } from './logger.js';
 
 const log = createLogger('orgContext');
@@ -25,13 +26,20 @@ let cached: RemyContext | null = null;
 export async function initOrgContext(config: ApiConfig): Promise<void> {
   try {
     cached = await fetchRemyContext(config);
+    // Validate + publish org default model picks to the surfaces registry so
+    // resolveModel and the picker payloads use them as the live per-surface
+    // default. Invalid/unknown entries are dropped; absent ⇒ registry defaults.
+    const orgDefaultModels = filterModelPicks(cached?.defaultModels);
+    setOrgDefaultModels(orgDefaultModels);
     log.debug('org context loaded', {
       delegatedAvailable: cached?.auth?.delegatedAvailable ?? false,
       requireDelegatedOnly: cached?.auth?.requireDelegatedOnly ?? false,
       hasOrgName: !!cached?.org?.name,
+      orgDefaultModels,
     });
   } catch (err: any) {
     cached = null;
+    setOrgDefaultModels({});
     log.debug('org context init failed', { error: err.message });
   }
 }

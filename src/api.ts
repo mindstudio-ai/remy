@@ -548,6 +548,12 @@ export interface RemyContext {
    * always a URL to a hosted resource (e.g. an llms.txt). Surfaced to the
    * design agent, not the main agent. */
   designSystem?: string;
+  /** Org-configured default model picks: a partial surfaceId -> model ID map,
+   * omitted when the org has set none. Best-effort and unvalidated by the
+   * platform — Remy validates each entry against MODEL_SURFACES /
+   * ALLOWED_MODELS_BY_TYPE (filterModelPicks) and applies the rest as the
+   * live per-surface default (below a user's own pick). */
+  defaultModels?: Record<string, string>;
 }
 
 /**

@@ -4,8 +4,8 @@
  * Single source of truth for defaults, picker metadata, user-facing
  * labels/descriptions, and allow-lists. Every call site that needs a
  * model goes through `resolveModel(surfaceId, models, fallback)` —
- * three-tier resolution: explicit user pick > startup-time global
- * override > registry default.
+ * four-tier resolution: explicit user pick > startup-time global
+ * override > org default > registry default.
  *
  * The frontend reads this registry over the stdin protocol (shipped on
  * `session_restored` and `get_history` payloads) and renders the picker
@@ -163,13 +163,86 @@ export const ALLOWED_MODELS_BY_TYPE: Partial<Record<ModelType, string[]>> = {
 };
 
 /**
- * Three-tier resolution: explicit user pick > global startup override >
- * registry default. Always returns a non-empty string.
+ * Org-configured default model picks, validated and held for the process
+ * lifetime. Populated once at boot from remy-context via setOrgDefaultModels
+ * (see orgContext.initOrgContext). Empty when the org sets none or the fetch
+ * fails, in which case resolution and the picker behave exactly as with the
+ * registry defaults. orgContext pushes into this module (rather than surfaces
+ * importing orgContext) to avoid an import cycle.
+ */
+let orgDefaultModels: Record<string, string> = {};
+
+/** Replace the process-wide org default model picks. Pass an already-validated
+ * map (see filterModelPicks). */
+export function setOrgDefaultModels(models: Record<string, string>): void {
+  orgDefaultModels = models;
+}
+
+/**
+ * Validate a partial surfaceId -> modelId map against the registry, returning
+ * only the entries that are safe to apply. Drops any key that is not a known
+ * surface or is not user-pickable; drops any value that isn't a non-empty
+ * string or — for surfaces whose modelType has an allow-list (text) — isn't in
+ * it. vision and image_generation have no allow-list, so their values pass
+ * through. Never throws; fully-invalid input yields {}. Dropped surfaces fall
+ * back to the registry default via resolveModel, so a stale or invalid value
+ * can never break a build.
+ */
+export function filterModelPicks(
+  picks: Record<string, string> | undefined,
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!picks || typeof picks !== 'object') {
+    return out;
+  }
+  for (const [key, value] of Object.entries(picks)) {
+    if (!(key in MODEL_SURFACES)) {
+      continue; // unknown surface
+    }
+    const surface = MODEL_SURFACES[key as SurfaceId];
+    if (!surface.userPickable) {
+      continue; // internal surface (e.g. imagePromptEnhancer)
+    }
+    if (typeof value !== 'string' || value.length === 0) {
+      continue; // require a non-empty string
+    }
+    const allow = ALLOWED_MODELS_BY_TYPE[surface.modelType];
+    if (allow && !allow.includes(value)) {
+      continue; // out of allow-list (text only; vision/image_generation skip)
+    }
+    out[key] = value;
+  }
+  return out;
+}
+
+/**
+ * MODEL_SURFACES with each `default` overlaid from the org defaults (registry
+ * default where the org hasn't set that surface). This is what ships to the
+ * frontend picker, so it displays — and "reset to default" lands on — the org
+ * default. Identical to MODEL_SURFACES when no org defaults are set.
+ */
+export function getEffectiveModelSurfaces(): Record<string, ModelSurface> {
+  const out: Record<string, ModelSurface> = {};
+  for (const [id, surface] of Object.entries(MODEL_SURFACES)) {
+    const orgDefault = orgDefaultModels[id];
+    out[id] = orgDefault ? { ...surface, default: orgDefault } : { ...surface };
+  }
+  return out;
+}
+
+/**
+ * Four-tier resolution: explicit user pick > global startup override >
+ * org default > registry default. Always returns a non-empty string.
  */
 export function resolveModel(
   surfaceId: SurfaceId,
   models?: Record<string, string>,
   fallback?: string,
 ): string {
-  return models?.[surfaceId] ?? fallback ?? MODEL_SURFACES[surfaceId].default;
+  return (
+    models?.[surfaceId] ??
+    fallback ??
+    orgDefaultModels[surfaceId] ??
+    MODEL_SURFACES[surfaceId].default
+  );
 }

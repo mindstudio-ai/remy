@@ -46,6 +46,7 @@ import { parseSentinel } from './automatedActions/sentinel.js';
 import { triggerBrandExtraction } from './brandExtraction/trigger.js';
 import { resolveModel } from './models/surfaces.js';
 import { USER_CANCELLED_RESULT } from './toolRegistry.js';
+import { capToolResult } from './toolResultCap.js';
 
 const BRAND_TRIGGERING_TOOLS = new Set(['writeSpec', 'editSpec']);
 
@@ -765,7 +766,7 @@ export async function runTurn(params: {
                   }),
               });
             }
-            safeSettle(result, result.startsWith('Error'));
+            safeSettle(capToolResult(result), result.startsWith('Error'));
           } catch (err: any) {
             safeSettle(`Error: ${err.message}`, true);
           }

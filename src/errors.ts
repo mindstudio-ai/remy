@@ -17,6 +17,10 @@ const patterns: Array<[RegExp, string]> = [
   ],
   [/HTTP 40[13]/i, 'Authentication failed. Please check your API key.'],
   [
+    /HTTP 413/i,
+    'This conversation has grown too large to send in a single request. Starting a new conversation will reset the context.',
+  ],
+  [
     /HTTP 5\d\d/i,
     'The AI service is temporarily unavailable. Please try again.',
   ],

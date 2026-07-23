@@ -43,8 +43,8 @@ import {
 } from '../agent.js';
 import { loadSession, clearSession, saveSession } from '../session.js';
 import {
-  MODEL_SURFACES,
   ALLOWED_MODELS_BY_TYPE,
+  getEffectiveModelSurfaces,
   resolveModel,
 } from '../models/surfaces.js';
 import type { StdinCommand } from '../types.js';
@@ -205,7 +205,7 @@ export class HeadlessSession {
       this.emit('session_restored', {
         messageCount: this.state.messages.length,
         ...(this.state.models && { models: this.state.models }),
-        modelSurfaces: MODEL_SURFACES,
+        modelSurfaces: getEffectiveModelSurfaces(),
         allowedModelsByType: ALLOWED_MODELS_BY_TYPE,
       });
     }
@@ -956,7 +956,7 @@ export class HeadlessSession {
     saveSession(this.state);
     return {
       ...(this.state.models && { models: this.state.models }),
-      modelSurfaces: MODEL_SURFACES,
+      modelSurfaces: getEffectiveModelSurfaces(),
       allowedModelsByType: ALLOWED_MODELS_BY_TYPE,
     };
   }
@@ -1095,7 +1095,7 @@ export class HeadlessSession {
           ? { currentRequestId: this.currentRequestId }
           : {}),
         ...(this.state.models && { models: this.state.models }),
-        modelSurfaces: MODEL_SURFACES,
+        modelSurfaces: getEffectiveModelSurfaces(),
         allowedModelsByType: ALLOWED_MODELS_BY_TYPE,
         // Current queue snapshot for connect/reconnect — get_history is the
         // on-demand "current state" query. Always an array (possibly empty),
