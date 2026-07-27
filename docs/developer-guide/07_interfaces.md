@@ -320,6 +320,8 @@ Apps can receive mail at three different kinds of addresses, all delivered to th
 
 The new tiers are catchall, so `to` carries an arbitrary localpart. If your method needs to branch on it, read `input.to` (e.g. `if (input.to.startsWith('support@')) ...`).
 
+A verified custom domain (and your app's `madewithremy.com` subdomain) also **sends** outbound mail, not just receives — `sendEmail` picks your app's own-brand sender automatically, configured in the dashboard's **Email** settings.
+
 ### Config (`interface.json`)
 
 ```json

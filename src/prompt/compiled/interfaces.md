@@ -338,6 +338,8 @@ Three tiers, all delivered to the same handler method. The new tiers are catchal
 
 Because the new tiers are catchall, `to` carries an arbitrary localpart. Methods that need to branch on it should read `input.to` (e.g. `if (input.to.startsWith('support@')) ...`).
 
+A verified custom domain (and the app's `madewithremy.com` subdomain) also **sends** outbound mail, not just receives — `sendEmail` picks the app's own-brand sender automatically, configured in the dashboard's **Email** settings.
+
 ### Config (`interface.json`)
 
 ```json
