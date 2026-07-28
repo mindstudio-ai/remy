@@ -44,7 +44,19 @@ const ARCHIVE_DIR = '.logs/sessions';
 const ROTATE_THRESHOLD_BYTES = 32 * 1024 * 1024;
 const RETAIN_TAIL_BYTES = 16 * 1024 * 1024;
 
+// Retention cap for the sealed archives under ARCHIVE_DIR. Rotation is
+// archive-not-delete, so without a cap .logs/sessions/ grows forever and — via
+// the app's _draft snapshot — bloats the whole-repo tar the git server
+// re-uploads on every flush. Keep the most recent archives up to this many
+// bytes (enough scrollback for debugging/support) and drop the oldest; always
+// keep at least the newest archive, even if it alone exceeds the budget.
+const ARCHIVE_RETENTION_BYTES = 64 * 1024 * 1024;
+
 export function loadSession(state: AgentState): boolean {
+  // Heal already-bloated apps on boot: enforce the archive cap once per
+  // process, before touching the live file. Runs on both surfaces — headless
+  // and TUI both call loadSession once at startup.
+  pruneArchives();
   try {
     const raw = fs.readFileSync(SESSION_FILE, 'utf-8');
     const data = JSON.parse(raw);
@@ -179,7 +191,77 @@ function archiveMessages(
   }
   fs.writeFileSync(dest, JSON.stringify(payload), 'utf-8');
   log.info('Session archived', { label, dest, messageCount: messages.length });
+  pruneArchives();
   return dest;
+}
+
+/**
+ * Enforce ARCHIVE_RETENTION_BYTES over ARCHIVE_DIR: keep the newest archives
+ * whose cumulative size stays under the budget (always keeping at least the
+ * newest), delete the rest oldest-first.
+ *
+ * Sorts by the ISO timestamp embedded in the filename, NOT mtime — `git
+ * restore` on a fresh VM boot rewrites every archive with the same restore-time
+ * mtime, which would make a boot-time prune evict arbitrary files. The filename
+ * timestamp is restore-stable.
+ *
+ * Best-effort and silent on a missing dir: a prune failure must never abort a
+ * rotation or crash a turn (rotate() does not wrap its archiveMessages call).
+ */
+function pruneArchives(): void {
+  try {
+    const entries = fs
+      .readdirSync(ARCHIVE_DIR)
+      .filter((name) => /^(cleared|rotated)-.*\.json$/.test(name));
+    if (entries.length <= 1) {
+      return;
+    }
+
+    // Newest first, by the timestamp in the filename (label prefix stripped).
+    const sortKey = (name: string): string =>
+      name.replace(/^(cleared|rotated)-/, '');
+    const archives = entries
+      .map((name) => ({
+        name,
+        size: fs.statSync(path.join(ARCHIVE_DIR, name)).size,
+      }))
+      .sort((a, b) => sortKey(b.name).localeCompare(sortKey(a.name)));
+
+    // Keep the newest archives up to the byte budget (always at least one);
+    // everything from the cutoff onward is older and gets deleted.
+    let kept = 0;
+    let cut = archives.length;
+    for (let i = 0; i < archives.length; i++) {
+      if (i === 0 || kept + archives[i].size <= ARCHIVE_RETENTION_BYTES) {
+        kept += archives[i].size;
+      } else {
+        cut = i;
+        break;
+      }
+    }
+
+    let removed = 0;
+    let freed = 0;
+    for (let i = cut; i < archives.length; i++) {
+      try {
+        fs.unlinkSync(path.join(ARCHIVE_DIR, archives[i].name));
+        freed += archives[i].size;
+        removed++;
+      } catch {
+        // best-effort per file
+      }
+    }
+
+    if (removed > 0) {
+      log.info('Session archives pruned', {
+        removed,
+        freedBytes: freed,
+        keptBytes: kept,
+      });
+    }
+  } catch {
+    // Missing dir or unreadable — nothing to prune.
+  }
 }
 
 /**
