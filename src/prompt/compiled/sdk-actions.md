@@ -61,7 +61,7 @@ result.$billingCost;         // cost in credits (if applicable)
 
 | Action | What it does | Key input | Key output |
 |--------|-------------|-----------|------------|
-| `sendEmail` | Send an email | `to`, `subject`, `body` | `messageId` |
+| `sendEmail` | Send an email (own-brand sender auto-selected) | `to`, `subject`, `body`, `cc?`, `bcc?`, `from?`, `replyTo?`, `inReplyTo?`, `references?`, `bodyType?`, `attachments?` | `recipients`, `cc`, `bcc`, `from` |
 | `sendSMS` | Send a text message | `to`, `message` | `messageId` |
 | `postToSlackChannel` | Post to Slack | `channel`, `message` | — |
 

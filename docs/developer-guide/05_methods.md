@@ -141,11 +141,21 @@ const { imageUrl } = await mindstudio.generateImage({
   prompt: 'A professional headshot placeholder',
 });
 
-// Send email
+// Send email — own-brand sender auto-selected (custom domain / subdomain / Remy default)
 await mindstudio.sendEmail({
   to: 'user@example.com',
   subject: 'Your invoice',
-  body: content,
+  body: content, // markdown or HTML, auto-detected; bodyType overrides. cc/bcc/replyTo/attachments also supported
+});
+
+// Reply in-thread to an inbound email (fields come from the email interface's input)
+await mindstudio.sendEmail({
+  to: input.replyTo ?? input.from,
+  subject: `Re: ${input.subject}`,
+  body: reply,
+  inReplyTo: input.messageId ?? undefined,
+  references: input.messageId ? [...input.references, input.messageId] : input.references,
+  cc: input.cc, // reply-all
 });
 
 // Upload files

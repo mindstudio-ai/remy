@@ -339,14 +339,23 @@ A verified custom domain (and your app's `madewithremy.com` subdomain) also **se
 
 ```ts
 {
-  to: string;            // full recipient address; localpart is arbitrary on catchall tiers
-  from: string;          // bare address, extracted from "Name <a@b>" form
-  subject: string;       // 'No Subject' if missing
-  message: string;       // plain text body, falls back to HTML if text is missing; 'No Body' if neither was sent
-  html: string;          // HTML body, or '' when text-only
-  attachments: string[]; // CDN URLs — already uploaded by the platform
+  to: string;               // full recipient address; localpart is arbitrary on catchall tiers
+  from: string;             // bare sender address, extracted from "Name <a@b>" form
+  fromName: string | null;  // sender display name, or null
+  subject: string;          // 'No Subject' if missing
+  message: string;          // plain-text body, falls back to HTML if text is missing; 'No Body' if neither was sent
+  html: string;             // HTML body, or '' when text-only
+  attachments: string[];    // CDN URLs — already uploaded by the platform
+  messageId: string | null; // this email's Message-ID, angle-bracketed (<id@host>)
+  inReplyTo: string | null; // Message-ID this email is replying to, if any
+  references: string[];     // prior Message-IDs in the thread (angle-bracketed); [] if none
+  replyTo: string | null;   // Reply-To address — reply here, not `from`, when set
+  cc: string[];             // Cc recipient addresses
+  date: string | null;      // original send time, ISO-8601
 }
 ```
+
+To reply in-thread, feed these into `sendEmail`: set `inReplyTo` to the incoming `messageId` and `references` to `[...references, messageId]`. Send to `replyTo` when it's set, otherwise `from`. `sendEmail` returns `{ recipients, cc, bcc, from }` (who it sent to + the sender used); it does not return the sent message's own `Message-ID`, so thread off *inbound* mail, not off messages you sent.
 
 Max inbound size is 25 MB total. Oversized messages are rejected by the platform before the method runs.
 
