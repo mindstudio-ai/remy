@@ -99,13 +99,24 @@ function parseFrontmatter(filePath: string): {
 /**
  * Load plan status from .remy-plan.md if it exists.
  * Returns a behavioral prompt section based on the plan's frontmatter status.
+ *
+ * The pending note is onboarding-aware. During `intake` the plan on disk is
+ * the *initial* plan, and it is approved out-of-band (the user presses "Start
+ * Building", which arrives as an `approveInitialPlan` automated action driving
+ * the whole build chain) — NOT by the agent reading a chat "ok" and calling
+ * updatePlanStatus itself. Every other phase uses the normal chat-approval
+ * flow. Passing the onboarding state lets us give the right instruction instead
+ * of one generic note that tells the agent to self-approve during intake too.
  */
-export function loadPlanStatus(): string {
+export function loadPlanStatus(onboardingState?: string): string {
   try {
     const content = fs.readFileSync('.remy-plan.md', 'utf-8');
     const match = content.match(/^---\n([\s\S]*?)\n---/);
     const status = match?.[1]?.match(/^status:\s*(.+)$/m)?.[1]?.trim();
 
+    if (status === 'pending' && onboardingState === 'intake') {
+      return `\n<pending_initial_plan>\nThis is your initial plan, proposed via writePlan and awaiting the user's decision. The user approves it by pressing "Start Building" — you'll get an approveInitialPlan message when they do, and it will tell you to begin. Until then, stay in intake: keep discussing, and revise with writePlan if the user asks. Don't start building on your own, even if the user says "looks good" in chat.\n</pending_initial_plan>`;
+    }
     if (status === 'pending') {
       return `\n<pending_plan>\nYou have a pending implementation plan in .remy-plan.md awaiting user approval. Do NOT begin implementing the plan until the user approves it. You may continue chatting, answering questions, and revising the plan if asked. To revise, call writePlan again with updated content. When the user approves the plan (via chat or any other signal), call updatePlanStatus with status "approved" before beginning any implementation work.\n</pending_plan>`;
     }

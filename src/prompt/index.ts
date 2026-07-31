@@ -181,7 +181,7 @@ The user is currently in ${viewContext?.mode ?? 'code'} mode.
 ${viewContext?.activeFile ? `Active file: ${viewContext.activeFile}` : ''}
 </view_context>
 
-${loadPlanStatus()}
+${loadPlanStatus(onboardingState)}
 `;
 
   return resolveIncludes(template);
