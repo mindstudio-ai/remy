@@ -68,9 +68,10 @@ export const BROWSER_TOOLS: ToolDefinition[] = [
                   'styles',
                   'screenshotFullPage',
                   'screenshotViewport',
+                  'setViewport',
                 ],
                 description:
-                  'snapshot: accessibility tree of the page (waits for network to settle). click: click an element (animated cursor, full event sequence). type: type text into input (one char at a time, works with React/Vue/Svelte). select: select a dropdown option by text. wait: wait for an element to appear (polls 100ms, waits for network). navigate: navigate to a URL within the app (waits for load, subsequent steps run on new page). evaluate: run JS in the page. styles: read computed CSS styles from elements (pass properties array with camelCase names, or omit for defaults). screenshotFullPage: full-page viewport-stitched screenshot (returns CDN url with dimensions). screenshotViewport: screenshot of just the visible viewport — pass `scrollToSelector` (or `scrollY`) on this step to scroll a section into view and capture it in one atomic step (no separate scroll needed).',
+                  'snapshot: accessibility tree of the page (waits for network to settle). click: click an element (animated cursor, full event sequence). type: type text into input (one char at a time, works with React/Vue/Svelte). select: select a dropdown option by text. wait: wait for an element to appear (polls 100ms, waits for network). navigate: navigate to a URL within the app (waits for load, subsequent steps run on new page). evaluate: run JS in the page. styles: read computed CSS styles from elements (pass properties array with camelCase names, or omit for defaults). screenshotFullPage: full-page viewport-stitched screenshot (returns CDN url with dimensions). screenshotViewport: screenshot of just the visible viewport — pass `scrollToSelector` (or `scrollY`) on this step to scroll a section into view and capture it in one atomic step (no separate scroll needed). setViewport: switch the browser between desktop and mobile rendering (pass `mode`: "desktop" or "mobile"). Reloads the page so responsive layouts, media queries, and matchMedia re-evaluate — use it to QA mobile/responsive views.',
               },
               ref: {
                 type: 'string',
@@ -132,6 +133,12 @@ export const BROWSER_TOOLS: ToolDefinition[] = [
                 type: 'number',
                 description:
                   'For screenshotViewport: absolute Y offset to scroll to before the shot, when no selector is available.',
+              },
+              mode: {
+                type: 'string',
+                enum: ['desktop', 'mobile'],
+                description:
+                  'For setViewport: the rendering mode to switch to. "mobile" emulates a phone (narrow width, touch, device pixel ratio); "desktop" is the standard wide viewport.',
               },
             },
             required: ['command'],

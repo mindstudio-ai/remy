@@ -44,6 +44,7 @@ Note: the snapshot concatenates inline text and strips whitespace. If you need t
 - `evaluate`: Run arbitrary JavaScript in the page and return the result.
 - `styles`: Read computed CSS styles from page elements. Pass a `properties` array with camelCase CSS property names (e.g., `["backgroundColor", "borderRadius", "fontSize"]`). Omit `properties` for a default set covering colors, typography, spacing, borders, shadows, dimensions, and layout. Uses the same targeting as click/type (ref, text, role, label, selector). Omit the target to get styles for all elements from the last snapshot.
 - `screenshotViewport`: Take a screenshot of the visible viewport. Returns CDN url with full text analysis and dimensions. To capture a specific section, set `scrollToSelector` (a CSS selector) — or `scrollY` (an absolute offset) — on this same step; it scrolls the target into view and captures it atomically, so you do NOT need a separate scroll step. Do not use if you can get what you need with other tools - only use when you need to visually see the viewport.
+- `setViewport`: Switch the browser between desktop and mobile rendering. Set `mode` to `"desktop"` or `"mobile"`. Mobile emulates a phone (390-wide, touch, device pixel ratio 2); desktop is the standard wide viewport. This reloads the page so media queries, responsive layouts, and `matchMedia` re-evaluate — the reload clears in-page state, so switch before you set up the state you want to inspect. The mode persists across navigations within a run. Each run starts in the app's default mode, so only use this when you need to check the other one.
 
 ### Element targeting (tried in order)
 
@@ -114,6 +115,16 @@ Capture a specific below-the-fold section (scroll + capture in one atomic step):
 {
   "steps": [
     { "command": "screenshotViewport", "scrollToSelector": "#pricing" }
+  ]
+}
+```
+
+Check the mobile layout of a page:
+```json
+{
+  "steps": [
+    { "command": "setViewport", "mode": "mobile" },
+    { "command": "screenshotViewport" }
   ]
 }
 ```

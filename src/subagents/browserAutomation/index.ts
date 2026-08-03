@@ -50,6 +50,21 @@ export async function runBrowserAutomation(
 ): Promise<BrowserAutomationResult> {
   const release = await acquireBrowserLock();
   try {
+    // Start every run from the app's default viewport so a prior run's
+    // desktop/mobile switch (via the `setViewport` browserCommand step) never
+    // leaks into this run's snapshots. Best-effort: if the browser is
+    // unavailable the sub-agent reports the run inconclusive when it first tries
+    // a command, so don't fail the run on the reset.
+    try {
+      await sidecarRequest(
+        '/set-viewport',
+        { mode: 'default' },
+        { timeout: 20000 },
+      );
+    } catch {
+      // Non-fatal — proceed with the run regardless.
+    }
+
     // Viewport captures happen as `screenshotViewport` steps inside
     // `browserCommand` results (an external tool), which the runner can't stash
     // as an artifact. Harvest the last one here so it can be surfaced below.
