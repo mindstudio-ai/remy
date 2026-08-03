@@ -3,7 +3,7 @@
 import fs from 'node:fs/promises';
 import type { Tool } from '../index.js';
 
-const DEFAULT_MAX_LINES = 500;
+const DEFAULT_WINDOW = 500;
 
 /**
  * Check if a buffer likely contains binary content by looking for null bytes
@@ -24,7 +24,7 @@ export const readFileTool: Tool = {
   definition: {
     name: 'readFile',
     description:
-      "Read a file's contents with line numbers. Always read a file before editing it — never guess at contents. For large files, consider using symbols first to identify the relevant section, then use offset and maxLines to read just that section. Line numbers in the output correspond to what editFile expects. Defaults to first 500 lines. Use a negative offset to read from the end of the file (e.g., offset: -50 reads the last 50 lines).",
+      "Read a file's contents with line numbers. Always read a file before editing it — never guess at contents. By default returns the first 500 lines. To read a specific range, pass startLine and endLine (1-indexed, inclusive) — e.g. to read lines 253–343, pass startLine: 253, endLine: 343. To read the end of a file or log, pass tail (the number of lines from the end). Line numbers in the output correspond to what editFile expects. For a large file, locate the relevant section first (symbols or grep), then read just that range.",
     inputSchema: {
       type: 'object',
       properties: {
@@ -32,15 +32,20 @@ export const readFileTool: Tool = {
           type: 'string',
           description: 'The file path to read, relative to the project root.',
         },
-        offset: {
+        startLine: {
           type: 'number',
           description:
-            'Line number to start reading from (1-indexed). Use a negative number to read from the end (e.g., -50 reads the last 50 lines). Defaults to 1.',
+            'First line to read (1-indexed, inclusive). Defaults to 1. Pair with endLine to read an exact range — e.g. startLine: 253, endLine: 343 reads lines 253–343.',
         },
-        maxLines: {
+        endLine: {
           type: 'number',
           description:
-            'Maximum number of lines to return. Defaults to 500. Set to 0 for no limit.',
+            'Last line to read (1-indexed, inclusive). Defaults to a 500-line window from startLine, capped at the end of the file. Use with startLine to read an exact range.',
+        },
+        tail: {
+          type: 'number',
+          description:
+            'Read only the last N lines of the file (useful for logs). When set, startLine and endLine are ignored.',
         },
       },
       required: ['path'],
@@ -63,28 +68,48 @@ export const readFileTool: Tool = {
       const content = buffer.toString('utf-8');
       const allLines = content.split('\n');
       const totalLines = allLines.length;
-      const maxLines =
-        input.maxLines === 0 ? Infinity : input.maxLines || DEFAULT_MAX_LINES;
+
+      const tail =
+        input.tail != null ? Math.floor(Number(input.tail)) : undefined;
 
       let startIdx: number;
-      if (input.offset && input.offset < 0) {
-        // Negative offset: read from end
-        startIdx = Math.max(0, totalLines + input.offset);
+      let endIdxExclusive: number;
+
+      if (tail != null && tail > 0) {
+        // Read the last N lines.
+        startIdx = Math.max(0, totalLines - tail);
+        endIdxExclusive = totalLines;
       } else {
-        startIdx = Math.max(0, (input.offset || 1) - 1);
+        const startLine = Math.max(1, Math.floor(Number(input.startLine) || 1));
+        startIdx = startLine - 1;
+
+        if (startIdx >= totalLines) {
+          return `${input.path} has ${totalLines} lines — startLine ${startLine} is past the end of the file.`;
+        }
+
+        if (input.endLine != null) {
+          // Inclusive end line, clamped to [startLine, EOF].
+          const endLine = Math.min(
+            totalLines,
+            Math.max(startLine, Math.floor(Number(input.endLine))),
+          );
+          endIdxExclusive = endLine;
+        } else {
+          endIdxExclusive = Math.min(startIdx + DEFAULT_WINDOW, totalLines);
+        }
       }
 
-      const sliced = allLines.slice(startIdx, startIdx + maxLines);
+      const sliced = allLines.slice(startIdx, endIdxExclusive);
 
       const numbered = sliced
         .map((line, i) => `${String(startIdx + i + 1).padStart(4)} ${line}`)
         .join('\n');
 
       let result = numbered;
-      const endLine = startIdx + sliced.length;
       const displayStart = startIdx + 1;
-      if (endLine < totalLines) {
-        result += `\n\n(showing lines ${displayStart}–${endLine} of ${totalLines} — use offset and maxLines to read more)`;
+      const displayEnd = startIdx + sliced.length;
+      if (displayStart > 1 || displayEnd < totalLines) {
+        result += `\n\n(showing lines ${displayStart}–${displayEnd} of ${totalLines} — pass startLine/endLine to read a different range)`;
       }
 
       return result;

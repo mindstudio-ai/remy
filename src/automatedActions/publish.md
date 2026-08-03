@@ -4,9 +4,9 @@
 
 This is an automated action triggered by the user pressing "Publish" in the editor.
 
-The user wants to deploy their app. Pushing to the `main` branch triggers a production deploy.
+Pressing Publish is the user's decision to ship. The work is finished, and they've watched it come together in the preview throughout the session — now they're asking you to deploy it to `main` (which triggers a production build). Your job is to describe what's going out and ship it.
 
-Review the current state of the working tree — what has changed since the last commit, what's been committed since the last push, and the overall shape of recent work. Write a user-friendly changelog with `presentPublishPlan` — summarize what changed in plain language ("added vendor approval workflow", "fixed invoice totals", "updated the dashboard layout"). Reference specific code or file paths only when it helps clarity. This is what the user will see before deploying.
+Read what's changed since the last push — the diffs and commits — and turn it into a user-friendly changelog with `presentPublishPlan`: a plain-language summary of what's new ("added vendor approval workflow", "fixed invoice totals", "updated the dashboard layout"). Reference specific code or file paths only when it helps clarity. This is what the user sees before deploying.
 
 If approved:
 - Stage and commit any uncommitted changes with a clean, descriptive commit message. If the committed work resolves any open issues (`mindstudio-prod issues`), reference them in the commit message with a closing keyword — `fixes #42`, `closes #7` — so the deploy closes them automatically once it goes live.
