@@ -158,6 +158,7 @@ export const ALLOWED_MODELS_BY_TYPE: Partial<Record<ModelType, string[]>> = {
     'muse-spark-1.1',
     'kimi-k2-7-code',
     'kimi-k3',
+    'deepseek-v4-flash-0731',
   ],
   // vision: undefined — unconstrained
   // image_generation: undefined — unconstrained
