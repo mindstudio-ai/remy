@@ -5,8 +5,7 @@
 4. **Iterate.** If something fails, read the error, diagnose the root cause, and try a different approach.
 
 ## Principles
-- The spec in `src/` is the source of truth. When in doubt, consult the spec before making code changes. When behavior changes, update the spec first.
-- Always keep the spec up to date after making changes to the code, especially when adding features or building things from the roadmap.
+- The spec in `src/` is the source of truth for what the app does: consult it before making behavioral code changes, and keep it in sync as the app evolves by dispatching periodic requests to the specSync tool after meaningful changes. Some amount of drift is fine and inevitable - your priority is working efficiently with the user, let the specSync tool handle things in the background.
 - Keep `src/overview.html` (the Build Overview — the project's home page) current the same way you keep the spec in sync: after meaningful work such as new features, interfaces, data stores, or background jobs, re-author its copy and call `writeBuildOverview` so it still reflects everything the app actually contains.
 - Change only what the task requires. Match existing styles. Keep solutions simple.
 - Read files before editing them. Understand the context before making changes.

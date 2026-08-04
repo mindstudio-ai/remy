@@ -89,6 +89,22 @@ const USER_BLOCKING_EXTERNAL_TOOLS = new Set([
   'confirmDestructiveAction',
 ]);
 
+/**
+ * Whether a tool call runs in the background — either the model set the
+ * `background` input flag, or the tool is inherently background-only
+ * (`Tool.backgroundOnly`). Background calls stay registered past the turn
+ * (the sub-agent runner owns their lifecycle) and render a background
+ * indicator in the UI.
+ */
+function isBackgroundCall(tc: {
+  name: string;
+  input: Record<string, any>;
+}): boolean {
+  return Boolean(
+    tc.input?.background || getToolByName(tc.name)?.backgroundOnly,
+  );
+}
+
 export type { AgentEvent, AgentState, ExternalToolResolver } from './types.js';
 import type { AgentEvent, AgentState, ExternalToolResolver } from './types.js';
 
@@ -508,16 +524,18 @@ export async function runTurn(params: {
           }
 
           case 'tool_use': {
+            const tool = getToolByName(event.name);
             contentBlocks.push({
               type: 'tool',
               id: event.id,
               name: event.name,
               input: event.input,
               startedAt: event.ts,
-              ...(event.input.background && { background: true }),
+              ...((event.input.background || tool?.backgroundOnly) && {
+                background: true,
+              }),
             });
             const acc = toolInputAccumulators.get(event.id);
-            const tool = getToolByName(event.name);
             const wasStreamed = acc?.started ?? false;
             const isInputStreaming = !!tool?.streaming?.partialInput;
             log.info('Tool received', {
@@ -801,7 +819,7 @@ export async function runTurn(params: {
         const r = await resultPromise;
         // Background tools stay registered — the sub-agent runner manages
         // their lifecycle and unregisters on completion.
-        if (!tc.input.background) {
+        if (!isBackgroundCall(tc)) {
           toolRegistry?.unregister(tc.id);
         }
 

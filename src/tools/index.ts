@@ -67,6 +67,11 @@ export interface Tool {
    * true = results are ephemeral (file contents, diffs, search results, terminal output).
    * false = results contain decisions, guidance, or user input that should persist. */
   clearable: boolean;
+  /** Tools that only ever run in the background — dispatched detached, returning
+   * an immediate ack while work continues. Unlike the opt-in `background: true`
+   * input flag (which the model chooses per call), this is inherent to the tool,
+   * so the runtime treats every call as backgrounded regardless of input. */
+  backgroundOnly?: boolean;
   execute: (
     input: Record<string, any>,
     context?: ToolExecutionContext,
@@ -136,6 +141,7 @@ import { designExpertTool } from '../subagents/designExpert/index.js';
 import { productVisionTool } from '../subagents/productVision/index.js';
 import { codeSanityCheckTool } from '../subagents/codeSanityCheck/index.js';
 import { copyEditorTool } from '../subagents/copyEditor/index.js';
+import { specSyncTool } from '../subagents/specSync/index.js';
 import { scrapeWebUrlTool } from './common/scrapeWebUrl.js';
 import { buildOverviewTool } from './spec/writeBuildOverview.js';
 
@@ -155,6 +161,7 @@ const ALL_TOOLS: Tool[] = [
   productVisionTool,
   codeSanityCheckTool,
   copyEditorTool,
+  specSyncTool, // no-ops until onboardingFinished; kept here so the tool list stays cache-stable
   buildOverviewTool,
   compactConversationTool,
   // Post-onboarding
@@ -203,6 +210,7 @@ export const SUBAGENT_TOOL_NAMES = new Set([
   'productVision',
   'codeSanityCheck',
   'copyEditor',
+  'specSync',
   'runAutomatedBrowserTest',
   'askMindStudioSdk',
 ]);

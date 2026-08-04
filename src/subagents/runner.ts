@@ -56,6 +56,12 @@ export interface SubAgentConfig {
   history?: Message[];
   /** Run in background — return initial response immediately, continue working. */
   background?: boolean;
+  /** Optional FIFO lock acquired around the (background) run so concurrent
+   * dispatches of the same agent serialize instead of running at once. Acquired
+   * inside the detached work — after the ack is generated — so a queued dispatch
+   * still returns its ack immediately and only its work waits its turn. Returns
+   * a `release` to call when the run finishes. */
+  acquireLock?: () => Promise<() => void>;
   /** Called when a backgrounded sub-agent finishes all its work. */
   onBackgroundComplete?: (result: SubAgentResult) => void;
   /** Tool names whose last result (parsed as JSON) should be stashed in result.artifacts. */
@@ -91,6 +97,7 @@ export async function runSubAgent(
     requestId,
     history,
     background,
+    acquireLock,
     onBackgroundComplete,
     captureArtifacts,
   } = config;
@@ -586,8 +593,18 @@ export async function runSubAgent(
     task,
   });
 
-  // Run detached — deliver result via callback when done.
-  wrapRun()
+  // Run detached — deliver result via callback when done. When an acquireLock
+  // is supplied, the run serializes behind any prior holder (FIFO queue): the
+  // ack above already returned, so only the actual work waits its turn.
+  const runDetached = async (): Promise<SubAgentResult> => {
+    const release = acquireLock ? await acquireLock() : null;
+    try {
+      return await wrapRun();
+    } finally {
+      release?.();
+    }
+  };
+  runDetached()
     .then((finalResult) => {
       toolRegistry?.unregister(parentToolId);
       onBackgroundComplete?.(finalResult);
