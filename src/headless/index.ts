@@ -516,7 +516,16 @@ export class HeadlessSession {
         this.emit('turn_started', {}, rid);
         return;
       case 'user_message':
-        this.emit('user_message', { text: e.text }, rid);
+        this.emit(
+          'user_message',
+          {
+            text: e.text,
+            // Forward attachments so queued voice/image/file sends render live;
+            // otherwise the bubble is blank until a get_history refresh.
+            ...(e.attachments && { attachments: e.attachments }),
+          },
+          rid,
+        );
         return;
 
       // Terminal events — translate to `completed`.

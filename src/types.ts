@@ -5,7 +5,7 @@
  * tools/index.ts.
  */
 
-import type { Message } from './api.js';
+import type { Message, Attachment } from './api.js';
 
 // Events emitted to the UI layer
 export type AgentEvent =
@@ -56,7 +56,14 @@ export type AgentEvent =
       input: Record<string, any>;
       parentToolId?: string;
     }
-  | { type: 'user_message'; text: string; hidden?: boolean }
+  | {
+      type: 'user_message';
+      text: string;
+      hidden?: boolean;
+      /** Carried through so the live event has parity with get_history —
+       * without it, queued voice/image/file sends render blank until refresh. */
+      attachments?: Attachment[];
+    }
   | { type: 'turn_started' }
   | {
       type: 'turn_done';

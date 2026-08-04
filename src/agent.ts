@@ -203,6 +203,9 @@ export async function runTurn(params: {
     type: 'user_message',
     text: userMessage,
     hidden: hidden || undefined,
+    // Include attachments so the live event can render a queued voice/image/file
+    // bubble; a voice message has empty text and the transcript lives here.
+    ...(hasAttachments && { attachments }),
   });
 
   // Skip status labels on the very first message — too little context to
