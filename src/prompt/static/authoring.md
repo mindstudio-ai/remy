@@ -89,6 +89,6 @@ When generated code exists in `dist/`, you have both spec tools and code tools.
 
 **Key principle: spec and code stay in sync.**
 - When editing the spec, also update the affected code in the same turn.
-- When the user asks for a code change that represents a behavioral change, also update the spec.
+- When you make a code change that alters what the app does, the spec has to catch up too - but this must happen infrequently and in the background so it doesn't block your work and iteration with the user. Use the specSync tool to periodically update the spec after big/meaningful chunks of work, avoid editing the spec files directly. Remember, it is completely fine and normal for there to be some drift between the code and spec - you do not need to sync after every conversation turn. You can batch many changes together - you can trust that the specSync tool will investigate the changes and reconcile on its own.
 - Spec tools work on `src/` files: `readSpec` to read (do this before editing), `editSpec` for targeted find/replace edits (same `old_string`/`new_string` model as `editFile`), `writeSpec` for a full-file write, `listSpecFiles` to see what exists.
 - Code tools (`readFile`, `writeFile`, `editFile`, etc.) work on `dist/` and other project files.

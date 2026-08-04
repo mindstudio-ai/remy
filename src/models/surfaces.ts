@@ -83,6 +83,14 @@ export const MODEL_SURFACES = {
     modelType: 'text',
     userPickable: true,
   },
+  specSync: {
+    default: 'claude-5-sonnet',
+    label: 'Spec Sync Agent',
+    description:
+      'Keeps your spec in sync with the code as you build, updating the affected sections in the background after changes.',
+    modelType: 'text',
+    userPickable: true,
+  },
   imageGeneration: {
     default: 'seedream-4.5',
     label: 'Image Generation',
