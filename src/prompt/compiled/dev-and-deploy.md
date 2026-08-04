@@ -42,6 +42,10 @@ The platform builds and deploys automatically:
 
 All deployed apps are available on `<uuid>.madewithremy.com` where uuid is their app ID. Apps can also be served on a custom platform subdomain (`<subdomain>.madewithremy.com`) or on a fully custom domain the user owns (pointed at the platform via CNAME or A records). Configure either via the `mindstudio-prod` CLI.
 
+### Post-Deploy Diagnostics
+
+Every live deploy runs an automated Lighthouse audit of the app. Pull it via `mindstudio-prod diagnostics get` CLI when the user wants to evaluate frontend performance. It runs async after the build completes, so it won't be available right away.
+
 ### Preview Deployments
 
 Push to a non-default branch for a preview deployment — same build pipeline, but doesn't affect the live app. Useful for testing changes before merging.
