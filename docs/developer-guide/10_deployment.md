@@ -130,6 +130,17 @@ All effects are computed during build and stored on the release as `pendingEffec
 
 ---
 
+## Post-Deploy Diagnostics
+
+Every live deploy runs an automated Lighthouse audit of the app — performance, accessibility, best-practices, and SEO scores, plus runtime findings (console errors and failed network requests). Pull it via the `mindstudio-prod` CLI to find concrete issues worth fixing while iterating:
+
+- `mindstudio-prod diagnostics get` — scores + runtime findings + a distilled list of failing audits, with a signed link to the full report.
+- `mindstudio-prod diagnostics report` — the raw Lighthouse JSON for a deep dive.
+
+The audit runs **asynchronously and lands ~30–60s after the release goes live** — it is not ready the moment a deploy finishes. Immediately after deploying, `diagnostics get` returns `{"status":"pending"}`; retry a bit later, or use `diagnostics get --wait` to block until it's ready. Both default to the current live release.
+
+---
+
 ## Rollback
 
 Rollback is a git operation:

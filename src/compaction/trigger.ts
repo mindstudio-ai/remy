@@ -9,15 +9,14 @@
  * returned promise or fire-and-forget.
  *
  * Summaries are queued in a module-level array. Callers drain via
- * getPendingSummaries() when it's safe to splice into state.messages
+ * applyPendingSummaries() when it's safe to splice into state.messages
  * (i.e., when the agent is idle).
  */
 
-import { compactConversation } from './index.js';
-import { buildSystemPrompt } from '../prompt/index.js';
-import { getToolDefinitions } from '../tools/index.js';
+import { compactConversation, findSafeInsertionPoint } from './index.js';
 import { createLogger } from '../logger.js';
 import { resolveModel } from '../models/surfaces.js';
+import { saveSession } from '../session.js';
 import type { AgentState } from '../types.js';
 import type { Message } from '../api.js';
 import type { ApiConfig } from '../config.js';
@@ -30,9 +29,22 @@ const pendingSummaries: Message[] = [];
 /** The currently in-flight compaction, if any — concurrent callers join this. */
 let inflightCompaction: Promise<void> | null = null;
 
-/** Drain and return all pending summaries. */
-export function getPendingSummaries(): Message[] {
-  return pendingSummaries.splice(0);
+/**
+ * Drain pending summaries into the session at a safe point. Call when the
+ * agent is idle — splicing mid-turn can land a checkpoint between a tool_use
+ * and its results.
+ *
+ * Every mode that can start a compaction has to call this. Summaries left in
+ * the queue are billed and thrown away, and the conversation stays uncompacted.
+ */
+export function applyPendingSummaries(state: AgentState): void {
+  const summaries = pendingSummaries.splice(0);
+  if (summaries.length === 0) {
+    return;
+  }
+  const idx = findSafeInsertionPoint(state.messages);
+  state.messages.splice(idx, 0, ...summaries);
+  saveSession(state);
 }
 
 export type CompactionLifecycleEvent =
@@ -87,14 +99,9 @@ export function triggerCompaction(
   const { blocking = false, requestId, model } = opts;
   listener?.({ type: 'started', blocking, requestId });
 
-  const system = buildSystemPrompt('onboardingFinished');
-  const tools = getToolDefinitions('onboardingFinished');
-
   inflightCompaction = compactConversation(
     state.messages,
     apiConfig,
-    system,
-    tools,
     resolveModel('conversationSummarizer', state.models, model),
   )
     .then((summaries) => {
