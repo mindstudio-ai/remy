@@ -36,14 +36,22 @@ function filenameFromUrl(url: string): string {
   }
 }
 
-function resolveUniqueFilename(name: string): string {
-  if (!existsSync(join(UPLOADS_DIR, name))) {
+/**
+ * Pick a filename no other upload is using. `claimed` holds the names already
+ * handed out for this batch — the files behind them have not been downloaded
+ * yet, so the disk check alone cannot see them.
+ */
+function resolveUniqueFilename(name: string, claimed: Set<string>): string {
+  const isFree = (candidate: string) =>
+    !claimed.has(candidate) && !existsSync(join(UPLOADS_DIR, candidate));
+
+  if (isFree(name)) {
     return name;
   }
   const ext = extname(name);
   const base = name.slice(0, name.length - ext.length);
   let counter = 1;
-  while (existsSync(join(UPLOADS_DIR, `${base}-${counter}${ext}`))) {
+  while (!isFree(`${base}-${counter}${ext}`)) {
     counter++;
   }
   return `${base}-${counter}${ext}`;
@@ -71,11 +79,23 @@ export async function persistAttachments(
 
   mkdirSync(UPLOADS_DIR, { recursive: true });
 
+  // Claim every name before any download starts. Resolving inside the parallel
+  // map instead would race: no file is on disk yet while the batch resolves, so
+  // every attachment in a multi-file message picks the same name and they
+  // overwrite each other, leaving only the last one.
+  const claimed = new Set<string>();
+  const names = nonVoice.map((att) => {
+    const name = resolveUniqueFilename(
+      att.filename || filenameFromUrl(att.url),
+      claimed,
+    );
+    claimed.add(name);
+    return name;
+  });
+
   const results = await Promise.allSettled(
-    nonVoice.map(async (att): Promise<PersistResult> => {
-      const name = resolveUniqueFilename(
-        att.filename || filenameFromUrl(att.url),
-      );
+    nonVoice.map(async (att, i): Promise<PersistResult> => {
+      const name = names[i];
       const localPath = join(UPLOADS_DIR, name);
 
       const res = await fetch(att.url, {
