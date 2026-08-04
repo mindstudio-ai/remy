@@ -7,6 +7,6 @@ Write a tight, factual summary in bullet points. Cover what matters for picking 
 - Any errors hit, things tried that didn't work, or lessons learned (e.g. when fixing bugs or disambiguating intent).
 - Specific phrases or ideas the user used that feel important to preserve.
 
-Be concise — capture the state, not the play-by-play. Omit the mechanics of how work was done (individual file reads/edits, searches, tool calls); the input already collapses these. Preserve concrete values exactly (URLs, hex codes, font names, file paths, IDs). Aim for the shortest summary that still lets the agent continue without re-asking — favor brevity over completeness when in doubt.
+Be concise — capture the state, not the play-by-play. Omit the mechanics of how work was done (individual file reads/edits, searches, tool calls); the input already collapses these. Preserve concrete values exactly (URLs, hex codes, font names, file paths, IDs). Length follows from how much the agent has to carry forward: a long session with many decisions needs more than a short one. Cover everything it would otherwise have to re-ask about.
 
 Reply only with the summary and absolutely no other text.

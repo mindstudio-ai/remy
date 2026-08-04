@@ -29,10 +29,9 @@ import { initOrgContext } from '../orgContext.js';
 import { buildSystemPrompt } from '../prompt/index.js';
 import {
   triggerCompaction,
-  getPendingSummaries,
+  applyPendingSummaries,
   setCompactionListener,
 } from '../compaction/trigger.js';
-import { findSafeInsertionPoint } from '../compaction/index.js';
 import { triggerBrandExtraction } from '../brandExtraction/trigger.js';
 import { setLspBaseUrl } from '../tools/_helpers/lsp.js';
 import {
@@ -238,7 +237,13 @@ export class HeadlessSession {
         const data = event.error ? { error: event.error } : {};
         this.emit('compaction_complete', data, event.requestId);
         this.sessionStats.compactionInProgress = false;
-        this.sessionStats.lastContextSize = 0;
+        // Only a compaction that actually shrank the context may disarm the
+        // forced gate. Zeroing this on the error path too let a session whose
+        // summaries kept failing grow past the threshold unchecked, since the
+        // gate re-arms a turn late off the next call's input size.
+        if (!event.error) {
+          this.sessionStats.lastContextSize = 0;
+        }
         this.sessionStats.messageCount = this.state.messages.length;
         this.persistStats();
       }
@@ -408,21 +413,10 @@ export class HeadlessSession {
         requestId,
         model: this.opts.model,
       });
-      this.applyPendingSummaries();
+      applyPendingSummaries(this.state);
     } catch {
       // Listener already emitted compaction_complete with the error.
     }
-  }
-
-  /** Drain pending compaction summaries and insert at a safe point. */
-  private applyPendingSummaries(): void {
-    const summaries = getPendingSummaries();
-    if (summaries.length === 0) {
-      return;
-    }
-    const idx = findSafeInsertionPoint(this.state.messages);
-    this.state.messages.splice(idx, 0, ...summaries);
-    saveSession(this.state);
   }
 
   private onBackgroundComplete = (
@@ -826,7 +820,7 @@ export class HeadlessSession {
     }
 
     // Apply queued mutations — happens on both success and cancel paths
-    this.applyPendingSummaries();
+    applyPendingSummaries(this.state);
     this.applyPendingBlockUpdates();
   }
 
@@ -1224,7 +1218,7 @@ export class HeadlessSession {
           model: this.opts.model,
         });
         if (!this.running) {
-          this.applyPendingSummaries();
+          applyPendingSummaries(this.state);
         }
         this.emit('completed', { success: true }, requestId);
       } catch (err: any) {

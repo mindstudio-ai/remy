@@ -12,16 +12,17 @@
  * upfront and inserts at that index when done, so new messages that
  * arrive during generation are unaffected.
  *
- * The summarization call reuses the main conversation's system prompt
- * and tools so the API request hits the same prompt cache — avoiding
- * a full cache miss from a different system prompt.
+ * A summary the model didn't really write is worse than no compaction at
+ * all: the history it replaces is gone from every later API call, and the
+ * agent carries on with no record of what it built. So the conversation
+ * summary is validated, retried, and — if it still doesn't hold up —
+ * abandoned with an error rather than checkpointed.
  */
 
 import {
-  streamChat,
+  streamChatWithRetry,
   type Message,
   type ContentBlock,
-  type ToolDefinition,
 } from '../api.js';
 import { readAsset } from '../assets.js';
 import { SUBAGENT_TOOL_NAMES } from '../tools/index.js';
@@ -44,14 +45,13 @@ const SUMMARIZABLE_SUBAGENTS = ['visualDesignExpert', 'productVision'];
  * are generated in parallel, then inserted at the snapshot index. Messages
  * appended after the snapshot (from ongoing turns) are not affected.
  *
- * @param system - The main conversation's system prompt (reused for cache hits)
- * @param tools - The main conversation's tool definitions (reused for cache hits)
+ * Throws if the conversation had content to summarize and no usable summary
+ * came back. The caller reports that and leaves the history alone — losing
+ * the conversation is the failure worth avoiding, not skipping a compaction.
  */
 export async function compactConversation(
   messages: Message[],
   apiConfig: ApiConfig,
-  system: string | undefined,
-  tools: ToolDefinition[] | undefined,
   model: string,
 ): Promise<Message[]> {
   // Snapshot the end of the messages to summarize. The caller will
@@ -66,6 +66,9 @@ export async function compactConversation(
     messages,
     endIndex,
   );
+  // Tracked separately from `summaries` so an unusable conversation summary
+  // can be told apart from a conversation that had nothing to summarize.
+  let conversationFailed = false;
   if (conversationMessages.length > 0) {
     tasks.push(
       generateSummary(
@@ -73,24 +76,19 @@ export async function compactConversation(
         'conversation',
         CONVERSATION_SUMMARY_PROMPT,
         conversationMessages,
-        system,
-        tools,
         model,
       ).then((text) => {
         if (text) {
           summaries.push({ name: 'conversation', text });
+        } else {
+          conversationFailed = true;
         }
       }),
     );
   }
 
-  // Subagent summaries — these reuse the main conversation's system prompt
-  // and tools for cache hits, NOT the subagent's own prompt/tools. This is
-  // intentional: the main cache is most likely warm at compaction time, while
-  // the subagent's cache may have expired between invocations. The subagent
-  // summary instruction in the user message is sufficient context. If summary
-  // quality degrades for subagent-specific content, consider passing each
-  // subagent's own system prompt and tools here instead.
+  // A failed subagent summary is not fatal — that thread's history stays in
+  // place and gets another chance at the next compaction.
   for (const name of SUMMARIZABLE_SUBAGENTS) {
     const subagentMessages = getSubAgentMessagesForSummary(
       messages,
@@ -104,12 +102,14 @@ export async function compactConversation(
           name,
           SUBAGENT_SUMMARY_PROMPT,
           subagentMessages,
-          system,
-          tools,
           model,
         ).then((text) => {
           if (text) {
             summaries.push({ name, text });
+          } else {
+            log.warn('Subagent summary unusable — leaving its history intact', {
+              name,
+            });
           }
         }),
       );
@@ -117,6 +117,12 @@ export async function compactConversation(
   }
 
   await Promise.all(tasks);
+
+  if (conversationFailed) {
+    throw new Error(
+      'Could not summarize the conversation — the model did not return a usable summary. History left intact.',
+    );
+  }
 
   const checkpointMessages: Message[] = summaries.map((s) => ({
     role: 'user' as const,
@@ -339,97 +345,165 @@ function serializeForSummary(messages: Message[]): string {
 }
 
 /**
+ * Longest serialized conversation to summarize in one call, in characters.
+ * Above this the message list is split in half and each side summarized
+ * separately.
+ *
+ * The ceiling is about summary quality, not the context limit. Past roughly
+ * this much input the model stops summarizing and starts answering the
+ * conversation, so every call needs to stay well inside the range where it
+ * still does the job. ~4 chars/token puts this near 50K tokens of input.
+ */
+const CHUNK_CHAR_LIMIT = 200_000;
+
+/**
+ * Shortest believable summary, in characters.
+ *
+ * The failure this guards is the model replying to the conversation instead
+ * of summarizing it — one or two sentences, around 120 characters, which
+ * passes any non-empty check. Real summaries of a conversation worth
+ * compacting run to thousands of characters, so this sits with roughly a 3x
+ * margin either side.
+ *
+ * Deliberately flat rather than scaled to the input. A floor that shrinks
+ * with the input gets defeated by the retry below: each split halves the
+ * chunk, and a few splits in, the threshold drops under the canned reply and
+ * starts accepting it.
+ */
+const MIN_SUMMARY_CHARS = 400;
+
+/**
  * Generate a summary via LLM. Returns the summary text, or null on failure.
  *
- * When the main conversation's system prompt and tools are provided, the
- * summarization call reuses them so the request hits the same prompt cache.
- * The compaction instruction is sent as a user message instead of as the
- * system prompt.
+ * A summary that comes back too short for its input is retried once as two
+ * half-sized chunks. Splitting is the reliable escape hatch for the failure
+ * the size ceiling exists for: the model answering the conversation rather
+ * than summarizing it, which only happens on large inputs.
  */
-// Max serialized chars per summarization call. Leaves headroom for the
-// system prompt + tools + compaction instructions under the 1M-token API
-// limit (~4 chars/token → 2.4M chars ≈ 600K tokens of user content).
-const CHUNK_CHAR_LIMIT = 2_400_000;
-
 async function generateSummary(
   apiConfig: ApiConfig,
   name: string,
   compactionPrompt: string,
   messagesToSummarize: Message[],
-  mainSystem: string | undefined,
-  mainTools: ToolDefinition[] | undefined,
   model: string,
+  opts: { forceChunk?: boolean; allowRetry?: boolean } = {},
 ): Promise<string | null> {
   const serialized = serializeForSummary(messagesToSummarize);
   if (!serialized.trim()) {
     return null;
   }
 
-  // If serialized content would overflow the API context, recursively split
-  // the message list in half and summarize each side in parallel, then join
-  // the partial summaries. Without this, /compact silently fails on long
-  // conversations — exactly the case where the user most needs it to work.
-  if (serialized.length > CHUNK_CHAR_LIMIT && messagesToSummarize.length > 1) {
+  const splittable = messagesToSummarize.length > 1;
+  const allowRetry = opts.allowRetry ?? true;
+
+  if (splittable && (opts.forceChunk || serialized.length > CHUNK_CHAR_LIMIT)) {
     const mid = Math.floor(messagesToSummarize.length / 2);
+    const halves = [
+      messagesToSummarize.slice(0, mid),
+      messagesToSummarize.slice(mid),
+    ];
     log.info('Chunking summary', {
       name,
       messageCount: messagesToSummarize.length,
       serializedLength: serialized.length,
+      forced: !!opts.forceChunk,
     });
-    const [first, second] = await Promise.all([
-      generateSummary(
-        apiConfig,
-        `${name} [pt1]`,
-        compactionPrompt,
-        messagesToSummarize.slice(0, mid),
-        mainSystem,
-        mainTools,
-        model,
+    const results = await Promise.all(
+      halves.map((half, i) =>
+        generateSummary(
+          apiConfig,
+          `${name} [pt${i + 1}]`,
+          compactionPrompt,
+          half,
+          model,
+          // A split driven by size gets its children a retry of their own. A
+          // split that IS the retry does not, or a model that will not
+          // summarize at any size fans out call after call before giving up.
+          { allowRetry: opts.forceChunk ? false : allowRetry },
+        ),
       ),
-      generateSummary(
-        apiConfig,
-        `${name} [pt2]`,
-        compactionPrompt,
-        messagesToSummarize.slice(mid),
-        mainSystem,
-        mainTools,
-        model,
-      ),
-    ]);
-    const parts = [first, second].filter((p): p is string => !!p);
+    );
+    // A half with nothing to serialize yields null legitimately. A half that
+    // had content and still failed means that stretch of the conversation
+    // would vanish with no record of it, so fail the whole summary rather
+    // than hand back half of one.
+    const lost = results.some(
+      (r, i) => r === null && serializeForSummary(halves[i]).trim(),
+    );
+    if (lost) {
+      return null;
+    }
+    const parts = results.filter((p): p is string => p !== null);
     return parts.length > 0 ? parts.join('\n\n---\n\n') : null;
   }
 
   log.info('Generating summary', {
     name,
     messageCount: messagesToSummarize.length,
-    cacheReuse: !!mainSystem,
+    serializedLength: serialized.length,
   });
 
+  const summaryText = await runSummaryCall(
+    apiConfig,
+    name,
+    compactionPrompt,
+    serialized,
+    model,
+  );
+  if (summaryText === null) {
+    return null;
+  }
+
+  if (summaryText.length >= MIN_SUMMARY_CHARS) {
+    log.info('Summary generated', { name, summaryLength: summaryText.length });
+    return summaryText;
+  }
+
+  log.warn('Summary too short to be real', {
+    name,
+    summaryLength: summaryText.length,
+    minimum: MIN_SUMMARY_CHARS,
+    serializedLength: serialized.length,
+    retrying: splittable && allowRetry,
+  });
+  if (!splittable || !allowRetry) {
+    return null;
+  }
+  return generateSummary(
+    apiConfig,
+    name,
+    compactionPrompt,
+    messagesToSummarize,
+    model,
+    { forceChunk: true, allowRetry: false },
+  );
+}
+
+/** One summarization request. Returns the text, or null if the call failed. */
+async function runSummaryCall(
+  apiConfig: ApiConfig,
+  name: string,
+  compactionPrompt: string,
+  serialized: string,
+  model: string,
+): Promise<string | null> {
+  // The instruction is repeated after the conversation. A single copy above
+  // it sits tens of thousands of tokens from where generation starts, and
+  // the model finishes the transcript in character instead of summarizing
+  // it — the conversation is the last thing it read.
+  const userContent = `Conversation to summarize:\n\n${serialized}\n\n---\n\nWrite the summary of the conversation above, following your instructions.`;
+
   let summaryText = '';
-
-  // When the main system prompt is available, reuse it so the API call
-  // hits the same prompt cache as the conversation. The compaction
-  // instruction goes into the user message instead.
-  const useMainCache = !!mainSystem;
-  const system = useMainCache ? mainSystem : compactionPrompt;
-  // Always pass empty tools to the summarizer. With the main system prompt
-  // and the full agent toolset available, the model often picks `tool_use`
-  // over producing a summary, leaving summaryText empty and silently
-  // breaking /compact.
-  const tools: ToolDefinition[] = [];
-  const userContent = useMainCache
-    ? `${compactionPrompt}\n\n---\n\nConversation to summarize:\n\n${serialized}`
-    : serialized;
-
   const iterStart = Date.now();
-  for await (const event of streamChat({
+  for await (const event of streamChatWithRetry({
     ...apiConfig,
     model,
     subAgentId: 'conversationSummarizer',
-    system,
+    system: compactionPrompt,
     messages: [{ role: 'user', content: userContent }],
-    tools,
+    // Always empty. With a toolset available the model picks `tool_use` over
+    // producing a summary, leaving summaryText empty.
+    tools: [],
   })) {
     if (event.type === 'text') {
       summaryText += event.text;
@@ -457,7 +531,5 @@ async function generateSummary(
     log.warn('Empty summary generated', { name });
     return null;
   }
-
-  log.info('Summary generated', { name, summaryLength: summaryText.length });
   return summaryText.trim();
 }

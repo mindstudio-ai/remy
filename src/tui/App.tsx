@@ -13,6 +13,7 @@ import { Box, Text, useApp, useInput } from 'ink';
 import { InputPrompt } from './InputPrompt.js';
 import { MessageList, type TurnState } from './MessageList.js';
 import { runTurn, createAgentState, type AgentEvent } from '../agent.js';
+import { applyPendingSummaries } from '../compaction/trigger.js';
 import { buildSystemPrompt } from '../prompt/index.js';
 import { loadSession, clearSession } from '../session.js';
 
@@ -176,6 +177,12 @@ export function App({ apiConfig, model }: Props) {
           done: true,
         }));
       }
+
+      // The compactConversation tool runs in the background and leaves its
+      // summaries queued for whoever owns the session. The turn is over, so
+      // it is safe to splice them in now; skipping this bills for summaries
+      // and discards them.
+      applyPendingSummaries(agentState);
 
       abortRef.current = null;
       setIsRunning(false);
