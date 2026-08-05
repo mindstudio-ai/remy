@@ -1,6 +1,8 @@
 /** Run a shell command with streaming output. 120s timeout by default. Returns stdout + stderr. */
 
 import { spawn } from 'node:child_process';
+import path from 'node:path';
+import { PROJECT_ROOT } from '../../projectRoot.js';
 import type { Tool, ToolExecutionContext } from '../index.js';
 
 const DEFAULT_TIMEOUT_MS = 120_000;
@@ -26,7 +28,7 @@ export const bashTool: Tool = {
         cwd: {
           type: 'string',
           description:
-            'Working directory to run the command in. Defaults to the project root.',
+            'Working directory, relative to the project root. Defaults to the project root itself.',
         },
         timeout: {
           type: 'number',
@@ -50,7 +52,9 @@ export const bashTool: Tool = {
 
     return new Promise<string>((resolve) => {
       const child = spawn('sh', ['-c', input.command], {
-        cwd: input.cwd || undefined,
+        // Pinned rather than inherited. `undefined` here means "wherever the
+        // process happens to be", which is the project root only by luck.
+        cwd: input.cwd ? path.resolve(PROJECT_ROOT, input.cwd) : PROJECT_ROOT,
         env: { ...process.env, FORCE_COLOR: '1' },
       });
 

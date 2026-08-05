@@ -12,6 +12,7 @@
 
 import { readAsset } from '../assets.js';
 import {
+  loadProjectRoot,
   loadProjectManifest,
   loadProjectFileListing,
   loadSpecFileMetadata,
@@ -45,6 +46,7 @@ export function buildSystemPrompt(
   viewContext?: ViewContext,
 ): string {
   const projectContext = [
+    loadProjectRoot(),
     loadProjectManifest(),
     loadSpecFileMetadata(),
     loadProjectFileListing(),
