@@ -8,6 +8,18 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { PROJECT_ROOT } from '../../projectRoot.js';
+
+/**
+ * State where the project lives and that every tool already starts there.
+ *
+ * Without this the agent has to infer the root from the relative paths it
+ * sees, and a plausible-looking guess can land in a real directory that
+ * isn't the project — a container often has several.
+ */
+export function loadProjectRoot(): string {
+  return `\n## Project Root\n\`${PROJECT_ROOT}\`\n\nFile paths are relative to this directory. Every tool operates here and bash commands run it it.`;
+}
 
 /**
  * Load the project manifest (mindstudio.json) from cwd.
