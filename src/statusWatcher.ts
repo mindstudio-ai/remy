@@ -73,9 +73,12 @@ export function startStatusWatcher(config: StatusWatcherConfig): StatusWatcher {
         return;
       }
 
-      // Re-check pause: the caller may have paused while we were in
-      // flight (e.g. user-blocking external tool started mid-fetch).
-      if (pauseCount > 0) {
+      // Re-check pause AND stopped: the caller may have paused or stopped
+      // the watcher while we were awaiting the fetch/JSON (e.g. the turn
+      // ended and stop() ran during `await res.json()`). Without the stopped
+      // re-check this trailing label would emit after turn_done, leaving the
+      // frontend's agentStatusMessage populated at idle.
+      if (pauseCount > 0 || stopped || signal?.aborted) {
         return;
       }
 
