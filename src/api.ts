@@ -104,6 +104,14 @@ export interface Message {
   // echoed back on subsequent requests verbatim — never inspect or mutate.
   // Anthropic/Gemini may be absent or empty.
   providerMetadata?: Record<string, any>;
+  // Model id that produced this assistant message (authoritative provider echo
+  // from `done`, else the requested model). Assistant messages only; persisted
+  // for history attribution and stripped before the provider request.
+  model?: string;
+  // Set only when a build-plan override made this turn run on a model different
+  // from the user's normal parent model; `from` is that baseline id. Drives the
+  // "overridden" UI treatment. Absent for manual model changes.
+  modelOverride?: { from: string };
 }
 
 // Tool definition sent to the LLM — vendor-agnostic JSON Schema format

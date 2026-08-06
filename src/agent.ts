@@ -44,7 +44,7 @@ import { cleanMessagesForApi } from './subagents/common/cleanMessages.js';
 import { CLEARABLE_TOOLS } from './tools/index.js';
 import { parseSentinel } from './automatedActions/sentinel.js';
 import { triggerBrandExtraction } from './brandExtraction/trigger.js';
-import { resolveModel } from './models/surfaces.js';
+import { resolveModel, filterModelPicks } from './models/surfaces.js';
 import { USER_CANCELLED_RESULT } from './toolRegistry.js';
 import { capToolResult } from './toolResultCap.js';
 
@@ -126,6 +126,9 @@ export async function runTurn(params: {
   apiConfig: ApiConfig;
   system: string;
   model?: string;
+  /** Per-build model override from the approve message; applies to this turn's
+   * parent surface only. Not persisted — scoped to the single build turn. */
+  buildModel?: string;
   onboardingState: string;
   signal?: AbortSignal;
   onEvent: (event: AgentEvent) => void;
@@ -149,6 +152,7 @@ export async function runTurn(params: {
     apiConfig,
     system,
     model,
+    buildModel,
     onboardingState,
     signal,
     onEvent,
@@ -165,9 +169,30 @@ export async function runTurn(params: {
     .filter((t) => !CLEARABLE_TOOLS.has(t.name))
     .map((t) => t.name);
 
+  // Per-build executor model: the approve message may carry a `buildModel`
+  // that runs this build turn's parent surface on a non-default model. Scoped
+  // to this one turn (not persisted) and applied only to `parent` — subagents
+  // keep resolving their own surfaces. Validated against the text allow-list;
+  // an invalid pick falls through to the default.
+  const buildModelOverride = buildModel
+    ? filterModelPicks({ parent: buildModel }).parent
+    : undefined;
+  // Resolve the parent model once per turn (deterministic: state.models is
+  // frozen while a turn runs). `baseline` is what the user would otherwise get
+  // (including any manual pick); a build override that diverges from it is
+  // recorded as `modelOverride` so history/UI can flag it, while a manual pick
+  // — folded into `baseline` — is intentionally left unflagged.
+  const baseline = resolveModel('parent', state.models, model);
+  const parentModel = buildModelOverride ?? baseline;
+  const modelOverride =
+    buildModelOverride && buildModelOverride !== baseline
+      ? { from: baseline }
+      : undefined;
+
   log.info('Turn started', {
     requestId,
     model,
+    buildModel: buildModelOverride,
     toolCount: tools.length,
     ...(attachments &&
       attachments.length > 0 && {
@@ -175,7 +200,11 @@ export async function runTurn(params: {
       }),
   });
 
-  onEvent({ type: 'turn_started' });
+  onEvent({
+    type: 'turn_started',
+    model: parentModel,
+    ...(modelOverride && { modelOverride }),
+  });
 
   // Store the original message (with @@automated:: prefix if present) in history
   // so the frontend can identify automated messages. The prefix is stripped by
@@ -279,6 +308,9 @@ export async function runTurn(params: {
     // the assistant message so the next request can pass it back verbatim
     // (required for OpenAI Responses stateless reasoning).
     let turnProviderMetadata: Record<string, any> | undefined;
+    // Authoritative model id echoed by the adapter on this call's `done`
+    // event; persisted on the assistant message for history attribution.
+    let turnModelId: string | undefined;
 
     // Mutable state for the unified status watcher
     let subAgentText = '';
@@ -405,9 +437,7 @@ export async function runTurn(params: {
       }
     }
 
-    // Stream one LLM turn. Three-tier resolution via the registry:
-    // explicit user pick → opts.model fallback → registry default.
-    const parentModel = resolveModel('parent', state.models, model);
+    // Stream one LLM turn using the per-turn parent model resolved above.
     try {
       for await (const event of streamChatWithRetry(
         {
@@ -562,6 +592,7 @@ export async function runTurn(params: {
           case 'done':
             stopReason = event.stopReason;
             turnProviderMetadata = event.providerMetadata;
+            turnModelId = event.modelId;
             turnLlmCalls++;
             lastCallInputTokens = event.usage.inputTokens;
             lastCallCacheCreation = event.usage.cacheCreationTokens ?? 0;
@@ -633,6 +664,8 @@ export async function runTurn(params: {
           ...(turnProviderMetadata && {
             providerMetadata: turnProviderMetadata,
           }),
+          model: turnModelId ?? parentModel,
+          ...(modelOverride && { modelOverride }),
         });
       }
       onEvent({ type: 'turn_cancelled' });
@@ -653,6 +686,8 @@ export async function runTurn(params: {
           llmCalls: turnLlmCalls,
         },
         ...(turnProviderMetadata && { providerMetadata: turnProviderMetadata }),
+        model: turnModelId ?? parentModel,
+        ...(modelOverride && { modelOverride }),
       });
     }
 

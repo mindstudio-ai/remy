@@ -186,6 +186,9 @@ export async function runSubAgent(
       let currentToolNames = '';
       let lastUsage: Message['usage'] | undefined;
       let lastProviderMetadata: Record<string, any> | undefined;
+      // Authoritative model id echoed on `done`; persisted on the subagent
+      // assistant message for history attribution.
+      let lastModelId: string | undefined;
 
       const statusWatcher = startStatusWatcher({
         apiConfig,
@@ -315,6 +318,7 @@ export async function runSubAgent(
                 llmCalls: 1,
               };
               lastProviderMetadata = event.providerMetadata;
+              lastModelId = event.modelId;
               recordUsage({
                 ts: Date.now(),
                 requestId,
@@ -363,6 +367,7 @@ export async function runSubAgent(
         ...(lastProviderMetadata
           ? { providerMetadata: lastProviderMetadata }
           : {}),
+        model: lastModelId ?? model,
       });
 
       // Extract tool calls from content blocks

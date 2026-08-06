@@ -60,6 +60,7 @@ import { MessageQueue, type QueuedMessage } from './messageQueue.js';
 import { resolveAction, getActionChain } from '../automatedActions/resolve.js';
 import {
   sentinel,
+  hasSentinel,
   buildBackgroundResultsMessage,
   mergeBackgroundResultsMessages,
 } from '../automatedActions/sentinel.js';
@@ -507,7 +508,14 @@ export class HeadlessSession {
 
     switch (e.type) {
       case 'turn_started':
-        this.emit('turn_started', {}, rid);
+        this.emit(
+          'turn_started',
+          {
+            ...(e.model && { model: e.model }),
+            ...(e.modelOverride && { modelOverride: e.modelOverride }),
+          },
+          rid,
+        );
         return;
       case 'user_message':
         this.emit(
@@ -740,7 +748,14 @@ export class HeadlessSession {
 
     // Update .remy-plan.md before building the system prompt so the
     // injected <pending_plan>/<approved_plan> note reflects the new state.
-    applyPlanFileSideEffect((parsed.text as string) ?? '');
+    const rawText = (parsed.text as string) ?? '';
+    applyPlanFileSideEffect(rawText);
+    // A per-build model override rides on the approve message only; gate it to
+    // the approvePlan sentinel so it applies to the single build turn (see
+    // runTurn) and never leaks onto unrelated messages.
+    const buildModel = hasSentinel(rawText, 'approvePlan')
+      ? (parsed.buildModel as string | undefined)
+      : undefined;
 
     const onboardingState =
       (parsed.onboardingState as string) ?? 'onboardingFinished';
@@ -778,6 +793,7 @@ export class HeadlessSession {
         apiConfig: this.config,
         system,
         model: this.opts.model,
+        buildModel,
         onboardingState,
         requestId,
         signal: this.currentAbort.signal,

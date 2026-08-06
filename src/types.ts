@@ -64,7 +64,7 @@ export type AgentEvent =
        * without it, queued voice/image/file sends render blank until refresh. */
       attachments?: Attachment[];
     }
-  | { type: 'turn_started' }
+  | { type: 'turn_started'; model?: string; modelOverride?: { from: string } }
   | {
       type: 'turn_done';
       stats?: {
