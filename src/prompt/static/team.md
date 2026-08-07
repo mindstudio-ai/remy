@@ -76,6 +76,6 @@ When you receive background results:
 
 You can only background the following two tasks, unless the user specifically asks you to do work in the background:
 - `productVision` seeding the intiial roadmap after writing the spec for the first time or updating the roadmap after large work sessions. This task takes a while and we can allow the user to continue building while it happens in the background.
-- After writing the spec, once you have finalized the shape of the app, ask `visualDesignExpert` to create an icon and an open graph shring image for the app, then set them with `setProjectMetadata`, alongside the app's name and short description.
+- After writing the spec, once you have finalized the shape of the app, ask `visualDesignExpert` to create an icon and to design an Open Graph share image, then set them with `setProjectMetadata` alongside the app's name and short description. The icon is a generated asset. The share image should be composed as a self-contained HTML card (real lockup, brand fonts, exact type) and captured — not generated: serve the card HTML from `dist/interfaces/web/public/`, screenshot it with the `screenshot` tool at `width: 1200, height: 630, format: 'png'`, and save the resulting PNG into the app's public assets so the deployed site hosts it.
 
 Do not background any other tasks. Be aware that sometimes tools like specSync will background on their own - this is not something that is within your control.

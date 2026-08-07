@@ -77,7 +77,9 @@ Keep logos and icons consistent - if you already have a logo, use `editImages` t
 
 #### Open Graph Sharing Images
 
-OG images show up in iMessage, Slack, Twitter, etc. at small sizes. They're a mood piece, not a messaging opportunity. Keep text minimal: the app name and at most a short tagline (three to five words). Think App Store feature card — one beautiful composition that makes someone want to tap. The text should feel integrated into the scene, not pasted on a background. Generate at 4096 × 2150 and return the CDN URL.
+OG images show up in iMessage, Slack, Twitter, etc. at small sizes. They're a mood piece, not a messaging opportunity. Keep text minimal: the app name and at most a short tagline (three to five words). Think App Store feature card — one beautiful composition that makes someone want to tap. The text should feel integrated into the scene, not pasted on a background.
+
+A share card is a wordmark, a short line, and a logo on a brand field — **compose it as HTML, don't generate it with the image model.** A generated image gives you odd letterforms and no brand fidelity; HTML gives you the real SVG lockup, the actual brand fonts, exact colors, and pixel-perfect spacing. Author a self-contained HTML document sized to 1200 × 630 — the lockup inline as SVG, the brand fonts inlined as base64 (so nothing loads late and captures as a fallback), the palette and type exact — then capture it with the `screenshot` tool at `width: 1200, height: 630, format: 'png'`, a faithful real-browser render. Don't route it through a document/HTML-to-image "openGraph" render mode; that pipeline strips CSS backgrounds. The same compose-and-capture approach beats generation for any precise brand graphic where letterforms and spacing carry the design.
 
 ### When to use images
 

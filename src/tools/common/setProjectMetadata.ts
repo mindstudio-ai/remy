@@ -28,11 +28,11 @@ export const setProjectMetadataTool: Tool = {
         },
         iconUrl: {
           type: 'string',
-          description: 'URL for the app icon (square.',
+          description: 'URL for the app icon (square).',
         },
         openGraphShareImageUrl: {
           type: 'string',
-          description: 'URL for the Open Graph share image (1200x630).',
+          description: 'URL for the Open Graph share image (1200×630 PNG).',
         },
       },
     },

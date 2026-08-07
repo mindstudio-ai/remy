@@ -16,7 +16,7 @@ export const screenshotTool: Tool = {
   definition: {
     name: 'screenshot',
     description:
-      "Capture a screenshot of the app preview and get a description of what's on screen. Choose `fullPage`: `false` captures just the visible viewport (fast — for a specific section the page is scrolled to), `true` captures the entire page top-to-bottom (slower — for overall composition or content past the fold). Captures the settled page state — it cannot catch animations, transitions, or transient state. Optionally provide specific questions about what you're looking for. Use a bulleted list to ask many questions at once. To ask additional questions about a screenshot you have already captured, pass its URL as imageUrl to skip recapture. If the screenshot requires interaction first (logging in, clicking a tab, dismissing a modal, scrolling to a section), use the instructions param to describe the steps.",
+      "Capture a screenshot of the app preview and get a description of what's on screen. Choose `fullPage`: `false` captures just the visible viewport (fast — for a specific section the page is scrolled to), `true` captures the entire page top-to-bottom (slower — for overall composition or content past the fold). Captures the settled page state — it cannot catch animations, transitions, or transient state. Optionally provide specific questions about what you're looking for. Use a bulleted list to ask many questions at once. To ask additional questions about a screenshot you have already captured, pass its URL as imageUrl to skip recapture. If the screenshot requires interaction first (logging in, clicking a tab, dismissing a modal, scrolling to a section), use the instructions param to describe the steps. To render a fixed-size image such as an Open Graph share card, set `width` and `height` (e.g. 1200 × 630) and `format: 'png'`: the tool navigates to `path`, clips to exactly those pixel dimensions, and returns the image URL.",
     inputSchema: {
       type: 'object',
       properties: {
@@ -39,6 +39,22 @@ export const screenshotTool: Tool = {
           type: 'string',
           description:
             'Navigate to this path before capturing (e.g. "/settings", "/dashboard"). If omitted, screenshots the current page.',
+        },
+        width: {
+          type: 'number',
+          description:
+            'Exact capture width in pixels. Set together with `height` to render a fixed-size image; clips to exactly this viewport instead of the default preview size.',
+        },
+        height: {
+          type: 'number',
+          description:
+            'Exact capture height in pixels. Set together with `width`.',
+        },
+        format: {
+          type: 'string',
+          enum: ['png', 'jpeg'],
+          description:
+            "Output image format. Defaults to 'jpeg'. Use 'png' for crisp flat graphics like share cards, where JPEG artifacts show on sharp type and edges.",
         },
         instructions: {
           type: 'string',
@@ -93,6 +109,9 @@ export const screenshotTool: Tool = {
           prompt: input.prompt as string,
           path: input.path as string | undefined,
           fullPage,
+          width: input.width as number | undefined,
+          height: input.height as number | undefined,
+          format: input.format as 'png' | 'jpeg' | undefined,
           onLog: context?.onLog,
           model: resolveModel('imageAnalysis', context?.models, context?.model),
         });

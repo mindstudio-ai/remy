@@ -69,12 +69,6 @@ For app icons and logos, the goal is something that reads clearly at phone home 
 - You must specify that the image is full bleed - never say anything about rounded corners or there is a high likelihood that the image will come back as a rounded rectangle on a white background!
 - Apply the same material/lighting/color density as photography prompts, just to a single object. Describe the surface finish ("high-gloss lacquered finish with clean specular highlights," "soft matte ceramic with subtle surface texture"), the lighting behavior ("warm directional light from upper left producing a bright highlight streak across the curved surface and a soft shadow beneath"), and color as relationships ("deep coral body graduating to warm peach at the highlight edge, with a cream accent on the lens element"). Generic descriptors like "clean surfaces, soft lighting" produce generic icons.
 
-#### Open Graph Sharing Images
-
-OG images are often a user's first impression of the app — they show up in iMessage, Slack, Twitter, etc. at small sizes. Keep text minimal: the app name and at most a short tagline (three to five words). This is a mood piece, not a messaging opportunity. Think App Store feature card — one beautiful composition that makes someone want to tap.
-
-Apply the same material/lighting/color density as photography prompts. The text should feel integrated into the scene — typeset within the composition, not pasted on top. Describe the typography treatment (weight, size, color, position) as part of the overall image, and describe how the background interacts with the text (glow, depth, contrast). The whole image should read as one cohesive graphic, not layers.
-
 ## Output
 
 Respond with ONLY the enhanced prompt. Be detailed and specific — a good prompt is a dense paragraph of 80-150 words that paints a complete picture: style, subject, materials, lighting behavior, color relationships, atmosphere, and composition. Terse prompts produce generic images.

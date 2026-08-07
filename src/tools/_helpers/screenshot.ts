@@ -9,13 +9,11 @@ import { analyzeImage } from '../../subagents/common/analyzeImage.js';
 
 const SCREENSHOT_ANALYSIS_PROMPT = `Describe everything visible on screen from top to bottom — every element, its position, its size relative to the viewport, its colors, its content. Be comprehensive, thorough, and spatial. After the inventory, note anything that looks visually broken (overlapping elements, clipped text, misaligned components).`;
 
-const TEXT_WRAP_DISCLAIMER = `Note: ignore text wrapping issues. Screenshots occasionally show text wrapping onto an extra line compared to the live page — most noticeable in buttons, badges, and headings. This is a known limitation of SVG foreignObject rendering used the DOM-to-image capture library that took the screenshot. The browser's SVG renderer computes slightly wider text metrics than the HTML layout engine, so text that fits on one line in the live DOM can overflow by a fraction of a pixel in the capture - this is not a real issue.
-
-Respond only with your analysis as Markdown and absolutely no other text. Do not use emojis - use unicode if you need symbols.`;
+const ANALYSIS_RESPONSE_FORMAT = `Respond only with your analysis as Markdown and absolutely no other text. Do not use emojis - use unicode if you need symbols.`;
 
 /**
  * Build a complete screenshot analysis prompt with optional styleMap
- * and the text-wrap disclaimer. All screenshot analysis paths should
+ * and the response-format instruction. All screenshot analysis paths should
  * use this to keep prompt construction consistent.
  */
 export function buildScreenshotAnalysisPrompt(opts?: {
@@ -28,7 +26,7 @@ export function buildScreenshotAnalysisPrompt(opts?: {
     p += `\n\nThe following styleMap describes the computed layout state at the moment of capture. Use it to verify typography, spacing, overflow, and element dimensions — it is more accurate than visual estimation from the image.\n\n<style_map>\n${opts.styleMap}\n</style_map>`;
   }
 
-  p += `\n\n${TEXT_WRAP_DISCLAIMER}`;
+  p += `\n\n${ANALYSIS_RESPONSE_FORMAT}`;
 
   return p;
 }
@@ -44,6 +42,14 @@ export interface ScreenshotOptions {
    * Viewport captures skip the pre-roll scroll and tall stitch, so they're
    * faster and far less failure-prone for long pages. */
   fullPage?: boolean;
+  /** Exact-size capture: clip to these viewport dimensions, for rendering a
+   * fixed-size artifact like a 1200×630 Open Graph share card. Both must be set
+   * together; providing them forces a viewport capture (overrides `fullPage`). */
+  width?: number;
+  height?: number;
+  /** Output format. Defaults to 'jpeg' (existing behavior). Use 'png' for crisp
+   * flat graphics like share cards, where JPEG artifacts show on sharp type. */
+  format?: 'png' | 'jpeg';
   /** Called for each log line emitted during CLI execution. */
   onLog?: (line: string) => void;
   /** Authoritative model ID for the vision analysis. Caller resolves
@@ -105,6 +111,9 @@ export async function captureAndAnalyzeScreenshot(
 
   let path: string | undefined;
   let fullPage = true;
+  let width: number | undefined;
+  let height: number | undefined;
+  let format: 'png' | 'jpeg' | undefined;
 
   if (typeof promptOrOptions === 'object' && promptOrOptions !== null) {
     prompt = promptOrOptions.prompt;
@@ -113,10 +122,19 @@ export async function captureAndAnalyzeScreenshot(
     if (promptOrOptions.fullPage !== undefined) {
       fullPage = promptOrOptions.fullPage;
     }
+    width = promptOrOptions.width;
+    height = promptOrOptions.height;
+    format = promptOrOptions.format;
     onLog = promptOrOptions.onLog;
     model = promptOrOptions.model;
   } else {
     prompt = promptOrOptions;
+  }
+
+  // An exact width/height request is always a viewport clip, never a full-page
+  // stitch — force the viewport endpoint so the size is honored.
+  if (width != null && height != null) {
+    fullPage = false;
   }
 
   let url: string;
@@ -126,7 +144,12 @@ export async function captureAndAnalyzeScreenshot(
   } else {
     const ssResult = await sidecarRequest(
       fullPage ? '/screenshot-full-page' : '/screenshot-viewport',
-      path ? { path } : undefined,
+      {
+        ...(path ? { path } : {}),
+        ...(width != null ? { width } : {}),
+        ...(height != null ? { height } : {}),
+        ...(format ? { format } : {}),
+      },
       { timeout: fullPage ? 120000 : 30000 },
     );
     url = ssResult?.url || ssResult?.screenshotUrl;
