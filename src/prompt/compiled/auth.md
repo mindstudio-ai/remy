@@ -34,7 +34,7 @@ Remy apps can have and manage their own users. Auth is opt-in: configure it in t
   - `email-code` — 6-digit code sent via email
   - `sms-code` — 6-digit code sent via SMS
   - `api-key` — programmatic access via `Authorization: Bearer sk_...` header. Resolves to a user with full RBAC.
-  - `remy` — platform-delegated sign-in ("Sign in with Remy"). The platform resolves who the user is; roles and verification are platform-managed. Only usable when the app's owning organization has it enabled — the `<org_auth_context>` block signals availability. See *Organization-Managed Sign-In* above.
+  - `remy` — platform-delegated sign-in ("Sign in with Remy"). The platform resolves who the user is; roles and verification are platform-managed. Only usable when the app's owning organization has it enabled — the `<org_context>` block signals availability. See *Organization-Managed Sign-In* above.
 - **`auth.table.name`** — name of the `defineTable` table that holds user records.
 - **`auth.table.columns`** — maps platform-managed fields to column names in the developer's table.
   - `email` — required if `email-code` is in methods
@@ -135,12 +135,12 @@ const user = await auth.verifySmsCode(verificationId, '123456');
 
 ## Organization-Managed Sign-In ("Sign in with Remy")
 
-Some apps are owned by an organization that centralizes sign-in. When that applies to the current app, the system prompt includes an `<org_auth_context>` block (near the end) stating the organization name and whether delegated sign-in is available. Sign in with Remy is a way to make authentication seamless for internal apps - it should not be used for public-facing applications. The app owner will need to add users to their workspace's team on the Remy platform and those users will need Remy accounts for it to work.
+Some apps are owned by an organization that centralizes sign-in. When that applies to the current app, the system prompt includes an `<org_context>` block (near the end); for org-managed sign-in it states the organization name and whether delegated sign-in is available. Sign in with Remy is a way to make authentication seamless for internal apps - it should not be used for public-facing applications. The app owner will need to add users to their workspace's team on the Remy platform and those users will need Remy accounts for it to work.
 
 - **When it says "Sign in with Remy" is available** — offer delegated sign-in: a **"Continue with {Org}"** button wired to the `remy` method (see *Sign in with Remy (delegated)* below). Use the exact organization name from the block for the label. For an org-owned app this is usually the primary sign-in — the members already have platform identities, so a verification-code form is redundant.
 - **When it says the organization requires delegated sign-in** — `remy` is the *only* human method: do not add `email-code` or `sms-code`. Those are blocked at the platform edge for the org's apps, so building them yields a login that can't work.
 
-When no `<org_auth_context>` block is present — the common case — do not build it or offer to build it. This is an auth scheme for enterprises building internal apps only, and it requires a Remy enterprise plan to use. When enabled, the platform decides who the user is (like "Sign in with Google"); the app just starts the flow and reads the result.
+When the `<org_context>` block is absent, or present without a delegated-sign-in line — the common case — do not build it or offer to build it. This is an auth scheme for enterprises building internal apps only, and it requires a Remy enterprise plan to use. When enabled, the platform decides who the user is (like "Sign in with Google"); the app just starts the flow and reads the result.
 
 ```typescript
 // "Continue with {Org}" button — must be triggered by a user gesture (click).
@@ -399,7 +399,7 @@ Consult the `visualDesignExpert` to help you work through authentication at a hi
 ### Rules for Building Auth Screens
 **Auth modes:** Think about which mode(s) makes the most sense for the type of app you are building. Consumer apps likely to be used on mobile should probably tend toward SMS auth as the default - business apps used on desktop make more sense to use email verification - or allow both, there's no harm in giving the user choice!
 
-**"Continue with {Org}" (delegated):** When `<org_auth_context>` says delegated sign-in is available, a single "Continue with {Org}" button is the primary path — often the *only* one — and there's no verification-code step to design at all (the platform handles it). Give the button real weight in the branded login moment rather than treating it as a secondary option, and use the exact organization name. If the org also allows code methods, delegated goes first with the code form beneath. On return from the handshake (and on dashboard launch), render a brief "Completing sign-in…" state driven by `auth.authStatus === 'authenticating'` — never the login form — so a successful sign-in doesn't flash the logged-out screen.
+**"Continue with {Org}" (delegated):** When the `<org_context>` block says delegated sign-in is available, a single "Continue with {Org}" button is the primary path — often the *only* one — and there's no verification-code step to design at all (the platform handles it). Give the button real weight in the branded login moment rather than treating it as a secondary option, and use the exact organization name. If the org also allows code methods, delegated goes first with the code form beneath. On return from the handshake (and on dashboard launch), render a brief "Completing sign-in…" state driven by `auth.authStatus === 'authenticating'` — never the login form — so a successful sign-in doesn't flash the logged-out screen.
 
 **Verification code input:** The 6-digit code entry is the critical moment. Prefer to design it as individual digit boxes (not a single text input), with auto-advance between digits, a beautiful animation and auto-submit on paste, and clear visual feedback. The boxes should be large enough to tap easily on mobile. Show a subtle animation on successful verification. Error states should be inline and immediate, not a separate alert. Make sure there is no layout shift when loading in the success/error states - loading spinners must never pop in below the input and shift the content, for example.
 
