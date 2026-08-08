@@ -19,7 +19,10 @@
  * page size (default 500, hard cap 2000). Response: {event:"history",
  * messages, startIndex, endIndex, totalMessageCount, ...}. Walk backward by
  * passing the previous response's `startIndex` as the next `before`. When
- * `startIndex === 0`, no older messages remain.
+ * `startIndex === 0`, no older messages remain. Indices are GLOBAL — they span
+ * the sealed session archives followed by the live tail (see getHistoryPage in
+ * session.ts), so scrollback continues past a rotation to the conversation
+ * start, not just to the start of the live (post-rotation) array.
  */
 
 import { createLogger } from '../logger.js';
@@ -40,7 +43,12 @@ import {
   type AgentState,
   type AgentEvent,
 } from '../agent.js';
-import { loadSession, clearSession, saveSession } from '../session.js';
+import {
+  loadSession,
+  clearSession,
+  saveSession,
+  getHistoryPage,
+} from '../session.js';
 import {
   ALLOWED_MODELS_BY_TYPE,
   getEffectiveModelSurfaces,
@@ -101,10 +109,6 @@ interface BlockUpdate {
  * raising this gets risky, lowering it triggers compaction more often.
  */
 const FORCED_COMPACTION_THRESHOLD_TOKENS = 850_000;
-
-/** Default and hard-cap page sizes for the paginated `get_history` action. */
-const HISTORY_DEFAULT_LIMIT = 500;
-const HISTORY_MAX_LIMIT = 2000;
 
 /**
  * Encapsulates all state and behavior for a headless session. State is
@@ -1063,52 +1067,32 @@ export class HeadlessSession {
       // but callers — e.g., sandbox init frame — need the latest state).
       this.applyPendingBlockUpdates();
 
-      // Paginated. `before` is an exclusive upper bound (default = end of
-      // array, i.e. most recent messages). `limit` caps page size. Cursors
-      // are integer indices into state.messages; the array is append-mostly
-      // (compaction splices at the tail via findSafeInsertionPoint), so
-      // historical indices stay stable across compactions.
-      const total = this.state.messages.length;
-      const rawLimit = parsed.limit;
-      const limit =
-        typeof rawLimit === 'number' && Number.isFinite(rawLimit)
-          ? Math.min(Math.max(1, rawLimit | 0), HISTORY_MAX_LIMIT)
-          : HISTORY_DEFAULT_LIMIT;
-      const rawBefore = parsed.before;
-      const before =
-        typeof rawBefore === 'number' && Number.isFinite(rawBefore)
-          ? Math.max(0, Math.min(rawBefore | 0, total))
-          : total;
-      // Clamp startIndex backward to a safe group boundary: never start a
-      // page on a tool_result whose matching tool_use is in the previous
-      // page (or absent entirely). Walk back past leading tool_results so
-      // the page begins on the assistant message whose tool_use blocks own
-      // them. May return slightly more than `limit` messages when adjusting.
-      let startIndex = Math.max(0, before - limit);
-      while (
-        startIndex > 0 &&
-        this.state.messages[startIndex].role === 'user' &&
-        this.state.messages[startIndex].toolCallId
-      ) {
-        startIndex--;
-      }
-      const endIndex = before;
+      // Paginated over a GLOBAL index space that spans the sealed session
+      // archives followed by the live tail — so scrollback continues past a
+      // rotation to the conversation start, not just to the start of the live
+      // (post-rotation) array. `before` is an exclusive upper bound (default =
+      // end, i.e. most recent). getHistoryPage owns the clamp, boundary walk,
+      // and archive reads; state.messages is never mutated. (See session.ts.)
+      const page = getHistoryPage(this.state, {
+        ...(typeof parsed.before === 'number' ? { before: parsed.before } : {}),
+        ...(typeof parsed.limit === 'number' ? { limit: parsed.limit } : {}),
+      });
 
       log.info('History response', {
         requestId,
-        startIndex,
-        endIndex,
-        count: endIndex - startIndex,
-        totalMessageCount: total,
-        beforeParam: rawBefore,
-        limitParam: rawLimit,
+        startIndex: page.startIndex,
+        endIndex: page.endIndex,
+        count: page.endIndex - page.startIndex,
+        totalMessageCount: page.totalMessageCount,
+        beforeParam: parsed.before,
+        limitParam: parsed.limit,
       });
 
       this.dispatchSimple(requestId, 'history', () => ({
-        messages: this.state.messages.slice(startIndex, endIndex),
-        startIndex,
-        endIndex,
-        totalMessageCount: total,
+        messages: page.messages,
+        startIndex: page.startIndex,
+        endIndex: page.endIndex,
+        totalMessageCount: page.totalMessageCount,
         running: this.running,
         ...(this.running && this.currentRequestId
           ? { currentRequestId: this.currentRequestId }

@@ -52,6 +52,33 @@ const RETAIN_TAIL_BYTES = 16 * 1024 * 1024;
 // keep at least the newest archive, even if it alone exceeds the budget.
 const ARCHIVE_RETENTION_BYTES = 64 * 1024 * 1024;
 
+// Shared archive-filename helpers (used by pruneArchives and the get_history
+// read path). Every archive is `${label}-${ts}[.c${count}].json`; the ISO `ts`
+// (with `:.` replaced by `-`) is fixed-width, so a lexicographic sort of the
+// timestamp portion is chronological. The `.c<count>` segment (added below in
+// archiveMessages) lets the read path learn a file's message count from its
+// name alone — no parse on the latency-sensitive init frame.
+const ARCHIVE_NAME_RE = /^(cleared|rotated)-.*\.json$/;
+const archiveSortKey = (name: string): string =>
+  name.replace(/^(cleared|rotated)-/, '');
+const ARCHIVE_COUNT_RE = /\.c(\d+)\.json$/;
+
+// Page sizes for the paginated get_history read path. Live here (not in the
+// headless handler) because clamping now happens against the global archive +
+// live total that getHistoryPage owns.
+export const HISTORY_DEFAULT_LIMIT = 500;
+export const HISTORY_MAX_LIMIT = 2000;
+
+// Read-path caches (get_history). Archives are sealed/immutable, so a filename
+// is a safe cache key. archiveCountCache is tiny (a filename→count int) and
+// unbounded; archiveMsgCache holds parsed message arrays and is a small LRU —
+// enough for the live↔newest-archive straddle plus sequential scroll-up.
+// Entries for pruned files are simply never looked up again (listing is from
+// readdirSync) and age out.
+const archiveCountCache = new Map<string, number>();
+const archiveMsgCache = new Map<string, Message[]>();
+const ARCHIVE_MSG_CACHE_MAX = 3;
+
 export function loadSession(state: AgentState): boolean {
   // Heal already-bloated apps on boot: enforce the archive cap once per
   // process, before touching the live file. Runs on both surfaces — headless
@@ -180,17 +207,25 @@ function archiveMessages(
 ): string {
   fs.mkdirSync(ARCHIVE_DIR, { recursive: true });
   const ts = new Date().toISOString().replace(/[:.]/g, '-');
-  let dest = path.join(ARCHIVE_DIR, `${label}-${ts}.json`);
+  // Embed the message count in the name (`.c<count>.json`) so the read path
+  // learns it from readdirSync alone — no parse on the init frame — and it
+  // drops for free when the file is pruned. pruneArchives's `.*` regex and
+  // sortKey are unaffected (the fixed-width ISO ts still dominates the sort).
+  const count = messages.length;
+  let dest = path.join(ARCHIVE_DIR, `${label}-${ts}.c${count}.json`);
   let n = 1;
   while (fs.existsSync(dest)) {
-    dest = path.join(ARCHIVE_DIR, `${label}-${ts}-${n++}.json`);
+    dest = path.join(ARCHIVE_DIR, `${label}-${ts}-${n++}.c${count}.json`);
   }
   const payload: Record<string, unknown> = { messages };
   if (models && Object.keys(models).length > 0) {
     payload.models = models;
   }
   fs.writeFileSync(dest, JSON.stringify(payload), 'utf-8');
-  log.info('Session archived', { label, dest, messageCount: messages.length });
+  // Prime the count cache so a get_history right after an in-process rotation
+  // resolves this file's count without a read.
+  archiveCountCache.set(path.basename(dest), count);
+  log.info('Session archived', { label, dest, messageCount: count });
   pruneArchives();
   return dest;
 }
@@ -212,20 +247,20 @@ function pruneArchives(): void {
   try {
     const entries = fs
       .readdirSync(ARCHIVE_DIR)
-      .filter((name) => /^(cleared|rotated)-.*\.json$/.test(name));
+      .filter((name) => ARCHIVE_NAME_RE.test(name));
     if (entries.length <= 1) {
       return;
     }
 
     // Newest first, by the timestamp in the filename (label prefix stripped).
-    const sortKey = (name: string): string =>
-      name.replace(/^(cleared|rotated)-/, '');
     const archives = entries
       .map((name) => ({
         name,
         size: fs.statSync(path.join(ARCHIVE_DIR, name)).size,
       }))
-      .sort((a, b) => sortKey(b.name).localeCompare(sortKey(a.name)));
+      .sort((a, b) =>
+        archiveSortKey(b.name).localeCompare(archiveSortKey(a.name)),
+      );
 
     // Keep the newest archives up to the byte budget (always at least one);
     // everything from the cutoff onward is older and gets deleted.
@@ -262,6 +297,221 @@ function pruneArchives(): void {
   } catch {
     // Missing dir or unreadable — nothing to prune.
   }
+}
+
+// ---------------------------------------------------------------------------
+// Paginated read path (get_history) — spans sealed archives + the live tail
+// ---------------------------------------------------------------------------
+
+/** A current-conversation archive placed in the global index space. */
+interface ArchiveSlot {
+  name: string;
+  count: number;
+  /** Global index of this archive's first message. */
+  offset: number;
+}
+
+/**
+ * Parse a sealed archive once, populating both caches. Returns null (and logs)
+ * on a missing/corrupt file so callers skip it. Archives are immutable, so the
+ * filename is a safe cache key.
+ */
+function parseArchive(name: string): Message[] | null {
+  const cached = archiveMsgCache.get(name);
+  if (cached) {
+    // LRU touch: move to the most-recently-used end.
+    archiveMsgCache.delete(name);
+    archiveMsgCache.set(name, cached);
+    return cached;
+  }
+  try {
+    const raw = fs.readFileSync(path.join(ARCHIVE_DIR, name), 'utf-8');
+    const data = JSON.parse(raw);
+    const messages: Message[] = Array.isArray(data?.messages)
+      ? (data.messages as Message[])
+      : [];
+    archiveCountCache.set(name, messages.length);
+    archiveMsgCache.set(name, messages);
+    while (archiveMsgCache.size > ARCHIVE_MSG_CACHE_MAX) {
+      const oldest = archiveMsgCache.keys().next().value as string | undefined;
+      if (oldest === undefined) {
+        break;
+      }
+      archiveMsgCache.delete(oldest);
+    }
+    return messages;
+  } catch (err: any) {
+    log.warn('Session archive unreadable', { name, error: err?.message });
+    return null;
+  }
+}
+
+/**
+ * Message count for an archive — from the `.c<count>` filename segment (no
+ * read), else a one-time parse for legacy archives. Null if unreadable.
+ */
+function archiveCount(name: string): number | null {
+  const cached = archiveCountCache.get(name);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const m = ARCHIVE_COUNT_RE.exec(name);
+  if (m) {
+    const n = Number(m[1]);
+    archiveCountCache.set(name, n);
+    return n;
+  }
+  const msgs = parseArchive(name);
+  return msgs ? msgs.length : null;
+}
+
+/** Parsed messages for an archive (LRU-cached); empty array if unreadable. */
+function readArchiveMessages(name: string): Message[] {
+  return parseArchive(name) ?? [];
+}
+
+/**
+ * The current conversation's sealed archives, oldest-first, with cumulative
+ * global offsets. Scope = `rotated-*` newer than the most recent `cleared-*`
+ * (or all `rotated-*` if never cleared); `cleared-*` and pre-clear `rotated-*`
+ * are abandoned prior conversations and excluded (`/clear` archives everything
+ * as `cleared-*`, then resets). Empty/uncountable files are dropped so global
+ * ranges stay contiguous. Rebuilt from readdirSync each call — cheap, since
+ * counts come from filenames — so it reflects in-process rotations and prunes.
+ */
+function listConversationArchives(): {
+  slots: ArchiveSlot[];
+  archivedCount: number;
+} {
+  let names: string[];
+  try {
+    names = fs.readdirSync(ARCHIVE_DIR).filter((n) => ARCHIVE_NAME_RE.test(n));
+  } catch {
+    return { slots: [], archivedCount: 0 };
+  }
+
+  let maxClearedKey: string | null = null;
+  for (const name of names) {
+    if (name.startsWith('cleared-')) {
+      const key = archiveSortKey(name);
+      if (maxClearedKey === null || key > maxClearedKey) {
+        maxClearedKey = key;
+      }
+    }
+  }
+
+  const rotated = names
+    .filter((n) => n.startsWith('rotated-'))
+    .filter((n) => maxClearedKey === null || archiveSortKey(n) > maxClearedKey)
+    .sort((a, b) => archiveSortKey(a).localeCompare(archiveSortKey(b)));
+
+  const slots: ArchiveSlot[] = [];
+  let offset = 0;
+  for (const name of rotated) {
+    const count = archiveCount(name);
+    if (count === null || count <= 0) {
+      continue;
+    }
+    slots.push({ name, count, offset });
+    offset += count;
+  }
+  return { slots, archivedCount: offset };
+}
+
+/**
+ * Paginated read over the current conversation's full history, spanning the
+ * sealed archives followed by the live tail as one global index space:
+ * archived messages occupy [0, archivedCount), live messages occupy
+ * [archivedCount, total). `before` is an exclusive upper bound (default: the
+ * end); `limit` caps the page size. Walk backward by passing the previous
+ * response's `startIndex` as the next `before`; `startIndex === 0` is the start
+ * of the conversation (or the oldest surviving message, if older archives were
+ * pruned under the retention cap).
+ *
+ * Read-only: never mutates state.messages or the archives, and never re-enters
+ * archived messages into state (that would re-bloat the live file on save and
+ * defeat rotation). Serves raw messages (tool_results + hidden included, as the
+ * live path does) — downstream transformHistory does the display filtering.
+ */
+export function getHistoryPage(
+  state: AgentState,
+  opts?: { before?: number; limit?: number },
+): {
+  messages: Message[];
+  startIndex: number;
+  endIndex: number;
+  totalMessageCount: number;
+} {
+  const { slots, archivedCount } = listConversationArchives();
+  const liveLen = state.messages.length;
+  const total = archivedCount + liveLen;
+
+  const rawLimit = opts?.limit;
+  const limit =
+    typeof rawLimit === 'number' && Number.isFinite(rawLimit)
+      ? Math.min(Math.max(1, rawLimit | 0), HISTORY_MAX_LIMIT)
+      : HISTORY_DEFAULT_LIMIT;
+  const rawBefore = opts?.before;
+  const before =
+    typeof rawBefore === 'number' && Number.isFinite(rawBefore)
+      ? Math.max(0, Math.min(rawBefore | 0, total))
+      : total;
+
+  // Peek one message by global index (for the boundary walk). Only ever touches
+  // the archive/live array that already contains the index: rotation cuts at
+  // findSafeInsertionPoint, so every seam begins on a non-tool_result and a
+  // tool group never straddles a seam — the walk stays inside one array.
+  const peekGlobal = (i: number): Message | undefined => {
+    if (i >= archivedCount) {
+      return state.messages[i - archivedCount];
+    }
+    for (const slot of slots) {
+      if (i < slot.offset + slot.count) {
+        return readArchiveMessages(slot.name)[i - slot.offset];
+      }
+    }
+    return undefined;
+  };
+
+  // Clamp the page start back to a safe group boundary: never begin on a
+  // tool_result (a user message carrying a toolCallId) whose owning tool_use is
+  // in the previous page. May return slightly more than `limit` when adjusting.
+  let startIndex = Math.max(0, before - limit);
+  while (startIndex > 0) {
+    const msg = peekGlobal(startIndex);
+    if (msg && msg.role === 'user' && msg.toolCallId) {
+      startIndex--;
+    } else {
+      break;
+    }
+  }
+  const endIndex = before;
+
+  // Assemble [startIndex, endIndex): overlapping archive slots (ascending),
+  // then the live tail. A page straddling the archive→live boundary falls out
+  // naturally (both branches contribute).
+  const messages: Message[] = [];
+  for (const slot of slots) {
+    const slotEnd = slot.offset + slot.count;
+    if (slotEnd <= startIndex || slot.offset >= endIndex) {
+      continue;
+    }
+    const from = Math.max(startIndex, slot.offset) - slot.offset;
+    const to = Math.min(endIndex, slotEnd) - slot.offset;
+    const msgs = readArchiveMessages(slot.name);
+    for (let i = from; i < to; i++) {
+      messages.push(msgs[i]);
+    }
+  }
+  if (endIndex > archivedCount) {
+    const from = Math.max(startIndex, archivedCount) - archivedCount;
+    const to = endIndex - archivedCount;
+    for (let i = from; i < to; i++) {
+      messages.push(state.messages[i]);
+    }
+  }
+
+  return { messages, startIndex, endIndex, totalMessageCount: total };
 }
 
 /**
