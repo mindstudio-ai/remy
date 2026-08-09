@@ -420,4 +420,6 @@ All other emails and phone numbers receive real codes. There is no dev-mode bypa
 
 The `runMethod` tool's `userId: "testUser"` shortcut resolves to this same dev-bypass identity. The platform find-or-creates a real users-table row for it on first call and caches the row's UUID for the rest of the dev session. **`auth.userId` inside the method is that UUID — not the literal string `"testUser"`.** The user row already exists, so don't try to insert it. If you need the UUID to seed app-specific rows that reference it (profiles, preferences, foreign keys), read it from any method response or query the users table directly: `SELECT id FROM users WHERE email = 'remy@mindstudio.ai'` (or `phone = '+15555555555'` for SMS-auth apps).
 
+For **"Sign in with Remy"** apps (`auth.methods` is `["remy"]`, with no `email-code`/`sms-code`), `testUser` — and `setupBrowser` — resolve to **the developer's own delegated Remy identity**, not the `remy@mindstudio.ai` code-bypass user. `auth.userId` is still that user's real UUID, but the `remy@mindstudio.ai` email lookup above does not apply — read the UUID from a method response instead.
+
 Browser automation tools (screenshots, automated browser tests) handle their own auth sessions. Scenarios seed database data but do not create browser auth sessions.
