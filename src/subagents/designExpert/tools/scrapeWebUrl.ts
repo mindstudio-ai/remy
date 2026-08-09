@@ -1,5 +1,6 @@
 import type { ToolDefinition } from '../../../api.js';
 import { runMindstudioCli } from '../../common/runMindstudioCli.js';
+import { SCRAPE_MAX_BUFFER } from '../../common/runCli.js';
 
 export const definition: ToolDefinition = {
   clearable: false,
@@ -23,9 +24,6 @@ export async function execute(
   onLog?: (line: string) => void,
 ): Promise<string> {
   const pageOptions: Record<string, any> = { onlyMainContent: true };
-  if (input.screenshot) {
-    pageOptions.screenshot = true;
-  }
   return runMindstudioCli(
     [
       'scrape-url',
@@ -34,6 +32,6 @@ export async function execute(
       '--page-options',
       JSON.stringify(pageOptions),
     ],
-    { onLog, caller: 'designExpert' },
+    { onLog, caller: 'designExpert', maxBuffer: SCRAPE_MAX_BUFFER },
   );
 }

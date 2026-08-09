@@ -43,7 +43,7 @@
  *     returns the raw stdout unchanged.
  */
 
-import { runCli, type RunCliOptions } from './runCli.js';
+import { runCli, formatCliResult, type RunCliOptions } from './runCli.js';
 import { recordUsage, nanoToDollars } from '../../usageLedger.js';
 import type { BillingEvent } from '../../api.js';
 
@@ -52,9 +52,18 @@ export interface RunMindstudioOptions extends RunCliOptions {
    * (stringified if the value is not already a string). Ignored for batch
    * responses, which always return the bare `results` array. */
   outputKey?: string;
-  /** Caller identifier for ledger attribution (e.g. 'designExpert',
+  /** Caller identifier for ledger attribution (e.g. 'parent', 'designExpert',
    * 'browserAutomation'). Falls back to 'mindstudio-cli' if omitted. */
   caller?: string;
+}
+
+/** Structured outcome. `ok` is false when the CLI failed to run (spawn error,
+ * timeout, non-zero exit) OR when an `outputKey` was requested but absent from
+ * the envelope (a JSON error body). `value` carries the extracted content on
+ * success and a human-readable error/body on failure — never string-sniff it. */
+export interface MindstudioResult {
+  ok: boolean;
+  value: string;
 }
 
 /** Remove `--no-meta` (boolean) and `--output-key X` (flag + value) from
@@ -75,24 +84,34 @@ function stripFlags(args: string[]): string[] {
   return out;
 }
 
-export async function runMindstudioCli(
+/** Structured entry point. Prefer this for internal pipeline callers that
+ * must not feed a failure string forward (prompt enhancement, image URLs,
+ * screenshot URLs). Model-facing tools can use the string `runMindstudioCli`. */
+export async function runMindstudioCliResult(
   args: string[],
   options?: RunMindstudioOptions,
-): Promise<string> {
+): Promise<MindstudioResult> {
   const cleanArgs = stripFlags(args);
   const cliAction = args[0];
   const agentName = options?.caller ?? 'mindstudio-cli';
   const start = Date.now();
 
-  const raw = await runCli('mindstudio', cleanArgs, options);
+  const res = await runCli('mindstudio', cleanArgs, options);
+
+  // Spawn error, timeout, or non-zero exit with no output. No envelope to
+  // parse and no cost to record.
+  if (!res.ok) {
+    return { ok: false, value: formatCliResult(res) };
+  }
+
+  const truncNote = res.truncated ? '\n\n[output truncated]' : '';
 
   let envelope: any;
   try {
-    envelope = JSON.parse(raw);
+    envelope = JSON.parse(res.output);
   } catch {
-    // Not JSON (e.g. `mindstudio ask` markdown, or error strings).
-    // Return as-is; cost tracking unavailable for this call.
-    return raw;
+    // Not JSON (e.g. `mindstudio ask` markdown). Ran fine; no cost tracking.
+    return { ok: true, value: res.output + truncNote };
   }
 
   // ---- Batch shape: { results: [...], totalBillingCost, appId, threadId }
@@ -118,7 +137,7 @@ export async function runMindstudioCli(
     }
     // Preserve the bare-array contract for existing batch consumers
     // (`JSON.parse(batchResult).map(...)`).
-    return JSON.stringify(envelope.results);
+    return { ok: true, value: JSON.stringify(envelope.results) + truncNote };
   }
 
   // ---- Single-action shape: $-prefixed metadata
@@ -141,13 +160,29 @@ export async function runMindstudioCli(
 
   if (options?.outputKey) {
     const v = envelope?.[options.outputKey];
+    // Requested key absent → a JSON error body, not a real value. Flag it as
+    // a failure so callers don't forward `{...}` as a URL/prompt/analysis.
     if (v === undefined || v === null) {
-      return JSON.stringify(stripDollarKeys(envelope));
+      return { ok: false, value: JSON.stringify(stripDollarKeys(envelope)) };
     }
-    return typeof v === 'string' ? v : JSON.stringify(v);
+    const value = typeof v === 'string' ? v : JSON.stringify(v);
+    return { ok: true, value: value + truncNote };
   }
 
-  return JSON.stringify(stripDollarKeys(envelope));
+  return {
+    ok: true,
+    value: JSON.stringify(stripDollarKeys(envelope)) + truncNote,
+  };
+}
+
+/** String convenience — returns the extracted value on success or a
+ * human-readable error/body on failure. Behavior is unchanged for existing
+ * model-facing tools (searchGoogle, scrapeWebUrl, analyzeImage, batch). */
+export async function runMindstudioCli(
+  args: string[],
+  options?: RunMindstudioOptions,
+): Promise<string> {
+  return (await runMindstudioCliResult(args, options)).value;
 }
 
 /** Shallow-copy with `$`-prefixed top-level keys removed. Matches the

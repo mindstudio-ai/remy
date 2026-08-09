@@ -7,6 +7,7 @@
 
 import type { Tool } from '../index.js';
 import { runMindstudioCli } from '../../subagents/common/runMindstudioCli.js';
+import { SEARCH_MAX_BUFFER } from '../../subagents/common/runCli.js';
 
 export const searchGoogleTool: Tool = {
   clearable: false,
@@ -30,7 +31,12 @@ export const searchGoogleTool: Tool = {
     const query = input.query as string;
     return runMindstudioCli(
       ['search-google', '--query', query, '--export-type', 'json'],
-      { outputKey: 'results', maxBuffer: 512 * 1024, onLog: context?.onLog },
+      {
+        outputKey: 'results',
+        maxBuffer: SEARCH_MAX_BUFFER,
+        onLog: context?.onLog,
+        caller: 'parent',
+      },
     );
   },
 };

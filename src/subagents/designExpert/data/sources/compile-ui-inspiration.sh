@@ -68,7 +68,7 @@ process_one() {
     --output-key analysis \
     --no-meta 2>&1) || true
 
-  if echo "$ANALYSIS" | grep -q '"error"'; then
+  if [ -z "$ANALYSIS" ] || echo "$ANALYSIS" | grep -q '"error"'; then
     echo "    FAILED — $url"
     return
   fi

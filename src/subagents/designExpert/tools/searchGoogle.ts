@@ -1,5 +1,6 @@
 import type { ToolDefinition } from '../../../api.js';
 import { runMindstudioCli } from '../../common/runMindstudioCli.js';
+import { SEARCH_MAX_BUFFER } from '../../common/runCli.js';
 
 export const definition: ToolDefinition = {
   clearable: false,
@@ -24,6 +25,11 @@ export async function execute(
 ): Promise<string> {
   return runMindstudioCli(
     ['search-google', '--query', input.query, '--export-type', 'json'],
-    { outputKey: 'results', onLog, caller: 'designExpert' },
+    {
+      outputKey: 'results',
+      onLog,
+      caller: 'designExpert',
+      maxBuffer: SEARCH_MAX_BUFFER,
+    },
   );
 }

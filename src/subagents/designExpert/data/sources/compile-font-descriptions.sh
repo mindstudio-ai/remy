@@ -6,7 +6,7 @@
 # in specimens/fonts/{slug}.png, runs analyze-image, and writes the
 # description back to the font's "description" field.
 #
-# Run: bash src/subagents/designExpert/data/compile-font-descriptions.sh
+# Run: bash src/subagents/designExpert/data/sources/compile-font-descriptions.sh
 # Supports resuming — skips fonts that already have a description.
 
 set -euo pipefail

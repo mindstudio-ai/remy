@@ -6,7 +6,7 @@
  * knowledge (no hex codes, style-first structure, composition rules, etc.).
  */
 
-import { runMindstudioCli } from '../../../common/runMindstudioCli.js';
+import { runMindstudioCliResult } from '../../../common/runMindstudioCli.js';
 import { readAsset } from '../../../../assets.js';
 
 const SYSTEM_PROMPT = readAsset(
@@ -59,7 +59,7 @@ export async function enhanceImagePrompt(
   const context = `<context>\n${contextParts.join('\n')}\n</context>`;
   const message = `${SYSTEM_PROMPT}\n\n${context}\n\n<brief>\n${brief}\n</brief>`;
 
-  const enhanced = await runMindstudioCli(
+  const enhanced = await runMindstudioCliResult(
     [
       'generate-text',
       '--message',
@@ -70,5 +70,12 @@ export async function enhanceImagePrompt(
     { outputKey: 'content', timeout: 60_000, onLog, caller: 'designExpert' },
   );
 
-  return enhanced.trim();
+  // Enhancement is an optimization — if the LLM call fails, fall back to the
+  // raw brief rather than feeding an error string into image generation.
+  if (!enhanced.ok) {
+    onLog?.(`[enhancePrompt] enhancement failed, using original brief`);
+    return brief;
+  }
+
+  return enhanced.value.trim();
 }

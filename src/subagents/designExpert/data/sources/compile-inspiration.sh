@@ -5,7 +5,7 @@
 # Reads each image URL from inspiration.raw.json, runs analyze-image via the
 # mindstudio CLI, and writes the compiled output with URL + analysis.
 #
-# Run manually: bash src/subagents/designExpert/data/compile-inspiration.sh
+# Run manually: bash src/subagents/designExpert/data/sources/compile-inspiration.sh
 # Processes images sequentially (one API call at a time).
 # Supports resuming — skips URLs already present in the output file.
 
@@ -67,7 +67,7 @@ process_one() {
     --output-key analysis \
     --no-meta 2>&1) || true
 
-  if echo "$ANALYSIS" | grep -q '"error"'; then
+  if [ -z "$ANALYSIS" ] || echo "$ANALYSIS" | grep -q '"error"'; then
     echo "    FAILED — $url"
     return
   fi

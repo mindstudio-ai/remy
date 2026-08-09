@@ -5,7 +5,7 @@
  * The underlying model is configured via the MindStudio CLI.
  */
 
-import { runMindstudioCli } from '../../../common/runMindstudioCli.js';
+import { runMindstudioCliResult } from '../../../common/runMindstudioCli.js';
 import { analyzeImage } from '../../../common/analyzeImage.js';
 import { enhanceImagePrompt } from './enhancePrompt.js';
 
@@ -105,7 +105,7 @@ export async function generateImageAssets(
         config,
       },
     });
-    const url = await runMindstudioCli(['generate-image'], {
+    const res = await runMindstudioCliResult(['generate-image'], {
       outputKey: 'imageUrl',
       jsonLogs: true,
       timeout: 200_000,
@@ -113,7 +113,9 @@ export async function generateImageAssets(
       stdin: step,
       caller: 'designExpert',
     });
-    imageUrls = [url];
+    // Failure (spawn error, timeout, `(no response)`, or a JSON error body)
+    // becomes an `Error: …` sentinel the downstream loops already handle.
+    imageUrls = [res.ok ? res.value : `Error: ${res.value}`];
   } else {
     const steps = enhancedPrompts.map((prompt) => ({
       stepType: 'generateImage',
@@ -125,20 +127,23 @@ export async function generateImageAssets(
         },
       },
     }));
-    const batchResult = await runMindstudioCli(['batch'], {
+    const batchRes = await runMindstudioCliResult(['batch'], {
       jsonLogs: true,
       timeout: 200_000,
       onLog,
       stdin: JSON.stringify(steps),
       caller: 'designExpert',
     });
+    if (!batchRes.ok) {
+      return batchRes.value;
+    }
     try {
-      const parsed = JSON.parse(batchResult);
+      const parsed = JSON.parse(batchRes.value);
       imageUrls = parsed.map(
         (r: any) => r.output?.imageUrl ?? `Error: ${r.error}`,
       );
     } catch {
-      return batchResult;
+      return batchRes.value;
     }
   }
 
@@ -149,7 +154,7 @@ export async function generateImageAssets(
         if (url.startsWith('Error')) {
           return url;
         }
-        const result = await runMindstudioCli(
+        const result = await runMindstudioCliResult(
           ['remove-background-from-image', '--image-url', url],
           {
             outputKey: 'imageUrl',
@@ -158,7 +163,8 @@ export async function generateImageAssets(
             caller: 'designExpert',
           },
         );
-        return result.startsWith('Error') ? url : result;
+        // On failure keep the original image rather than dropping it.
+        return result.ok ? result.value : url;
       }),
     );
   }

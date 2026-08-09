@@ -140,11 +140,10 @@ export type SurfaceId = keyof typeof MODEL_SURFACES;
 /**
  * Allow-list of pickable model IDs by model type.
  *
- * `text` surfaces are constrained to the chat-endpoint allow-list (7 IDs
- * spanning Anthropic, OpenAI, and Google). `vision` and `image_generation`
- * surfaces are unconstrained — the frontend renders them from its own
- * model catalog. An undefined value means "no allow-list — pick anything
- * of this type from the catalog."
+ * `text` surfaces are constrained to the chat-endpoint allow-list. `vision`
+ * and `image_generation` surfaces are unconstrained — the frontend renders
+ * them from its own model catalog. An undefined value means "no allow-list —
+ * pick anything of this type from the catalog."
  */
 export const ALLOWED_MODELS_BY_TYPE: Partial<Record<ModelType, string[]>> = {
   text: [
@@ -156,6 +155,9 @@ export const ALLOWED_MODELS_BY_TYPE: Partial<Record<ModelType, string[]>> = {
     'claude-fable-5',
     'claude-5-sonnet',
     'gpt-5.5',
+    'gpt-5.6-sol',
+    'gpt-5.6-terra',
+    'gpt-5.6-luna',
     'gemini-3-pro',
     'gemini-3.1-pro',
     'gemini-3-flash',

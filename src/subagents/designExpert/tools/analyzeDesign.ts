@@ -1,6 +1,6 @@
 import type { ToolDefinition } from '../../../api.js';
 import type { ToolExecutionContext } from '../../../tools/index.js';
-import { runMindstudioCli } from '../../common/runMindstudioCli.js';
+import { runMindstudioCliResult } from '../../common/runMindstudioCli.js';
 import { analyzeImage } from '../../common/analyzeImage.js';
 import { resolveModel } from '../../../models/surfaces.js';
 
@@ -65,7 +65,7 @@ export async function execute(
   let imageUrl = url;
   if (!isImageUrl) {
     // Screenshot the website first
-    const ssUrl = await runMindstudioCli(
+    const ss = await runMindstudioCliResult(
       [
         'screenshot-url',
         '--url',
@@ -84,10 +84,12 @@ export async function execute(
         caller: 'designExpert',
       },
     );
-    if (ssUrl.startsWith('Error')) {
-      return `Could not screenshot ${url}: ${ssUrl}`;
+    // Covers spawn errors, `(no response)`, and JSON error bodies — not just
+    // the `Error:`-prefixed string the old `startsWith('Error')` caught.
+    if (!ss.ok) {
+      return `Could not screenshot ${url}: ${ss.value}`;
     }
-    imageUrl = ssUrl;
+    imageUrl = ss.value;
   }
 
   const analysis = await analyzeImage({

@@ -7,6 +7,7 @@
 
 import type { Tool } from '../index.js';
 import { runMindstudioCli } from '../../subagents/common/runMindstudioCli.js';
+import { SCRAPE_MAX_BUFFER } from '../../subagents/common/runCli.js';
 
 export const scrapeWebUrlTool: Tool = {
   clearable: false,
@@ -48,7 +49,11 @@ export const scrapeWebUrlTool: Tool = {
         '--page-options',
         JSON.stringify(pageOptions),
       ],
-      { onLog: context?.onLog },
+      {
+        onLog: context?.onLog,
+        maxBuffer: SCRAPE_MAX_BUFFER,
+        caller: 'parent',
+      },
     );
   },
 };

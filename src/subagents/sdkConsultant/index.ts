@@ -7,7 +7,7 @@
  */
 
 import type { Tool } from '../../tools/index.js';
-import { runCli } from '../common/runCli.js';
+import { runCli, formatCliResult } from '../common/runCli.js';
 
 export const askMindStudioSdkTool: Tool = {
   clearable: false,
@@ -33,10 +33,11 @@ export const askMindStudioSdkTool: Tool = {
     // `mindstudio ask` returns markdown, not JSON, so runMindstudioCli's
     // envelope-parsing path doesn't apply. Cost data for this surface is
     // unavailable until/unless the CLI exposes a metadata format for `ask`.
-    return runCli('mindstudio', ['ask', query], {
+    const result = await runCli('mindstudio', ['ask', query], {
       timeout: 200_000,
       maxBuffer: 512 * 1024,
       onLog: context?.onLog,
     });
+    return formatCliResult(result);
   },
 };
