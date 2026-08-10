@@ -53,7 +53,7 @@ const result = await mindstudio.runTask<{
     photoUrl: 'https://cdn.mindstudio.ai/...',
   },
 
-  model: 'claude-4-6-sonnet',
+  model: 'claude-5-sonnet',
   maxTurns: 15,
 });
 

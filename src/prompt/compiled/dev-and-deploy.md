@@ -46,10 +46,6 @@ All deployed apps are available on `<uuid>.madewithremy.com` where uuid is their
 
 Every live deploy runs an automated Lighthouse audit of the app. Pull it via `mindstudio-prod diagnostics get` CLI when the user wants to evaluate frontend performance. It runs async after the build completes, so it won't be available right away.
 
-### Preview Deployments
-
-Push to a non-default branch for a preview deployment — same build pipeline, but doesn't affect the live app. Useful for testing changes before merging.
-
 ### Database Migrations on Deploy
 
 Schema changes are automatic:

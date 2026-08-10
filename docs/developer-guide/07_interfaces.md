@@ -41,6 +41,7 @@ All fields are nested under the `"web"` key.
 | `devPort` | `number` | `5173` | Port for the dev server |
 | `devCommand` | `string` | `"npm run dev"` | Command to start the dev server |
 | `defaultPreviewMode` | `"desktop"` \| `"mobile"` | `"desktop"` | Default preview viewport in the editor. Set to `"mobile"` for mobile-first apps. |
+| `prerender` | `object` | — | Opt into prerendering the listed routes for crawlers/unfurlers. See "Prerendering for crawlers" below. |
 
 ### Frontend SDK
 
@@ -89,6 +90,38 @@ auth.logout()                       // clears session
 ### Deployment
 
 On `git push`, the platform runs `npm install && npm run build` in the web directory and hosts the output on CDN. Zero configuration in your code. The platform injects connection details automatically.
+
+### Prerendering for crawlers
+
+Web apps are client-rendered SPAs, so link unfurlers (iMessage, Slack, WhatsApp) and AI/search crawlers (GPTBot, ClaudeBot, Bingbot, Googlebot) — which don't run JavaScript — see only the empty `index.html` shell: no per-page title, description, or Open Graph image. Prerendering fixes this. For opted-in routes, when a bot requests the page the platform serves a cached headless-browser snapshot of the fully-rendered page; real users always get the normal live SPA.
+
+**Opt in** in `web.json` by listing the route globs worth prerendering (shareable/indexable pages — not private or app-like screens):
+
+```json
+{
+  "web": {
+    "prerender": { "paths": ["/u/*", "/blog/*"] }
+  }
+}
+```
+
+`prerender` takes a single field, `paths` — an array of route globs (`*` = one path segment, `**` = any). Only listed routes are ever prerendered.
+
+**The opt-in alone isn't enough — the SPA has to produce a real page for the snapshot to capture.** For each prerendered route, at runtime:
+
+1. **Set the per-route `<head>`** once the route's data resolves — `<title>`, `<meta name="description">`, and Open Graph / Twitter tags (`og:title`, `og:description`, `og:image`, `twitter:card`, …). Use react-helmet or write to `document` directly. The snapshot captures whatever is in the DOM, so a page that never sets these ends up with a generic card.
+2. **Redirect declaratively, never imperatively.** If the route redirects (e.g. a short link), render `<meta http-equiv="refresh" content="0; url=TARGET">` (and/or a visible link) — do **not** call `location.replace(target)`. A DOM snapshot can't capture an imperative navigation; a declarative redirect lets a crawler read your card while a human still bounces to the target.
+3. **Signal readiness — required.** Once the head is written and the route's data has resolved, set `document.documentElement.setAttribute('data-prerender-ready', 'true')`. The renderer **waits for this marker** before it snapshots, so it captures the resolved page rather than a loading state. **This is mandatory for every route you list in `prerender.paths`** — a prerendered route that never sets the marker times out and produces **no snapshot at all**, so crawlers keep getting the empty shell. Set it on every prerendered route, including ones that render synchronously (set it as soon as they're ready).
+
+**Keep snapshots fresh.** A deploy re-renders everything automatically. When content behind a prerendered page changes at runtime (a short link retargeted, a post edited), invalidate its snapshot from the mutating backend method:
+
+```typescript
+import { prerender } from '@mindstudio-ai/agent';
+
+await prerender.invalidate(['/u/abc']); // omit the argument to purge every snapshot for the app
+```
+
+While developing, the `mindstudio-prod prerender` CLI verifies and manages snapshots (run `mindstudio-prod prerender --help`) — a build-time tool only; a deployed app keeps things fresh via `prerender.invalidate`, not the CLI.
 
 ---
 

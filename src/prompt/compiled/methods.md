@@ -231,7 +231,7 @@ export async function enrichRestaurant(input: { id: string; name: string }) {
     input: { name: input.name },
     tools: ['searchGoogle', 'fetchUrl', 'generateImage'],
     structuredOutputExample: { /* ... */ },
-    model: 'claude-4-6-sonnet',
+    model: 'claude-5-sonnet',
   }).then(async (result) => {
     if (result.parsedSuccessfully) {
       await Restaurants.update(input.id, { ...result.output, status: 'complete' });

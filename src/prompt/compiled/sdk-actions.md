@@ -119,7 +119,7 @@ Override the default model for any AI action. Each model has its own config opti
 const { content } = await mindstudio.generateText({
   message: 'Hello',
   modelOverride: {
-    model: 'claude-sonnet-4-6',
+    model: 'claude-5-sonnet',
     temperature: 0.7,
     maxResponseTokens: 16000,
   },

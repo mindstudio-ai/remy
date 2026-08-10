@@ -41,6 +41,7 @@ All fields are nested under the `"web"` key.
 | `devPort` | `number` | `5173` | Port for the dev server |
 | `devCommand` | `string` | `"npm run dev"` | Command to start the dev server |
 | `defaultPreviewMode` | `"desktop"` \| `"mobile"` | `"desktop"` | Default preview viewport in the editor. Set to `"mobile"` for mobile-first apps. |
+| `prerender` | `object` | — | Opt into prerendering the listed routes/patterns for crawlers/unfurlers. See "Prerendering" below. |
 
 ### Frontend SDK
 
@@ -112,6 +113,29 @@ analytics.track('checkout_completed', { itemCount: 3, total: 47.99 });
 Analytics is **cookie-banner-free by design**: per-app scoping, IP discarded after geo lookup, country-level only, query strings server-scrubbed except for a UTM whitelist (`utm_*`, `ref`, `source`, `gclid`, `fbclid`, `msclkid`), no fingerprinting, no third-party scripts. If a user asks about GDPR cookie consent for analytics, you can explain why it is not needed.
 
 Disabling telemetry is a per-app dashboard setting (platform toggle, not code). Point users there if they ask.
+
+### Prerendering (for crawlers/unfurlers)
+
+For non-static SPAs, link unfurlers and AI/search crawlers see only the empty shell. Opt routes into prerendering and the platform serves a cached headless snapshot to bots; real users always get the live SPA.
+
+Opt in per route in `web.json`:
+
+```json
+{ "web": { "prerender": { "paths": ["/u/*", "/blog/*"] } } }
+```
+
+`prerender` is an object with a single field, `paths`: an array of route globs (`*` = one segment, `**` = any). Only listed routes prerender.
+
+The opt-in alone is not enough. For every route in `prerender.paths`, the SPA must set `document.documentElement.setAttribute('data-prerender-ready', 'true')` once the head is written and the route has resolved — this is required, not optional. The renderer waits for this marker, so a prerendered route that never sets it times out. Set it even on routes that render synchronously, as soon as they're ready.
+
+App deploys invalidate prerender cache automatically. When prerendered content changes at runtime, invalidate from the mutating method:
+
+```typescript
+import { prerender } from '@mindstudio-ai/agent';
+await prerender.invalidate(['/u/abc']); // omit arg to purge all
+```
+
+`mindstudio-prod prerender` can help you verify/manage snapshots during development.
 
 ## API Interface
 
@@ -593,7 +617,7 @@ dist/interfaces/agent/
 
 | Field | Description |
 |-------|-------------|
-| `model` | MindStudio model ID (e.g. `claude-4-5-haiku`, `claude-4-6-sonnet`) |
+| `model` | MindStudio model ID (e.g. `claude-4-5-haiku`, `claude-5-sonnet`) |
 | `temperature` | Model temperature |
 | `maxTokens` | Max response tokens |
 | `systemPrompt` | Relative path to the compiled system prompt markdown file |
