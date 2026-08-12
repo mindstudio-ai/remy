@@ -30,6 +30,8 @@ The system prompt says *who* the agent is. The tool descriptions say *what it ca
 - **Parameter guidance** beyond the schema — what makes a good value, when to include optional fields, what to skip
 - **Return value** and how to present results to the user
 
+Note: Task agents (`runTask`) can also expose app methods as tools, but their descriptions are written **inline at the call site**, not compiled here. The two are deliberately different: an agent interface is one long-lived persona whose tools are a stable capability surface, so each method earns one carefully-written description in `tools/*.md`. A task agent is narrow and single-purpose, and the same method gets framed differently depending on the job — so its description belongs with the task, not the method.
+
 ### Not every method should be a tool
 
 Expose methods that serve the conversational flow. Internal helpers, admin-only methods, and batch operations often don't belong in the agent's toolset. A focused set of well-described tools performs better than many underdocumented ones.

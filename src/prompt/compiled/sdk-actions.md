@@ -154,4 +154,4 @@ Consider the ways in which AI can be incorporated into backend methods to solve 
 
 ### Task Agents
 
-For multi-step tasks where the model needs to autonomously compose actions (research + scrape + generate, enrichment pipelines, content creation), use `runTask()` instead of chaining actions manually. It runs an agent loop with the SDK actions as tools and returns structured JSON. See the task agents reference for full details.
+For multi-step tasks where the model needs to autonomously compose actions (research + scrape + generate, enrichment pipelines, content creation), use `runTask()` instead of chaining actions manually. It runs an agent loop and returns structured JSON. Its tools can include SDK actions as well as your app's own methods, so the agent can read your data to decide what to do next and write results back itself. See the task agents reference for full details.
