@@ -88,6 +88,8 @@ When a plan includes multiple screens/API calls, always note this item for the d
 
 - **Hardcoded credentials.** If the plan or code contains API keys, tokens, or connection strings inline, flag it — these should be `process.env` secrets managed via the dashboard. Also flag if the plan uses `process.env` for something the MindStudio SDK already handles (AI model keys, email/SMS sending, etc.).
 
+- **Don't use `agent.uploadFile()` from @mindstudio-ai/agent SDK** — that's the legacy v1 public CDN. Use `files`.
+
 ### Other things to note
 
 If you get a whiff of any of the following, make a note for the developer:

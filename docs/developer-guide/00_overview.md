@@ -91,7 +91,8 @@ export async function approveVendor(input: { vendorId: string }) {
 }
 ```
 
-See [Tables & Database](04_tables-and-database.md) and [Methods](05_methods.md) for the full API.
+See [Tables & Database](04_tables-and-database.md), [Files & Storage](11_files-and-storage.md), and
+[Methods](05_methods.md) for the full API.
 
 ### Frontend: `@mindstudio-ai/interface`
 
@@ -141,6 +142,7 @@ Both use the same execution pipeline, the same database, the same SDK. Code that
 | Learn the spec format | [Spec & MSFM](02_spec-and-msfm.md) |
 | See every manifest field | [Manifest Reference](03_manifest-reference.md) |
 | Work with the database | [Tables & Database](04_tables-and-database.md) |
+| Store or serve files | [Files & Storage](11_files-and-storage.md) |
 | Write backend logic | [Methods](05_methods.md) |
 | Set up access control | [Roles & Auth](06_roles-and-auth.md) |
 | Connect an interface | [Interfaces](07_interfaces.md) |

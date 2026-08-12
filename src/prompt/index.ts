@@ -106,6 +106,10 @@ Current date: ${now}
   {{compiled/media-cdn.md}}
   </media_cdn>
 
+  <app_files>
+  {{compiled/files.md}}
+  </app_files>
+
   <interfaces>
   {{compiled/interfaces.md}}
   </interfaces>
