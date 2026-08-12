@@ -5,6 +5,8 @@
  */
 
 import type { ToolDefinition } from '../../api.js';
+import { COMMON_READ_TOOLS } from '../common/tools.js';
+import { readSpecTool } from '../../tools/spec/readSpec.js';
 
 export const BROWSER_TOOLS: ToolDefinition[] = [
   {
@@ -164,6 +166,11 @@ export const BROWSER_TOOLS: ToolDefinition[] = [
       },
     },
   },
+  // Read tools so the QA agent can pull full spec detail on demand — the spec
+  // context in its prompt is a lightweight index (see prompt.ts) that points
+  // here. Routed to the global executeTool in index.ts, mirroring specSync.
+  ...COMMON_READ_TOOLS,
+  readSpecTool.definition,
 ];
 
 export const BROWSER_EXTERNAL_TOOLS = new Set(['browserCommand']);

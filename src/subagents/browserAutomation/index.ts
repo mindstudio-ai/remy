@@ -7,8 +7,11 @@
  */
 
 import type { Tool, ToolExecutionContext } from '../../tools/index.js';
+import { executeTool as executeRegistryTool } from '../../tools/index.js';
 import { runSubAgent } from '../runner.js';
 import { BROWSER_TOOLS, BROWSER_EXTERNAL_TOOLS } from './tools.js';
+import { COMMON_READ_TOOL_NAMES } from '../common/tools.js';
+import { readSpecTool } from '../../tools/spec/readSpec.js';
 import { getBrowserAutomationPrompt } from './prompt.js';
 import { sidecarRequest } from '../../tools/_helpers/sidecar.js';
 import { acquireBrowserLock } from '../../tools/_helpers/browserLock.js';
@@ -107,6 +110,15 @@ export async function runBrowserAutomation(
           } catch (err: any) {
             return `Error taking screenshot: ${err.message}`;
           }
+        }
+        // Read tools (readFile/listDir/grep/glob + readSpec) route to the global
+        // registry so the QA agent can fetch the full spec its prompt index points
+        // to. Mirrors how specSync / productVision execute their read tools.
+        if (
+          COMMON_READ_TOOL_NAMES.has(name) ||
+          name === readSpecTool.definition.name
+        ) {
+          return executeRegistryTool(name, _input, context);
         }
         return `Error: unknown local tool "${name}"`;
       },

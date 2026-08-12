@@ -14,8 +14,6 @@ import type { ToolExecutionContext } from '../../tools/index.js';
 import { runDesignExpertRender } from '../designExpert/index.js';
 import { readAsset } from '../../assets.js';
 
-export { loadSpecIndex, loadRoadmapIndex } from '../common/context.js';
-
 const ROADMAP_DIR = 'src/roadmap';
 const PITCH_DECK_SHELL = readAsset(
   'subagents/productVision',

@@ -6,8 +6,11 @@
  */
 
 import { readAsset } from '../../assets.js';
-import { loadSpecIndex, loadRoadmapIndex } from './executor.js';
-import { loadPlatformBrief } from '../common/context.js';
+import {
+  loadSpecIndex,
+  loadRoadmapIndex,
+  loadPlatformBrief,
+} from '../common/context.js';
 
 const BASE_PROMPT = readAsset('subagents/productVision', 'prompt.md');
 
