@@ -14,6 +14,13 @@ export const Uploads = files.defineStore('uploads');
 export const Assets = files.defineStore('assets', { access: 'public' });
 ```
 
+> **File stores are always live — there is no dev copy.** Unlike the database (which has a dev copy
+> that scenarios truncate), file storage is a single, live store. Every `put`, `delete`, or overwrite
+> takes effect on production immediately and is irreversible. **Scenarios never reset file stores** —
+> running a scenario truncates database tables but leaves files untouched, so files are not a "clean
+> slate" you can re-seed, and orphaned files accumulate across runs. Delete deliberately, and prefer
+> content-addressed or user-scoped keys so re-runs overwrite rather than pile up.
+
 ## Defining a Store
 
 `files.defineStore(name, options?)` returns a lazy `Store` handle. Like `db.defineTable`, define it

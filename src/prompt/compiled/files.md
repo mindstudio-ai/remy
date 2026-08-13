@@ -4,6 +4,11 @@ Per-app blob storage — the twin of `db` (`db` stores rows; `files` stores file
 generated documents, images, marketing assets). **Private by default.** Files serve on the app's own
 domain.
 
+**File stores are always live — there is no dev copy.** Every `put`/`delete`/overwrite hits
+production storage immediately and irreversibly. And unlike the database, **scenarios never reset file
+stores** — a scenario truncates DB tables but leaves files untouched, so files are not a "clean slate"
+you can re-seed, and orphaned files accumulate across runs. Delete deliberately.
+
 ## Defining a store
 
 Like `db.defineTable`, define at module scope and import into methods. Access is pinned at define
