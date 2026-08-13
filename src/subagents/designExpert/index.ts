@@ -39,16 +39,20 @@ const DESIGN_EXPERT_RENDER_TOOLS = [
 interface DesignExpertRunOptions {
   task: string;
   background?: boolean;
-  /** Include + route writeFile/editFile so the expert writes the asset itself. */
-  enableWrite?: boolean;
+  /**
+   * Author the asset directly: includes + routes writeFile/editFile, and swaps
+   * the system prompt's advisor contract for the authoring one. Both halves
+   * matter — the tools alone leave the prompt telling it to reply with advice.
+   */
+  render?: boolean;
   /** Tool name used in the background-completion notification. */
   reportingName?: string;
 }
 
 /**
  * Shared core for both the public (read-only advisor) tool and the internal
- * render entry point. The only differences are the tool set / routing (write
- * tools when enableWrite) and the background reporting name.
+ * render entry point. The only differences are the contract (prompt + tool set
+ * and routing when `render`) and the background reporting name.
  */
 async function runDesignExpert(
   opts: DesignExpertRunOptions,
@@ -59,10 +63,12 @@ async function runDesignExpert(
     : [];
 
   return runSubAgent({
-    system: getDesignExpertPrompt(context.onboardingState),
+    system: getDesignExpertPrompt(context.onboardingState, {
+      render: opts.render,
+    }),
     task: opts.task,
     history: history.length > 0 ? history : undefined,
-    tools: opts.enableWrite ? DESIGN_EXPERT_RENDER_TOOLS : DESIGN_EXPERT_TOOLS,
+    tools: opts.render ? DESIGN_EXPERT_RENDER_TOOLS : DESIGN_EXPERT_TOOLS,
     externalTools: new Set<string>(),
     executeTool: (name, input, toolCallId, onLog, sams) => {
       const childCtx = toolCallId
@@ -71,7 +77,7 @@ async function runDesignExpert(
       if (COMMON_READ_TOOL_NAMES.has(name)) {
         return mainExecuteTool(name, input, childCtx);
       }
-      if (opts.enableWrite && RENDER_WRITE_TOOL_NAMES.has(name)) {
+      if (opts.render && RENDER_WRITE_TOOL_NAMES.has(name)) {
         return mainExecuteTool(name, input, childCtx);
       }
       return executeDesignExpertTool(name, input, childCtx, toolCallId, onLog);
@@ -150,5 +156,5 @@ export async function runDesignExpertRender(
   opts: { task: string; background?: boolean; reportingName?: string },
   context: ToolExecutionContext,
 ): Promise<SubAgentResult> {
-  return runDesignExpert({ ...opts, enableWrite: true }, context);
+  return runDesignExpert({ ...opts, render: true }, context);
 }

@@ -46,6 +46,27 @@ const PROMPT_TEMPLATE = readAsset(SUBAGENT, 'prompt.md')
 // Public API
 // ---------------------------------------------------------------------------
 
+// Render mode's contract, stated once.
+//
+// Everything in prompt.md casts this agent as an advisor whose deliverable is a
+// message: "an expert developer who will implement exactly what you propose"
+// (identity.md), "The developer interprets your results" (instructions.md), plus
+// the guidance throughout on specifying layouts in prose and writing
+// implementation notes. That's right for the public visualDesignExpert tool,
+// which is nearly all of its traffic, and untrue when the agent writes the file
+// itself. Without this block the render brief is one paragraph arguing against
+// the whole system prompt, and the failure mode is the agent composing the
+// document in its thinking and replying with the summary the brief asked for —
+// no file, and nothing in the reply to recover it from.
+//
+// Names the three instructions that actually misfire rather than trying to undo
+// the persona wholesale, which is what keeps it this short.
+const RENDER_TASK_BLOCK = `<render_task>
+This task is a render: you are the author of the artifact, not an advisor on it. Everything above describes your usual work — proposing a design to a developer who then builds it. Here there is no developer downstream. You write the file the brief names, using writeFile (or editFile when it already exists), and that file is the entire deliverable.
+
+The guidance about specifying layouts in prose, writing implementation notes, and keeping wireframes small doesn't apply here: it exists to hand a design to someone else to build, and you are the one building it. Your reply is a receipt — one line naming what you wrote.
+</render_task>`;
+
 /**
  * Render the org-level design-system block for the prompt tail, when the org
  * has one set. Facts plus soft framing: it's a foundational reference to orient
@@ -66,8 +87,14 @@ export function renderDesignSystemBlock(designSystem?: string): string {
 /**
  * Build the design research prompt with session-stable samples.
  * Call per invocation — samples are stable across calls within a session.
+ *
+ * `render` swaps the advisor contract for the authoring one. It lands after the
+ * cache breakpoint, so both modes share a byte-identical cached prefix.
  */
-export function getDesignExpertPrompt(onboardingState?: string): string {
+export function getDesignExpertPrompt(
+  onboardingState?: string,
+  opts?: { render?: boolean },
+): string {
   const specContext = loadSpecIndex();
 
   // Get or create stable sample indices for this session
@@ -112,6 +139,11 @@ export function getDesignExpertPrompt(onboardingState?: string): string {
   const state = onboardingState ?? 'onboardingFinished';
   if (state !== 'onboardingFinished') {
     prompt += `\n\n<project_phase>\nThis project is in the "${state}" phase. The codebase is a placeholder scaffold or is being generated for the first time.\n</project_phase>`;
+  }
+
+  // Last, so the contract it states is the closest thing to the task itself.
+  if (opts?.render) {
+    prompt += `\n\n${RENDER_TASK_BLOCK}`;
   }
 
   return prompt;

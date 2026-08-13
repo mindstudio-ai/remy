@@ -85,7 +85,7 @@ export async function executeVisionTool(
           ? `### Your deliverable
 The pitch deck already exists at \`${filePath}\`. Read it, then update it for the new <pitch_content>, keeping the presentation scaffolding intact — change only what needs to change.
 
-Reply with a one-line summary of what you changed — not the HTML.`
+Then reply with a one-line summary of what you changed.`
           : `### Your deliverable
 Write the complete pitch deck to \`${filePath}\`. It does not exist yet — start from this scaffold, keeping its progress bar, chevron navigation, keyboard navigation, and transition mechanics intact:
 
@@ -93,7 +93,7 @@ Write the complete pitch deck to \`${filePath}\`. It does not exist yet — star
 ${PITCH_DECK_SHELL}
 </pitch_deck_shell>
 
-Reply with a one-line summary of what you wrote — not the HTML.`;
+Then reply with a one-line summary of what you wrote.`;
 
         const task = `
 <pitch_content>${input.task}</pitch_content>

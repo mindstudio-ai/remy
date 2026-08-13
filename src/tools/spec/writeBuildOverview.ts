@@ -81,7 +81,7 @@ Write the complete Build Overview to \`${OVERVIEW_FILE}\`. The file does not exi
 ${OVERVIEW_SHELL}
 </overview_shell>
 
-Reply with a one-line summary of what you wrote — not the HTML.`;
+Then reply with a one-line summary of what you wrote.`;
 }
 
 // Refresh: a file already exists — update it, preserving the skin.
@@ -89,7 +89,7 @@ function refreshDelivery(): string {
   return `### Your deliverable
 The Build Overview already exists at \`${OVERVIEW_FILE}\`. Read it, then update it to reflect <overview_copy>, preserving its established skin — change only what the copy changed.
 
-Reply with a one-line summary of what you changed — not the HTML.`;
+Then reply with a one-line summary of what you changed.`;
 }
 
 export const buildOverviewTool: Tool = {
