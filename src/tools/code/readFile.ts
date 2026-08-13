@@ -5,6 +5,14 @@ import type { Tool } from '../index.js';
 
 const DEFAULT_WINDOW = 500;
 
+// A line window doesn't bound bytes. 500 rows of a wide CSV — 200 columns, ~800
+// chars each — is a quarter of a megabyte, and two such reads in one turn put
+// ~128K tokens into the conversation permanently. Cap the emitted text by UTF-8
+// bytes as well, the same way bash.ts caps command output (MAX_OUTPUT_BYTES).
+// 64KB is ~16K tokens: 500 lines of 128 chars fits, so ordinary source is
+// untouched and only genuinely wide files get cut.
+const MAX_BYTES = 64 * 1024;
+
 /**
  * Check if a buffer likely contains binary content by looking for null bytes
  * in the first 8KB.
@@ -24,7 +32,7 @@ export const readFileTool: Tool = {
   definition: {
     name: 'readFile',
     description:
-      "Read a file's contents with line numbers. Always read a file before editing it — never guess at contents. By default returns the first 500 lines. To read a specific range, pass startLine and endLine (1-indexed, inclusive) — e.g. to read lines 253–343, pass startLine: 253, endLine: 343. To read the end of a file or log, pass tail (the number of lines from the end). Line numbers in the output correspond to what editFile expects. For a large file, locate the relevant section first (symbols or grep), then read just that range.",
+      "Read a file's contents with line numbers. Always read a file before editing it — never guess at contents. By default returns the first 500 lines, and at most 64KB — a file with very wide lines (a CSV, a minified bundle) comes back short of 500 lines, so read a narrower range or grep rather than paging through it. To read a specific range, pass startLine and endLine (1-indexed, inclusive) — e.g. to read lines 253–343, pass startLine: 253, endLine: 343. To read the end of a file or log, pass tail (the number of lines from the end). Line numbers in the output correspond to what editFile expects. For a large file, locate the relevant section first (symbols or grep), then read just that range.",
     inputSchema: {
       type: 'object',
       properties: {
@@ -99,16 +107,48 @@ export const readFileTool: Tool = {
         }
       }
 
-      const sliced = allLines.slice(startIdx, endIdxExclusive);
+      const numberedLines = allLines
+        .slice(startIdx, endIdxExclusive)
+        .map((line, i) => `${String(startIdx + i + 1).padStart(4)} ${line}`);
 
-      const numbered = sliced
-        .map((line, i) => `${String(startIdx + i + 1).padStart(4)} ${line}`)
-        .join('\n');
+      let kept = numberedLines;
+      let byteTruncated = false;
+      if (Buffer.byteLength(numberedLines.join('\n'), 'utf-8') > MAX_BYTES) {
+        byteTruncated = true;
+        kept = [];
+        let used = 0;
+        for (const line of numberedLines) {
+          // +1 for the newline this line will be joined with.
+          const cost =
+            Buffer.byteLength(line, 'utf-8') + (kept.length > 0 ? 1 : 0);
+          if (used + cost > MAX_BYTES) {
+            break;
+          }
+          kept.push(line);
+          used += cost;
+        }
+        if (kept.length === 0) {
+          // One line wider than the whole budget — a minified bundle, or a
+          // single-line JSON file. Emit a byte-exact head of it rather than
+          // nothing at all.
+          kept = [
+            Buffer.from(numberedLines[0], 'utf-8')
+              .subarray(0, MAX_BYTES)
+              .toString('utf-8'),
+          ];
+        }
+      }
 
-      let result = numbered;
+      let result = kept.join('\n');
       const displayStart = startIdx + 1;
-      const displayEnd = startIdx + sliced.length;
-      if (displayStart > 1 || displayEnd < totalLines) {
+      const displayEnd = startIdx + kept.length;
+      if (byteTruncated) {
+        result +=
+          `\n\n(showing lines ${displayStart}–${displayEnd} of ${totalLines}, ` +
+          `truncated at ${(MAX_BYTES / 1024).toFixed(0)}KB — this file's lines are wide. ` +
+          `Read a narrower range with startLine/endLine, or grep for what you need, ` +
+          `instead of paging through it.)`;
+      } else if (displayStart > 1 || displayEnd < totalLines) {
         result += `\n\n(showing lines ${displayStart}–${displayEnd} of ${totalLines} — pass startLine/endLine to read a different range)`;
       }
 
