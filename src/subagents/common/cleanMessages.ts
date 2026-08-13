@@ -98,9 +98,15 @@ export function cleanMessagesForApi(messages: Message[]): Message[] {
       (b) => b.type === 'summary' && b.name === 'conversation',
     );
     if (summaryBlock && summaryBlock.type === 'summary') {
+      // The quoted turns go in their own block rather than inside the summary:
+      // the summary paraphrases, this is verbatim, and the difference matters
+      // when the pending question is "which of those did you offer me?"
+      const recent = summaryBlock.recent
+        ? `\n\n<recent_messages>\nThe last few turns of the summarized conversation, quoted exactly as they were said.\n\n${summaryBlock.recent}\n</recent_messages>`
+        : '';
       prefix.push({
         role: 'user',
-        content: `<conversation_summary>\n${summaryBlock.text}\n</conversation_summary>`,
+        content: `<conversation_summary>\n${summaryBlock.text}\n</conversation_summary>${recent}`,
         hidden: true,
       });
     }

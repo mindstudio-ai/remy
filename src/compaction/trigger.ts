@@ -8,42 +8,70 @@
  * `triggerCompaction(...)` with a `blocking` flag and either await the
  * returned promise or fire-and-forget.
  *
- * Summaries are queued in a module-level array. Callers drain via
+ * The finished checkpoint waits in a module-level slot. Callers drain via
  * applyPendingSummaries() when it's safe to splice into state.messages
  * (i.e., when the agent is idle).
  */
 
-import { compactConversation, findSafeInsertionPoint } from './index.js';
+import { compactConversation, type CompactionResult } from './index.js';
 import { createLogger } from '../logger.js';
 import { resolveModel } from '../models/surfaces.js';
 import { saveSession } from '../session.js';
 import type { AgentState } from '../types.js';
-import type { Message } from '../api.js';
 import type { ApiConfig } from '../config.js';
 
 const log = createLogger('compaction:trigger');
 
-/** Summaries waiting to be inserted into state.messages. */
-const pendingSummaries: Message[] = [];
+/**
+ * The finished checkpoint waiting to be inserted into state.messages. A single
+ * slot rather than a queue: triggerCompaction refuses to start another
+ * compaction while one is pending, so there is never more than one.
+ */
+let pending: CompactionResult | null = null;
 
 /** The currently in-flight compaction, if any — concurrent callers join this. */
 let inflightCompaction: Promise<void> | null = null;
 
 /**
- * Drain pending summaries into the session at a safe point. Call when the
+ * Drain the pending checkpoint into the session at a safe point. Call when the
  * agent is idle — splicing mid-turn can land a checkpoint between a tool_use
  * and its results.
  *
- * Every mode that can start a compaction has to call this. Summaries left in
- * the queue are billed and thrown away, and the conversation stays uncompacted.
+ * Every mode that can start a compaction has to call this. A checkpoint left in
+ * the slot is billed and thrown away, and the conversation stays uncompacted.
+ *
+ * The checkpoint goes directly after the last message its summary covered, not
+ * at the end of the conversation. Those differ whenever anything was appended
+ * while the summary generated, and the difference is not cosmetic: everything
+ * in between would be summarized by nothing and, sitting before the checkpoint,
+ * dropped from every later API call by cleanMessagesForApi.
  */
 export function applyPendingSummaries(state: AgentState): void {
-  const summaries = pendingSummaries.splice(0);
-  if (summaries.length === 0) {
+  const drained = pending;
+  pending = null;
+  if (!drained || drained.checkpoints.length === 0) {
     return;
   }
-  const idx = findSafeInsertionPoint(state.messages);
-  state.messages.splice(idx, 0, ...summaries);
+
+  // The boundary is already a safe insertion point by construction, so it is
+  // deliberately not re-snapped here — findSafeInsertionPoint only walks
+  // backward, which would move the checkpoint earlier and reopen the gap.
+  let idx: number;
+  if (!drained.boundary) {
+    idx = 0;
+  } else {
+    const at = state.messages.indexOf(drained.boundary);
+    // Not found means rotation archived the summarized range while this waited.
+    // Everything still in state.messages is then past the boundary, so the
+    // checkpoint belongs in front of all of it.
+    idx = at === -1 ? 0 : at + 1;
+  }
+
+  state.messages.splice(idx, 0, ...drained.checkpoints);
+  log.info('Checkpoint applied', {
+    index: idx,
+    messageCount: state.messages.length,
+  });
   saveSession(state);
 }
 
@@ -86,6 +114,12 @@ export interface TriggerOptions {
  * late joiners get the awaitable promise but no `started`/`complete`
  * notifications. Frontends should not assume `started`/`complete` pair
  * with every caller's requestId — they pair only with the originator's.
+ *
+ * A request that arrives after a compaction finishes but before it drains is
+ * also a no-op. The checkpoint isn't in state.messages yet, so a second run
+ * would find no checkpoint to start from and re-summarize the conversation from
+ * the beginning, billing a full summary to produce a checkpoint the first one
+ * already covers.
  */
 export function triggerCompaction(
   state: AgentState,
@@ -94,6 +128,10 @@ export function triggerCompaction(
 ): Promise<void> {
   if (inflightCompaction) {
     return inflightCompaction;
+  }
+  if (pending) {
+    log.info('Compaction skipped — a checkpoint is already waiting to apply');
+    return Promise.resolve();
   }
 
   const { blocking = false, requestId, model } = opts;
@@ -104,8 +142,8 @@ export function triggerCompaction(
     apiConfig,
     resolveModel('conversationSummarizer', state.models, model),
   )
-    .then((summaries) => {
-      pendingSummaries.push(...summaries);
+    .then((result) => {
+      pending = result;
       listener?.({ type: 'complete', requestId });
       log.info('Compaction complete');
     })

@@ -8,15 +8,23 @@
  * Generates separate summaries for the main conversation and each
  * subagent that has accumulated history.
  *
- * Designed to run in the background — snapshots the insertion point
- * upfront and inserts at that index when done, so new messages that
- * arrive during generation are unaffected.
+ * Designed to run in the background — snapshots the boundary it summarized
+ * upfront and hands it back, so the checkpoint lands there rather than at
+ * wherever the conversation has reached by the time it's safe to splice.
+ * Messages that arrive during generation then sit after the checkpoint and
+ * survive verbatim; when the checkpoint went in at the current end instead,
+ * they were covered by neither the summary nor the API context.
  *
  * A summary the model didn't really write is worse than no compaction at
  * all: the history it replaces is gone from every later API call, and the
  * agent carries on with no record of what it built. So the conversation
  * summary is validated, retried, and — if it still doesn't hold up —
  * abandoned with an error rather than checkpointed.
+ *
+ * A summary also paraphrases, and paraphrase loses referents — "yes, do that"
+ * needs the exact words it points at. So the conversation checkpoint carries
+ * the last few narrative turns of the range it replaces quoted verbatim,
+ * alongside the summary.
  */
 
 import {
@@ -25,6 +33,7 @@ import {
   type ContentBlock,
 } from '../api.js';
 import { readAsset } from '../assets.js';
+import { isAutomatedMessage } from '../automatedActions/sentinel.js';
 import { SUBAGENT_TOOL_NAMES } from '../tools/index.js';
 import { createLogger } from '../logger.js';
 import { recordUsage, nanoToDollars } from '../usageLedger.js';
@@ -38,12 +47,26 @@ const SUBAGENT_SUMMARY_PROMPT = readAsset('compaction', 'subagent.md');
 /** Subagents that support persistent threads and should get their own summaries. */
 const SUMMARIZABLE_SUBAGENTS = ['visualDesignExpert', 'productVision'];
 
+export interface CompactionResult {
+  /** The checkpoint messages to splice in. Empty when there was nothing to do. */
+  checkpoints: Message[];
+  /**
+   * The last message the summary covered — the checkpoint belongs directly
+   * after it. Identified by object rather than index because `rotate()`
+   * (session.ts) reassigns `state.messages` to a tail slice, which shifts
+   * every index out from under a snapshot taken before it ran. Null when
+   * nothing was summarized.
+   */
+  boundary: Message | null;
+}
+
 /**
  * Compact the conversation by generating summary checkpoints.
  *
- * Snapshots the current message count as the insertion point. Summaries
- * are generated in parallel, then inserted at the snapshot index. Messages
- * appended after the snapshot (from ongoing turns) are not affected.
+ * Snapshots the boundary to summarize up to, generates the summaries in
+ * parallel, and returns them together with that boundary so the caller can
+ * splice at it once the agent is idle. Messages appended in the meantime end
+ * up after the checkpoint and stay in the API context verbatim.
  *
  * Throws if the conversation had content to summarize and no usable summary
  * came back. The caller reports that and leaves the history alone — losing
@@ -53,10 +76,9 @@ export async function compactConversation(
   messages: Message[],
   apiConfig: ApiConfig,
   model: string,
-): Promise<Message[]> {
-  // Snapshot the end of the messages to summarize. The caller will
-  // determine the actual insertion point when it's safe to splice.
+): Promise<CompactionResult> {
   const endIndex = findSafeInsertionPoint(messages);
+  const boundary = endIndex > 0 ? messages[endIndex - 1] : null;
 
   const summaries: Array<{ name: string; text: string }> = [];
   const tasks: Promise<void>[] = [];
@@ -124,6 +146,11 @@ export async function compactConversation(
     );
   }
 
+  // Quoted from the same range the conversation checkpoint replaces, so the
+  // checkpoint is self-contained: a paraphrase of the range plus the last few
+  // things actually said in it.
+  const recent = collectRecentNarrative(conversationMessages);
+
   const checkpointMessages: Message[] = summaries.map((s) => ({
     role: 'user' as const,
     hidden: true,
@@ -132,13 +159,17 @@ export async function compactConversation(
         type: 'summary' as const,
         name: s.name,
         text: s.text,
+        ...(s.name === 'conversation' && recent ? { recent } : {}),
         startedAt: Date.now(),
       },
     ],
   }));
 
-  log.info('Compaction complete', { summaries: summaries.length });
-  return checkpointMessages;
+  log.info('Compaction complete', {
+    summaries: summaries.length,
+    recentNarrativeChars: recent.length,
+  });
+  return { checkpoints: checkpointMessages, boundary };
 }
 
 /**
@@ -257,6 +288,112 @@ function getSubAgentMessagesForSummary(
   }
 
   return collected;
+}
+
+/**
+ * Turns quoted verbatim in a conversation checkpoint, counted in assistant
+ * replies — messages that end a turn, not mid-turn tool narration. Three covers
+ * the case this exists for — an offer, the user turn that prompted it, and the
+ * reply before — without carrying a transcript.
+ */
+const RECENT_NARRATIVE_REPLIES = 3;
+
+/**
+ * Ceiling on the quoted block, applied walking newest-first. Narrative is
+ * small: every narrative turn across the fifteen-message stretch that prompted
+ * this came to 7.5KB, and three consecutive replies to under 1KB. So this only
+ * bites on a pathologically long reply, and the newest assistant turn is quoted
+ * whole regardless — it's the one a follow-up is most likely pointing at.
+ */
+const RECENT_NARRATIVE_MAX_CHARS = 20_000;
+
+/**
+ * The words in a message, or null if it has none.
+ *
+ * Assistant messages count only when they end a turn — text with no tool calls
+ * after it. An assistant message that also calls tools is narrating its own work
+ * mid-turn ("Now let me fetch the signed URL and see what comes back"), and
+ * those outnumber real replies several to one during a build: counting them
+ * spends the whole quota on tool commentary and never reaches the exchange with
+ * the user. Thinking is always skipped — ephemeral, and not said to anyone.
+ *
+ * Genuine user turns only: tool results carry a `toolCallId`, internal machinery
+ * is `hidden`, and automated-action prompts carry a sentinel. Those last ones
+ * matter to exclude — `background_results` arrives as a user message holding a
+ * multi-kilobyte tool result and says so in its own body ("This is not a direct
+ * message from the user"). Quoting it under `[user]:` would both misattribute it
+ * and spend most of the budget below on it.
+ *
+ * A voice message arrives with empty `content` and its words on the attachment,
+ * so read the transcript when the body is empty — otherwise the quoted
+ * conversation drops precisely the user turns that tend to be referential.
+ */
+function narrativeText(msg: Message): string | null {
+  if (msg.role === 'assistant') {
+    if (!Array.isArray(msg.content)) {
+      return null;
+    }
+    const blocks = msg.content as ContentBlock[];
+    if (blocks.some((b) => b.type === 'tool')) {
+      return null;
+    }
+    const text = blocks
+      .filter((b): b is ContentBlock & { type: 'text' } => b.type === 'text')
+      .map((b) => b.text)
+      .join('')
+      .trim();
+    return text || null;
+  }
+  if (msg.role !== 'user' || msg.toolCallId || msg.hidden) {
+    return null;
+  }
+  if (typeof msg.content !== 'string' || isAutomatedMessage(msg.content)) {
+    return null;
+  }
+  const body = msg.content.trim();
+  if (body) {
+    return body;
+  }
+  return msg.attachments?.find((a) => a.transcript)?.transcript?.trim() || null;
+}
+
+/**
+ * Quote the last few narrative turns of `messages`, oldest-first.
+ *
+ * Narrative only — no tool calls, no tool results. Those are what make a tail
+ * expensive and they hold no referent: a compaction typically fires right after
+ * a long build turn, so a tail counted in messages would be all tool results
+ * and none of what was said.
+ */
+export function collectRecentNarrative(messages: Message[]): string {
+  const quoted: string[] = [];
+  let replies = 0;
+  let chars = 0;
+
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i];
+    const text = narrativeText(msg);
+    if (!text) {
+      continue;
+    }
+    // Both limits apply from the second turn on, so the newest reply is always
+    // quoted in full however long it ran.
+    if (quoted.length > 0) {
+      if (replies >= RECENT_NARRATIVE_REPLIES) {
+        break;
+      }
+      if (chars + text.length > RECENT_NARRATIVE_MAX_CHARS) {
+        break;
+      }
+    }
+    quoted.push(`[${msg.role}]: ${text}`);
+    chars += text.length;
+    if (msg.role === 'assistant') {
+      replies++;
+    }
+  }
+
+  return quoted.reverse().join('\n\n');
 }
 
 /**

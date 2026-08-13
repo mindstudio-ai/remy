@@ -73,6 +73,12 @@ export type ContentBlock =
       /** What this summary covers: 'conversation' or a subagent name (e.g. 'visualDesignExpert'). */
       name: string;
       text: string;
+      /**
+       * The last few things actually said in the range this summary replaces,
+       * quoted verbatim (conversation summaries only). A summary paraphrases,
+       * and a follow-up like "yes, do that" needs the exact words it refers to.
+       */
+      recent?: string;
       startedAt: number;
     };
 
