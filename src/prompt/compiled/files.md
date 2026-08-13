@@ -1,13 +1,31 @@
 # Files & Storage
 
-Per-app blob storage — the twin of `db` (`db` stores rows; `files` stores files: user uploads,
-generated documents, images, marketing assets). **Private by default.** Files serve on the app's own
-domain.
+Per-app blob storage: user uploads, generated documents, images, marketing assets. **Think of a store
+as a CDN-backed bucket the app talks to — not app-defined state like the database.** You declare the
+store; what lands in it is arbitrary durable blobs the app doesn't model — no schema, nothing to
+migrate, no dev/prod sync. **Private by default**, served on the app's own domain. (The API is
+*shaped* like `db` — `defineStore` at module scope, import the handle, like `defineTable` — but the
+mental model is a bucket, not rows.)
 
-**File stores are always live — there is no dev copy.** Every `put`/`delete`/overwrite hits
-production storage immediately and irreversibly. And unlike the database, **scenarios never reset file
-stores** — a scenario truncates DB tables but leaves files untouched, so files are not a "clean slate"
-you can re-seed, and orphaned files accumulate across runs. Delete deliberately.
+## How a store behaves (read before the API)
+
+- **One store, shared across dev and prod — on purpose.** There's no dev copy: a file you upload in
+  the dev editor (a marketing image, a corpus to vectorize) is *already there in prod* at the same
+  stable URL. That continuity is a feature — don't fork buckets per environment.
+- **Creates are safe by default**, because keys default to unique — `put()` mints a UUID (or a
+  content-addressed hash) when you don't pass one, so a dev write and a prod write land at different
+  keys and coexist. A collision only happens when you *choose* a fixed key.
+- **Care goes on the destructive / fixed-key operations**, not on writing in general: `delete(key)`
+  and overwriting a **stable key** (e.g. `config/latest.json`) reach the one live store, so a dev run
+  can clobber what prod serves. A `put()` with a default key can't. (There's intentionally no bulk
+  "clear the store".)
+- **Scenarios don't touch files — and that's correct.** A scenario truncates DB tables to seed test
+  *rows*; files are durable and left alone. A store isn't a "clean slate" you re-seed each run — upload
+  a test file once in dev and it stays. Accumulation is normal for an asset store; don't write
+  `clear()`-style reset helpers.
+- **Need dev and prod to *not* share** something (mutable fixed-key state, or sensitive uploads a
+  developer shouldn't see)? There's no per-store isolation switch — scope the key yourself (e.g.
+  `config/${env}/…`). Rare; the shared default is right almost always.
 
 ## Defining a store
 
