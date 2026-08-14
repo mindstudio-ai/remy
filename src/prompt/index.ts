@@ -110,6 +110,10 @@ Current date: ${now}
   {{compiled/files.md}}
   </app_files>
 
+  <data_sources>
+  {{compiled/datasources.md}}
+  </data_sources>
+
   <interfaces>
   {{compiled/interfaces.md}}
   </interfaces>

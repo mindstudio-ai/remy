@@ -91,6 +91,8 @@ For developers writing apps that run on Remy. The three-layer model (spec → co
 | [`09_local-development.md`](./developer-guide/09_local-development.md) | Local dev workflow with the CLI. |
 | [`09_secrets.md`](./developer-guide/09_secrets.md) | Encrypted secrets injected as `process.env`, with separate dev and prod values. |
 | [`10_deployment.md`](./developer-guide/10_deployment.md) | `git push` → build → deploy. The full deployment pipeline. |
+| [`11_files-and-storage.md`](./developer-guide/11_files-and-storage.md) | `files.defineStore()`: per-app blob storage for uploads, generated documents and assets. Private by default, served on the app's own domain. |
+| [`12_data-sources.md`](./developer-guide/12_data-sources.md) | `dataSources.defineDataSource()`: search over unstructured documents, with citations. When to use one — and when a database query is the right tool instead. |
 
 ### `brand-positioning/` — external positioning
 
