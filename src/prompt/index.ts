@@ -102,10 +102,6 @@ Current date: ${now}
   {{compiled/mcp-interfaces.md}}
   </building_mcp_interfaces>
 
-  <media_cdn>
-  {{compiled/media-cdn.md}}
-  </media_cdn>
-
   <app_files>
   {{compiled/files.md}}
   </app_files>

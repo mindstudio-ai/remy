@@ -116,10 +116,12 @@ response.abort();
 
 **Attachments:**
 
-Send images or documents alongside a message. Upload via `platform.uploadFile()` first, then pass CDN URLs as the 4th argument:
+Send images or documents alongside a message. Upload to the app's file store first (see Files & Storage), then pass the returned URLs as the 4th argument:
 
 ```ts
-const url = await platform.uploadFile(file);
+// backend method mints a token; the browser uploads straight to storage
+const token = await api.getUploadSlot({ filename: file.name, contentType: file.type });
+const { url } = await platform.upload(token, file);
 
 chat.sendMessage(threadId, "What's in this document?", {
   onText: (delta) => setText((prev) => prev + delta),
@@ -128,7 +130,7 @@ chat.sendMessage(threadId, "What's in this document?", {
 });
 ```
 
-Images (`i.mscdn.ai`) are sent as vision input. Documents (`f.mscdn.ai`) have text extracted server-side and included in context. Attachments are preserved in thread history.
+Images are sent as vision input; documents have their text extracted server-side and included in context. Attachments are preserved in thread history.
 
 **Key points:**
 - `onText` and `onThinking` receive deltas (append to state, don't replace)

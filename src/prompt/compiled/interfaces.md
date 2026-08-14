@@ -59,19 +59,16 @@ const api = createClient<{
 const { vendorId } = await api.submitVendorRequest({ name: 'Acme' });
 const { vendors } = await api.listVendors();
 
-// File upload (returns CDN URL)
-const url = await platform.uploadFile(file);
+// File upload → client-direct to the app's file store (see Files & Storage).
+// A backend method mints an upload token; the browser uploads straight to storage.
+const token = await api.getUploadSlot({ filename: file.name, contentType: file.type });
+const { key, url } = await platform.upload(token, file);
 
-// With progress tracking
-const url = await platform.uploadFile(file, {
-  onProgress: (fraction) => setProgress(fraction), // 0 to 1
-});
-
-// With abort support
+// With progress + abort
 const controller = new AbortController();
-const url = await platform.uploadFile(file, {
+const { url } = await platform.upload(token, file, {
   signal: controller.signal,
-  onProgress: (f) => setProgress(f),
+  onProgress: (fraction) => setProgress(fraction), // 0 to 1
 });
 controller.abort(); // cancels the upload
 

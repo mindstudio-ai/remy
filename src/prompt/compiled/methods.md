@@ -97,11 +97,8 @@ await mindstudio.sendEmail({
   cc: input.cc, // reply-all
 });
 
-// Upload files
-const { url } = await mindstudio.uploadFile({
-  data: buffer,
-  fileName: 'report.pdf',
-});
+// Store a file → returns a stable URL (define the store at module scope; see Files & Storage)
+const { url } = await Reports.put(buffer, { contentType: 'application/pdf', filename: 'report.pdf' });
 
 // Web scraping
 const { markdown } = await mindstudio.scrapeUrl({

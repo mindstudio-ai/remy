@@ -104,6 +104,22 @@ This is deterministic — same scenario always produces the same state.
 
 Scenarios are useful for seeding initial app state after build for testing, as well as to give the user a first impression of an app that is already filled with data and looks and feels usable. The user can choose to run further scenarios after initial build by clicking the Scenarios tab and selecting a scenario to run.
 
+## What scenarios don't touch
+
+**Scenarios seed database tables and nothing else.** They do not touch file stores or data sources —
+deliberately: both are durable and shared across dev and prod, with no per-release copy to reset, so
+there is nothing to truncate.
+
+Don't try to seed documents into a data source from a scenario, and don't write `clear()`-style reset
+helpers for one. Load a test corpus once from the CLI instead:
+
+```bash
+mindstudio-prod datasources add --source policies --wait fixtures/*.pdf
+```
+
+Re-running it is free (documents are content-addressed), so it's safe to keep in a setup script
+beside your scenarios.
+
 ## Scenario Data
 
 Align scenario data to the vibe of the app - construct data that feels like it fits.

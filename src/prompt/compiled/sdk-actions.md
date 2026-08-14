@@ -83,7 +83,6 @@ result.$billingCost;         // cost in credits (if applicable)
 
 | Action | What it does |
 |--------|-------------|
-| `uploadFile` | Upload a file to CDN |
 | `downloadVideo` | Download a video URL |
 | `getMediaMetadata` | Get dimensions, duration, etc. |
 | `convertPdfToImages` | PDF pages to PNG images |

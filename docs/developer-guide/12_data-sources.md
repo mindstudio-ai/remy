@@ -77,6 +77,19 @@ flags.
 Supported formats: `pdf`, `docx`, `pptx`, `xlsx`, `odt`, `rtf`, `epub`, images (`png`, `jpg`, `webp`,
 `gif`, `avif`, `tiff`), and text (`txt`, `md`, `markdown`, `json`, `csv`, `tsv`, `log`, `html`).
 
+### Seeding a corpus for testing
+
+Scenarios seed database tables and deliberately don't touch data sources (durable, shared, nothing to
+reset). The supported way to get a known corpus into dev is the same `add` command, in a setup script
+next to your scenarios:
+
+```bash
+mindstudio-prod datasources add --source policies --wait fixtures/*.pdf
+```
+
+Re-running it is free — content-addressing means an unchanged corpus transfers nothing and embeds
+nothing — so it's safe to run on every setup rather than guarding it.
+
 ### When the app loads documents instead
 
 Use `add()` when *users* upload documents that need to be searchable — a knowledge base the customer

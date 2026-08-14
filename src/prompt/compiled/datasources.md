@@ -55,6 +55,10 @@ mindstudio-prod datasources search --source policies "what are the payment terms
 `--wait` blocks until processing finishes and exits non-zero on failure. Also `datasources list`,
 `status` (per-document state + ingest errors), `rm --document <id>`. `--help` for flags.
 
+**Seeding a test corpus:** scenarios don't touch data sources, so load fixtures with the same command
+in a setup script — `datasources add --source <slug> --wait fixtures/*.pdf`. Re-running is free, so
+it needs no guard.
+
 Use the SDK's `add()` only when *users* upload documents that must become searchable:
 
 ```typescript

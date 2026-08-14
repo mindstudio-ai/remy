@@ -85,9 +85,23 @@ const { key, url } = await platform.upload(token, file, { onProgress: (f) => set
 
 ## Public assets + image resizing
 
-Public files are world-readable, on the app's domain, and **images resize via query params**
-(`?w=&h=&fit=&crop=&fm=&dpr=&q=&blur=&sharpen=` — same vocabulary as the image CDN; set `dpr=2/3` for
-retina). Request the size you need rather than CSS-scaling a full-res original.
+Public files are world-readable, served on the app's own domain, and **images resize via query
+params** — request the size you need rather than CSS-scaling a full-res original. Always set `dpr=2`
+or `3` when sizing so images stay crisp on Retina displays.
+
+| Param | Example | Effect |
+|-------|---------|--------|
+| `w` | `?w=400` | Max width in pixels |
+| `h` | `?h=300` | Max height in pixels |
+| `fit` | `?fit=crop` | Resize mode: `scale-down`, `contain`, `cover`, `crop`, `pad` |
+| `crop` | `?crop=face` | Face-aware crop (with `fit=crop`) |
+| `fm` | `?fm=webp` | Output format: `avif`, `webp`, `jpeg`, `auto` |
+| `dpr` | `?dpr=2` | Device pixel ratio |
+| `q` | `?q=80` | Quality (1–100) |
+| `blur` | `?blur=10` | Blur radius |
+| `sharpen` | `?sharpen=1` | Sharpen amount |
+
+Combine freely: `…/hero.jpg?w=200&h=200&fit=crop&fm=avif`.
 
 Lightweight-config pattern: a public store + a stable `key` is a file the frontend can `fetch` with no
 DB hit and the backend can overwrite (`Config.put(json, { key: 'config/latest.json' })`).
