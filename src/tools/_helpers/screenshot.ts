@@ -7,6 +7,16 @@
 import { sidecarRequest } from './sidecar.js';
 import { analyzeImage } from '../../subagents/common/analyzeImage.js';
 
+// Outermost rung of the capture timeout ladder. Each layer must be strictly
+// slower than the one it wraps, so the innermost layer — which knows *what* was
+// slow — is always the one that reports the failure. These used to match the
+// sandbox's exactly, and since the outer timer starts first it always won: the
+// agent got this layer's opaque abort instead of the tunnel's explanation.
+//
+//   tunnel capture   20s / 90s   <   sandbox sidecar   30s / 120s   <   here
+const VIEWPORT_CAPTURE_TIMEOUT_MS = 45_000;
+const FULLPAGE_CAPTURE_TIMEOUT_MS = 135_000;
+
 const SCREENSHOT_ANALYSIS_PROMPT = `Describe everything visible on screen from top to bottom — every element, its position, its size relative to the viewport, its colors, its content. Be comprehensive, thorough, and spatial. After the inventory, note anything that looks visually broken (overlapping elements, clipped text, misaligned components).`;
 
 const ANALYSIS_RESPONSE_FORMAT = `Respond only with your analysis as Markdown and absolutely no other text. Do not use emojis - use unicode if you need symbols.`;
@@ -39,8 +49,8 @@ export interface ScreenshotOptions {
   /** Navigate to this path before capturing (e.g. "/settings"). */
   path?: string;
   /** Capture the full page height (default) vs. just the visible viewport.
-   * Viewport captures skip the pre-roll scroll and tall stitch, so they're
-   * faster and far less failure-prone for long pages. */
+   * Viewport captures skip the pre-roll scroll, so they're faster and far less
+   * failure-prone for long pages. */
   fullPage?: boolean;
   /** Exact-size capture: clip to these viewport dimensions, for rendering a
    * fixed-size artifact like a 1200×630 Open Graph share card. Both must be set
@@ -132,7 +142,7 @@ export async function captureAndAnalyzeScreenshot(
   }
 
   // An exact width/height request is always a viewport clip, never a full-page
-  // stitch — force the viewport endpoint so the size is honored.
+  // capture — force the viewport endpoint so the size is honored.
   if (width != null && height != null) {
     fullPage = false;
   }
@@ -150,7 +160,11 @@ export async function captureAndAnalyzeScreenshot(
         ...(height != null ? { height } : {}),
         ...(format ? { format } : {}),
       },
-      { timeout: fullPage ? 120000 : 30000 },
+      {
+        timeout: fullPage
+          ? FULLPAGE_CAPTURE_TIMEOUT_MS
+          : VIEWPORT_CAPTURE_TIMEOUT_MS,
+      },
     );
     url = ssResult?.url || ssResult?.screenshotUrl;
     if (!url) {

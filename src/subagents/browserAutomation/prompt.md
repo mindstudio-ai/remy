@@ -43,6 +43,7 @@ Note: the snapshot concatenates inline text and strips whitespace. If you need t
 - `navigate`: Navigate to a new URL within the app. Waits for the new page to load before continuing with subsequent steps. Use this instead of evaluate with `window.location.href` when you need to navigate and then continue interacting with the new page. Steps after navigate execute on the new page automatically.
 - `evaluate`: Run arbitrary JavaScript in the page and return the result.
 - `styles`: Read computed CSS styles from page elements. Pass a `properties` array with camelCase CSS property names (e.g., `["backgroundColor", "borderRadius", "fontSize"]`). Omit `properties` for a default set covering colors, typography, spacing, borders, shadows, dimensions, and layout. Uses the same targeting as click/type (ref, text, role, label, selector). Omit the target to get styles for all elements from the last snapshot.
+- `screenshotFullPage`: Take a screenshot of the whole page, top to bottom. Returns CDN url with full text analysis and dimensions. Use for overall composition or content past the fold.
 - `screenshotViewport`: Take a screenshot of the visible viewport. Returns CDN url with full text analysis and dimensions. To capture a specific section, set `scrollToSelector` (a CSS selector) — or `scrollY` (an absolute offset) — on this same step; it scrolls the target into view and captures it atomically, so you do NOT need a separate scroll step. Do not use if you can get what you need with other tools - only use when you need to visually see the viewport.
 - `setViewport`: Switch the browser between desktop and mobile rendering. Set `mode` to `"desktop"` or `"mobile"`. Mobile emulates a phone (390-wide, touch, device pixel ratio 2); desktop is the standard wide viewport. This reloads the page so media queries, responsive layouts, and `matchMedia` re-evaluate — the reload clears in-page state, so switch before you set up the state you want to inspect. The mode persists across navigations within a run. Each run starts in the app's default mode, so only use this when you need to check the other one.
 
@@ -161,7 +162,7 @@ Check a count with evaluate:
 
 ### Final Screenshot
 How you take the final screenshot depends on what the task asked for:
-- **Whole page** → use the standalone `screenshotFullPage` tool. It takes a full-height screenshot of the current page and returns the URL plus a full-text description.
+- **Whole page** → use a `browserCommand` batch ending in a `screenshotFullPage` step. Returns the URL plus a full-text description.
 - **A specific section / viewport** → use a `browserCommand` batch ending in a `screenshotViewport` step with `scrollToSelector` set to the section (e.g. `{ "command": "screenshotViewport", "scrollToSelector": "#pricing" }`). This scrolls the section into view and captures it in one atomic step. Do this rather than a separate scroll step followed by a capture — capturing the viewport is only reliable when the scroll and the shot are in the same step.
 
 <rules>

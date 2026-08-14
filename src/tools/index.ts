@@ -9,14 +9,8 @@
  *   - initialCodegen / onboardingFinished:  spec tools + code tools
  */
 
-export interface ToolDefinition {
-  name: string;
-  description: string;
-  inputSchema: Record<string, any>;
-}
-
 import type { AgentEvent, ExternalToolResolver } from '../types.js';
-import type { Message } from '../api.js';
+import type { Message, ToolDefinition } from '../api.js';
 import type { ToolRegistry } from '../toolRegistry.js';
 import type { ApiConfig } from '../config.js';
 
@@ -65,7 +59,13 @@ export interface Tool {
   definition: ToolDefinition;
   /** Whether results from this tool can be cleared from old turns to save context.
    * true = results are ephemeral (file contents, diffs, search results, terminal output).
-   * false = results contain decisions, guidance, or user input that should persist. */
+   * false = results contain decisions, guidance, or user input that should persist.
+   *
+   * Required here, and beside the definition rather than inside it: main-agent
+   * tools are `Tool` objects, so there's a wrapper to hang it on, and agent.ts
+   * turns it into the `excludeToolsFromClearing` request param. Sub-agent tool
+   * lists are bare `ToolDefinition[]` with no wrapper, so they set the optional
+   * `clearable` on the definition instead. The server accepts either. */
   clearable: boolean;
   /** Tools that only ever run in the background — dispatched detached, returning
    * an immediate ack while work continues. Unlike the opt-in `background: true`

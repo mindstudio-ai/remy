@@ -15,15 +15,16 @@ import { readSpecTool } from '../../tools/spec/readSpec.js';
 import { getBrowserAutomationPrompt } from './prompt.js';
 import { sidecarRequest } from '../../tools/_helpers/sidecar.js';
 import { acquireBrowserLock } from '../../tools/_helpers/browserLock.js';
-import {
-  captureAndAnalyzeScreenshot,
-  buildScreenshotAnalysisPrompt,
-} from '../../tools/_helpers/screenshot.js';
+import { buildScreenshotAnalysisPrompt } from '../../tools/_helpers/screenshot.js';
 import { runMindstudioCli } from '../common/runMindstudioCli.js';
 import { resolveModel } from '../../models/surfaces.js';
 import { createLogger } from '../../logger.js';
 
 const log = createLogger('browser-automation');
+
+/** `browserCommand` steps that produce an image — the only way this sub-agent
+ *  captures anything. Both are analyzed and harvested the same way. */
+const CAPTURE_COMMANDS = new Set(['screenshotViewport', 'screenshotFullPage']);
 
 /**
  * Structured result from running the browser automation sub-agent.
@@ -68,12 +69,13 @@ export async function runBrowserAutomation(
       // Non-fatal — proceed with the run regardless.
     }
 
-    // Viewport captures happen as `screenshotViewport` steps inside
-    // `browserCommand` results (an external tool), which the runner can't stash
-    // as an artifact. Harvest the last one here so it can be surfaced below.
-    let lastBrowserCommandViewport:
-      | { url: string; styleMap?: string }
-      | undefined;
+    // Captures happen as steps inside `browserCommand` results (an external
+    // tool), which the runner can't stash as an artifact. Harvest the last one of
+    // each kind here so they can be surfaced below.
+    let lastCapture: {
+      viewport?: { url: string; styleMap?: string };
+      fullPage?: { url: string; styleMap?: string };
+    } = {};
     const result = await runSubAgent({
       system: getBrowserAutomationPrompt(),
       task,
@@ -93,22 +95,6 @@ export async function runBrowserAutomation(
             return JSON.stringify(result);
           } catch (err: any) {
             return `Error setting up browser: ${err.message}`;
-          }
-        }
-        if (name === 'screenshotFullPage') {
-          try {
-            return await captureAndAnalyzeScreenshot({
-              path: _input.path as string | undefined,
-              fullPage: true,
-              onLog,
-              model: resolveModel(
-                'imageAnalysis',
-                context.models,
-                context.model,
-              ),
-            });
-          } catch (err: any) {
-            return `Error taking screenshot: ${err.message}`;
           }
         }
         // Read tools (readFile/listDir/grep/glob + readSpec) route to the global
@@ -135,21 +121,29 @@ export async function runBrowserAutomation(
         }
         const result = await context.resolveExternalTool(id, name, input);
 
-        // Auto-analyze screenshotViewport results in browserCommand results
+        // Auto-analyze any captures the batch produced
         if (name === 'browserCommand') {
           try {
             const parsed = JSON.parse(result);
+            // Both capture kinds, analyzed and harvested identically. Full-page
+            // steps used to fall through this filter, so they came back as a bare
+            // URL with no description and were invisible to `opts.capture`.
             const screenshotSteps = (parsed.steps || []).filter(
-              (s: any) => s.command === 'screenshotViewport' && s.result?.url,
+              (s: any) => CAPTURE_COMMANDS.has(s.command) && s.result?.url,
             );
             if (screenshotSteps.length > 0) {
-              // Surface the last viewport capture from this batch (last write
-              // wins across batches) — this is what runBrowserAutomation returns.
-              const lastStep = screenshotSteps[screenshotSteps.length - 1];
-              lastBrowserCommandViewport = {
-                url: lastStep.result.url,
-                styleMap: lastStep.result.styleMap,
-              };
+              // Last write wins across batches, per kind — this is what
+              // runBrowserAutomation returns.
+              for (const step of screenshotSteps) {
+                const kind =
+                  step.command === 'screenshotFullPage'
+                    ? 'fullPage'
+                    : 'viewport';
+                lastCapture[kind] = {
+                  url: step.result.url,
+                  styleMap: step.result.styleMap,
+                };
+              }
               const visionOverride = {
                 model: resolveModel(
                   'imageAnalysis',
@@ -173,20 +167,15 @@ export async function runBrowserAutomation(
               );
               try {
                 const analyses = JSON.parse(batchResult);
-                let ai = 0;
-                for (const step of parsed.steps) {
-                  if (
-                    step.command === 'screenshotViewport' &&
-                    step.result?.url &&
-                    ai < analyses.length
-                  ) {
-                    step.result.analysis =
-                      analyses[ai]?.output?.analysis ||
-                      analyses[ai]?.output ||
-                      '';
-                    ai++;
+                // Same predicate as the filter above, so the analyses line up
+                // with the steps that produced them.
+                screenshotSteps.forEach((step: any, i: number) => {
+                  if (i >= analyses.length) {
+                    return;
                   }
-                }
+                  step.result.analysis =
+                    analyses[i]?.output?.analysis || analyses[i]?.output || '';
+                });
               } catch {
                 log.debug('Failed to parse batch analysis result', {
                   batchResult,
@@ -201,21 +190,17 @@ export async function runBrowserAutomation(
         return result;
       },
       toolRegistry: context.toolRegistry,
-      captureArtifacts: ['screenshotFullPage'],
     });
 
     context.subAgentMessages?.set(context.toolCallId, result.messages);
 
-    // Surface the screenshot the caller asked for; fall back to whichever
-    // kind the sub-agent actually captured so a result is never dropped.
-    // Full-page comes from the standalone-tool artifact; viewport is harvested
-    // from the browserCommand screenshotViewport step above.
-    const fullPage = result.artifacts?.screenshotFullPage;
-    const viewport = lastBrowserCommandViewport;
+    // Surface the kind the caller asked for; fall back to whichever the
+    // sub-agent actually captured so a result is never dropped. Both come from
+    // the same harvest above, so neither kind can go missing.
     const preferred =
       opts?.capture === 'viewport'
-        ? (viewport ?? fullPage)
-        : (fullPage ?? viewport);
+        ? (lastCapture.viewport ?? lastCapture.fullPage)
+        : (lastCapture.fullPage ?? lastCapture.viewport);
     return {
       text: result.text,
       ...(preferred?.url

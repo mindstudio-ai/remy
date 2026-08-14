@@ -73,7 +73,7 @@ export const BROWSER_TOOLS: ToolDefinition[] = [
                   'setViewport',
                 ],
                 description:
-                  'snapshot: accessibility tree of the page (waits for network to settle). click: click an element (animated cursor, full event sequence). type: type text into input (one char at a time, works with React/Vue/Svelte). select: select a dropdown option by text. wait: wait for an element to appear (polls 100ms, waits for network). navigate: navigate to a URL within the app (waits for load, subsequent steps run on new page). evaluate: run JS in the page. styles: read computed CSS styles from elements (pass properties array with camelCase names, or omit for defaults). screenshotFullPage: full-page viewport-stitched screenshot (returns CDN url with dimensions). screenshotViewport: screenshot of just the visible viewport — pass `scrollToSelector` (or `scrollY`) on this step to scroll a section into view and capture it in one atomic step (no separate scroll needed). setViewport: switch the browser between desktop and mobile rendering (pass `mode`: "desktop" or "mobile"). Reloads the page so responsive layouts, media queries, and matchMedia re-evaluate — use it to QA mobile/responsive views.',
+                  'snapshot: accessibility tree of the page (waits for network to settle). click: click an element (animated cursor, full event sequence). type: type text into input (one char at a time, works with React/Vue/Svelte). select: select a dropdown option by text. wait: wait for an element to appear (polls 100ms, waits for network). navigate: navigate to a URL within the app (waits for load, subsequent steps run on new page). evaluate: run JS in the page. styles: read computed CSS styles from elements (pass properties array with camelCase names, or omit for defaults). screenshotFullPage: screenshot of the whole page top-to-bottom (returns a CDN url with dimensions and a written analysis). screenshotViewport: screenshot of just the visible viewport — pass `scrollToSelector` (or `scrollY`) on this step to scroll a section into view and capture it in one atomic step (no separate scroll needed). setViewport: switch the browser between desktop and mobile rendering (pass `mode`: "desktop" or "mobile"). Reloads the page so responsive layouts, media queries, and matchMedia re-evaluate — use it to QA mobile/responsive views.',
               },
               ref: {
                 type: 'string',
@@ -150,22 +150,11 @@ export const BROWSER_TOOLS: ToolDefinition[] = [
       required: ['steps'],
     },
   },
-  {
-    clearable: true,
-    name: 'screenshotFullPage',
-    description:
-      'Capture a full-height screenshot of the current page. Returns a CDN URL with full text analysis and description.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        path: {
-          type: 'string',
-          description:
-            'Navigate to this path before capturing (e.g. "/settings"). If omitted, screenshots the current page.',
-        },
-      },
-    },
-  },
+  // Captures are `browserCommand` steps only — there is deliberately no
+  // standalone screenshot tool here. Both used to exist for full-page, with
+  // different budgets, different result plumbing, and analysis on only one of
+  // them, so which door you picked changed what you got back.
+  //
   // Read tools so the QA agent can pull full spec detail on demand — the spec
   // context in its prompt is a lightweight index (see prompt.ts) that points
   // here. Routed to the global executeTool in index.ts, mirroring specSync.

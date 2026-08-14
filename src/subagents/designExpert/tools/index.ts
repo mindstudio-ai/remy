@@ -13,17 +13,23 @@ import * as searchGoogle from './searchGoogle.js';
 import * as scrapeWebUrl from './scrapeWebUrl.js';
 import * as analyzeDesign from './analyzeDesign.js';
 import * as analyzeImage from './analyzeImage.js';
-import * as screenshot from './screenshot.js';
 import * as generateImages from './images/generateImages.js';
 import * as editImages from './images/editImages.js';
 import * as polishCopy from './polishCopy.js';
+import {
+  screenshotDefinition,
+  executeScreenshot,
+} from '../../../tools/code/screenshot.js';
 
 const tools = {
   searchGoogle,
   scrapeWebUrl,
   analyzeDesign,
   analyzeImage,
-  screenshot,
+  // Same tool the main agent offers, imported rather than reimplemented — the
+  // two used to be near-identical copies and had already drifted apart. Its core
+  // already takes (input, onLog, context), which is this registry's convention.
+  screenshot: { definition: screenshotDefinition, execute: executeScreenshot },
   generateImages,
   editImages,
   polishCopy,

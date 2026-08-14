@@ -41,6 +41,25 @@ export function findLastSummaryCheckpoint(
 }
 
 /**
+ * Rewrite a provider-generated tool-call id into the portable character set.
+ *
+ * Tool-call ids are minted by whichever model produced the turn, then live in
+ * history forever and replay on every later request — possibly to a different
+ * vendor, since a build turn can run on a non-default model. Anthropic accepts
+ * only `^[a-zA-Z0-9_-]+$`, while OpenAI-compatible providers emit ids like
+ * `functions.readSpec:0`. Without this, one build on such a model permanently
+ * wedges the session: every subsequent Anthropic request is rejected on the
+ * ids sitting in history.
+ *
+ * Pure and deterministic, so a tool_use and its tool_result independently
+ * normalize to the same id — no mapping table, and ids already in the portable
+ * set (`toolu_...`, `call_...`) pass through untouched.
+ */
+function portableToolCallId(id: string): string {
+  return id.replace(/[^a-zA-Z0-9_-]/g, '_');
+}
+
+/**
  * Fix orphaned tool_use blocks — if an assistant message has tool calls
  * but subsequent messages don't include matching tool_results (e.g., due
  * to a crash or cancellation mid-turn), inject synthetic error results
@@ -170,7 +189,13 @@ export function cleanMessagesForApi(messages: Message[]): Message[] {
             ? `${attachmentHeader}\n\n${content}`
             : attachmentHeader;
         }
-        return { ...rest, content };
+        return {
+          ...rest,
+          content,
+          ...(msg.toolCallId && {
+            toolCallId: portableToolCallId(msg.toolCallId),
+          }),
+        };
       }
 
       if (!Array.isArray(msg.content)) {
@@ -186,9 +211,17 @@ export function cleanMessagesForApi(messages: Message[]): Message[] {
         .join('');
 
       // Extract tool calls
-      const toolCalls = blocks
-        .filter((b): b is ContentBlock & { type: 'tool' } => b.type === 'tool')
-        .map((b) => ({ id: b.id, name: b.name, input: b.input }));
+      const toolBlocks = blocks.filter(
+        (b): b is ContentBlock & { type: 'tool' } => b.type === 'tool',
+      );
+      const toolCalls = toolBlocks.map((b) => ({
+        id: portableToolCallId(b.id),
+        name: b.name,
+        input: b.input,
+      }));
+      const rewroteToolIds = toolBlocks.some(
+        (b) => portableToolCallId(b.id) !== b.id,
+      );
 
       const cleaned: Record<string, any> = {
         role: msg.role,
@@ -198,7 +231,17 @@ export function cleanMessagesForApi(messages: Message[]): Message[] {
       if (toolCalls.length > 0) {
         cleaned.toolCalls = toolCalls;
       }
-      if (msg.providerMetadata) {
+      // providerMetadata is the adapters' verbatim-replay path: when it is
+      // present they rebuild the turn from the stored provider blocks and
+      // ignore `toolCalls` entirely, while the paired tool_result still takes
+      // its id from `toolCallId`. So if normalization above changed an id, the
+      // stored blocks still hold the original and the pair would no longer
+      // match — drop them and let the adapter synthesize the turn from the
+      // normalized `toolCalls` instead. Costs verbatim reasoning replay for
+      // that one message, which is the same trade the adapters already make on
+      // a cross-provider switch. No provider today both mints non-portable ids
+      // and captures provider state, so this is an invariant, not a live path.
+      if (msg.providerMetadata && !rewroteToolIds) {
         cleaned.providerMetadata = msg.providerMetadata;
       }
       if (msg.hidden) {

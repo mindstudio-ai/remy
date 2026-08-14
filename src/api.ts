@@ -120,12 +120,30 @@ export interface Message {
   modelOverride?: { from: string };
 }
 
-// Tool definition sent to the LLM — vendor-agnostic JSON Schema format
+/**
+ * Tool definition sent to the LLM — vendor-agnostic JSON Schema format.
+ *
+ * The single definition of this shape. `src/tools/index.ts` used to declare a
+ * second one without `clearable`, so which flavour you got depended on which
+ * module you imported from, and a definition written against one wouldn't type
+ * against the other.
+ */
 export interface ToolDefinition {
   name: string;
   description: string;
   inputSchema: Record<string, any>;
-  /** Whether results from this tool can be cleared from old turns to save context. */
+  /**
+   * Whether this tool's results can be cleared from old turns to save context.
+   *
+   * Read by the server, not just locally: the adapter unions every tool with
+   * `clearable === false` into the exclude list alongside the explicit
+   * `excludeToolsFromClearing` param (youai-api
+   * AnthropicAdapter/index.ts). Two ways of saying the same thing, and the two
+   * call paths here use different ones — the main registry keeps it beside the
+   * definition on `Tool.clearable` and derives the param in agent.ts, while
+   * sub-agent tool lists set it here because they're bare definition arrays with
+   * no wrapper to hang it on (and runner.ts derives the param from it too).
+   */
   clearable?: boolean;
 }
 
