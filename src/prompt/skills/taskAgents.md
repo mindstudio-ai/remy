@@ -1,3 +1,9 @@
+---
+name: Task Agents
+what: A full autonomous agent loop callable from any method. Give it a prompt, a set of tools, and an example of the output shape; the platform runs the model until it produces that shape — searching, scraping, generating images, retrying approaches that failed, and calling your app's own methods to read and write data as it goes. Tools can be any of the 1000+ SDK actions and your own methods in any combination, which is what makes it part of the app rather than a detached research bot. This is the difference between a feature that saves what the user typed and one that researches, enriches, and creates on their behalf, and it is one of the most powerful things the platform can do. Consider it whenever a feature would be dramatically more compelling if the app could do real work autonomously.
+when: Before writing any `mindstudio.runTask()` call — background enrichment, research-and-generate, anything where the model decides its own next step.
+---
+
 # Task Agents (`mindstudio.runTask`)
 
 A user types the name of a restaurant into your app, or uploads a photo of a storefront. The API call returns early, and in the background, a task agent searches Google, finds the official website, scrapes the address, gets the official social media accounts, and generates a stylized watercolor postcard of the exterior from images it found online. The user gets back a rich, illustrated card with the canonical name, website, address, and a custom image. A few tool calls (some in parallel), fully autonomous.
@@ -6,7 +12,7 @@ A user types the name of a restaurant into your app, or uploads a photo of a sto
 
 Tools are **SDK actions** (`searchGoogle`, `generateImage`, …) and **your own app's methods** (`{ appMethod: 'saveVendor' }`), in any combination. That second half is what makes a task agent part of your app rather than a detached research bot: it can read your tables to decide what to do next, and write results back itself instead of handing them to you to persist.
 
-This is one of the most powerful pieces of the MindStudio SDK and can make turn apps from amazing into truly magical. Use `askMindStudioSdk` to help construct the perfect agent for a task.
+This is one of the most powerful pieces of the MindStudio SDK, and it can turn an app from amazing into truly magical. Use `askMindStudioSdk` to help construct the right agent for a task — including which model to give it.
 
 ## When to Use
 
@@ -62,7 +68,7 @@ const result = await mindstudio.runTask<{
     photoUrl: 'https://cdn.mindstudio.ai/...',
   },
 
-  model: 'claude-5-sonnet',
+  model: 'claude-5-sonnet',   // ask askMindStudioSdk — don't copy this one blind
   maxTurns: 15,
 });
 
@@ -136,7 +142,7 @@ Keep them short and task-specific. Say when to reach for it and when not to, sin
 
 ## Voice & Tone in Prompts
 
-When a task agent produces user-facing text, the prompt must include a note voice and tone constraints. Make sure to specify no emojis, em dashes, and other "ai-isms" in the prompt, as well as the desired tone and voice of the output.
+When a task agent produces user-facing text, the prompt must state the voice and tone it should write in. Specify the desired voice explicitly, and rule out emojis, em dashes, and other "ai-isms" — the output goes straight to the user, so nothing downstream will catch them.
 
 ## Options
 
@@ -146,13 +152,9 @@ When a task agent produces user-facing text, the prompt must include a note voic
 | `input` | Yes | — | Structured input (passed as user message) |
 | `tools` | Yes | — | SDK action names and/or `{ appMethod, description }` entries, each with optional `defaults` |
 | `structuredOutputExample` | Yes | — | Object or JSON string showing expected output shape. Use realistic example values, not placeholders like `'string'` |
-| `model` | Yes | — | Model ID (must support tool use) |
+| `model` | Yes | — | Model ID (must support tool use). Ask `askMindStudioSdk` for the right one — MindStudio's ids don't match vendor ids, so a plausible-looking guess is usually wrong |
 | `maxTurns` | No | 20 | Max loop iterations (capped at 100) |
 | `onEvent` | No | — | SSE event callback for real-time streaming |
-
-## Models
-
-Use `askMindStudioSdk` for appropriate models given the task and its complexity.
 
 ## Return Value
 

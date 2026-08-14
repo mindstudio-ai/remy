@@ -113,6 +113,7 @@ import { askMindStudioSdkTool } from '../subagents/sdkConsultant/index.js';
 import { searchGoogleTool } from './common/searchGoogle.js';
 import { setProjectMetadataTool } from './common/setProjectMetadata.js';
 import { compactConversationTool } from './common/compactConversation.js';
+import { loadSkillTool } from './common/loadSkill.js';
 
 // Code tools
 import { readFileTool } from './code/readFile.js';
@@ -183,6 +184,9 @@ const ALL_TOOLS: Tool[] = [
   // LSP
   lspDiagnosticsTool,
   restartProcessTool,
+  // Appended rather than grouped: position is part of the cache prefix, so a
+  // new tool goes at the end to leave every existing session's prefix intact.
+  loadSkillTool,
 ];
 
 /**

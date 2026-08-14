@@ -1,3 +1,9 @@
+---
+name: Agent Interfaces
+what: Conversational AI as a first-class interface to the app — an LLM with authenticated, per-user access to the app's methods as tools, paired with a streaming chat UI. The platform handles auth, tool dispatch, threads, and streaming, so the work is authorship: who the agent is, which methods it can reach, and how each one is described to it. Any app whose methods do something interesting can be projected into a conversation this way, often as its most compelling surface. This reference covers both halves — writing the agent spec, and building the chat frontend with the SDK's `createAgentChatClient()`.
+when: Before authoring `src/interfaces/agent.md`, compiling `dist/interfaces/agent/`, or building an agent's chat UI. The `<interfaces>` platform doc has the wiring; this is how to author one well.
+---
+
 # Building Agent Interfaces
 
 Guidance for designing conversational AI agents and their frontends. An agent interface pairs an LLM (with per-user-scoped/authenticated access to app methods as tools, handled by platform automatically) with a chat UI. The developer authors the agent's character in MSFM (`src/interfaces/agent.md`); you compile it into a system prompt and tool descriptions (`dist/interfaces/agent/`).
@@ -10,21 +16,32 @@ A good system prompt establishes who the agent is — personality, tone, judgmen
 
 Short and opinionated beats long and comprehensive. "Sounds like a sharp, organized friend — brief by default" gives the model more to work with than a page of behavioral rules. Define constraints through character, not checklists. Let the model's judgment work.
 
-#### System Prompt Specifics
-Always include a note like "## Tool Usage
-- When multiple tool calls are independent, make them all in a single turn. Searching for three different products, or fetching two reference sites: batch them instead of doing one per turn." to help the model know it can run tools in parallel
-- The user's name and current role(s) at the time of message, if any, will be automatically appended to the end of every system prompt at runtime like:
+Three things every compiled system prompt should carry, on top of the character:
 
+**Parallel tool use.** The model won't batch independent calls unless told it can. Include a section like:
+
+```markdown
+## Tool Usage
+
+When multiple tool calls are independent, make them all in a single turn.
+Searching for three different products, or fetching two reference sites:
+batch them instead of doing one per turn.
 ```
+
+**Markdown and house style.** Unless the user says otherwise, tell the agent it can use markdown (the chat UI renders it) and to avoid em dashes and emojis.
+
+**The current user is appended for you.** At runtime the platform appends the user's name and roles to the end of every system prompt, so don't write your own placeholder for it:
+
+```markdown
 ## Current User
+
 Name: Jane Smith
 Roles: editor
 ```
-- Unless the user specifies otherwise, always include a note that the agent can use markdown in responses (since the chat UI renders it) and should avoid using em dashes and emojis in its responses.
 
 ### Tool descriptions are the most important artifact
 
-The system prompt says *who* the agent is. The tool descriptions say *what it can do*. A great tool description means the agent uses the tool correctly without explicit instruction. Do not be overly precise or micromanage. Your goal with tool descriptions is to provide context and faming- trust that the model is intelligent enough to fill in the gaps.. Each `tools/*.md` file should cover:
+The system prompt says *who* the agent is. The tool descriptions say *what it can do*. A great tool description means the agent uses the tool correctly without explicit instruction. Do not be overly precise or micromanage. Your goal with tool descriptions is to provide context and framing — trust that the model is intelligent enough to fill in the gaps. Each `tools/*.md` file should cover:
 
 - **When to use** this tool (and when NOT to — e.g. "NOT for marking complete, use toggle-todo")
 - **Parameter guidance** beyond the schema — what makes a good value, when to include optional fields, what to skip
@@ -176,7 +193,7 @@ The first screen should invite conversation. A greeting from the agent, a few su
 
 ### Mobile
 
-Chat is inherently mobile-friendly — lean into it. Pay attention to viewport sizing on mobile as the virtual keyboard changes the available height. 
+Chat is inherently mobile-friendly — lean into it. Pay attention to viewport sizing on mobile as the virtual keyboard changes the available height.
 
 ### Respect the brand
 

@@ -11,34 +11,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 /**
- * Project root directory — the parent of src/ or dist/.
+ * The base directory for resolving asset paths: the directory this module
+ * itself lives in. That's `src/` when running from source and `dist/` when
+ * running the bundle — tsup emits both entries at the root of dist/ with
+ * `splitting: false`, so the bundle's own location is the asset root.
  *
- * Works whether running from source (src/) or bundled output (dist/)
- * by walking up from the current file's location until we find
- * package.json.
+ * Derived from the module rather than by probing for a `dist/` directory,
+ * because probing gets dev wrong: once a build existed, `dist/` won even for a
+ * process started from source, so editing a prompt .md had no visible effect.
  */
-const ROOT = findRoot(
-  import.meta.dirname ?? path.dirname(new URL(import.meta.url).pathname),
-);
-
-function findRoot(start: string): string {
-  let dir = start;
-  while (dir !== path.dirname(dir)) {
-    if (fs.existsSync(path.join(dir, 'package.json'))) {
-      return dir;
-    }
-    dir = path.dirname(dir);
-  }
-  return start;
-}
-
-/**
- * The base directory for resolving asset paths — either src/ or dist/
- * depending on the runtime environment.
- */
-const ASSETS_BASE = fs.existsSync(path.join(ROOT, 'dist', 'prompt'))
-  ? path.join(ROOT, 'dist')
-  : path.join(ROOT, 'src');
+const ASSETS_BASE =
+  import.meta.dirname ?? path.dirname(new URL(import.meta.url).pathname);
 
 /**
  * Resolve an asset path relative to the assets base directory.

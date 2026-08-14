@@ -20,7 +20,7 @@
   },
   "scripts": {
     "build": "tsup",
-    "dev": "tsup --watch",
+    "dev": "tsup --watch src",
     "typecheck": "tsc --noEmit",
     "lint:fix": "prettier --write ./src",
     "local-update": "npm run build && npm link",

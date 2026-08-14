@@ -416,7 +416,7 @@ It supports the full MCP surface:
 - **Prompts** — reusable, parameterized prompt templates the server offers.
 - **Instructions** — server-level guidance shown to the calling agent (the toolset's "system prompt").
 
-The platform hosts the server, handles auth like the API interface (optional — keyed or anonymous), and derives every tool's input schema from the method contract. Because the consumer is an external agent with no knowledge of your app, **the descriptions are the product** — see "Building MCP Interfaces" for how to write them.
+The platform hosts the server, handles auth like the API interface (optional — keyed or anonymous), and derives every tool's input schema from the method contract. Because the consumer is an external agent with no knowledge of your app, **the descriptions are the product** — load the `mcpInterfaces` skill for how to write them.
 
 ### Spec: `src/interfaces/mcp.md`
 
@@ -562,6 +562,8 @@ There is no `inputSchema` field — the platform derives each tool's schema from
 ## Agent (Conversational Interface)
 
 A conversational interface where an LLM has access to the app's methods as tools. Unlike MCP (which exposes methods for external agents), the agent interface IS the agent — it has its own personality, system prompt, and model config, and orchestrates tool calls against the app's methods internally.
+
+This section is the wiring. Load the `agentInterfaces` skill before authoring the spec body or building the chat UI — what belongs in the agent's system prompt, how to write its tool descriptions, and the `createAgentChatClient()` frontend API are all there.
 
 ### Spec: `src/interfaces/agent.md`
 

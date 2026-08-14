@@ -218,6 +218,8 @@ export async function createPurchaseOrder(input: {
 
 A method can return immediately while kicking off slow work (like `runTask()`) that continues in the background. Don't await the slow call — use `.then()` / `.catch()` to update the record when it completes, and return an early result to the caller. The frontend polls the record's status to track progress.
 
+The example below shows the fire-and-forget shape, not a complete `runTask()` call. Load the `taskAgents` skill before writing one — configuring its tools, validating the output, and handling failures are all there, and none of them are visible here.
+
 ```typescript
 export async function enrichRestaurant(input: { id: string; name: string }) {
   await Restaurants.update(input.id, { status: 'enriching' });
