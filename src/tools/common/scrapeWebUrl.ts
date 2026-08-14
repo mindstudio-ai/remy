@@ -10,8 +10,8 @@ import { runMindstudioCli } from '../../subagents/common/runMindstudioCli.js';
 import { SCRAPE_MAX_BUFFER } from '../../subagents/common/runCli.js';
 
 export const scrapeWebUrlTool: Tool = {
-  clearable: false,
   definition: {
+    clearable: false,
     name: 'scrapeWebUrl',
     description:
       'Scrape the content of a web page. Returns the HTML of the page as markdown text. Optionally capture a screenshot if you need see the visual design. Use this when you need to fetch or analyze content from a website',

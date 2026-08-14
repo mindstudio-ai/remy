@@ -12,8 +12,8 @@
 import type { Tool } from '../index.js';
 
 export const presentPublishPlanTool: Tool = {
-  clearable: false,
   definition: {
+    clearable: false,
     name: 'presentPublishPlan',
     description:
       'Present a publish changelog to the user for approval. Write a clear markdown summary of what changed since the last deploy. The user will see this in a full-screen view and can approve or dismiss. Call this BEFORE committing or pushing.',

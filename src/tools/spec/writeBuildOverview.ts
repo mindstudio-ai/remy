@@ -93,8 +93,8 @@ Then reply with a one-line summary of what you changed.`;
 }
 
 export const buildOverviewTool: Tool = {
-  clearable: false,
   definition: {
+    clearable: false,
     name: 'writeBuildOverview',
     description:
       "Generate or refresh the Build Overview — the project's home page in the Spec tab: a single-page, plain-language reference of everything the app actually contains, including the parts the user can't see (data stores, backend operations, access and roles, background jobs, seeded scenarios, the design system). You author the full copy: read the manifest and spec and state, plainly and exactly, what genuinely exists — real names and accurate counts — in calm, declarative, present-tense outcome language, with no persuasion or hype. Describe only what exists. Pass the complete copy as `content`; the design expert lays it out and skins it to the app's brand using your copy verbatim — it typesets your words, it does not rewrite them, so polish the copy before you pass it. Generate it at the end of a build and refresh it after meaningful work.",

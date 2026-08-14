@@ -20,8 +20,8 @@ import { resolveModel } from '../../models/surfaces.js';
 const BASE_PROMPT = readAsset('subagents/copyEditor', 'prompt.md');
 
 export const copyEditorTool: Tool = {
-  clearable: false,
   definition: {
+    clearable: false,
     name: 'copyEditor',
     description:
       "Hand it user-facing copy and it hands back a sharper version — better structured for its audience and free of the overused words, telltale constructions, and rhythms that make text read as AI-generated. Think of it as a design expert for words: it elevates how the copy communicates and strips the AI fingerprints, but it never invents facts or claims you didn't give it. Use it on anything users will read: in-app strings, empty states, errors, the Build Overview, deck copy, launch posts, Slack announcements. Readonly.",

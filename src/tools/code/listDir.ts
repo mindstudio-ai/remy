@@ -74,8 +74,8 @@ async function formatFile(
 }
 
 export const listDirTool: Tool = {
-  clearable: true,
   definition: {
+    clearable: true,
     name: 'listDir',
     description:
       "List the contents of a directory with one level of subdirectory expansion. Shows file sizes and collapses single-child directory chains (a/b/c/ shown as one entry). Use this for a quick overview of a directory's structure. For finding files across the whole project, use glob instead.",

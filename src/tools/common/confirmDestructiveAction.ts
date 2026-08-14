@@ -17,8 +17,8 @@
 import type { Tool } from '../index.js';
 
 export const confirmDestructiveActionTool: Tool = {
-  clearable: false,
   definition: {
+    clearable: false,
     name: 'confirmDestructiveAction',
     description:
       'Confirm a destructive or irreversible action with the user. Use for things like deleting data, resetting the database, or discarding draft work. Do not use after presentPublishPlan or writePlan (those already include approval). Do not use before onboarding state transitions.',

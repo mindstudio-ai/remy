@@ -17,8 +17,8 @@ import { resolveModel } from '../../models/surfaces.js';
 const BASE_PROMPT = readAsset('subagents/codeSanityCheck', 'prompt.md');
 
 export const codeSanityCheckTool: Tool = {
-  clearable: false,
   definition: {
+    clearable: false,
     name: 'codeSanityCheck',
     description:
       'Quick sanity check on an approach before building. Reviews architecture, package choices, and flags potential issues. Usually responds with "looks good." Occasionally catches something important. Readonly — can search the web and read code but cannot modify anything.',

@@ -41,7 +41,6 @@ import { startStatusWatcher } from './statusWatcher.js';
 import { friendlyError } from './errors.js';
 
 import { cleanMessagesForApi } from './subagents/common/cleanMessages.js';
-import { CLEARABLE_TOOLS } from './tools/index.js';
 import { parseSentinel } from './automatedActions/sentinel.js';
 import { triggerBrandExtraction } from './brandExtraction/trigger.js';
 import { resolveModel, filterModelPicks } from './models/surfaces.js';
@@ -163,11 +162,6 @@ export async function runTurn(params: {
     onBackgroundComplete,
   } = params;
   const tools = getToolDefinitions(onboardingState);
-
-  // Tools whose results should NOT be cleared by server-side context management
-  const excludeToolsFromClearing = tools
-    .filter((t) => !CLEARABLE_TOOLS.has(t.name))
-    .map((t) => t.name);
 
   // Per-build executor model: the approve message may carry a `buildModel`
   // that runs this build turn's parent surface on a non-default model. Scoped
@@ -447,7 +441,6 @@ export async function runTurn(params: {
           system,
           messages: cleanMessagesForApi(state.messages),
           tools,
-          excludeToolsFromClearing,
           signal,
         },
         {

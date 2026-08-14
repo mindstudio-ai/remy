@@ -56,17 +56,10 @@ export function deriveContext(
 }
 
 export interface Tool {
+  /** Includes `clearable` — see ToolDefinition in api.ts. It used to be a
+   *  sibling of this field, which meant main-agent tools declared it in one
+   *  place and sub-agent tools (bare definition arrays) in another. */
   definition: ToolDefinition;
-  /** Whether results from this tool can be cleared from old turns to save context.
-   * true = results are ephemeral (file contents, diffs, search results, terminal output).
-   * false = results contain decisions, guidance, or user input that should persist.
-   *
-   * Required here, and beside the definition rather than inside it: main-agent
-   * tools are `Tool` objects, so there's a wrapper to hang it on, and agent.ts
-   * turns it into the `excludeToolsFromClearing` request param. Sub-agent tool
-   * lists are bare `ToolDefinition[]` with no wrapper, so they set the optional
-   * `clearable` on the definition instead. The server accepts either. */
-  clearable: boolean;
   /** Tools that only ever run in the background — dispatched detached, returning
    * an immediate ack while work continues. Unlike the opt-in `background: true`
    * input flag (which the model chooses per call), this is inherent to the tool,
@@ -191,11 +184,6 @@ const ALL_TOOLS: Tool[] = [
   lspDiagnosticsTool,
   restartProcessTool,
 ];
-
-/** Set of tool names whose results can be cleared from old turns. */
-export const CLEARABLE_TOOLS = new Set(
-  ALL_TOOLS.filter((t) => t.clearable).map((t) => t.definition.name),
-);
 
 /**
  * Main-agent-facing tools that delegate to a sub-agent and return substantive

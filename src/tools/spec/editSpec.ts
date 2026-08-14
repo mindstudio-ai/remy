@@ -13,8 +13,8 @@ import { unifiedDiff } from '../_helpers/diff.js';
 import { acquireFileLock } from '../_helpers/fileLock.js';
 
 export const editSpecTool: Tool = {
-  clearable: true,
   definition: {
+    clearable: true,
     name: 'editSpec',
     description:
       "Make a targeted find/replace edit to a spec file (src/*.md). old_string must appear exactly once (minor indentation differences are handled automatically); set replace_all to true to replace every occurrence. Read the file with readSpec first so you match the exact text, and include the full enclosing structure rather than an inner fragment. The file's YAML frontmatter (the leading --- … --- block, which holds required fields like name) is protected — an edit that would remove or malform it is refused. For a full rewrite, use writeSpec.",

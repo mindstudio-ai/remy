@@ -11,8 +11,8 @@
 import type { Tool } from '../index.js';
 
 export const runScenarioTool: Tool = {
-  clearable: true,
   definition: {
+    clearable: true,
     name: 'runScenario',
     description:
       'Run a scenario to seed the dev database with test data. By default truncates all tables first, then executes the seed function and impersonates the scenario roles. Use skipTruncate to run the seed function against existing data without resetting. Blocks until complete. Scenario IDs are defined in mindstudio.json. If it fails, check .logs/tunnel.log or .logs/requests.ndjson for details. Return synchronously - no need to sleep before checking results.',
