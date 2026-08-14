@@ -7,8 +7,8 @@ import { validateSpecPath } from './_helpers.js';
 const DEFAULT_MAX_LINES = 500;
 
 export const readSpecTool: Tool = {
-  clearable: true,
   definition: {
+    clearable: true,
     name: 'readSpec',
     description:
       'Read a spec file from src/ with line numbers. Always read a spec file before editing it. Paths are relative to the project root and must start with src/ (e.g., src/app.md, src/interfaces/web.md).',

@@ -28,9 +28,9 @@ const MSFM_DOCS = `<mindstudio_flavored_markdown_spec_docs>\n${readAsset(
 )}\n</mindstudio_flavored_markdown_spec_docs>`;
 
 export const specSyncTool: Tool = {
-  clearable: false,
   backgroundOnly: true,
   definition: {
+    clearable: false,
     name: 'specSync',
     description:
       'Reconcile the spec to bring it in line with code changes you have made. Provide a brief, bulleted list of what changed and why; it finds the affected spec sections and updates them to match. Always runs in the background — it returns immediately and reports back when done.',

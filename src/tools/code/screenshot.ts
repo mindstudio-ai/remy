@@ -145,7 +145,6 @@ export async function executeScreenshot(
 }
 
 export const screenshotTool: Tool = {
-  clearable: true,
   definition: screenshotDefinition,
   execute: (input, context) =>
     executeScreenshot(input, context?.onLog, context),

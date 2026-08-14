@@ -213,8 +213,8 @@ export async function runBrowserAutomation(
 }
 
 export const browserAutomationTool: Tool = {
-  clearable: true,
   definition: {
+    clearable: true,
     name: 'runAutomatedBrowserTest',
     description:
       'Run an automated browser test against the live preview. Describe what to test — the agent figures out how. Use after meaningful changes to frontend code, to reproduce user-reported issues, or to test end-to-end flows. Never give it explicit values to use when filling out forms or creating accounts — it will use its own judgement (often it needs specific values to trigger dev-mode bypasses of things like login verification codes).',

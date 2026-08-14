@@ -24,8 +24,8 @@ import { getSubAgentHistory } from '../common/history.js';
 import { resolveModel } from '../../models/surfaces.js';
 
 export const productVisionTool: Tool = {
-  clearable: false,
   definition: {
+    clearable: false,
     name: 'productVision',
     description:
       'Owns the product roadmap. Reads spec and roadmap files automatically. Creates, updates, and deletes roadmap items in src/roadmap/. Describe the situation and what needs to happen.',

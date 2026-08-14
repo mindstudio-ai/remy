@@ -9,8 +9,8 @@
 import type { Tool } from '../index.js';
 
 export const runMethodTool: Tool = {
-  clearable: true,
   definition: {
+    clearable: true,
     name: 'runMethod',
     description:
       'Run a method in the dev environment and return the result. Use for testing methods after writing or modifying them. Returns output, captured console output, errors with stack traces, and duration. If it fails, check .logs/tunnel.log or .logs/requests.ndjson for more details. Returns synchronously — no need to sleep before checking results.\n\nBy default methods run unauthenticated. If the method is auth-gated (calls `auth.requireRole()`, filters on `auth.userId`, etc.), pass `userId: "testUser"` to run as the default test user — no scenario setup required, no userId lookup.',

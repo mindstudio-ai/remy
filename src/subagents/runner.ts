@@ -130,11 +130,6 @@ export async function runSubAgent(
   });
   const fullSystem = `${system}\n\nCurrent date: ${dateStr}`;
 
-  // Tools whose results should NOT be cleared by server-side context management
-  const excludeToolsFromClearing = tools
-    .filter((t) => t.clearable === false)
-    .map((t) => t.name);
-
   // The core loop
   let turns = 0;
   const run = async (): Promise<SubAgentResult> => {
@@ -223,7 +218,6 @@ export async function runSubAgent(
             system: fullSystem,
             messages: cleanMessagesForApi(messages),
             tools,
-            excludeToolsFromClearing,
             signal,
           },
           {

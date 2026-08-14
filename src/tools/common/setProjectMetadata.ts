@@ -8,8 +8,8 @@
 import type { Tool } from '../index.js';
 
 export const setProjectMetadataTool: Tool = {
-  clearable: false,
   definition: {
+    clearable: false,
     name: 'setProjectMetadata',
     description:
       'Set project metadata. Can update any combination of: display name, short description, app icon, and Open Graph share image. Provide only the fields you want to change.',

@@ -123,10 +123,10 @@ export interface Message {
 /**
  * Tool definition sent to the LLM — vendor-agnostic JSON Schema format.
  *
- * The single definition of this shape. `src/tools/index.ts` used to declare a
- * second one without `clearable`, so which flavour you got depended on which
- * module you imported from, and a definition written against one wouldn't type
- * against the other.
+ * The one shape, for every agent. There used to be a second declaration in
+ * `src/tools/index.ts` without `clearable`, so which flavour you got depended on
+ * which module you imported from and a definition written against one wouldn't
+ * type against the other.
  */
 export interface ToolDefinition {
   name: string;
@@ -134,15 +134,19 @@ export interface ToolDefinition {
   inputSchema: Record<string, any>;
   /**
    * Whether this tool's results can be cleared from old turns to save context.
+   * Omitted counts as clearable — only an explicit `false` protects results.
    *
-   * Read by the server, not just locally: the adapter unions every tool with
-   * `clearable === false` into the exclude list alongside the explicit
-   * `excludeToolsFromClearing` param (youai-api
-   * AnthropicAdapter/index.ts). Two ways of saying the same thing, and the two
-   * call paths here use different ones — the main registry keeps it beside the
-   * definition on `Tool.clearable` and derives the param in agent.ts, while
-   * sub-agent tool lists set it here because they're bare definition arrays with
-   * no wrapper to hang it on (and runner.ts derives the param from it too).
+   * true = results are ephemeral (file contents, diffs, search results, terminal
+   * output). false = results carry decisions, guidance, or user input that must
+   * persist.
+   *
+   * Declared here and nowhere else, for main agent and sub-agents alike. The
+   * server reads it straight off the wire — youai-api's AnthropicAdapter builds
+   * its clear-exclusion list from the tools in the request — so there is nothing
+   * for remy to derive or send alongside. It previously lived in two places at
+   * once: on the `Tool` wrapper for main-agent tools, inside the definition for
+   * sub-agent tools, with both call paths recomputing the same list into a
+   * now-removed `excludeToolsFromClearing` request param.
    */
   clearable?: boolean;
 }
@@ -246,8 +250,6 @@ export async function* streamChat(
     maxTokens?: number;
     temperature?: number;
     config?: Record<string, any>;
-    /** Tool names whose results should NOT be cleared by server-side context management. */
-    excludeToolsFromClearing?: string[];
     subAgentId?: string;
     requestId?: string;
     signal?: AbortSignal;

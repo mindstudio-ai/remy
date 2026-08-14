@@ -13,8 +13,8 @@
 import type { Tool } from '../index.js';
 
 export const promptUserTool: Tool = {
-  clearable: false,
   definition: {
+    clearable: false,
     name: 'promptUser',
     description:
       'Ask the user structured questions. Choose type first: "form" for structured intake (5+ questions, takes over screen), "inline" for quick clarifications or confirmations. Blocks until the user responds. Result contains `_dismissed: true` if the user dismisses without answering.',

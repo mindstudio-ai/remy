@@ -5,8 +5,8 @@ import path from 'node:path';
 import type { Tool } from '../index.js';
 
 export const listSpecFilesTool: Tool = {
-  clearable: false,
   definition: {
+    clearable: false,
     name: 'listSpecFiles',
     description:
       'List all files in the src/ directory (spec files, brand guidelines, interface specs, references). Use this to understand what spec files exist before reading or editing them.',
