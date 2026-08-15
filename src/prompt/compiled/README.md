@@ -87,6 +87,47 @@ No YAML frontmatter. No meta-commentary. Just the reference content the
 agent needs. Each fragment should make sense on its own — the agent may
 not see all fragments in every session.
 
+### Fragments vs. skills
+
+Not every fragment is resident. Docs for capabilities most apps never use live
+in `src/prompt/skills/` instead, and the agent loads one with the `loadSkill`
+tool when it needs it. Only a name and a trigger line stay in the prompt (see
+`src/prompt/skills/catalog.ts`).
+
+A skill is authored the same way, with two differences:
+
+- **It carries frontmatter** — `name` (human-readable label), `what` (what the
+  capability is and how far it reaches), and `when` (the *trigger* to load it,
+  not a summary of the contents). Keep each value on one line; the parser splits
+  on the first `:` per line.
+
+  Both `what` and `when` are needed, because they do different jobs. `when` is a
+  gate: it tells the agent it may load something, but a gate can't make the agent
+  *want* to. `what` is the argument for the capability — the thing that used to be
+  read on every turn, back when these docs were resident. Any constraint that
+  would change a *decision* belongs in the frontmatter rather than the body, since
+  the body isn't read until after the decision.
+
+  Where a capability is easy to over-reach for, keep the gate stronger than the
+  description. `dataSources` is the case to study: its `what` is genuinely
+  impressive about retrieval quality while its `when` stays narrow, because most
+  apps should not use one. `taskAgents` is the inverse — its failure mode is Remy
+  never reaching for it, so its `what` is written to persuade.
+- **It has room.** The stripping rules above exist partly because a resident
+  fragment is paying rent on every turn. A skill isn't, so it can keep detail a
+  fragment would have to lose. When recompiling one, err toward completeness.
+
+Self-containment matters more for a skill than for a fragment. It arrives alone,
+mid-task, with no guarantee the agent has read anything else. Where a skill needs
+another one, name it (`` load the `agentInterfaces` skill ``) rather than
+referring to "the X doc".
+
+If you move a doc into `skills/`, sweep the resident fragments for what it left
+behind. A mention that stays should *point* ("load the `taskAgents` skill before
+writing one"), never *demonstrate* — a copyable example in a resident fragment is
+an invitation to skip the load, and the result is confidently wrong code rather
+than an error.
+
 ---
 
 ### Step 2: Review

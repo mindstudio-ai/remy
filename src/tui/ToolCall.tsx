@@ -33,6 +33,8 @@ function summarizeInput(name: string, input: Record<string, any>): string {
       return input.pattern || '';
     case 'listDir':
       return input.path || '.';
+    case 'loadSkill':
+      return input.skill || '';
     default:
       return JSON.stringify(input).slice(0, 60);
   }
@@ -60,6 +62,8 @@ function summarizeResult(name: string, result: string): string {
       return `${lines} files`;
     case 'listDir':
       return `${lines} entries`;
+    case 'loadSkill':
+      return 'reference loaded';
     default:
       return `${lines} lines`;
   }

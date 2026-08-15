@@ -6,6 +6,22 @@ Scenarios are seed scripts that put the dev database into a specific state. Inst
 
 A scenario is just an async function that uses the same `db.push()` calls as methods. If you can write a method, you can write a scenario.
 
+## What Scenarios Don't Touch
+
+**Scenarios seed database tables. Nothing else.** Specifically, they do **not** touch file stores or
+data sources, and that's deliberate rather than an omission — both are durable, shared across dev and
+prod, and have no per-release copy to reset. There is nothing for a scenario to truncate.
+
+So don't reach for a scenario to put documents into a data source, and don't write `clear()`-style
+reset helpers for one. To get a test corpus in place, add it once from the CLI:
+
+```bash
+mindstudio-prod datasources add --source policies --wait fixtures/*.pdf
+```
+
+Re-running that is free — documents are content-addressed, so an unchanged corpus transfers nothing
+and embeds nothing — which is what makes it safe to keep in a setup script alongside your scenarios.
+
 ---
 
 ## Defining Scenarios

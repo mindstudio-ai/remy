@@ -1,3 +1,9 @@
+---
+name: Data Sources
+what: A managed retrieval system for document corpora, not a bolt-on keyword search. Documents are chunked and embedded, candidate hits are re-scored by a reranking model, semantic search runs alongside exact keyword matching so part numbers and error codes still land, images inside documents are described by a vision model and made searchable, and every hit returns a citation that links to its source page. Chunking and embedding settings are versioned — a rebuilt corpus can be compared against the live one and promoted without downtime. All of that applies to unstructured documents queried by meaning, and to nothing else.
+when: Only for unstructured documents queried by meaning — "find the clause about early termination". Structured data belongs in `db`: if the question can be expressed as a filter, it is not a search problem, and a `WHERE` clause is faster, cheaper and exact. Load before defining or querying a data source.
+---
+
 # Data Sources (Search Over Documents)
 
 Per-app searchable document corpora: upload documents, ask in plain language, get back the passages
@@ -33,7 +39,8 @@ const context = results.map((r) => r.text).join('\n\n');
 ```
 
 Hits are `{ score, text, citation }` with
-`citation: { documentId, filename, pageNumber, headingPath, boundingBox?, url }`.
+`citation: { documentId, filename, pageNumber, chunkIndex, headingPath, boundingBox?, url }`, plus
+`retrievalRank`/`retrievalScore` — the position before reranking, so you can show what reranking did.
 
 **Always render the citation.** `citation.url` is a stable on-domain link — put it in an `<a href>`
 beside the answer. Retrieval is approximate; a user who can click through can judge for themselves.
@@ -41,6 +48,15 @@ An answer with no citation is an assertion.
 
 Created on first use, so searching a source the build hasn't populated returns no results rather than
 throwing. `search` options: `topK` (default 5, max 50), `scoreThreshold`, `rerank`, `hybrid`.
+
+Search is deterministic for a fixed corpus and configuration, so eval sets and regression checks are
+meaningful — key them on `(documentId, chunkIndex)` rather than on chunk text.
+
+**Debugging retrieval.** Two opt-in options, neither of which changes the results or their order:
+`explain: true` adds `explain.{dense, lexical, matchedVia}` (which half of hybrid found each hit;
+costs two extra round trips), and `expand: 1` adds `neighbors.{before, after}` for surrounding
+context. When a document never comes back at all, `Policies.stats()` reports the config actually in
+effect and `Policies.chunks(documentId)` shows exactly how it was split.
 
 **Configuration is not declared in code** — chunking and embedding settings live on the corpus and are
 set with the CLI, so code and reality can't drift.
@@ -50,10 +66,15 @@ set with the CLI, so code and reality can't drift.
 ```bash
 mindstudio-prod datasources add --source policies --wait docs/*.pdf
 mindstudio-prod datasources search --source policies "what are the payment terms?"   # sanity-check
+mindstudio-prod datasources delete --source policies   # whole source; --source is required, never defaulted
 ```
 
 `--wait` blocks until processing finishes and exits non-zero on failure. Also `datasources list`,
 `status` (per-document state + ingest errors), `rm --document <id>`. `--help` for flags.
+
+**Seeding a test corpus:** scenarios don't touch data sources, so load fixtures with the same command
+in a setup script — `datasources add --source <slug> --wait fixtures/*.pdf`. Re-running is free, so
+it needs no guard.
 
 Use the SDK's `add()` only when *users* upload documents that must become searchable:
 
@@ -75,8 +96,12 @@ tool so it can query repeatedly and refine, rather than retrieving once up front
 
 | Kind | Settings | Cost |
 |---|---|---|
-| **Free** (ranking) | `--rerank`, `--hybrid`, `--top-k` | none, next search |
-| **Rebuild** (how docs become vectors) | `--max-chars`, `--min-chars`, `--drop-blocks`, `--contextual`, `--embedding-model`, `--extraction-model` | every document reprocessed |
+| **Free** (ranking) | `--rerank`, `--rerank-model`, `--hybrid`, `--top-k` | none, next search |
+| **Rebuild** (how docs become vectors) | `--max-chars`, `--min-chars`, `--drop-blocks`, `--contextual`, `--describe-images`, `--embedding-model`, `--extraction-model` | every document reprocessed |
+
+Images inside documents are described by a vision model and the description substituted into the
+searchable text (`--describe-images`, on by default) — without it a chart contributes nothing to
+search at all. Documents with no images cost nothing.
 
 `rerank` and `hybrid` default on and are usually right — reranking is the biggest quality lever, and
 hybrid is what finds part numbers, error codes and proper nouns a semantic model never learned. Both

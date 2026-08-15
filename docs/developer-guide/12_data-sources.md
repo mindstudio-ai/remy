@@ -71,11 +71,27 @@ mindstudio-prod datasources search --source policies "what are the payment terms
 ```
 
 Other subcommands: `datasources list` (sources with counts), `datasources status` (per-document state
-and ingest errors), `datasources rm --document <id>`. Run `mindstudio-prod datasources --help` for
-flags.
+and ingest errors), `datasources rm --document <id>`, and `datasources delete --source <slug>` — the
+whole source: every version, document and vector. Deletion requires an explicit `--source` (it never
+falls back to the default) and refuses while documents are still ingesting. Extraction caches survive
+by content hash, so re-ingesting the same files elsewhere costs no re-extraction. Run
+`mindstudio-prod datasources --help` for flags.
 
 Supported formats: `pdf`, `docx`, `pptx`, `xlsx`, `odt`, `rtf`, `epub`, images (`png`, `jpg`, `webp`,
 `gif`, `avif`, `tiff`), and text (`txt`, `md`, `markdown`, `json`, `csv`, `tsv`, `log`, `html`).
+
+### Seeding a corpus for testing
+
+Scenarios seed database tables and deliberately don't touch data sources (durable, shared, nothing to
+reset). The supported way to get a known corpus into dev is the same `add` command, in a setup script
+next to your scenarios:
+
+```bash
+mindstudio-prod datasources add --source policies --wait fixtures/*.pdf
+```
+
+Re-running it is free — content-addressing means an unchanged corpus transfers nothing and embeds
+nothing — so it's safe to run on every setup rather than guarding it.
 
 ### When the app loads documents instead
 
@@ -100,7 +116,7 @@ const context = results.map((r) => r.text).join('\n\n');
 ```
 
 Each hit is `{ score, text, citation }`, where `citation` is
-`{ documentId, filename, pageNumber, headingPath, boundingBox?, url }`.
+`{ documentId, filename, pageNumber, chunkIndex, headingPath, boundingBox?, url }`.
 
 **Always show the citation.** `citation.url` is a stable, on-domain link to the source document — put
 it in an `<a href>` next to the answer. Retrieval is approximate by nature, and a user who can click
@@ -108,6 +124,47 @@ through to the source can tell for themselves whether the answer is grounded. An
 citation is an assertion.
 
 Options: `topK` (default 5, max 50), `scoreThreshold`, and two switches covered under *Tuning*.
+
+Each hit also carries `retrievalRank` and `retrievalScore` — where retrieval put it *before*
+reranking. Comparing that with its final position is how you see what reranking actually did. The call
+returns `latencyMs` alongside `results`.
+
+### Reproducibility
+
+Search is **deterministic**: the same query against the same corpus, with the same settings, returns
+the same hits in the same order. There is no seed to set, and none is needed. So an eval set or a
+regression check measures your changes rather than noise.
+
+Two things legitimately move results, both yours: adding or removing documents, and changing the
+corpus configuration.
+
+Key those checks on `(documentId, chunkIndex)`, not on the chunk text. That pair is a chunk's stable
+identity for as long as the corpus keeps its current configuration — a rebuild-class change moves the
+chunk boundaries and therefore renumbers them, which is inherent rather than a wobble.
+
+### Debugging retrieval
+
+Two opt-in options, both off by default because they cost something and neither changes the results or
+their order:
+
+```typescript
+const { results } = await Policies.search(question, { explain: true, expand: 1 });
+
+results[0].explain;    // { dense, lexical, matchedVia } — which half of hybrid found it
+results[0].neighbors;  // { before, after } — the chunks either side, for context
+```
+
+`explain` costs two extra round trips: a hybrid result carries one fused score, so the dense and
+lexical branches have to be asked separately. It's what turns "the results changed when I toggled
+hybrid" into "this passage was found by the keyword branch only" — worth reaching for when a search
+returns something you can't account for.
+
+When the puzzle is a document that *never* comes back, the answer is usually in how it was split:
+
+```typescript
+const stats = await Policies.stats();          // counts + the config actually in effect
+const chunks = await Policies.chunks(docId);   // exactly how one document was split
+```
 
 ### Feeding results to a model
 
@@ -126,8 +183,8 @@ matters is that settings come in two kinds, and the difference is what a change 
 
 | Kind | Settings | Cost to change |
 |---|---|---|
-| **Free** — how results are ranked | `--rerank`, `--hybrid`, `--top-k` | none; effective on the next search |
-| **Rebuild** — how documents become vectors | `--max-chars`, `--min-chars`, `--drop-blocks`, `--contextual`, `--embedding-model`, `--extraction-model` | every document must be reprocessed |
+| **Free** — how results are ranked | `--rerank`, `--rerank-model`, `--hybrid`, `--top-k` | none; effective on the next search |
+| **Rebuild** — how documents become vectors | `--max-chars`, `--min-chars`, `--drop-blocks`, `--contextual`, `--describe-images`, `--embedding-model`, `--extraction-model` | every document must be reprocessed |
 
 ```bash
 mindstudio-prod datasources config --source policies                 # show current settings
@@ -140,7 +197,12 @@ The free switches are also per-query, for the rare case where one call needs dif
 await Policies.search(query, { rerank: false });   // e.g. a latency-sensitive path
 ```
 
-Both default **on** and are usually right. `rerank` re-scores candidates with a model that reads the
+**Images inside documents are described by a vision model and the description is
+substituted into the searchable text** (`--describe-images`, on by default). Without it a chart or
+diagram contributes nothing to search at all — it isn't ranked lower, it's absent. A document with
+no images costs nothing, which is why this is on rather than opt-in.
+
+Both `rerank` and `hybrid` default **on** and are usually right. `rerank` re-scores candidates with a model that reads the
 query and passage together — the single biggest quality lever. `hybrid` combines meaning-based search
 with exact keyword matching, which is what finds part numbers, error codes and proper nouns that a
 semantic model never learned.

@@ -6,6 +6,8 @@
 
 import { sidecarRequest } from './sidecar.js';
 import { analyzeImage } from '../../subagents/common/analyzeImage.js';
+import { resolveImageRef } from './uploadImage.js';
+import type { ApiConfig } from '../../config.js';
 
 // Outermost rung of the capture timeout ladder. Each layer must be strictly
 // slower than the one it wraps, so the innermost layer — which knows *what* was
@@ -44,8 +46,9 @@ export function buildScreenshotAnalysisPrompt(opts?: {
 export interface ScreenshotOptions {
   /** Analysis prompt. Pass `false` to skip analysis and return just the URL. */
   prompt?: string | false;
-  /** Existing image URL to analyze instead of capturing a new screenshot. */
-  imageUrl?: string;
+  /** Existing image to analyze instead of capturing a new screenshot — a URL
+   * from an earlier capture, or a path on disk. */
+  image?: string;
   /** Navigate to this path before capturing (e.g. "/settings"). */
   path?: string;
   /** Capture the full page height (default) vs. just the visible viewport.
@@ -66,6 +69,8 @@ export interface ScreenshotOptions {
    * via `resolveModel('imageAnalysis', ...)` before invoking. Required
    * when analysis runs; ignored when `prompt === false`. */
   model?: string;
+  /** Needed to host `image` when it's a local file. */
+  apiConfig?: ApiConfig;
 }
 
 /**
@@ -79,13 +84,20 @@ export interface ScreenshotOptions {
  * text as it streams.
  */
 export async function streamScreenshotAnalysis(opts: {
-  url: string;
+  /** A URL, or a path on disk (hosted before the first snapshot is emitted —
+   * the frontend renders this value as an image src). */
+  image: string;
   prompt?: string;
   styleMap?: string;
   onLog?: (line: string) => void;
   model: string;
+  apiConfig?: ApiConfig;
 }): Promise<string> {
-  const { url, prompt, styleMap, onLog, model } = opts;
+  const { image, prompt, styleMap, onLog, model, apiConfig } = opts;
+
+  // Resolve before the first emit rather than leaving it to analyzeImage: the
+  // snapshot below is what the frontend renders, so it needs a real URL.
+  const url = await resolveImageRef(image, apiConfig);
 
   // Image-only snapshot before analysis starts — the frontend renders the
   // captured image right away while the analysis sub-agent is still working.
@@ -94,9 +106,9 @@ export async function streamScreenshotAnalysis(opts: {
   const analysisPrompt = buildScreenshotAnalysisPrompt({ prompt, styleMap });
 
   let accumulated = '';
-  const analysis = await analyzeImage({
+  const { analysis } = await analyzeImage({
     prompt: analysisPrompt,
-    imageUrl: url,
+    image: url,
     model,
     onLog: (chunk) => {
       accumulated += chunk;
@@ -109,15 +121,16 @@ export async function streamScreenshotAnalysis(opts: {
 
 /**
  * Capture a screenshot via sidecar and optionally analyze it.
- * If imageUrl is provided, skip capture and analyze that image directly.
+ * If `image` is provided, skip capture and analyze that image directly.
  */
 export async function captureAndAnalyzeScreenshot(
   promptOrOptions?: string | false | ScreenshotOptions,
 ): Promise<string> {
   let prompt: string | false | undefined;
-  let existingUrl: string | undefined;
+  let existingImage: string | undefined;
   let onLog: ((line: string) => void) | undefined;
   let model: string | undefined;
+  let apiConfig: ApiConfig | undefined;
 
   let path: string | undefined;
   let fullPage = true;
@@ -127,7 +140,7 @@ export async function captureAndAnalyzeScreenshot(
 
   if (typeof promptOrOptions === 'object' && promptOrOptions !== null) {
     prompt = promptOrOptions.prompt;
-    existingUrl = promptOrOptions.imageUrl;
+    existingImage = promptOrOptions.image;
     path = promptOrOptions.path;
     if (promptOrOptions.fullPage !== undefined) {
       fullPage = promptOrOptions.fullPage;
@@ -137,6 +150,7 @@ export async function captureAndAnalyzeScreenshot(
     format = promptOrOptions.format;
     onLog = promptOrOptions.onLog;
     model = promptOrOptions.model;
+    apiConfig = promptOrOptions.apiConfig;
   } else {
     prompt = promptOrOptions;
   }
@@ -149,8 +163,8 @@ export async function captureAndAnalyzeScreenshot(
 
   let url: string;
   let styleMap: string | undefined;
-  if (existingUrl) {
-    url = existingUrl;
+  if (existingImage) {
+    url = existingImage;
   } else {
     const ssResult = await sidecarRequest(
       fullPage ? '/screenshot-full-page' : '/screenshot-viewport',
@@ -176,7 +190,8 @@ export async function captureAndAnalyzeScreenshot(
   }
 
   if (prompt === false) {
-    return url;
+    // Callers want a URL, not the path they may have handed in.
+    return resolveImageRef(url, apiConfig);
   }
 
   if (!model) {
@@ -185,7 +200,8 @@ export async function captureAndAnalyzeScreenshot(
     );
   }
   return streamScreenshotAnalysis({
-    url,
+    image: url,
+    apiConfig,
     prompt: prompt || undefined,
     styleMap,
     onLog,

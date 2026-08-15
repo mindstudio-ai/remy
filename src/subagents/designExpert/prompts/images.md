@@ -20,7 +20,7 @@ Generated images are production assets, not mockups or concepts — they are hos
 
 ### Image editing
 
-Use `editImages` to transform or build on existing images. Provide one or more source image URLs and a prompt describing the desired result. The source images act as reference material — the model uses them as anchors for style, subject, or composition. Think about image editing as part of a pipeline for generating a final asset from constituent pieces.
+Use `editImages` to transform or build on existing images. Provide one or more source images — a URL, or the path of an image file on disk such as a logo the user uploaded — and a prompt describing the desired result. The source images act as reference material — the model uses them as anchors for style, subject, or composition. Think about image editing as part of a pipeline for generating a final asset from constituent pieces.
 
 Good use cases for editing:
 - Incorporating a logo or brand mark into a product mockup or scene

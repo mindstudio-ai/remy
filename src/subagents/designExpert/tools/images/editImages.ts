@@ -25,7 +25,7 @@ export const definition: ToolDefinition = {
           type: 'string',
         },
         description:
-          'One or more source/reference image URLs. These are used as the basis for the edit — the AI will use them as reference for style, subject, or composition.',
+          'One or more source/reference images, each a URL or the path of an image file on disk (e.g. a user upload under src/.user-uploads/). These are used as the basis for the edit — the AI will use them as reference for style, subject, or composition.',
       },
       width: {
         type: 'number',
@@ -58,6 +58,7 @@ export async function execute(
     transparentBackground: input.transparentBackground as boolean | undefined,
     enhancePrompts: false,
     onLog,
+    apiConfig: context?.apiConfig,
     imageGenerationModel: resolveModel(
       'imageGeneration',
       context?.models,

@@ -38,7 +38,8 @@ export const readFileTool: Tool = {
       properties: {
         path: {
           type: 'string',
-          description: 'The file path to read, relative to the project root.',
+          description:
+            'The file path to read. Relative paths resolve from the project root; an absolute path is also accepted, which is how you re-read a reference doc from the path a loadSkill result gave you.',
         },
         startLine: {
           type: 'number',

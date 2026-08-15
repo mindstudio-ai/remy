@@ -97,11 +97,8 @@ await mindstudio.sendEmail({
   cc: input.cc, // reply-all
 });
 
-// Upload files
-const { url } = await mindstudio.uploadFile({
-  data: buffer,
-  fileName: 'report.pdf',
-});
+// Store a file → returns a stable URL (define the store at module scope; see Files & Storage)
+const { url } = await Reports.put(buffer, { contentType: 'application/pdf', filename: 'report.pdf' });
 
 // Web scraping
 const { markdown } = await mindstudio.scrapeUrl({
@@ -220,6 +217,8 @@ export async function createPurchaseOrder(input: {
 ## Fire-and-Forget Background Tasks
 
 A method can return immediately while kicking off slow work (like `runTask()`) that continues in the background. Don't await the slow call — use `.then()` / `.catch()` to update the record when it completes, and return an early result to the caller. The frontend polls the record's status to track progress.
+
+The example below shows the fire-and-forget shape, not a complete `runTask()` call. Load the `taskAgents` skill before writing one — configuring its tools, validating the output, and handling failures are all there, and none of them are visible here.
 
 ```typescript
 export async function enrichRestaurant(input: { id: string; name: string }) {

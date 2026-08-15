@@ -32,14 +32,14 @@ export const definition: ToolDefinition = {
   clearable: false,
   name: 'analyzeDesign',
   description:
-    'Analyze the visual design of a website or image URL. Websites are automatically screenshotted first. Provides static image analysis only, will not capture animations or video. If no prompt is provided, performs a full design reference analysis (mood, color, typography, layout, distinctiveness). Provide a custom prompt to ask a specific design question instead. Use a bulleted list to ask many questions at once.',
+    'Analyze the visual design of a website, an image URL, or an image file on disk. Websites are automatically screenshotted first. Provides static image analysis only, will not capture animations or video. If no prompt is provided, performs a full design reference analysis (mood, color, typography, layout, distinctiveness). Provide a custom prompt to ask a specific design question instead. Use a bulleted list to ask many questions at once.',
   inputSchema: {
     type: 'object',
     properties: {
       url: {
         type: 'string',
         description:
-          'URL to analyze. Can be an image URL or a website URL (will be screenshotted).',
+          'What to analyze: a website URL (will be screenshotted), an image URL, or the path of an image file on disk (e.g. a reference the user uploaded, under src/.user-uploads/). Local files are hosted automatically and their URL comes back in the result.',
       },
       prompt: {
         type: 'string',
@@ -59,11 +59,12 @@ export async function execute(
   const url = input.url as string;
   const analysisPrompt = input.prompt || DESIGN_REFERENCE_PROMPT;
 
-  // Detect if this is a website URL (needs screenshotting) or an image URL
-  const isImageUrl = /\.(png|jpe?g|webp|gif|svg|avif)(\?|$)/i.test(url);
+  // Detect if this is a website URL (needs screenshotting) or an image —
+  // either a URL or a local file, both of which analyzeImage handles.
+  const isImage = /\.(png|jpe?g|webp|gif|svg|avif)(\?|$)/i.test(url);
 
-  let imageUrl = url;
-  if (!isImageUrl) {
+  let image = url;
+  if (!isImage) {
     // Screenshot the website first
     const ss = await runMindstudioCliResult(
       [
@@ -89,15 +90,16 @@ export async function execute(
     if (!ss.ok) {
       return `Could not screenshot ${url}: ${ss.value}`;
     }
-    imageUrl = ss.value;
+    image = ss.value;
   }
 
-  const analysis = await analyzeImage({
+  const analyzed = await analyzeImage({
     prompt: analysisPrompt,
-    imageUrl,
+    image,
+    apiConfig: context?.apiConfig,
     onLog,
     model: resolveModel('imageAnalysis', context?.models, context?.model),
   });
 
-  return JSON.stringify({ url: imageUrl, analysis });
+  return JSON.stringify({ url: analyzed.url, analysis: analyzed.analysis });
 }

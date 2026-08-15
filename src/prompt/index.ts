@@ -8,6 +8,13 @@
  * Ordering follows Anthropic's long-context guidance: identity at the
  * top (primacy), reference docs in the middle, behavioral instructions
  * at the bottom (recency — what we most need the model to follow).
+ *
+ * Everything above the cache breakpoint is static, so the prefix is identical
+ * across turns, sessions, and onboarding states — which is why reference docs
+ * are included unconditionally rather than gated on what the app uses. The
+ * exception is documented in prompt/skills/catalog.ts: docs for capabilities
+ * most apps never touch are represented here only by the catalog, and their
+ * bodies arrive on demand as loadSkill tool results.
  */
 
 import { readAsset } from '../assets.js';
@@ -19,6 +26,7 @@ import {
   loadPlanStatus,
 } from './static/projectContext.js';
 import { renderOrgContextBlock } from '../orgContext.js';
+import { loadSkillsCatalog } from './skills/catalog.js';
 
 /** Replace all {{path/to/file.md}} with the file contents. */
 function resolveIncludes(template: string): string {
@@ -94,25 +102,9 @@ Current date: ${now}
   {{compiled/design.md}}
   </design>
 
-  <building_agent_interfaces>
-  {{compiled/agent-interfaces.md}}
-  </building_agent_interfaces>
-
-  <building_mcp_interfaces>
-  {{compiled/mcp-interfaces.md}}
-  </building_mcp_interfaces>
-
-  <media_cdn>
-  {{compiled/media-cdn.md}}
-  </media_cdn>
-
   <app_files>
   {{compiled/files.md}}
   </app_files>
-
-  <data_sources>
-  {{compiled/datasources.md}}
-  </data_sources>
 
   <interfaces>
   {{compiled/interfaces.md}}
@@ -127,10 +119,10 @@ Current date: ${now}
   </secrets>
 </platform_docs>
 
+${loadSkillsCatalog()}
+
 <mindstudio_agent_sdk_docs>
   {{compiled/sdk-actions.md}}
-
-  {{compiled/task-agents.md}}
 </mindstudio_agent_sdk_docs>
 
 <mindstudio_flavored_markdown_spec_docs>
