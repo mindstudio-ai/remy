@@ -22,7 +22,7 @@ export const definition: ToolDefinition = {
       referenceImage: {
         type: 'string',
         description:
-          'Optional URL of a single reference image to guide the generation — for style, subject, character consistency, or composition. Your prompt still describes the desired result; the reference conditions it. Applies to every prompt in the batch.',
+          'Optional single reference image to guide the generation — for style, subject, character consistency, or composition. Either a URL or the path of an image file on disk (e.g. a user upload under src/.user-uploads/). Your prompt still describes the desired result; the reference conditions it. Applies to every prompt in the batch.',
       },
       width: {
         type: 'number',
@@ -57,6 +57,7 @@ export async function execute(
       : undefined,
     enhancePrompts: true,
     onLog,
+    apiConfig: context?.apiConfig,
     imageGenerationModel: resolveModel(
       'imageGeneration',
       context?.models,

@@ -7,7 +7,9 @@
 
 import { runMindstudioCliResult } from '../../../common/runMindstudioCli.js';
 import { analyzeImage } from '../../../common/analyzeImage.js';
+import { resolveImageRefs } from '../../../../tools/_helpers/uploadImage.js';
 import { enhanceImagePrompt } from './enhancePrompt.js';
+import type { ApiConfig } from '../../../../config.js';
 
 const ANALYZE_PROMPT =
   'You are reviewing this image for a visual designer sourcing assets for a project. Describe: what the image depicts, the mood and color palette, how the lighting and composition work, any text present in the image, whether there are any issues (artifacts, distortions), and how it could be used in a layout for an app or website. Be concise and practical. Respond only with your analysis as Markdown (starting with the title "Asset Review") and absolutely no other text. Do not use emojis - use unicode if you need symbols.';
@@ -18,7 +20,8 @@ export interface ImageGeneratorOptions {
   height?: number;
   /** Source images for editing (`editImages`) or a single reference image
    * for generation (`generateImages`, passed as `[referenceImage]`). Mapped
-   * onto the chosen model's declared image input(s). */
+   * onto the chosen model's declared image input(s). URLs or local file
+   * paths — generation runs on the platform, so local files are hosted first. */
   sourceImages?: string[];
   transparentBackground?: boolean;
   onLog?: (line: string) => void;
@@ -35,6 +38,8 @@ export interface ImageGeneratorOptions {
    * generation. True for `generateImages` (briefs are creative); false for
    * `editImages` (prompts are edit instructions). */
   enhancePrompts: boolean;
+  /** Needed to host any `sourceImages` given as local file paths. */
+  apiConfig?: ApiConfig;
 }
 
 export async function generateImageAssets(
@@ -42,14 +47,17 @@ export async function generateImageAssets(
 ): Promise<string> {
   const {
     prompts,
-    sourceImages,
     transparentBackground,
     enhancePrompts,
     onLog,
+    apiConfig,
     imageGenerationModel: genModel,
     imageAnalysisModel,
     imagePromptEnhancerModel,
   } = opts;
+  const sourceImages = opts.sourceImages?.length
+    ? await resolveImageRefs(opts.sourceImages, apiConfig)
+    : undefined;
   const width = opts.width || 2048;
   const height = opts.height || 2048;
 
@@ -179,12 +187,16 @@ export async function generateImageAssets(
           error: url,
         };
       }
+      // A failed review shouldn't discard an image that generated fine, so
+      // note it per image instead of failing the whole batch.
       const analysis = await analyzeImage({
         prompt: ANALYZE_PROMPT,
-        imageUrl: url,
+        image: url,
         onLog,
         model: imageAnalysisModel,
-      });
+      })
+        .then((r) => r.analysis)
+        .catch((err: any) => `Could not review this image: ${err.message}`);
       return {
         url,
         prompt: prompts[i],

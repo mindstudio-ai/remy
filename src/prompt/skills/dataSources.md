@@ -95,7 +95,7 @@ tool so it can query repeatedly and refine, rather than retrieving once up front
 
 | Kind | Settings | Cost |
 |---|---|---|
-| **Free** (ranking) | `--rerank`, `--hybrid`, `--top-k` | none, next search |
+| **Free** (ranking) | `--rerank`, `--rerank-model`, `--hybrid`, `--top-k` | none, next search |
 | **Rebuild** (how docs become vectors) | `--max-chars`, `--min-chars`, `--drop-blocks`, `--contextual`, `--describe-images`, `--embedding-model`, `--extraction-model` | every document reprocessed |
 
 Images inside documents are described by a vision model and the description substituted into the

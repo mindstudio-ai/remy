@@ -180,7 +180,7 @@ matters is that settings come in two kinds, and the difference is what a change 
 
 | Kind | Settings | Cost to change |
 |---|---|---|
-| **Free** — how results are ranked | `--rerank`, `--hybrid`, `--top-k` | none; effective on the next search |
+| **Free** — how results are ranked | `--rerank`, `--rerank-model`, `--hybrid`, `--top-k` | none; effective on the next search |
 | **Rebuild** — how documents become vectors | `--max-chars`, `--min-chars`, `--drop-blocks`, `--contextual`, `--describe-images`, `--embedding-model`, `--extraction-model` | every document must be reprocessed |
 
 ```bash
