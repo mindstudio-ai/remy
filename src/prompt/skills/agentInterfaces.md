@@ -1,7 +1,7 @@
 ---
 name: Agent Interfaces
-what: Conversational AI as a first-class interface to the app — an LLM with authenticated, per-user access to the app's methods as tools, paired with a streaming chat UI. The platform handles auth, tool dispatch, threads, and streaming, so the work is authorship: who the agent is, which methods it can reach, and how each one is described to it. Any app whose methods do something interesting can be projected into a conversation this way, often as its most compelling surface. This reference covers both halves — writing the agent spec, and building the chat frontend with the SDK's `createAgentChatClient()`.
-when: Before authoring `src/interfaces/agent.md`, compiling `dist/interfaces/agent/`, or building an agent's chat UI. The `<interfaces>` platform doc has the wiring; this is how to author one well.
+what: Conversational AI as a first-class interface to the app — an LLM with authenticated, per-user access to the app's methods as tools, paired with a streaming chat UI. The platform handles auth, tool dispatch, threads, and streaming, so the work is authorship: who the agent is, which methods it can reach, and how each one is described to it. Any app whose methods do something interesting can be projected into a conversation this way, often as its most compelling surface. This reference covers the whole feature — writing the agent spec, compiling it, and building the chat frontend.
+when: Before authoring `src/interfaces/agent.md`, compiling `dist/interfaces/agent/`, or building an agent's chat UI.
 ---
 
 # Building Agent Interfaces
@@ -80,6 +80,8 @@ When building the `dist/interfaces/agent/`, consider the agent spec, as well as 
 **`tools/*.md`** — one file per exposed method. Rich markdown with when-to-use, examples, edge cases, return value guidance. These are what make the agent actually work well.
 
 **`agent.json`** — ties it together. Model config from frontmatter, paths to system prompt and tool files, optional `webInterfacePath`.
+
+The exact shape of all three, and of the spec frontmatter they compile from, is in "The wiring" at the end of this document.
 
 ## Chat UI Design
 
@@ -203,3 +205,90 @@ The chat UI uses the app's design system — colors, typography, voice from `@br
 
 - Avoid designs that look like dated messaging apps from 2015
 - Avoid robotic empty states ("Hello! I'm your AI assistant. How can I help you today?")
+
+---
+
+# The wiring
+
+## Spec: `src/interfaces/agent.md`
+
+The human-readable spec. Frontmatter contains structured fields; the prose body is the behavioral spec —
+voice, personality, capabilities, rules — written in MSFM.
+
+```yaml
+---
+name: Todo Assistant
+model: {"model": "claude-4-5-haiku", "temperature": 0.5, "maxResponseTokens": 16000}
+description: Conversational agent that helps users manage their to-do list.
+---
+```
+
+Frontmatter fields:
+
+- `name` — agent display name
+- `model` — JSON string with `model` (MindStudio model ID), `temperature`, `maxResponseTokens`, and
+  optional `config` (model-specific settings like `reasoning`, `tools`, etc.). Ask `askMindStudioSdk`
+  for available model IDs and their config options — MindStudio's ids don't match vendor ids, so treat
+  any id in this document's examples as illustrative rather than current. The user's UI has a visual picker for changing it later, so only validate
+  the model when you're setting it; if the value changes afterwards, assume it's correct.
+- `description` — one-liner for agent card/listing
+
+The prose body contains sections like Voice & Personality, Capabilities, Behavior — whatever structure
+serves the agent's character. This is compiled into the system prompt and tool descriptions.
+
+## Compiled Output: `dist/interfaces/agent/`
+
+```
+dist/interfaces/agent/
+├── agent.json          ← config the platform reads
+├── system.md           ← compiled system prompt
+└── tools/
+    ├── createTodo.md   ← rich tool description per method
+    ├── listTodos.md
+    └── ...
+```
+
+## Config (`agent.json`)
+
+```json
+{
+  "agent": {
+    "model": "claude-4-5-haiku",
+    "temperature": 0.5,
+    "maxTokens": 16000,
+    "systemPrompt": "system.md",
+    "tools": [
+      { "method": "create-todo", "description": "tools/createTodo.md" },
+      { "method": "list-todos", "description": "tools/listTodos.md" }
+    ],
+    "webInterfacePath": "/chat"
+  }
+}
+```
+
+**The token-limit field is renamed during compilation.** The spec frontmatter calls it
+`maxResponseTokens`; the compiled `agent.json` calls it `maxTokens`. Same value, two names — carry it
+across rather than copying the key.
+
+| Field | Description |
+|-------|-------------|
+| `model` | MindStudio model ID. Comes from the spec frontmatter; look it up with `askMindStudioSdk` rather than guessing |
+| `temperature` | Model temperature |
+| `maxTokens` | Max response tokens (the spec's `maxResponseTokens`) |
+| `systemPrompt` | Relative path to the compiled system prompt markdown file |
+| `tools` | Array of tool entries — `method` references a method `id` from the manifest, `description` is a relative path to a markdown file with rich tool docs (when to use, examples, edge cases, parameter guidance) |
+| `webInterfacePath` | Optional. If the app has a web interface with a chat page, this path tells the IDE where to show the preview. Otherwise the agent is accessed via API. |
+
+Declare it in `mindstudio.json`:
+
+```json
+{ "type": "agent", "path": "dist/interfaces/agent/agent.json" }
+```
+
+## Auth
+
+Agent chat runs as the **authenticated user**, not as a system role — tool calls carry that user's
+roles, so a method gated with `auth.requireRole` behaves exactly as it would if the user had called it
+from the web frontend. That's what makes exposing real methods safe; it's also why role restrictions
+belong in the tool descriptions, so the agent can decline gracefully instead of surfacing a rejection.
+
