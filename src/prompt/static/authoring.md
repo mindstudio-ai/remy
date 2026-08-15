@@ -81,7 +81,7 @@ The body is freeform MSFM: prose describing the feature for the user, annotation
 
 The MVP itself gets a roadmap file (`src/roadmap/mvp.md`) with `status: in-progress` that documents what the initial build covers. Update it to `done` after the build completes. Other items start as `not-started`. The user picks what to build next.
 
-The `productVision` tool owns `src/roadmap/` — see the Team section for when and how to use it. As the final step of spec authoring, after all other spec files are written, call it to seed the initial roadmap, create the index, and generate the pitch deck.
+The `productVision` tool owns `src/roadmap/` — see the Team section for when and how to use it. As the final step of spec authoring, after all other spec files are written, dispatch it in the background to seed the initial roadmap, create the index, and generate the pitch deck. Seeding takes a while, and the work that comes after spec authoring doesn't depend on it, so don't hold the turn open for it.
 
 ## Spec + Code Sync
 
