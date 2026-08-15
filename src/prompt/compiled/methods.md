@@ -87,15 +87,9 @@ await mindstudio.sendEmail({
   body: content, // markdown or HTML, auto-detected; bodyType overrides. cc/bcc/replyTo/attachments also supported
 });
 
-// Reply in-thread to an inbound email (fields come from the email interface's input)
-await mindstudio.sendEmail({
-  to: input.replyTo ?? input.from,
-  subject: `Re: ${input.subject}`,
-  body: reply,
-  inReplyTo: input.messageId ?? undefined,
-  references: input.messageId ? [...input.references, input.messageId] : input.references,
-  cc: input.cc, // reply-all
-});
+// Replying to inbound mail is the `inboundEmail` skill's job — load it before writing
+// a handler. It has the full input shape and the threading rules; getting the headers
+// wrong sends a reply that starts a new conversation instead of continuing one.
 
 // Store a file → returns a stable URL (define the store at module scope; see Files & Storage)
 const { url } = await Reports.put(buffer, { contentType: 'application/pdf', filename: 'report.pdf' });
@@ -323,7 +317,9 @@ input._request: {
 }
 ```
 
-`rawBody` preserves the exact bytes the client sent — whitespace, key ordering, encoding. Use it for webhook signature verification:
+`rawBody` preserves the exact bytes the client sent — whitespace, key ordering, encoding. Use it for signature verification.
+
+**There are two inbound HTTP interfaces and they expose the raw body differently.** This one is the API interface, at `input._request.rawBody`. The Webhook interface puts it at top-level `input.rawBody` and routes by a secret in the URL instead of a bearer token, which usually suits provider callbacks better since a provider can't send one. Load the `webhooks` skill before choosing — the example below is the API-interface shape and won't work unchanged in a webhook handler.
 
 ```typescript
 export async function stripeWebhook(input: {

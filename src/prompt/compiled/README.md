@@ -94,6 +94,34 @@ in `src/prompt/skills/` instead, and the agent loads one with the `loadSkill`
 tool when it needs it. Only a name and a trigger line stay in the prompt (see
 `src/prompt/skills/catalog.ts`).
 
+**What decides it is the kind of content, not the size.** Two categories behave
+completely differently in a resident prompt:
+
+- **Detail** — field names, config keys, input shapes, route params, cron
+  syntax. Expensive for the agent to hold and useless until it's writing that
+  exact code.
+- **A proposition** — "the app can receive email, here's when that matters."
+  One idea, nearly free.
+
+A skill is a good trade whenever it swaps detail for a proposition, whatever the
+byte count. `scheduledJobs` is the case to reason from: its body is smaller than
+its own catalog entry, so it *costs* tokens to defer — and it's still right to
+defer, because a cron config schema in front of the agent during a checkout
+build is noise either way.
+
+The one thing size does govern is **entry count**. Twenty catalog entries would
+recreate the problem in miniature: a list to scan instead of a schema to skim.
+Prefer folding new material into an existing skill over adding a ninth.
+
+**A skill can be a section of a source doc, not just a whole one.** Originally
+one source doc produced one fragment. `docs/developer-guide/07_interfaces.md`
+now fans out into a resident fragment plus six skills, and its sections map 1:1
+onto them (Web / API / Cron / Webhook / Email / MCP / Agent / manifest), so a
+recompile has a clear target per skill. When you split a doc this way, watch for
+anything defined once and used by several sections — a URL template, a shared
+auth rule, a manifest snippet. Those need copying into each skill, because a
+skill arrives alone.
+
 A skill is authored the same way, with two differences:
 
 - **It carries frontmatter** — `name` (human-readable label), `what` (what the
