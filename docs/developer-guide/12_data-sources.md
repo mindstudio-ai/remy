@@ -35,6 +35,11 @@ source, load documents into it, and search it.
 - **Reprocessing costs real money.** Every document has to be parsed and embedded. Changing how a
   corpus is built is therefore an explicit, deliberate action — never something that happens as a side
   effect (see *Tuning*, below).
+- **There are limits.** 25 data sources per app, 5,000 documents per source, 10,000 chunks per
+  document, and 300 searches per minute. They sit well clear of normal use, and if you have a real
+  reason to exceed one, get in touch — they're not a plan tier. The one worth designing around is the
+  source limit: because naming a source creates it, a name computed per user or per request will run
+  through it. Use one source and a metadata filter instead.
 
 ## Defining a Data Source
 

@@ -27,6 +27,10 @@ short docs that fit in a prompt.
 - **Re-adding the same bytes is free** — content-addressed, so ingest scripts are safe to re-run.
 - **Ingest is async.** `add()` returns once queued; poll `documents()`, or use `--wait` from the CLI.
 - **Reprocessing costs real money**, so changing how a corpus is built is always explicit.
+- **Limits apply**: 25 data sources per app, 5,000 documents per source, 10,000 chunks per
+  document, 300 searches/minute. Well clear of normal use — but **source names must be fixed, not
+  computed per user or per request**, since referencing one creates it. Partition inside a source
+  with a metadata filter instead.
 
 ## Defining and searching
 
