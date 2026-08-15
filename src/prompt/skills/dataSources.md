@@ -66,6 +66,7 @@ set with the CLI, so code and reality can't drift.
 ```bash
 mindstudio-prod datasources add --source policies --wait docs/*.pdf
 mindstudio-prod datasources search --source policies "what are the payment terms?"   # sanity-check
+mindstudio-prod datasources delete --source policies   # whole source; --source is required, never defaulted
 ```
 
 `--wait` blocks until processing finishes and exits non-zero on failure. Also `datasources list`,

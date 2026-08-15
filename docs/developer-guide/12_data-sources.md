@@ -71,8 +71,11 @@ mindstudio-prod datasources search --source policies "what are the payment terms
 ```
 
 Other subcommands: `datasources list` (sources with counts), `datasources status` (per-document state
-and ingest errors), `datasources rm --document <id>`. Run `mindstudio-prod datasources --help` for
-flags.
+and ingest errors), `datasources rm --document <id>`, and `datasources delete --source <slug>` — the
+whole source: every version, document and vector. Deletion requires an explicit `--source` (it never
+falls back to the default) and refuses while documents are still ingesting. Extraction caches survive
+by content hash, so re-ingesting the same files elsewhere costs no re-extraction. Run
+`mindstudio-prod datasources --help` for flags.
 
 Supported formats: `pdf`, `docx`, `pptx`, `xlsx`, `odt`, `rtf`, `epub`, images (`png`, `jpg`, `webp`,
 `gif`, `avif`, `tiff`), and text (`txt`, `md`, `markdown`, `json`, `csv`, `tsv`, `log`, `html`).
