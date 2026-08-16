@@ -116,6 +116,17 @@ mindstudio-prod files put --public ./hero.jpg   # → { url, key } — content-a
 ```
 Write that URL into your JSX/HTML. Also: `files list`, `files rm --store … --key …` (`--help` for flags).
 
+## Generated assets
+
+MindStudio SDK Actions that produce a file (`generateImage`, `generateVideo`, `generateSpeech`, `generatePdf`,
+`upscaleImage`, …) can optionally write straight into a store — pass the handle as `store` in the options object:
+
+```typescript
+const { imageUrl } = await mindstudio.generateImage({ prompt }, { store: Assets });
+```
+
+If omitted, files are written to the default global, public MindStudio CDN.
+
 ## When public vs private
 
 - **Private (default):** user uploads, generated docs, anything not world-readable. Reads are authed
