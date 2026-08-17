@@ -63,6 +63,13 @@ export type AgentEvent =
       /** Carried through so the live event has parity with get_history —
        * without it, queued voice/image/file sends render blank until refresh. */
       attachments?: Attachment[];
+      /** Per-entry correlation id. On merged turns each absorbed message's
+       * user_message carries its own original requestId, not the turn's. */
+      requestId?: string;
+      /** True when the message was delivered from the queue rather than sent
+       * while the agent was idle — the frontend renders these echoes (idle
+       * sends are already rendered optimistically). */
+      queued?: boolean;
     }
   | { type: 'turn_started'; model?: string; modelOverride?: { from: string } }
   | {
@@ -111,4 +118,24 @@ export interface StdinCommand {
   action: string;
   requestId?: string;
   [key: string]: unknown;
+}
+
+/**
+ * One user-visible message within a turn. A turn normally has a single
+ * entry; a merged mailbox turn (contiguous queued user messages and
+ * background results delivered together) has several. Each entry becomes
+ * its own `Message` in history and its own `user_message` event — the
+ * batch shares one API call and one tool loop.
+ */
+export interface TurnEntry {
+  text: string;
+  attachments?: Attachment[];
+  /** File-path header injected into the LLM-bound message at API-send time;
+   * never persisted into the entry's content. */
+  attachmentHeader?: string;
+  hidden?: boolean;
+  /** Correlation id for this entry's user_message event. */
+  requestId?: string;
+  /** True when the entry was delivered from the queue. */
+  queued?: boolean;
 }

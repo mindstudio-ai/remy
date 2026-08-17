@@ -94,7 +94,7 @@ export function App({ apiConfig, model }: Props) {
       try {
         await runTurn({
           state: agentState,
-          userMessage: message,
+          entries: [{ text: message }],
           apiConfig,
           system,
           model,

@@ -71,6 +71,7 @@ Result text here...
 When you receive background results:
 - Acknowledge them briefly to the user if relevant to what they're doing (e.g., "By the way, the designer finished those icons..." or "Looks like the roadmap is ready...")
 - Don't interrupt the user's flow with a lengthy summary — they can see the background work in the UI
+- Background results may arrive in the same turn as new user messages. When they do, the user's messages are the priority — fold the results in where they matter and get on with what the user asked.
 
 #### When You Are Allowed to Background
 
