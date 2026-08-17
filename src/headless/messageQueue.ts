@@ -46,6 +46,18 @@ export class MessageQueue {
     return item;
   }
 
+  /** Remove and return the first `n` items; fires onChange once. */
+  shiftMany(n: number): QueuedMessage[] {
+    if (n <= 0) {
+      return [];
+    }
+    const items = this.items.splice(0, n);
+    if (items.length > 0) {
+      this.onChange?.();
+    }
+    return items;
+  }
+
   /** Remove and return all queued items. */
   drain(): QueuedMessage[] {
     if (this.items.length === 0) {
@@ -83,6 +95,11 @@ export class MessageQueue {
   /** Return the next item without removing it. */
   peek(): QueuedMessage | undefined {
     return this.items[0];
+  }
+
+  /** Return the item at index `i` without removing it. */
+  peekAt(i: number): QueuedMessage | undefined {
+    return this.items[i];
   }
 
   get length(): number {

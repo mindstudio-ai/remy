@@ -104,8 +104,18 @@ function isBackgroundCall(tc: {
   );
 }
 
-export type { AgentEvent, AgentState, ExternalToolResolver } from './types.js';
-import type { AgentEvent, AgentState, ExternalToolResolver } from './types.js';
+export type {
+  AgentEvent,
+  AgentState,
+  ExternalToolResolver,
+  TurnEntry,
+} from './types.js';
+import type {
+  AgentEvent,
+  AgentState,
+  ExternalToolResolver,
+  TurnEntry,
+} from './types.js';
 
 export function createAgentState(): AgentState {
   return { messages: [] };
@@ -118,10 +128,11 @@ export function createAgentState(): AgentState {
  */
 export async function runTurn(params: {
   state: AgentState;
-  userMessage: string;
-  attachments?: Attachment[];
-  /** File-path header injected into the LLM-bound message; not persisted into content. */
-  attachmentHeader?: string;
+  /** Ordered user-visible messages for this turn. Usually one; a merged
+   * mailbox turn (queued user messages + background results delivered
+   * together) has several — each becomes its own history entry and
+   * user_message event, sharing one API call and tool loop. */
+  entries: TurnEntry[];
   apiConfig: ApiConfig;
   system: string;
   model?: string;
@@ -132,7 +143,6 @@ export async function runTurn(params: {
   signal?: AbortSignal;
   onEvent: (event: AgentEvent) => void;
   resolveExternalTool?: ExternalToolResolver;
-  hidden?: boolean;
   /** Correlation ID from the headless protocol — threaded for structured logging. */
   requestId?: string;
   toolRegistry?: import('./toolRegistry.js').ToolRegistry;
@@ -145,9 +155,7 @@ export async function runTurn(params: {
 }): Promise<void> {
   const {
     state,
-    userMessage,
-    attachments,
-    attachmentHeader,
+    entries,
     apiConfig,
     system,
     model,
@@ -156,7 +164,6 @@ export async function runTurn(params: {
     signal,
     onEvent,
     resolveExternalTool,
-    hidden,
     requestId,
     toolRegistry,
     onBackgroundComplete,
@@ -183,15 +190,17 @@ export async function runTurn(params: {
       ? { from: baseline }
       : undefined;
 
+  const totalAttachments = entries.reduce(
+    (n, e) => n + (e.attachments?.length ?? 0),
+    0,
+  );
   log.info('Turn started', {
     requestId,
     model,
     buildModel: buildModelOverride,
     toolCount: tools.length,
-    ...(attachments &&
-      attachments.length > 0 && {
-        attachmentCount: attachments.length,
-      }),
+    ...(entries.length > 1 && { entryCount: entries.length }),
+    ...(totalAttachments > 0 && { attachmentCount: totalAttachments }),
   });
 
   onEvent({
@@ -200,36 +209,42 @@ export async function runTurn(params: {
     ...(modelOverride && { modelOverride }),
   });
 
-  // Store the original message (with @@automated:: prefix if present) in history
-  // so the frontend can identify automated messages. The prefix is stripped by
-  // cleanMessagesForApi before sending to the LLM.
-  // Reject empty messages (no text and no attachments)
-  const hasText = userMessage.trim().length > 0;
-  const hasAttachments = attachments && attachments.length > 0;
-  if (!hasText && !hasAttachments) {
+  // Store the original messages (with @@automated:: prefix if present) in
+  // history so the frontend can identify automated messages. The prefix is
+  // stripped by cleanMessagesForApi before sending to the LLM.
+  // Reject entries with no text and no attachments; error only if none survive.
+  const keptEntries = entries.filter(
+    (e) => e.text.trim().length > 0 || (e.attachments?.length ?? 0) > 0,
+  );
+  if (keptEntries.length === 0) {
     onEvent({ type: 'error', error: 'Empty message' });
     return;
   }
 
-  const userMsg: Message = { role: 'user', content: userMessage };
-  if (hidden) {
-    userMsg.hidden = true;
+  for (const entry of keptEntries) {
+    const hasAttachments = (entry.attachments?.length ?? 0) > 0;
+    const userMsg: Message = { role: 'user', content: entry.text };
+    if (entry.hidden) {
+      userMsg.hidden = true;
+    }
+    if (hasAttachments) {
+      userMsg.attachments = entry.attachments;
+    }
+    if (entry.attachmentHeader) {
+      userMsg.attachmentHeader = entry.attachmentHeader;
+    }
+    state.messages.push(userMsg);
+    onEvent({
+      type: 'user_message',
+      text: entry.text,
+      hidden: entry.hidden || undefined,
+      // Include attachments so the live event can render a queued voice/image/file
+      // bubble; a voice message has empty text and the transcript lives here.
+      ...(hasAttachments && { attachments: entry.attachments }),
+      ...(entry.requestId && { requestId: entry.requestId }),
+      ...(entry.queued && { queued: true }),
+    });
   }
-  if (hasAttachments) {
-    userMsg.attachments = attachments;
-  }
-  if (attachmentHeader) {
-    userMsg.attachmentHeader = attachmentHeader;
-  }
-  state.messages.push(userMsg);
-  onEvent({
-    type: 'user_message',
-    text: userMessage,
-    hidden: hidden || undefined,
-    // Include attachments so the live event can render a queued voice/image/file
-    // bubble; a voice message has empty text and the transcript lives here.
-    ...(hasAttachments && { attachments }),
-  });
 
   // Skip status labels on the very first message — too little context to
   // generate anything useful and the results come out awkward.
@@ -345,12 +360,15 @@ export async function runTurn(params: {
             // etc.), surface only the action name — not the body. The body is
             // instructional text ("end the turn, build will start") that the
             // status generator would faithfully but misleadingly summarize as
-            // "Ending turn, build starting."
-            const automated = parseSentinel(userMessage);
-            if (automated) {
-              parts.push(`Automated action: ${automated.name}`);
-            } else if (userMessage) {
-              parts.push(`User request: ${userMessage.slice(-500)}`);
+            // "Ending turn, build starting." A merged turn can carry both a
+            // background_results entry and plain user text — surface each kind.
+            for (const entry of keptEntries) {
+              const automated = parseSentinel(entry.text);
+              if (automated) {
+                parts.push(`Automated action: ${automated.name}`);
+              } else if (entry.text) {
+                parts.push(`User request: ${entry.text.slice(-500)}`);
+              }
             }
             return parts.join('\n');
           },

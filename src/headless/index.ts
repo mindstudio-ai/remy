@@ -11,6 +11,10 @@
  * - System events (ready, session_restored, stopping, stopped) never have a requestId.
  * - Every command ends with exactly one `completed` event:
  *   {event:"completed", requestId, success:true|false, error?:string}
+ * - When contiguous queued user/background messages merge into one turn, the
+ *   turn's primary requestId gets the real `completed` first, then each other
+ *   absorbed requestId gets one `{...same outcome, absorbed:true}` completed
+ *   immediately after — one terminal per command either way.
  * - `tool_result` is fire-and-forget (resolves an in-flight promise, no completed event).
  *
  * `get_history` is paginated. Request: {action:"get_history", before?:number,
@@ -42,6 +46,7 @@ import {
   runTurn,
   type AgentState,
   type AgentEvent,
+  type TurnEntry,
 } from '../agent.js';
 import {
   loadSession,
@@ -69,6 +74,7 @@ import { resolveAction, getActionChain } from '../automatedActions/resolve.js';
 import {
   sentinel,
   hasSentinel,
+  isAutomatedMessage,
   buildBackgroundResultsMessage,
   mergeBackgroundResultsMessages,
 } from '../automatedActions/sentinel.js';
@@ -133,8 +139,12 @@ export class HeadlessSession {
   /** RequestId of the in-flight message command — injected into streamed events. */
   private currentRequestId: string | undefined;
 
-  /** Guard: track whether terminal `completed` was already sent so we emit exactly one. */
+  /** Guard: track whether terminal `completed` was already sent so we emit
+   * exactly one per requestId. */
   private completedEmitted = false;
+  /** Outcome of the current turn's primary `completed` — read after the turn
+   * to stamp the same success/error onto absorbed requestIds' terminals. */
+  private lastCompleted: { success: boolean; error?: string } | null = null;
   private turnStart = 0;
 
   /**
@@ -327,6 +337,16 @@ export class HeadlessSession {
   ): void {
     this.emit('completed', { ...data }, rid);
     this.completedEmitted = true;
+    this.lastCompleted = {
+      success: data.success === true,
+      ...(typeof data.error === 'string' && { error: data.error }),
+    };
+  }
+
+  /** Outcome of the turn's primary `completed`, for stamping onto absorbed
+   * requestIds' terminals. Falls back to failure if none was emitted. */
+  private primaryOutcome(): { success: boolean; error?: string } {
+    return this.lastCompleted ?? { success: false };
   }
 
   /** Dispatch a simple (non-streaming) command: call handler, emit response + completed. */
@@ -529,8 +549,13 @@ export class HeadlessSession {
             // Forward attachments so queued voice/image/file sends render live;
             // otherwise the bubble is blank until a get_history refresh.
             ...(e.attachments && { attachments: e.attachments }),
+            // Queue-delivered entries are flagged so the frontend renders the
+            // echo (idle sends are rendered optimistically instead).
+            ...(e.queued && { queued: true }),
           },
-          rid,
+          // A merged turn emits one user_message per absorbed entry — each
+          // carries its own original requestId, not the turn's.
+          e.requestId ?? rid,
         );
         return;
 
@@ -558,13 +583,11 @@ export class HeadlessSession {
           durationMs: Date.now() - this.turnStart,
         });
         return;
-      case 'turn_cancelled': {
+      case 'turn_cancelled':
         // Cancel flushes this run's chain/background follow-ups (in
         // handleCancel) while preserving queued user messages, which run next.
-        this.emit('completed', { success: false, error: 'cancelled' }, rid);
-        this.completedEmitted = true;
+        this.emitCompleted(rid, { success: false, error: 'cancelled' });
         return;
-      }
 
       // Streaming events — forward with requestId
       case 'text':
@@ -687,26 +710,42 @@ export class HeadlessSession {
   //////////////////////////////////////////////////////////////////////////////
 
   /**
-   * Run one turn (without acquiring the `running` lock). Called by
-   * handleMessage for the initial turn, then repeatedly for each queued
-   * message — `running` stays held across the queue drain so no user
-   * message can slip in mid-pipeline.
+   * Persist one entry's non-voice uploads to disk and build its header. The
+   * header tells the LLM where to read each file; it's kept separate so it
+   * gets injected at API-send time and never persisted into the user's chat
+   * content (which would leak into history restore on the frontend).
+   *
+   * Must be awaited sequentially across entries — persistAttachments'
+   * filename de-dup set is per-call, so parallel calls race on names.
+   */
+  private async persistEntryAttachments(
+    attachments: Attachment[] | undefined,
+  ): Promise<string | undefined> {
+    if (!attachments?.some((a) => !a.isVoice)) {
+      return undefined;
+    }
+    try {
+      const { documents, images } = await persistAttachments(attachments);
+      return buildUploadHeader(documents, images) || undefined;
+    } catch (err: any) {
+      log.warn('Attachment persistence failed', { error: err.message });
+      return undefined;
+    }
+  }
+
+  /**
+   * Run one turn for a single command (without acquiring the `running` lock).
+   * Owns the per-command machinery: @@automated:: action resolution, plan-file
+   * and buildModel side effects, and chain expansion — which is why
+   * sentinel-bearing commands always come through here, one turn each, never
+   * merged. The turn itself runs in executeTurn.
    */
   private async runSingleTurn(
     parsed: StdinCommand,
     requestId: string | undefined,
     fromChain = false,
+    queued = false,
   ): Promise<void> {
-    this.currentRequestId = requestId;
-    this.currentAbort = new AbortController();
-    this.completedEmitted = false;
-    this.turnStart = Date.now();
-
-    // Forced compaction gate: if the conversation is approaching the API cap,
-    // compact before processing this turn. Coalesces with any in-flight
-    // compaction. No timeout — compaction takes as long as it takes.
-    await this.runForcedCompactionIfNeeded(requestId);
-
     const attachments = parsed.attachments as Attachment[] | undefined;
     if (attachments?.length) {
       log.info('Message has attachments', {
@@ -715,23 +754,8 @@ export class HeadlessSession {
       });
     }
 
-    // Persist file uploads to disk (skip voice messages). The header tells
-    // the LLM where to read each file from disk; it's passed separately so it
-    // gets injected at API-send time and never persisted into the user's
-    // chat content (which would leak into history restore on the frontend).
     let userMessage = (parsed.text as string) ?? '';
-    let attachmentHeader: string | undefined;
-    if (attachments?.some((a) => !a.isVoice)) {
-      try {
-        const { documents, images } = await persistAttachments(attachments);
-        const header = buildUploadHeader(documents, images);
-        if (header) {
-          attachmentHeader = header;
-        }
-      } catch (err: any) {
-        log.warn('Attachment persistence failed', { error: err.message });
-      }
-    }
+    const attachmentHeader = await this.persistEntryAttachments(attachments);
 
     // Resolve @@automated:: actions — loads prompt, interpolates params
     let resolved: ReturnType<typeof resolveAction> = null;
@@ -787,22 +811,144 @@ export class HeadlessSession {
       }
     }
 
+    await this.executeTurn({
+      entries: [
+        {
+          text: userMessage,
+          attachments,
+          attachmentHeader,
+          hidden: isHidden || undefined,
+          requestId,
+          queued: queued || undefined,
+        },
+      ],
+      requestId,
+      absorbedRids: [],
+      onboardingState,
+      system,
+      buildModel,
+    });
+  }
+
+  /**
+   * Run a mailbox batch — contiguous queued user + background items — as one
+   * merged turn. Every item becomes its own history entry and user_message
+   * event (own requestId, attachments, hidden flag); adjacent background
+   * items fold into a single background_results entry so the LLM sees one
+   * combined block. No action-sentinel machinery here: batch construction
+   * guarantees none (sentinel-bearing user items are drain barriers that run
+   * alone via runSingleTurn, and background_results is a NON_ACTION sentinel
+   * with no side effects).
+   */
+  private async runMergedTurn(batch: QueuedMessage[]): Promise<void> {
+    const primaryRid =
+      (batch[0].command.requestId as string | undefined) ??
+      (batch.every((b) => b.source === 'background')
+        ? `background-${Date.now()}`
+        : `merged-${Date.now()}`);
+    const absorbedRids = batch
+      .slice(1)
+      .map((b) => b.command.requestId as string | undefined)
+      .filter((rid): rid is string => typeof rid === 'string');
+
+    const entryList: Array<{ entry: TurnEntry; background: boolean }> = [];
+    for (const item of batch) {
+      const text = (item.command.text as string) ?? '';
+      const prev = entryList[entryList.length - 1];
+      if (item.source === 'background' && prev?.background) {
+        prev.entry.text = mergeBackgroundResultsMessages([
+          prev.entry.text,
+          text,
+        ]);
+        continue;
+      }
+      entryList.push({
+        background: item.source === 'background',
+        entry: {
+          text,
+          attachments: item.command.attachments as Attachment[] | undefined,
+          hidden: !!item.command.hidden || undefined,
+          // Background items carry no requestId — their user_message falls
+          // back to the turn's primary rid on the wire.
+          requestId: item.command.requestId as string | undefined,
+          queued: true,
+        },
+      });
+    }
+    const entries = entryList.map((e) => e.entry);
+
+    // Sequential on purpose — see persistEntryAttachments.
+    for (const entry of entries) {
+      entry.attachmentHeader = await this.persistEntryAttachments(
+        entry.attachments,
+      );
+    }
+
+    // The batch shares one system prompt: onboardingState is uniform across
+    // the batch by construction (drain barrier), viewContext is the user's
+    // latest editor location.
+    const onboardingState =
+      (batch.find((b) => b.command.onboardingState !== undefined)?.command
+        .onboardingState as string | undefined) ??
+      this.currentOnboardingState ??
+      'onboardingFinished';
+    this.currentOnboardingState = onboardingState;
+    const viewContext = [...batch]
+      .reverse()
+      .find((b) => b.command.viewContext !== undefined)?.command.viewContext;
+
+    await this.executeTurn({
+      entries,
+      requestId: primaryRid,
+      absorbedRids,
+      onboardingState,
+      system: buildSystemPrompt(onboardingState, viewContext as any),
+    });
+  }
+
+  /**
+   * Run one agent turn over the given entries (without acquiring the
+   * `running` lock). Owns the turn-generic lifecycle: request bookkeeping,
+   * the forced-compaction gate, runTurn error handling, and terminal
+   * `completed` events — the primary requestId's completed first, then one
+   * `{absorbed: true}` completed per other absorbed requestId with the same
+   * outcome, on every exit path (done, cancel, error, unexpected), so every
+   * queued message's caller resolves.
+   */
+  private async executeTurn(params: {
+    entries: TurnEntry[];
+    requestId: string | undefined;
+    absorbedRids: string[];
+    onboardingState: string;
+    system: string;
+    buildModel?: string;
+  }): Promise<void> {
+    const { entries, requestId, absorbedRids, onboardingState, system } =
+      params;
+    this.currentRequestId = requestId;
+    this.currentAbort = new AbortController();
+    this.completedEmitted = false;
+    this.lastCompleted = null;
+    this.turnStart = Date.now();
+
+    // Forced compaction gate: if the conversation is approaching the API cap,
+    // compact before processing this turn. Coalesces with any in-flight
+    // compaction. No timeout — compaction takes as long as it takes.
+    await this.runForcedCompactionIfNeeded(requestId);
+
     try {
       await runTurn({
         state: this.state,
-        userMessage,
-        attachments,
-        attachmentHeader,
+        entries,
         apiConfig: this.config,
         system,
         model: this.opts.model,
-        buildModel,
+        buildModel: params.buildModel,
         onboardingState,
         requestId,
         signal: this.currentAbort.signal,
         onEvent: this.onEvent,
         resolveExternalTool: this.resolveExternalTool,
-        hidden: isHidden,
         toolRegistry: this.toolRegistry,
         onBackgroundComplete: this.onBackgroundComplete,
       });
@@ -832,10 +978,28 @@ export class HeadlessSession {
         requestId,
         error: err.message,
       });
-      // Leave the queue intact. emitCompleted surfaced it via queuedMessages
-      // so the sandbox can offer a resume action — transient errors like
-      // network termination shouldn't silently throw away the rest of the
-      // pipeline. Explicit user cancel is what drains the queue.
+      // Leave the queue intact — transient errors like network termination
+      // shouldn't silently throw away the rest of the pipeline; the sandbox
+      // can offer a resume action. Items already absorbed into THIS turn were
+      // delivered, not re-queued — their outcome is reported per-requestId by
+      // the absorbed completeds below. Explicit user cancel is what drains
+      // the queue.
+    }
+
+    // Terminal events for the other messages absorbed into this merged turn.
+    // Emitted via raw emit (not emitCompleted) so they don't disturb the
+    // primary's completedEmitted/lastCompleted bookkeeping.
+    const outcome = this.primaryOutcome();
+    for (const rid of absorbedRids) {
+      this.emit(
+        'completed',
+        {
+          success: outcome.success,
+          ...(outcome.error && { error: outcome.error }),
+          absorbed: true,
+        },
+        rid,
+      );
     }
 
     // Apply queued mutations — happens on both success and cancel paths
@@ -879,49 +1043,74 @@ export class HeadlessSession {
   }
 
   /**
+   * True for queued user items whose text is an @@automated:: action message.
+   * These key per-item raw-text side effects in runSingleTurn (resolveAction,
+   * plan file, buildModel, chain expansion) — they always run alone, one turn
+   * each. Background items are sentinel-formatted too but background_results
+   * is NON_ACTION and side-effect-free, so they merge freely.
+   */
+  private isDrainBarrier(item: QueuedMessage): boolean {
+    return (
+      item.source === 'user' &&
+      isAutomatedMessage((item.command.text as string) ?? '')
+    );
+  }
+
+  /**
    * Drain the queue in strict FIFO order. Caller must hold `running = true`.
    * User messages arriving during the drain will be enqueued behind current items.
    *
-   * Consecutive background-source items are coalesced into a single turn so
-   * the LLM sees all the background results together and produces one
-   * acknowledgment, not N separate ones.
+   * The queue serves two purposes with opposite delivery semantics:
+   * - Sequencer: chain steps and sentinel-bearing user items are pipeline
+   *   stages — one item, one turn, nothing merged in.
+   * - Mailbox: plain user messages and background results are accumulated
+   *   context and intent — everything contiguous flushes together into ONE
+   *   merged turn, so the model reconciles all of it at once instead of
+   *   burning a full turn per item (and possibly executing instructions a
+   *   later queued message already amended).
    */
   private async drainQueueLoop(): Promise<void> {
-    while (true) {
-      const next = this.queue.shift();
-      if (!next) {
-        break;
-      }
+    while (this.queue.length > 0) {
+      const head = this.queue.peek()!;
 
-      // If this is a background item, coalesce any following background items
-      // into a single combined message so the LLM sees all the results together
-      // and produces one acknowledgment instead of N. Stops at the first
-      // non-background item (which stays in the queue for the next iteration).
-      if (next.source === 'background') {
-        const batch = [next];
-        while (this.queue.peek()?.source === 'background') {
-          const more = this.queue.shift();
-          if (more) {
-            batch.push(more);
-          }
-        }
-        const combinedCommand: StdinCommand = {
-          action: 'message',
-          text: mergeBackgroundResultsMessages(
-            batch.map((b) => (b.command.text as string) ?? ''),
-          ),
-          ...(this.currentOnboardingState && {
-            onboardingState: this.currentOnboardingState,
-          }),
-        };
-        await this.runSingleTurn(combinedCommand, `background-${Date.now()}`);
+      if (head.source === 'chain') {
+        const item = this.queue.shift()!;
+        const rid =
+          (item.command.requestId as string | undefined) ??
+          `chain-${Date.now()}`;
+        await this.runSingleTurn(item.command, rid, true);
         continue;
       }
 
-      const nextRid =
-        (next.command.requestId as string | undefined) ??
-        `${next.source}-${Date.now()}`;
-      await this.runSingleTurn(next.command, nextRid, next.source === 'chain');
+      if (this.isDrainBarrier(head)) {
+        const item = this.queue.shift()!;
+        const rid =
+          (item.command.requestId as string | undefined) ??
+          `user-${Date.now()}`;
+        await this.runSingleTurn(item.command, rid, false, true);
+        continue;
+      }
+
+      // Mailbox batch: contiguous user+background items, stopping at a chain
+      // step, a sentinel barrier, or a conflicting onboardingState (it selects
+      // the turn's toolset, so items from different phases can't share one).
+      let n = 1;
+      let batchOb = head.command.onboardingState as string | undefined;
+      for (; ; n++) {
+        const it = this.queue.peekAt(n);
+        if (!it || it.source === 'chain' || this.isDrainBarrier(it)) {
+          break;
+        }
+        const ob = it.command.onboardingState as string | undefined;
+        if (ob !== undefined && batchOb !== undefined && ob !== batchOb) {
+          break;
+        }
+        if (ob !== undefined && batchOb === undefined) {
+          batchOb = ob;
+        }
+      }
+      const batch = this.queue.shiftMany(n); // one queue_changed for the batch
+      await this.runMergedTurn(batch);
     }
   }
 
@@ -987,9 +1176,14 @@ export class HeadlessSession {
    * Cancel the running turn and flush the follow-ups that belonged to it
    * (`chain`/`background`), while preserving `source: 'user'` items — those are
    * independent user intent, not tied to the aborted run. The preserved user
-   * messages run next: `runSingleTurn` swallows the abort, so `handleMessage`
+   * messages run next: `executeTurn` swallows the abort, so `handleMessage`
    * falls through to `drainQueueLoop` with `running` still held. Returns the
    * flushed items (for the cancel command's resume/discard UX).
+   *
+   * Messages already absorbed into the in-flight merged turn are NOT
+   * preserved — they were delivered into the turn that's being cancelled and
+   * each gets a `{cancelled, absorbed:true}` terminal. Only items still
+   * sitting in the queue survive.
    */
   private handleCancel(): QueuedMessage[] {
     if (this.currentAbort) {

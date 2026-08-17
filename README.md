@@ -264,6 +264,7 @@ The headless IPC protocol uses request correlation and a unified response patter
 - Every stdout response to a command includes the same `requestId`
 - System events (lifecycle, shutdown) never have a `requestId`
 - Every command ends with exactly one `completed` event: `{event:"completed", requestId, success, error?}`
+- Messages sent while a turn is running are queued. When the turn ends, all contiguous queued user messages and background results are delivered together as **one merged turn**: the first queued message's `requestId` becomes the turn's primary id (stamped on `turn_started` and all streaming events), each absorbed message echoes its own `user_message` with its original `requestId` and `queued: true`, and at turn end the primary `completed` is emitted first, followed immediately by one `completed {…same outcome, absorbed: true}` per other absorbed `requestId`. Automated-action (`@@automated::…@@`) messages and chain steps never merge — they always run one turn each.
 - The caller distinguishes command responses from system events with a single check: `if (msg.requestId)`
 
 This enables a simple promise-based RPC layer: send a command with a unique ID, store a pending promise keyed by that ID, resolve it when you see `completed` with the matching ID.
@@ -364,6 +365,7 @@ All command responses include the `requestId` from the originating command.
 |-------|--------|-------------|
 | `text` | `text`, `parentToolId?` | Streaming text chunk |
 | `thinking` | `text`, `parentToolId?` | Agent's internal reasoning |
+| `user_message` | `text`, `attachments?`, `queued?` | Echo of a user message entering the turn. Queue-delivered messages carry `queued: true` and their own original `requestId` (a merged turn emits one per absorbed message); idle sends echo with the turn's requestId and no `queued` flag. |
 | `tool_start` | `id`, `name`, `input`, `partial?`, `parentToolId?` | Tool execution started. `partial: true` means more `tool_start` events will follow for this id (progressive input streaming). |
 | `tool_input_delta` | `id`, `name`, `result`, `parentToolId?` | Progressive tool content (streaming tools only) |
 | `tool_done` | `id`, `name`, `result`, `isError`, `parentToolId?` | Tool execution completed |
@@ -372,7 +374,7 @@ All command responses include the `requestId` from the originating command.
 | `history` | `messages` | Response to `get_history` |
 | `session_cleared` | | Response to `clear` |
 | `models_changed` | `models?`, `modelSurfaces`, `allowedModelsByType` | Response to `changeModels` |
-| `completed` | `success`, `error?` | Terminal event — exactly one per command |
+| `completed` | `success`, `error?`, `absorbed?` | Terminal event — exactly one per command. For a merged turn, the primary requestId's `completed` comes first, then one `{absorbed: true}` completed per other absorbed requestId with the same outcome — consumers should resolve their pending request but skip turn-lifecycle handling for absorbed terminals. |
 
 #### Example Session
 
