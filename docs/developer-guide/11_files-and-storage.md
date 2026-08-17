@@ -210,6 +210,25 @@ immutable — safe to bake in; re-running `put` on the same bytes returns the sa
 subcommands: `mindstudio-prod files list` (stores + usage) and `mindstudio-prod files rm --store …
 --key …`. Run `mindstudio-prod files --help` for flags.
 
+## Generated Assets
+
+Actions that produce a file — `generateImage`, `generateVideo`, `generateSpeech`, `generatePdf`,
+`upscaleImage` and friends — can write their output straight into one of your stores. Pass the store
+handle as `store` in the options object (the second argument):
+
+```typescript
+import { Assets } from './files/assets';
+
+const { imageUrl } = await mindstudio.generateImage(
+  { prompt: 'a red sneaker on concrete' },
+  { store: Assets },
+);
+```
+
+It's optional. Leave it off and the asset is hosted on the shared MindStudio CDN exactly as before,
+which is fine for most things. Reach for a store when the asset belongs to the app — generated for a
+specific user, or something you want sitting alongside the app's other files.
+
 ## Public vs Private — When to Use Which
 
 - **Private (default)** — anything tied to a user or not meant to be world-readable: uploads,
