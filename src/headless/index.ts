@@ -724,8 +724,7 @@ export class HeadlessSession {
     if (attachments?.some((a) => !a.isVoice)) {
       try {
         const { documents, images } = await persistAttachments(attachments);
-        const all = [...documents, ...images];
-        const header = buildUploadHeader(all);
+        const header = buildUploadHeader(documents, images);
         if (header) {
           attachmentHeader = header;
         }

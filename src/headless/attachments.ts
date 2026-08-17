@@ -147,25 +147,40 @@ export async function persistAttachments(
   };
 }
 
-export function buildUploadHeader(results: PersistResult[]): string {
-  const succeeded = results.filter(Boolean) as Exclude<PersistResult, null>[];
-  if (succeeded.length === 0) {
+export function buildUploadHeader(
+  documents: PersistResult[],
+  images: PersistResult[],
+): string {
+  type Entry = Exclude<PersistResult, null> & { isImage: boolean };
+  const entries: Entry[] = [
+    ...documents
+      .filter((r): r is Exclude<PersistResult, null> => r !== null)
+      .map((r) => ({ ...r, isImage: false })),
+    ...images
+      .filter((r): r is Exclude<PersistResult, null> => r !== null)
+      .map((r) => ({ ...r, isImage: true })),
+  ];
+  if (entries.length === 0) {
     return '';
   }
-  if (succeeded.length === 1) {
-    const r = succeeded[0];
-    const parts = [`[Uploaded file: ${r.localPath}`];
-    if (r.extractedTextPath) {
-      parts.push(`extracted text: ${r.extractedTextPath}`);
-    }
-    return parts.join(' — ') + ']';
+  // A document without a sidecar means extraction wasn't possible (unsupported
+  // format or extraction failure) — say so, so the agent parses the raw file
+  // itself instead of hunting for a .txt that doesn't exist. Images never get
+  // the note; they reach the model as vision attachments.
+  const detail = (e: Entry): string | null =>
+    e.extractedTextPath
+      ? `extracted text: ${e.extractedTextPath}`
+      : e.isImage
+        ? null
+        : 'no extracted text — raw file only';
+  if (entries.length === 1) {
+    const e = entries[0];
+    const extra = detail(e);
+    return `[Uploaded file: ${e.localPath}${extra ? ` — ${extra}` : ''}]`;
   }
-  const lines = succeeded.map((r) => {
-    const parts = [`- ${r.localPath}`];
-    if (r.extractedTextPath) {
-      parts.push(`  extracted text: ${r.extractedTextPath}`);
-    }
-    return parts.join('\n');
+  const lines = entries.map((e) => {
+    const extra = detail(e);
+    return `- ${e.localPath}${extra ? `\n  ${extra}` : ''}`;
   });
   return `[Uploaded files]\n${lines.join('\n')}`;
 }
