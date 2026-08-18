@@ -210,6 +210,43 @@ app's voice ("Booking your appointment…"), never raw names or JSON.
 - Rendering user-side captions as authoritative ("you said X") — they're recognition output.
 - Auto-starting a session on page load. Microphone access is always a deliberate user action.
 
+## Outbound calls (`voice.call`)
+
+The agent can call the user. Backend methods (and crons) place outbound phone calls with the
+agent SDK's `voice` namespace — the platform dials the number and connects the callee to this
+app's voice agent (same persona, engine, and tools as the web sessions):
+
+```ts
+import { voice, auth } from '@mindstudio-ai/agent';
+
+export async function callMeAboutMyOrder(input: { phone: string }) {
+  auth.requireRole('member');
+  const call = await voice.call({ to: input.phone, assumeIdentity: true });
+  return { calling: call.to, from: call.from };
+}
+```
+
+- **The method is the authorization gate.** The voice interface's `auth` block does not apply to
+  calls the backend places deliberately — gate the *method* with `auth.requireRole(...)` exactly
+  as you would any sensitive action.
+- **`assumeIdentity: true`** runs the call as the user who invoked the method: the agent knows
+  who it's talking to (Current User block) and every tool call carries their roles — regardless
+  of which number was dialed (the user types any number into a field; identity comes from their
+  session, not the phone). Omitted/false → anonymous call; role-gated tools decline.
+  System/cron invocations have no human identity and always run anonymously.
+- **Dev sessions only for now.** Deployed apps need a dedicated phone number (coming soon);
+  production calls throw `phone_out_requires_dedicated_number`. Caller ID is a shared platform
+  test number that varies per call — set expectations that an unfamiliar number will call.
+- **Outcome is on the call record**, not the return value: `voice.call` returns as soon as
+  dialing starts (`{ sessionId, status: 'dialing', from, to }`); answered/busy/no-answer land on
+  the session in the app's call log (`voice.listSessions()` / the dashboard).
+- **Limits**: the app's concurrent-session policy, a daily outbound-call cap, a per-call
+  duration ceiling, and one active call per callee number (`voice_callee_busy`).
+- **Compliance**: automated calls require prior consent. Call your own users who opted in to
+  calls from this app, honor reasonable calling hours, never dial purchased or cold lists —
+  design the consent moment into the product (a "call me" button IS consent; a scraped list is
+  not).
+
 ---
 
 # The wiring

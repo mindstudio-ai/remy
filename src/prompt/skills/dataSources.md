@@ -30,7 +30,9 @@ short docs that fit in a prompt.
 - **Limits apply**: 25 data sources per app, 5,000 documents per source, 10,000 chunks per
   document, 300 searches/minute. Well clear of normal use — but **source names must be fixed, not
   computed per user or per request**, since referencing one creates it. Partition inside a source
-  with a metadata filter instead.
+  with document metadata instead: tag at add time
+  (`add(bytes, { filename, metadata: { userId } })`), narrow at search time
+  (`search(q, { filter: { metadata: { userId } } })`).
 
 ## Defining and searching
 
@@ -51,7 +53,22 @@ beside the answer. Retrieval is approximate; a user who can click through can ju
 An answer with no citation is an assertion.
 
 Created on first use, so searching a source the build hasn't populated returns no results rather than
-throwing. `search` options: `topK` (default 5, max 50), `scoreThreshold`, `rerank`, `hybrid`.
+throwing. `search` options: `topK` (default 5, max 50), `scoreThreshold`, `filter`, `mode`,
+`maxPerDocument`, `highlight`, `rerank`, `hybrid`.
+
+**Filtering** narrows a search before ranking, and every condition only narrows:
+`filter: { metadata: { department: 'legal', year: [2025, 2026] }, filename, documentIds,
+pages: { min?, max? }, contains: 'all these words', phrase: 'exact adjacent sequence' }`.
+Metadata is tagged at add time (scalars only, ≤16 keys); re-adding the same bytes with different
+metadata updates the tags in place, free. Filters are the right tool for scoping retrieval
+(per-user, per-category); they are NOT a substitute for a `db` query over structured data.
+
+**Modes**: `mode: 'hybrid'` (default) fuses semantic and keyword retrieval; `'semantic'` is the
+embedding alone; `'lexical'` is keyword-only with **no query embedding** — cheapest and fastest,
+right when the query is an identifier (an error code, a SKU, a name) rather than a meaning.
+`maxPerDocument: 2` stops one document monopolizing the results when the answer should draw on
+several. `highlight: true` adds `matches` (`{start, end}` offsets into `text`) for rendering
+highlighted excerpts.
 
 Search is deterministic for a fixed corpus and configuration, so eval sets and regression checks are
 meaningful — key them on `(documentId, chunkIndex)` rather than on chunk text.
@@ -69,7 +86,9 @@ set with the CLI, so code and reality can't drift.
 
 ```bash
 mindstudio-prod datasources add --source policies --wait docs/*.pdf
+mindstudio-prod datasources add --source policies --metadata department=legal,year=2026 contract.pdf
 mindstudio-prod datasources search --source policies "what are the payment terms?"   # sanity-check
+mindstudio-prod datasources search --source policies --filter department=legal --mode lexical "ERR-7741X"
 mindstudio-prod datasources delete --source policies   # whole source; --source is required, never defaulted
 ```
 
@@ -83,7 +102,11 @@ it needs no guard.
 Use the SDK's `add()` only when *users* upload documents that must become searchable:
 
 ```typescript
-await Policies.add(buffer, { filename: 'policy.pdf', contentType: 'application/pdf' });
+await Policies.add(buffer, {
+  filename: 'policy.pdf',
+  contentType: 'application/pdf',
+  metadata: { department: 'legal' },   // filterable at search time
+});
 const docs = await Policies.documents();   // 'processing' | 'done' | 'error'
 await Policies.remove(documentId);
 ```

@@ -755,6 +755,21 @@ const full = await voice.getSession(sessions[0].id);  // includes transcript
 - User-side transcripts come from a separate recognition pass and can differ slightly from what the model actually heard — treat them as history, never as input to logic.
 - Sessions are subject to per-app concurrency limits and a maximum duration; both are configurable in the app's settings. Voice minutes and model usage are metered.
 
+### Outbound calls (`voice.call`)
+
+Backend methods and crons can place outbound phone calls via the agent SDK's `voice` namespace — the platform dials the number and connects the callee to the app's voice agent:
+
+```ts
+import { voice, auth } from '@mindstudio-ai/agent';
+
+export async function callMeAboutMyOrder(input: { phone: string }) {
+  auth.requireRole('member');
+  return await voice.call({ to: input.phone, assumeIdentity: true });
+}
+```
+
+The invoking method is the authorization gate (the interface `auth` block does not apply to calls the backend places deliberately). `assumeIdentity: true` runs the call as the invoking user — Current User block and tool RBAC — regardless of the number dialed; system/cron invocations always run anonymously. Currently dev-sessions-only (deployed apps will require a dedicated phone number); caller ID is a shared platform test number. `voice.call` returns at dial time (`{ sessionId, status: 'dialing', from, to }`); the outcome (answered/busy/no-answer) lands on the call record. Limits: the app's concurrency policy, a daily outbound cap, a per-call duration ceiling, one active call per callee. Compliance: automated calls require the callee's prior consent (TCPA) — call your own opted-in users, honor calling hours, never dial cold lists.
+
 ### Manifest
 
 ```json
