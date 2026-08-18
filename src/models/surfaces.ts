@@ -162,13 +162,17 @@ export const ALLOWED_MODELS_BY_TYPE: Partial<Record<ModelType, string[]>> = {
     'gemini-3.1-pro',
     'gemini-3-flash',
     'gemini-3.5-flash',
+    'gemini-3.7-flash',
     'grok-build-0.1',
     'grok-4.5',
+    'grok-4.6',
     'glm-5.2',
     'muse-spark-1.1',
     'kimi-k2-7-code',
     'kimi-k3',
     'deepseek-v4-flash-0731',
+    'qwen3.8-2.4t-a95b-deepinfra',
+    'minimax-m3',
   ],
   // vision: undefined — unconstrained
   // image_generation: undefined — unconstrained
