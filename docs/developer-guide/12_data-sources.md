@@ -39,7 +39,9 @@ source, load documents into it, and search it.
   document, and 300 searches per minute. They sit well clear of normal use, and if you have a real
   reason to exceed one, get in touch — they're not a plan tier. The one worth designing around is the
   source limit: because naming a source creates it, a name computed per user or per request will run
-  through it. Use one source and a metadata filter instead.
+  through it. Use one source and a metadata filter instead: tag documents at add time
+  (`metadata: { userId }`) and scope searches with `filter: { metadata: { userId } }` (see
+  *Filtering*, below).
 
 ## Defining a Data Source
 
@@ -104,13 +106,23 @@ Use `add()` when *users* upload documents that need to be searchable — a knowl
 maintains. For an ingest you control, prefer the CLI.
 
 ```typescript
-await Policies.add(buffer, { filename: 'policy.pdf', contentType: 'application/pdf' });
+await Policies.add(buffer, {
+  filename: 'policy.pdf',
+  contentType: 'application/pdf',
+  metadata: { department: 'legal', year: 2026 },   // filterable at search time
+});
 const docs = await Policies.documents();   // status: 'processing' | 'done' | 'error'
 await Policies.remove(documentId);
 ```
 
 `add()` carries bytes in the request body, so it's for ordinary-sized documents. Very large files
 belong on the CLI path.
+
+`metadata` tags the document for search-time filtering: scalars only (string / number / boolean),
+up to 16 keys, keys `[a-zA-Z0-9_-]`. From the CLI it's
+`datasources add --metadata department=legal,year=2026 <file>`. Re-adding the same bytes with
+different metadata updates the tags in place — no re-processing, no cost. Supplying metadata
+replaces the document's whole metadata object.
 
 ## Searching
 
@@ -128,11 +140,49 @@ it in an `<a href>` next to the answer. Retrieval is approximate by nature, and 
 through to the source can tell for themselves whether the answer is grounded. An answer with no
 citation is an assertion.
 
-Options: `topK` (default 5, max 50), `scoreThreshold`, and two switches covered under *Tuning*.
+Options: `topK` (default 5, max 50), `scoreThreshold`, `filter`, `mode`, `maxPerDocument`,
+`highlight`, and two switches covered under *Tuning* (`rerank`, `hybrid`).
 
 Each hit also carries `retrievalRank` and `retrievalScore` — where retrieval put it *before*
 reranking. Comparing that with its final position is how you see what reranking actually did. The call
 returns `latencyMs` alongside `results`.
+
+### Filtering
+
+`filter` narrows a search **before** ranking, and every condition ANDs — a filter can only narrow:
+
+```typescript
+await Policies.search('termination clause', {
+  filter: {
+    metadata: { department: 'legal', year: [2025, 2026] },  // scalar = equals; array = any-of
+    pages: { max: 10 },
+    phrase: 'notice period',           // exact adjacent word sequence
+  },
+  maxPerDocument: 2,                   // stop one document monopolizing the results
+});
+```
+
+Fields: `metadata`, `filename` (one or several), `documentIds`, `pages: { min?, max? }`,
+`contains` (all these words, any order), `phrase` (exact sequence). Filters scope *retrieval* —
+per-user partitions, categories, a required identifier. They are not a substitute for a `db` query:
+if the whole question is expressible as a filter, it belongs in the database.
+
+### Modes
+
+`mode` selects which retrieval branches run: `'hybrid'` (default — semantic and keyword fused),
+`'semantic'` (the embedding alone), or `'lexical'` — keyword matching only, with **no query
+embedding**. Lexical is the cheapest and fastest mode, and the right one when the query is an
+identifier rather than a meaning:
+
+```typescript
+await Logs.search('ERR-7741X', { mode: 'lexical' });
+```
+
+### Highlighting
+
+`highlight: true` adds `matches` to each hit — `{ start, end }` offsets into `text`
+(`text.slice(start, end)` is a matched term), for rendering highlighted excerpts. Matching is
+keyword-based, so a hit that matched semantically may report an empty array.
 
 ### Reproducibility
 
@@ -196,7 +246,8 @@ mindstudio-prod datasources config --source policies                 # show curr
 mindstudio-prod datasources config --source policies --top-k 8       # free, applies immediately
 ```
 
-The free switches are also per-query, for the rare case where one call needs different behaviour:
+The free switches are also per-query, for the rare case where one call needs different behaviour —
+as are `mode`, `filter`, `maxPerDocument` and `highlight`, which are per-query only:
 
 ```typescript
 await Policies.search(query, { rerank: false });   // e.g. a latency-sensitive path
