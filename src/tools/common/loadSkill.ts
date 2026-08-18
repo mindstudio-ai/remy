@@ -20,7 +20,7 @@ export const loadSkillTool: Tool = {
     clearable: true,
     name: 'loadSkill',
     description:
-      "Load the full reference for a platform capability that isn't in your system prompt — task agents, agent interfaces, MCP interfaces, data sources. The available skills and the trigger for each are listed in <available_skills>. Load one before writing code in its area, not after: these are APIs where a plausible-looking guess is usually wrong. Calling this is cheap and expected — if you're unsure whether you need it, load it. Only covers the capabilities listed in the catalog; for backend SDK actions and model IDs use askMindStudioSdk.",
+      "Load the full reference for a platform capability that isn't in your system prompt — task agents, agent interfaces, voice interfaces, MCP interfaces, data sources. The available skills and the trigger for each are listed in <available_skills>. Load one before writing code in its area, not after: these are APIs where a plausible-looking guess is usually wrong. Calling this is cheap and expected — if you're unsure whether you need it, load it. Only covers the capabilities listed in the catalog; for backend SDK actions and model IDs use askMindStudioSdk.",
     inputSchema: {
       type: 'object',
       properties: {

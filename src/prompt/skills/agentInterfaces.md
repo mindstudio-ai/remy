@@ -257,6 +257,7 @@ dist/interfaces/agent/
     "temperature": 0.5,
     "maxTokens": 16000,
     "systemPrompt": "system.md",
+    "auth": { "requireUser": true },
     "tools": [
       { "method": "create-todo", "description": "tools/createTodo.md" },
       { "method": "list-todos", "description": "tools/listTodos.md" }
@@ -276,6 +277,7 @@ across rather than copying the key.
 | `temperature` | Model temperature |
 | `maxTokens` | Max response tokens (the spec's `maxResponseTokens`) |
 | `systemPrompt` | Relative path to the compiled system prompt markdown file |
+| `auth` | **Required.** Who may open the lobby: `{ "requireUser": boolean, "requireRole"?: string[] }`. See the Auth section below |
 | `tools` | Array of tool entries — `method` references a method `id` from the manifest, `description` is a relative path to a markdown file with rich tool docs (when to use, examples, edge cases, parameter guidance) |
 | `webInterfacePath` | Optional. If the app has a web interface with a chat page, this path tells the IDE where to show the preview. Otherwise the agent is accessed via API. |
 
@@ -287,8 +289,29 @@ Declare it in `mindstudio.json`:
 
 ## Auth
 
-Agent chat runs as the **authenticated user**, not as a system role — tool calls carry that user's
-roles, so a method gated with `auth.requireRole` behaves exactly as it would if the user had called it
-from the web frontend. That's what makes exposing real methods safe; it's also why role restrictions
-belong in the tool descriptions, so the agent can decline gracefully instead of surfacing a rejection.
+**Every agent config declares an `auth` block.** Agent chat spends the owner's money on every
+message without necessarily touching a backend method, so the platform gates the lobby itself —
+enforced at thread creation and message send:
+
+```json
+"auth": { "requireUser": true, "requireRole": ["support-agent", "admin"] }
+```
+
+- `requireUser: true` — only authenticated app users may chat; `false` — anyone, including
+  anonymous visitors. Most apps want `true`; choose `false` deliberately (a public concierge).
+- `requireRole` (optional) — the user must hold **at least one** of the listed manifest role ids
+  (OR semantics, same as the backend `auth.requireRole(...)`). Omit or leave empty for no role
+  gate. Requires `requireUser: true`. Unknown role ids fail the build.
+- Denials surface to the frontend SDK as `MindStudioInterfaceError` with code `auth_required`
+  (401) or `role_required` (403).
+- Dev preview is exempt — the builder is never locked out while testing.
+- Older compiled apps without the block fall back to the manifest's `auth.enabled` (auth-enabled →
+  users only; no auth → public). New configs always declare it explicitly.
+
+Once inside, agent chat runs as the **authenticated user**, not as a system role — tool calls
+carry that user's roles, so a method gated with `auth.requireRole` behaves exactly as it would if
+the user had called it from the web frontend. That's what makes exposing real methods safe; it's
+also why role restrictions belong in the tool descriptions, so the agent can decline gracefully
+instead of surfacing a rejection. Anonymous visitors (when allowed) are scoped by a per-browser
+visitor identity: their threads are private to their browser, and gated methods still reject.
 

@@ -162,6 +162,7 @@ Each interface type invokes the same backend methods. Methods don't know which i
 - Email — inbound email processing
 - MCP — tool servers for AI assistants
 - Agent — conversational LLM interface with tool access to backend methods
+- Voice — the app's agent as a realtime voice conversation, with the same tool access
 
 ## Backend
 

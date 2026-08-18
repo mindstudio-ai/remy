@@ -214,6 +214,8 @@ All auth methods throw on failure with a `code` property:
 | `invalid_state` | 400 | Sign in with Remy: returned CSRF state didn't match (stale/replayed redirect) |
 | `popup_blocked` | — | Sign in with Remy (embedded): popup was blocked — prompt to allow popups and retry |
 | `signin_timeout` | — | Sign in with Remy (embedded): popup didn't complete in time |
+| `auth_required` | 401 | Agent/voice interface requires an authenticated user (interface `auth` block) |
+| `role_required` | 403 | Agent/voice interface requires a role the user doesn't hold |
 
 ### Phone Helpers
 
@@ -380,9 +382,19 @@ Roles are declared in the manifest, stored as an array column on the user table,
 - Writable from dashboard: Remy dashboard shows app users and their roles
 - Backend enforcement: `auth.requireRole('admin')` works as before
 
+## Interface-Level Auth (Agent + Voice)
+
+Agent and voice interfaces additionally declare auth **in their config** (a required `auth` key:
+`{ "requireUser": boolean, "requireRole"?: string[] }`) because those sessions spend money without
+necessarily calling a backend method — the platform gates the lobby itself, before any model or
+media spend. `requireRole` uses the same manifest role ids with OR semantics. Denials reach the
+frontend SDK as `MindStudioInterfaceError` codes `auth_required` (401) and `role_required` (403) —
+route them to the app's login flow. See the `agentInterfaces` / `voiceInterfaces` skills for the
+full contract. Method-level `auth.requireRole(...)` checks still apply to every tool call inside.
+
 ## Apps Without Auth
 
-Apps without `auth` in the manifest use anonymous guest sessions. No login, no user identity, no roles. This is the default and works fine for single-user apps, internal tools, and simple utilities.
+Apps without `auth` in the manifest use anonymous guest sessions. No login, no user identity, no roles. This is the default and works fine for single-user apps, internal tools, and simple utilities. (Agent/voice interfaces on such apps declare `"auth": { "requireUser": false }` explicitly — anonymous callers are scoped by a per-browser visitor identity.)
 
 ## Important: Designing Auth in Web Interfaces
 

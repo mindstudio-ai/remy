@@ -268,7 +268,7 @@ Declare it in `mindstudio.json`:
   `custom_subdomain` host (e.g. `myapp.madewithremy.com`), a custom domain if configured, or the UUID
   host (`<appId>.madewithremy.com` / `.msagent.ai`).
 - **Auth is optional.** A `Bearer` key resolves to a user with full RBAC, so the method's own
-  `auth.requireRole`/`requireUser` checks apply as they would for that user. With no key, calls run
+  `auth.requireRole(...)`/`hasRole(...)` checks apply as they would for that user. With no key, calls run
   anonymously — no user, no roles. The method is the boundary: gate sensitive tools, and understand that
   a public (keyless) server effectively exposes only the un-gated ones.
 - Input schemas are derived automatically from each method's input contract.

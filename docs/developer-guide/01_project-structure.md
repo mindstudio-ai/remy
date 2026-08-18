@@ -101,6 +101,10 @@ my-app/
         agent.json                         agent config
         system.md                          compiled system prompt
         tools/                             tool descriptions (one .md per method)
+      voice/                             voice interface
+        interface.json                     voice config
+        system.md                          compiled voice-register system prompt
+        tools/                             tool descriptions (one .md per method)
 ```
 
 ---
