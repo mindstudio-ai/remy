@@ -30,19 +30,34 @@ everywhere else, and the compiled system prompt must carry them explicitly:
 - **Spoken-form values.** "Forty-two fifty," not "$42.50". "Two fifteen in the afternoon," not
   "14:15". Read email addresses and confirmation codes character by character, and read them *back*
   for confirmation before acting on them — mishearing one digit of a phone number is the classic
-  voice failure.
+  voice failure. Collect one value per turn; two asked together blend when spoken.
 - **Brevity is a hard rule, not a style preference.** One to two sentences per turn, one question at
   a time. A paragraph that reads fine in chat is a monologue on a call.
+- **Vary the phrasing.** Repeated openers and acknowledgments sound convincing once and robotic by
+  the third turn — give the prompt an explicit variety rule, and treat any sample phrases as
+  anchors, never scripts.
 - **Handle unclear audio explicitly.** Give the prompt a rule for it: respond only to clear audio;
-  if it's noisy or ambiguous, ask the user to repeat — never guess, and never call a tool on input
-  the agent isn't sure it heard.
+  if it's noisy or ambiguous, ask the user to repeat — never guess, never call a tool on input the
+  agent isn't sure it heard, and don't reuse the same clarification line twice in a row.
 - **Pin the language.** State the response language in the prompt; don't let the model infer it from
-  an accent.
+  an accent. If the app's domain has brand names or terms with non-obvious pronunciations, give
+  them a line ("pronounce SQL as 'sequel'").
 
 Beyond the mechanics, the persona itself should be *of the ear*: pacing, warmth, how it handles
 being interrupted, what it says when it needs a second. This is the fun part, same as the agent
 interface — a distinct character beats a generic assistant, and voice makes character land harder
 than any other surface.
+
+### The shape of `system.md`
+
+Structure the compiled prompt as short **labeled sections** — Role & Objective, Personality & Tone,
+Rules, and (when the app has a real call flow) Conversation Flow — with bullets over paragraphs;
+realtime models find and follow sectioned rules far more reliably than prose. Scope rules
+precisely: "confirm before any tool that changes data," not "always confirm everything" — blanket
+`always`/`never` makes the agent rigid and unable to handle reasonable exceptions. And start
+minimal: state the role, the boundaries, and the voice mechanics above, then add rules only for
+behaviors that actually misfire in test calls (the transcripts in the call log are the feedback
+loop) rather than front-loading a policy manual.
 
 ### The latency classes
 
@@ -82,6 +97,11 @@ Bake the policy into the system prompt: read-only tools — just call them. Writ
 about to happen and get a yes. Anything destructive or financial — read the details back first,
 piece by piece. In voice there is no confirmation dialog to lean on; the conversation *is* the
 confirmation UI.
+
+And give failure a script: never speak a raw error. When a lookup misses or a tool fails, read back
+the value it used ("I couldn't find an order ending three-one-two-five — did I get part of that
+wrong?"), offer one retry, then move to an alternate path — in character, without blaming the
+caller.
 
 ### Choosing the model
 
@@ -418,6 +438,7 @@ The top-level key must match the interface type (`voice`):
 | `systemPrompt` | Relative path to the compiled system prompt |
 | `auth` | **Required.** Who may start a session: `{ "requireUser": boolean, "requireRole"?: string[] }`. See the Auth section below |
 | `phone` | Optional telephony options: `{ "trustCallerId"?: boolean }` — see "Inbound calls" above. Only add it after the user has confirmed the spoofing tradeoff |
+| `context` | Optional session context: `{ "method": <method id> }` — auto-fired in the background at session start; see "Session context" below |
 | `tools` | `{ method, latency, description }` — method `id` from the manifest, a latency class, and a relative path to the tool's markdown |
 | `webInterfacePath` | Optional. Where the voice layer lives in the web interface, for the editor preview |
 
@@ -426,6 +447,30 @@ Declare it in `mindstudio.json`:
 ```json
 { "type": "voice", "path": "dist/interfaces/voice/interface.json" }
 ```
+
+## Session context (auto-loaded)
+
+When the config declares `"context": { "method": "session-context" }`, the platform fires that
+backend method automatically when a session starts — in the background, so the greeting is
+never delayed — and appends its return to the system prompt as a `## Session Context` block.
+Use it for situational state that should color every turn: the caller's open orders, account
+standing, where they left off. Timing: the method runs while the greeting audio plays, so the
+agent has the context by roughly the first exchange and is guaranteed to have it shortly
+after — it is NOT guaranteed for the literal first utterance. On inbound phone calls it
+re-fires after the caller verifies mid-call, so the context recomputes for the now-known user.
+
+The method contract:
+- Runs as the session's user (same identity/RBAC as a tool call); anonymous sessions run it
+  anonymously — return generic or empty content for them.
+- Return a short markdown **string** (a few lines). Results are capped at 4,000 characters;
+  keep it situational context, not documents — deep or on-demand data belongs in tools or
+  data sources.
+- It is never a model-visible tool, and failures degrade silently to the generic prompt —
+  never make correctness depend on it.
+
+Rule of thumb: `context` for always-relevant state the agent should just know; tools for
+anything looked up on demand. Identity itself (name, roles) is already injected via the
+Current User block — don't re-fetch it in the context method.
 
 ## Platform Behavior
 

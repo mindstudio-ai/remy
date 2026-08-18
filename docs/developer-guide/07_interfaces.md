@@ -704,6 +704,7 @@ The top-level key must match the interface type (`voice`):
 | `systemPrompt` | Relative path to the compiled system prompt. |
 | `auth` | **Required.** Who may start a session: `{ "requireUser": boolean, "requireRole"?: string[] }`. See Platform Behavior below. |
 | `phone` | Optional telephony options: `{ "trustCallerId"?: boolean }` — see Inbound calls below. |
+| `context` | Optional session context: `{ "method": <method id> }` — the platform auto-fires this backend method in the background at session start (and again after in-call verification) and appends its string return to the system prompt as a `## Session Context` block. Runs as the session user with normal RBAC; capped at 4KB; failures degrade to the generic prompt. Use for always-relevant situational state; tools remain the on-demand path. |
 | `tools` | `{ method, latency, description }` — method `id` from the manifest, a latency class, and a relative path to the tool's markdown description. |
 | `webInterfacePath` | Optional. Where the voice layer lives in the web interface, for the editor preview. |
 
