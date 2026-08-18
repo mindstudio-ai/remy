@@ -234,9 +234,11 @@ export async function callMeAboutMyOrder(input: { phone: string }) {
   of which number was dialed (the user types any number into a field; identity comes from their
   session, not the phone). Omitted/false → anonymous call; role-gated tools decline.
   System/cron invocations have no human identity and always run anonymously.
-- **Dev sessions only for now.** Deployed apps need a dedicated phone number (coming soon);
-  production calls throw `phone_out_requires_dedicated_number`. Caller ID is a shared platform
-  test number that varies per call — set expectations that an unfamiliar number will call.
+- **Production needs a dedicated phone number.** The app owner attaches one in the app's
+  settings (dashboard or `mindstudio-prod` CLI, $2/month) — it becomes the caller ID for every
+  call, in dev sessions too, so users always see the same number. Without one, deployed calls
+  throw `phone_out_requires_dedicated_number`, and dev sessions fall back to a shared platform
+  test number that varies per call (tighter limits apply on the shared pool).
 - **Outcome is on the call record**, not the return value: `voice.call` returns as soon as
   dialing starts (`{ sessionId, status: 'dialing', from, to }`); answered/busy/no-answer land on
   the session in the app's call log (`voice.listSessions()` / the dashboard).
@@ -246,6 +248,52 @@ export async function callMeAboutMyOrder(input: { phone: string }) {
   calls from this app, honor reasonable calling hours, never dial purchased or cold lists —
   design the consent moment into the product (a "call me" button IS consent; a scraped list is
   not).
+
+## Inbound calls
+
+Once the app has a dedicated phone number, people can call it — the same voice agent answers
+(same persona, engine, and tools). Nothing extra to author for the basic case; the number in the
+app's settings is the whole switch.
+
+How answering works:
+
+- **Inbound always runs the live release.** There is no dev inbound — test the agent over the
+  normal WebRTC session in the editor; the phone is the same interface with a different
+  transport. An app with no live voice interface (or at its concurrency limit) doesn't answer.
+- **Callers are anonymous until verified.** The `auth` block still applies, but a phone call
+  can't show a login page — so the platform answers first, and `requireUser` becomes an
+  in-call verification flow. The agent can serve whatever anonymous callers are allowed, and
+  offers verification when the caller wants something account-bound.
+- **Verification uses the app's own auth methods** (`sms-code` / `email-code` from the
+  manifest), existing accounts only — there is no sign-up over the phone:
+  - SMS: a code is texted to the number the caller is calling from, if an account has that
+    number on file. No other number is possible by design.
+  - Email: the caller says their address; the platform matches it against the app's users
+    (transcription-tolerant — no letter-by-letter spelling ceremony) and emails the account's
+    stored address a code.
+  - The flow never confirms or denies that an account exists — a code is "sent if an account
+    matches", always phrased that neutrally. The persona should offer verification naturally
+    when it unlocks something, never as a robotic gate.
+- **Verified mid-call, upgraded mid-call**: once the code checks out, the session becomes that
+  user's — Current User block, roles on every tool call — without redialing.
+
+### `phone.trustCallerId`
+
+For apps whose users are known by phone number, the interface config may opt into treating
+caller ID as identity:
+
+```json
+"phone": { "trustCallerId": true }
+```
+
+A caller whose number exactly matches an app user's phone starts the call already verified —
+no code. This is a real security tradeoff: **caller ID can be spoofed**, so a motivated
+attacker who knows a user's phone number can impersonate them to this agent. Before enabling
+it, you MUST surface that risk to the user and get their explicit confirmation — it's the
+right call for convenience-first, low-stakes apps (a family assistant, a status line), and the
+wrong one wherever the agent's tools can move money, reveal sensitive records, or take
+destructive actions. It lives in the interface config deliberately: enabling it is a code
+change, visible in review and auditable via deploys, not a dashboard toggle.
 
 ---
 
@@ -344,6 +392,7 @@ The top-level key must match the interface type (`voice`):
 | `greeting` | Optional spoken opener |
 | `systemPrompt` | Relative path to the compiled system prompt |
 | `auth` | **Required.** Who may start a session: `{ "requireUser": boolean, "requireRole"?: string[] }`. See the Auth section below |
+| `phone` | Optional telephony options: `{ "trustCallerId"?: boolean }` — see "Inbound calls" above. Only add it after the user has confirmed the spoofing tradeoff |
 | `tools` | `{ method, latency, description }` — method `id` from the manifest, a latency class, and a relative path to the tool's markdown |
 | `webInterfacePath` | Optional. Where the voice layer lives in the web interface, for the editor preview |
 
@@ -384,6 +433,8 @@ creation itself:
   (OR semantics, same as the backend `auth.requireRole(...)`). Omit or leave empty for no role
   gate. Requires `requireUser: true`. Unknown role ids fail the build.
 - Denials reject `startSession()` with code `auth_required` (401) or `role_required` (403).
+- On the phone channel there is no login page to bounce to, so `requireUser` becomes
+  answer-then-verify — see "Inbound calls" above.
 - Dev preview is exempt — the builder is never locked out while testing.
 - Older compiled apps without the block fall back to the manifest's `auth.enabled` (auth-enabled →
   users only; no auth → public). New configs always declare it explicitly.

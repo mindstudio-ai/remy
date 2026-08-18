@@ -9,7 +9,7 @@
  * itself only exists in the sandbox. So a path gets uploaded on its way in.
  *
  * Uploads go through the same presigned endpoint the tunnel uses for browser
- * screenshots and land beside them under `sandbox/tmp/` on the public CDN.
+ * screenshots and land beside them under `_sandbox-tmp/` on the public CDN.
  * Two things follow from that: the URL is durable, so it can be reused for
  * follow-up questions and embedded in a spec, and it's on `i.mscdn.ai`, so the
  * image proxy resizes it before it reaches a model (a raw signed URL from the
