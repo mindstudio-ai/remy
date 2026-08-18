@@ -30,19 +30,34 @@ everywhere else, and the compiled system prompt must carry them explicitly:
 - **Spoken-form values.** "Forty-two fifty," not "$42.50". "Two fifteen in the afternoon," not
   "14:15". Read email addresses and confirmation codes character by character, and read them *back*
   for confirmation before acting on them — mishearing one digit of a phone number is the classic
-  voice failure.
+  voice failure. Collect one value per turn; two asked together blend when spoken.
 - **Brevity is a hard rule, not a style preference.** One to two sentences per turn, one question at
   a time. A paragraph that reads fine in chat is a monologue on a call.
+- **Vary the phrasing.** Repeated openers and acknowledgments sound convincing once and robotic by
+  the third turn — give the prompt an explicit variety rule, and treat any sample phrases as
+  anchors, never scripts.
 - **Handle unclear audio explicitly.** Give the prompt a rule for it: respond only to clear audio;
-  if it's noisy or ambiguous, ask the user to repeat — never guess, and never call a tool on input
-  the agent isn't sure it heard.
+  if it's noisy or ambiguous, ask the user to repeat — never guess, never call a tool on input the
+  agent isn't sure it heard, and don't reuse the same clarification line twice in a row.
 - **Pin the language.** State the response language in the prompt; don't let the model infer it from
-  an accent.
+  an accent. If the app's domain has brand names or terms with non-obvious pronunciations, give
+  them a line ("pronounce SQL as 'sequel'").
 
 Beyond the mechanics, the persona itself should be *of the ear*: pacing, warmth, how it handles
 being interrupted, what it says when it needs a second. This is the fun part, same as the agent
 interface — a distinct character beats a generic assistant, and voice makes character land harder
 than any other surface.
+
+### The shape of `system.md`
+
+Structure the compiled prompt as short **labeled sections** — Role & Objective, Personality & Tone,
+Rules, and (when the app has a real call flow) Conversation Flow — with bullets over paragraphs;
+realtime models find and follow sectioned rules far more reliably than prose. Scope rules
+precisely: "confirm before any tool that changes data," not "always confirm everything" — blanket
+`always`/`never` makes the agent rigid and unable to handle reasonable exceptions. And start
+minimal: state the role, the boundaries, and the voice mechanics above, then add rules only for
+behaviors that actually misfire in test calls (the transcripts in the call log are the feedback
+loop) rather than front-loading a policy manual.
 
 ### The latency classes
 
@@ -82,6 +97,11 @@ Bake the policy into the system prompt: read-only tools — just call them. Writ
 about to happen and get a yes. Anything destructive or financial — read the details back first,
 piece by piece. In voice there is no confirmation dialog to lean on; the conversation *is* the
 confirmation UI.
+
+And give failure a script: never speak a raw error. When a lookup misses or a tool fails, read back
+the value it used ("I couldn't find an order ending three-one-two-five — did I get part of that
+wrong?"), offer one retry, then move to an alternate path — in character, without blaming the
+caller.
 
 ### Choosing the model
 
@@ -234,9 +254,12 @@ export async function callMeAboutMyOrder(input: { phone: string }) {
   of which number was dialed (the user types any number into a field; identity comes from their
   session, not the phone). Omitted/false → anonymous call; role-gated tools decline.
   System/cron invocations have no human identity and always run anonymously.
-- **Dev sessions only for now.** Deployed apps need a dedicated phone number (coming soon);
-  production calls throw `phone_out_requires_dedicated_number`. Caller ID is a shared platform
-  test number that varies per call — set expectations that an unfamiliar number will call.
+- **Production needs a dedicated phone number.** The app owner attaches one ($2/month) via the
+  dashboard or `mindstudio-prod voice numbers` (see "Managing the phone side from the CLI"
+  below) — it becomes the caller ID for every call, in dev sessions too, so users always see
+  the same number. Without one, deployed calls throw `phone_out_requires_dedicated_number`, and
+  dev sessions fall back to a shared platform test number that varies per call (tighter limits
+  apply on the shared pool).
 - **Outcome is on the call record**, not the return value: `voice.call` returns as soon as
   dialing starts (`{ sessionId, status: 'dialing', from, to }`); answered/busy/no-answer land on
   the session in the app's call log (`voice.listSessions()` / the dashboard).
@@ -246,6 +269,76 @@ export async function callMeAboutMyOrder(input: { phone: string }) {
   calls from this app, honor reasonable calling hours, never dial purchased or cold lists —
   design the consent moment into the product (a "call me" button IS consent; a scraped list is
   not).
+
+## Inbound calls
+
+Once the app has a dedicated phone number, people can call it — the same voice agent answers
+(same persona, engine, and tools). Nothing extra to author for the basic case; the number in the
+app's settings is the whole switch.
+
+How answering works:
+
+- **Inbound always runs the live release.** There is no dev inbound — test the agent over the
+  normal WebRTC session in the editor; the phone is the same interface with a different
+  transport. An app with no live voice interface (or at its concurrency limit) doesn't answer.
+- **Callers are anonymous until verified.** The `auth` block still applies, but a phone call
+  can't show a login page — so the platform answers first, and `requireUser` becomes an
+  in-call verification flow. The agent can serve whatever anonymous callers are allowed, and
+  offers verification when the caller wants something account-bound.
+- **Verification uses the app's own auth methods** (`sms-code` / `email-code` from the
+  manifest), existing accounts only — there is no sign-up over the phone:
+  - SMS: a code is texted to the number the caller is calling from, if an account has that
+    number on file. No other number is possible by design.
+  - Email: the caller says their address; the platform matches it against the app's users
+    (transcription-tolerant — no letter-by-letter spelling ceremony) and emails the account's
+    stored address a code.
+  - The flow never confirms or denies that an account exists — a code is "sent if an account
+    matches", always phrased that neutrally. The persona should offer verification naturally
+    when it unlocks something, never as a robotic gate.
+- **Verified mid-call, upgraded mid-call**: once the code checks out, the session becomes that
+  user's — Current User block, roles on every tool call — without redialing.
+
+### `phone.trustCallerId`
+
+For apps whose users are known by phone number, the interface config may opt into treating
+caller ID as identity:
+
+```json
+"phone": { "trustCallerId": true }
+```
+
+A caller whose number exactly matches an app user's phone starts the call already verified —
+no code. This is a real security tradeoff: **caller ID can be spoofed**, so a motivated
+attacker who knows a user's phone number can impersonate them to this agent. Before enabling
+it, you MUST surface that risk to the user and get their explicit confirmation — it's the
+right call for convenience-first, low-stakes apps (a family assistant, a status line), and the
+wrong one wherever the agent's tools can move money, reveal sensitive records, or take
+destructive actions. It lives in the interface config deliberately: enabling it is a code
+change, visible in review and auditable via deploys, not a dashboard toggle.
+
+## Managing the phone side from the CLI
+
+The `mindstudio-prod voice` family covers numbers, the call log, and voice policy:
+
+```bash
+mindstudio-prod voice numbers search --area-code 310   # available numbers to offer the user
+mindstudio-prod voice numbers buy +13105551234         # buy + attach ($2/month — see below)
+mindstudio-prod voice numbers release +13105551234     # permanent; no refund, ~15-day quarantine
+mindstudio-prod voice sessions list --limit 10         # call log: web / phone-out / phone-in
+mindstudio-prod voice sessions get <sessionId>         # full transcript + cost breakdown
+```
+
+Also `voice numbers list`, `voice settings get`/`set` (concurrency, per-visitor,
+max duration). `--help` for flags.
+
+**Never buy a number without the user's explicit confirmation** — it starts a recurring
+$2/month workspace charge. Search first, present the options with the price, and only run
+`numbers buy` after they've picked one and said yes.
+
+Transcripts are how you iterate on a voice persona: after the user test-calls the agent, read
+`voice sessions get` for what was actually said — misheard input, interruptions, tools declining
+— and fix the spec from evidence rather than guesses. (Dev-session test calls carry a
+`devSessionId` in the list, so you can tell them from live traffic.)
 
 ---
 
@@ -344,6 +437,8 @@ The top-level key must match the interface type (`voice`):
 | `greeting` | Optional spoken opener |
 | `systemPrompt` | Relative path to the compiled system prompt |
 | `auth` | **Required.** Who may start a session: `{ "requireUser": boolean, "requireRole"?: string[] }`. See the Auth section below |
+| `phone` | Optional telephony options: `{ "trustCallerId"?: boolean }` — see "Inbound calls" above. Only add it after the user has confirmed the spoofing tradeoff |
+| `context` | Optional session context: `{ "method": <method id> }` — auto-fired in the background at session start; see "Session context" below |
 | `tools` | `{ method, latency, description }` — method `id` from the manifest, a latency class, and a relative path to the tool's markdown |
 | `webInterfacePath` | Optional. Where the voice layer lives in the web interface, for the editor preview |
 
@@ -352,6 +447,30 @@ Declare it in `mindstudio.json`:
 ```json
 { "type": "voice", "path": "dist/interfaces/voice/interface.json" }
 ```
+
+## Session context (auto-loaded)
+
+When the config declares `"context": { "method": "session-context" }`, the platform fires that
+backend method automatically when a session starts — in the background, so the greeting is
+never delayed — and appends its return to the system prompt as a `## Session Context` block.
+Use it for situational state that should color every turn: the caller's open orders, account
+standing, where they left off. Timing: the method runs while the greeting audio plays, so the
+agent has the context by roughly the first exchange and is guaranteed to have it shortly
+after — it is NOT guaranteed for the literal first utterance. On inbound phone calls it
+re-fires after the caller verifies mid-call, so the context recomputes for the now-known user.
+
+The method contract:
+- Runs as the session's user (same identity/RBAC as a tool call); anonymous sessions run it
+  anonymously — return generic or empty content for them.
+- Return a short markdown **string** (a few lines). Results are capped at 4,000 characters;
+  keep it situational context, not documents — deep or on-demand data belongs in tools or
+  data sources.
+- It is never a model-visible tool, and failures degrade silently to the generic prompt —
+  never make correctness depend on it.
+
+Rule of thumb: `context` for always-relevant state the agent should just know; tools for
+anything looked up on demand. Identity itself (name, roles) is already injected via the
+Current User block — don't re-fetch it in the context method.
 
 ## Platform Behavior
 
@@ -384,6 +503,8 @@ creation itself:
   (OR semantics, same as the backend `auth.requireRole(...)`). Omit or leave empty for no role
   gate. Requires `requireUser: true`. Unknown role ids fail the build.
 - Denials reject `startSession()` with code `auth_required` (401) or `role_required` (403).
+- On the phone channel there is no login page to bounce to, so `requireUser` becomes
+  answer-then-verify — see "Inbound calls" above.
 - Dev preview is exempt — the builder is never locked out while testing.
 - Older compiled apps without the block fall back to the manifest's `auth.enabled` (auth-enabled →
   users only; no auth → public). New configs always declare it explicitly.

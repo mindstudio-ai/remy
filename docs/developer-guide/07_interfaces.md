@@ -703,6 +703,8 @@ The top-level key must match the interface type (`voice`):
 | `greeting` | Optional spoken opener. |
 | `systemPrompt` | Relative path to the compiled system prompt. |
 | `auth` | **Required.** Who may start a session: `{ "requireUser": boolean, "requireRole"?: string[] }`. See Platform Behavior below. |
+| `phone` | Optional telephony options: `{ "trustCallerId"?: boolean }` — see Inbound calls below. |
+| `context` | Optional session context: `{ "method": <method id> }` — the platform auto-fires this backend method in the background at session start (and again after in-call verification) and appends its string return to the system prompt as a `## Session Context` block. Runs as the session user with normal RBAC; capped at 4KB; failures degrade to the generic prompt. Use for always-relevant situational state; tools remain the on-demand path. |
 | `tools` | `{ method, latency, description }` — method `id` from the manifest, a latency class, and a relative path to the tool's markdown description. |
 | `webInterfacePath` | Optional. Where the voice layer lives in the web interface, for the editor preview. |
 
@@ -768,7 +770,15 @@ export async function callMeAboutMyOrder(input: { phone: string }) {
 }
 ```
 
-The invoking method is the authorization gate (the interface `auth` block does not apply to calls the backend places deliberately). `assumeIdentity: true` runs the call as the invoking user — Current User block and tool RBAC — regardless of the number dialed; system/cron invocations always run anonymously. Currently dev-sessions-only (deployed apps will require a dedicated phone number); caller ID is a shared platform test number. `voice.call` returns at dial time (`{ sessionId, status: 'dialing', from, to }`); the outcome (answered/busy/no-answer) lands on the call record. Limits: the app's concurrency policy, a daily outbound cap, a per-call duration ceiling, one active call per callee. Compliance: automated calls require the callee's prior consent (TCPA) — call your own opted-in users, honor calling hours, never dial cold lists.
+The invoking method is the authorization gate (the interface `auth` block does not apply to calls the backend places deliberately). `assumeIdentity: true` runs the call as the invoking user — Current User block and tool RBAC — regardless of the number dialed; system/cron invocations always run anonymously. Deployed apps require a **dedicated phone number** (attached in app settings, $2/month) which becomes the caller ID everywhere — dev sessions included; without one, dev sessions use a shared platform test number under tighter limits and production calls throw `phone_out_requires_dedicated_number`. `voice.call` returns at dial time (`{ sessionId, status: 'dialing', from, to }`); the outcome (answered/busy/no-answer) lands on the call record. Limits: the app's concurrency policy, a daily outbound cap, a per-call duration ceiling, one active call per callee. Compliance: automated calls require the callee's prior consent (TCPA) — call your own opted-in users, honor calling hours, never dial cold lists.
+
+### Inbound calls
+
+An app with a dedicated number also answers it — the same voice agent, same tools. Inbound always runs the **live release** (test over the editor's WebRTC session; there is no dev inbound). The `auth` block still applies but a call can't show a login page, so `requireUser` becomes answer-then-verify: callers start anonymous, and the agent offers in-call verification through the app's own auth methods — SMS codes go to the number the caller is calling from; email verification matches the spoken address against existing accounts (transcription-tolerant) and emails the stored address. Existing accounts only, and the flow never confirms whether an account exists. Once verified, the running session upgrades to that user mid-call.
+
+`phone: { "trustCallerId": true }` lets a caller whose number exactly matches an app user's phone skip verification entirely. Caller ID is spoofable — this is an explicit tradeoff for low-stakes, convenience-first apps, and it lives in the interface config so enabling it is a reviewed, deploy-audited code change.
+
+Numbers, the call log (with transcripts), and voice policy settings are all manageable from the `mindstudio-prod voice` CLI family (`voice numbers search/buy/release`, `voice sessions list/get`, `voice settings get/set`). Buying a number is a recurring $2/month charge — agents must get the user's explicit confirmation first.
 
 ### Manifest
 
