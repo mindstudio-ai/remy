@@ -234,11 +234,12 @@ export async function callMeAboutMyOrder(input: { phone: string }) {
   of which number was dialed (the user types any number into a field; identity comes from their
   session, not the phone). Omitted/false → anonymous call; role-gated tools decline.
   System/cron invocations have no human identity and always run anonymously.
-- **Production needs a dedicated phone number.** The app owner attaches one in the app's
-  settings (dashboard or `mindstudio-prod` CLI, $2/month) — it becomes the caller ID for every
-  call, in dev sessions too, so users always see the same number. Without one, deployed calls
-  throw `phone_out_requires_dedicated_number`, and dev sessions fall back to a shared platform
-  test number that varies per call (tighter limits apply on the shared pool).
+- **Production needs a dedicated phone number.** The app owner attaches one ($2/month) via the
+  dashboard or `mindstudio-prod voice numbers` (see "Managing the phone side from the CLI"
+  below) — it becomes the caller ID for every call, in dev sessions too, so users always see
+  the same number. Without one, deployed calls throw `phone_out_requires_dedicated_number`, and
+  dev sessions fall back to a shared platform test number that varies per call (tighter limits
+  apply on the shared pool).
 - **Outcome is on the call record**, not the return value: `voice.call` returns as soon as
   dialing starts (`{ sessionId, status: 'dialing', from, to }`); answered/busy/no-answer land on
   the session in the app's call log (`voice.listSessions()` / the dashboard).
@@ -294,6 +295,30 @@ right call for convenience-first, low-stakes apps (a family assistant, a status 
 wrong one wherever the agent's tools can move money, reveal sensitive records, or take
 destructive actions. It lives in the interface config deliberately: enabling it is a code
 change, visible in review and auditable via deploys, not a dashboard toggle.
+
+## Managing the phone side from the CLI
+
+The `mindstudio-prod voice` family covers numbers, the call log, and voice policy:
+
+```bash
+mindstudio-prod voice numbers search --area-code 310   # available numbers to offer the user
+mindstudio-prod voice numbers buy +13105551234         # buy + attach ($2/month — see below)
+mindstudio-prod voice numbers release +13105551234     # permanent; no refund, ~15-day quarantine
+mindstudio-prod voice sessions list --limit 10         # call log: web / phone-out / phone-in
+mindstudio-prod voice sessions get <sessionId>         # full transcript + cost breakdown
+```
+
+Also `voice numbers list`, `voice settings get`/`set` (concurrency, per-visitor,
+max duration). `--help` for flags.
+
+**Never buy a number without the user's explicit confirmation** — it starts a recurring
+$2/month workspace charge. Search first, present the options with the price, and only run
+`numbers buy` after they've picked one and said yes.
+
+Transcripts are how you iterate on a voice persona: after the user test-calls the agent, read
+`voice sessions get` for what was actually said — misheard input, interruptions, tools declining
+— and fix the spec from evidence rather than guesses. (Dev-session test calls carry a
+`devSessionId` in the list, so you can tell them from live traffic.)
 
 ---
 

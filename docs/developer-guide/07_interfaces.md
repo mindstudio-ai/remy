@@ -777,6 +777,8 @@ An app with a dedicated number also answers it — the same voice agent, same to
 
 `phone: { "trustCallerId": true }` lets a caller whose number exactly matches an app user's phone skip verification entirely. Caller ID is spoofable — this is an explicit tradeoff for low-stakes, convenience-first apps, and it lives in the interface config so enabling it is a reviewed, deploy-audited code change.
 
+Numbers, the call log (with transcripts), and voice policy settings are all manageable from the `mindstudio-prod voice` CLI family (`voice numbers search/buy/release`, `voice sessions list/get`, `voice settings get/set`). Buying a number is a recurring $2/month charge — agents must get the user's explicit confirmation first.
+
 ### Manifest
 
 ```json
