@@ -187,6 +187,8 @@ All auth methods throw on failure with a `code` property:
 | `max_attempts_exceeded` | 400 | Too many failed attempts |
 | `not_authenticated` | 401 | No active session |
 | `invalid_session` | 401 | Session expired or invalid |
+| `auth_required` | 401 | Agent/voice interface requires an authenticated user (interface `auth` block) |
+| `role_required` | 403 | Agent/voice interface requires a role the user doesn't hold |
 
 ### Phone Helpers (`auth.phone`)
 
@@ -350,6 +352,20 @@ Roles are a platform-managed concept stored on the developer's user table.
 
 ---
 
+## Interface-Level Auth (Agent + Voice)
+
+Agent and voice interfaces additionally declare auth **in their config** — a required `auth` key,
+`{ "requireUser": boolean, "requireRole"?: string[] }` — because those sessions spend money without
+necessarily calling a backend method, so the platform gates the lobby itself before any model or
+media spend. `requireRole` uses the same manifest role ids with OR semantics and requires
+`requireUser: true`. Denials reach the frontend SDK as `MindStudioInterfaceError` codes
+`auth_required` (401) and `role_required` (403). Dev preview is exempt; older compiled apps
+without the block fall back to the manifest's `auth.enabled`. See [Interfaces](07_interfaces.md)
+for the full contract. Method-level `auth.requireRole(...)` checks still apply to every tool call
+inside the session.
+
+---
+
 ## Impersonation (Dev Mode)
 
 During development, impersonate any role to test role-based behavior:
@@ -372,7 +388,7 @@ Scenarios set impersonation automatically. Each scenario declares which roles to
 
 ## Apps Without Auth
 
-Apps without `auth` in the manifest use anonymous guest sessions. No login, no user identity, no roles. This is the default and works fine for single-user apps, internal tools, and simple utilities.
+Apps without `auth` in the manifest use anonymous guest sessions. No login, no user identity, no roles. This is the default and works fine for single-user apps, internal tools, and simple utilities. (Agent/voice interfaces on such apps declare `"auth": { "requireUser": false }` explicitly — anonymous callers are scoped by a per-browser visitor identity.)
 
 ---
 

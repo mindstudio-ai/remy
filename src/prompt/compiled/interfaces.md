@@ -88,6 +88,8 @@ auth.logout()                       // clears session
 
 For apps with an agent interface, the SDK also provides `createAgentChatClient()` for thread management and streaming chat. Load the `agentInterfaces` skill for its usage — thread APIs, streaming callbacks, and attachments are all there.
 
+For apps with a voice interface, `createVoiceClient()` lives on the `@mindstudio-ai/interface/voice` subpath (deliberately separate so non-voice apps ship none of it). Load the `voiceInterfaces` skill for its usage — session lifecycle, live-caption events, tool status, and the voice-UI patterns are all there.
+
 The project uses `"jsx": "react-jsx"` (automatic JSX transform) — do not `import React from 'react'`. Only import the specific hooks and types you need (e.g., `import { useState, useEffect } from 'react'`).
 
 On deploy, the platform runs `npm install && npm run build` in the web directory and hosts the output on CDN.
@@ -180,9 +182,15 @@ It supports the full MCP surface: tools (methods the agent can call), resources 
 
 ## Agent (Conversational Interface)
 
-A conversational interface where an LLM has access to the app's methods as tools. Unlike MCP (which exposes methods for external agents), the agent interface IS the agent — it has its own personality, system prompt, and model config, and orchestrates tool calls against the app's methods internally. Chat runs as the authenticated user, so every tool call carries that user's roles.
+A conversational interface where an LLM has access to the app's methods as tools. Unlike MCP (which exposes methods for external agents), the agent interface IS the agent — it has its own personality, system prompt, and model config, and orchestrates tool calls against the app's methods internally. Chat runs as the authenticated user, so every tool call carries that user's roles. The config must declare an `auth` block (`{ "requireUser": boolean, "requireRole"?: string[] }`) gating who may chat at all.
 
 **Load the `agentInterfaces` skill** before authoring `src/interfaces/agent.md` or building the chat UI — the spec frontmatter, compiled output, `agent.json`, and the entire frontend surface are all there.
+
+## Voice (Realtime Conversation)
+
+The app's agent as a live voice conversation — the user talks, and the agent answers in sub-second, interruptible speech, calling methods mid-conversation. A sibling of the agent interface, not a mode of it: its own spec, a persona written for the ear rather than the screen, and a smaller toolset where every tool carries a latency class governing how the agent handles the wait out loud. Sessions run as the authenticated user, so tool calls carry that user's roles; the platform handles the realtime media, turn-taking, barge-in, and transcripts. The config must declare an `auth` block (`{ "requireUser": boolean, "requireRole"?: string[] }`) gating who may start a session at all.
+
+**Load the `voiceInterfaces` skill** before authoring `src/interfaces/voice.md` or building the voice UI — the spoken-register rules, latency classes, spec format, `interface.json`, and the `createVoiceClient()` frontend surface are all there.
 
 ## Manifest Declaration
 
@@ -197,7 +205,8 @@ Each interface is declared in `mindstudio.json`:
     { "type": "webhook", "path": "dist/interfaces/webhook/interface.json" },
     { "type": "email", "path": "dist/interfaces/email/interface.json" },
     { "type": "mcp", "path": "dist/interfaces/mcp/interface.json" },
-    { "type": "agent", "path": "dist/interfaces/agent/agent.json" }
+    { "type": "agent", "path": "dist/interfaces/agent/agent.json" },
+    { "type": "voice", "path": "dist/interfaces/voice/interface.json" }
   ]
 }
 ```

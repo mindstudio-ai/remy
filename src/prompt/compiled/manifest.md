@@ -111,7 +111,7 @@
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `type` | `string` | Yes | One of: `web`, `api`, `cron`, `webhook`, `email`, `mcp`, `agent` |
+| `type` | `string` | Yes | One of: `web`, `api`, `cron`, `webhook`, `email`, `mcp`, `agent`, `voice` |
 | `path` | `string` | No | Path to the interface config file |
 | `config` | `object` | No | Inline config (alternative to a file) |
 | `enabled` | `boolean` | No | Default `true`. Set `false` to skip during build. |

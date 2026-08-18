@@ -115,8 +115,8 @@ Prefer folding new material into an existing skill over adding a ninth.
 
 **A skill can be a section of a source doc, not just a whole one.** Originally
 one source doc produced one fragment. `docs/developer-guide/07_interfaces.md`
-now fans out into a resident fragment plus six skills, and its sections map 1:1
-onto them (Web / API / Cron / Webhook / Email / MCP / Agent / manifest), so a
+now fans out into a resident fragment plus seven skills, and its sections map 1:1
+onto them (Web / API / Cron / Webhook / Email / MCP / Agent / Voice / manifest), so a
 recompile has a clear target per skill. When you split a doc this way, watch for
 anything defined once and used by several sections — a URL template, a shared
 auth rule, a manifest snippet. Those need copying into each skill, because a

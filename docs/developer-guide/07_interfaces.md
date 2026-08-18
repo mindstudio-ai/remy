@@ -562,6 +562,7 @@ dist/interfaces/agent/
     "temperature": 0.5,
     "maxTokens": 16000,
     "systemPrompt": "system.md",
+    "auth": { "requireUser": true },
     "tools": [
       { "method": "create-todo", "description": "tools/createTodo.md" },
       { "method": "list-todos", "description": "tools/listTodos.md" }
@@ -577,13 +578,187 @@ dist/interfaces/agent/
 | `temperature` | Model temperature |
 | `maxTokens` | Max response tokens |
 | `systemPrompt` | Relative path to the compiled system prompt markdown file |
+| `auth` | **Required.** Who may open the lobby: `{ "requireUser": boolean, "requireRole"?: string[] }`. See Auth below. |
 | `tools` | Array of tool entries. `method` references a method `id` from `mindstudio.json`. `description` is a relative path to a markdown file with rich tool docs. |
 | `webInterfacePath` | Optional. If the app has a web interface with a chat page, this path tells the IDE where to show the agent preview. |
+
+### Auth
+
+**Every agent config declares an `auth` block.** Agent chat spends the owner's money on every
+message without necessarily touching a backend method, so the platform gates the lobby itself —
+enforced at thread creation and message send. `requireUser: true` limits chat to authenticated app
+users; `requireRole` (optional, requires `requireUser: true`) additionally demands at least one of
+the listed manifest role ids (OR semantics, matching the backend `auth.requireRole(...)`). Unknown
+role ids fail the build. Denials surface to the frontend SDK as `MindStudioInterfaceError` with
+code `auth_required` (401) or `role_required` (403). Dev preview is exempt. Older compiled apps
+without the block fall back to the manifest's `auth.enabled`.
+
+Once inside, agent chat runs as the **authenticated user**, not as a system role — tool calls
+carry that user's roles, so method-level `auth.requireRole` checks behave exactly as they would
+from the web frontend. Anonymous visitors (when allowed) are scoped by a per-browser visitor
+identity: their threads are private to their browser, and gated methods still reject.
 
 ### Manifest
 
 ```json
 { "type": "agent", "path": "dist/interfaces/agent/agent.json" }
+```
+
+---
+
+## Voice (Realtime Conversation)
+
+A realtime voice interface: the user talks to the app and the app's voice agent talks back — sub-second speech, interruptible mid-sentence, with the app's methods available as tools mid-conversation. It is a sibling of the agent interface, not a mode of it. The two share a philosophy (an LLM projecting the backend contract into conversation), but everything the author touches differs: the persona is written for the ear, the toolset is smaller and curated for conversational latency, and every tool carries a **latency class** that governs how the agent handles the wait out loud.
+
+The developer authors the spec in MSFM (`src/interfaces/voice.md`); the build agent compiles it into a voice-register system prompt and tool descriptions (`dist/interfaces/voice/`). The platform handles the realtime media transport, turn detection, barge-in, transcripts, and session limits.
+
+### Spec File: `src/interfaces/voice.md`
+
+Frontmatter holds the structured fields; the prose body is the persona; a `## Tools` section declares the toolset explicitly.
+
+```yaml
+---
+name: Front Desk
+description: Books appointments and answers questions by voice.
+type: interface/voice
+model: {"model": "gpt-realtime-mini", "voice": "marin"}
+turnDetection: {"eagerness": "medium"}
+greeting: Hey! I can help you book, reschedule, or answer questions — what do you need?
+---
+```
+
+| Field | Description |
+|-------|-------------|
+| `name` | Agent display name |
+| `description` | One-liner for listings |
+| `model` | JSON string. Native speech-to-speech: `{"model": <realtime model id>, "voice": <voice id>}`. Cascaded pipeline (any chat model behind a voice): `{"llm": <chat model id>, "stt": <transcription model id>, "tts": <speech model id>, "voice": <voice id>}` — the blessed streaming pairing is `"stt": "deepgram-nova-3", "tts": "cartesia-sonic-3"`. Optional `config` for model-specific settings. Query the MindStudio SDK for available ids — realtime, transcription, and speech models are separate catalogs. |
+| `turnDetection` | Optional. `{"eagerness": "low" \| "medium" \| "high"}` — how quickly the platform decides the user has finished speaking. High is snappier; low is more patient (better when users dictate numbers or addresses). Default `medium`. |
+| `greeting` | Optional. A spoken opener delivered when the session starts. Omit it and the agent waits for the user to speak first. Verbatim on cascaded engines; model-spoken (may paraphrase slightly) on speech-to-speech. |
+
+The body reads like a character brief in the **voice register** — how the agent sounds, what it cares about, how it behaves — plus the explicit toolset:
+
+```markdown
+## Tools
+
+### Book appointment
+method: book-appointment
+latency: slow
+~~~
+Book an appointment once the caller has confirmed a date, time, and service.
+Read the details back and get a yes before calling. Say the confirmation
+naturally ("You're all set for Tuesday the 4th at 2pm") — never read the
+booking id aloud unless asked.
+~~~
+```
+
+### Latency Classes
+
+Each tool declares how the agent should handle the wait, because in a live conversation silence reads as a dropped call:
+
+| Class | When | Behavior |
+|-------|------|----------|
+| `fast` | Sub-second reads (lookups, availability checks) | Call silently — a preamble would add more delay than the tool |
+| `slow` | Noticeable wait, roughly 1–3s (writes, searches) | Speak a one-line preamble ("Let me get that booked") generated in parallel with the call |
+| `background` | Long-running work (reports, enrichment, bulk operations) | Acknowledge, keep conversing, report the result when it lands; cancellable if the user changes course |
+
+### Compiled Output: `dist/interfaces/voice/`
+
+```
+dist/interfaces/voice/
+├── interface.json      ← config the platform reads
+├── system.md           ← compiled voice-register system prompt
+└── tools/
+    └── bookAppointment.md   ← rich tool description, one per tool
+```
+
+### Config (`interface.json`)
+
+The top-level key must match the interface type (`voice`):
+
+```json
+{
+  "voice": {
+    "name": "Front Desk",
+    "description": "Books appointments and answers questions by voice.",
+    "model": "gpt-realtime-mini",
+    "voice": "marin",
+    "turnDetection": { "eagerness": "medium" },
+    "greeting": "Hey! I can help you book, reschedule, or answer questions — what do you need?",
+    "systemPrompt": "system.md",
+    "auth": { "requireUser": true },
+    "tools": [
+      { "method": "book-appointment", "latency": "slow", "description": "tools/bookAppointment.md" }
+    ],
+    "webInterfacePath": "/"
+  }
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `model` | Realtime model id (native speech-to-speech). Mutually exclusive with `llm`/`stt`/`tts`. |
+| `llm`, `stt`, `tts` | The cascaded alternative: a chat model id plus streaming transcription and speech model ids. |
+| `voice` | Provider voice id (model-specific). |
+| `turnDetection` | `{ "eagerness": "low" \| "medium" \| "high" }`, optional. |
+| `greeting` | Optional spoken opener. |
+| `systemPrompt` | Relative path to the compiled system prompt. |
+| `auth` | **Required.** Who may start a session: `{ "requireUser": boolean, "requireRole"?: string[] }`. See Platform Behavior below. |
+| `tools` | `{ method, latency, description }` — method `id` from the manifest, a latency class, and a relative path to the tool's markdown description. |
+| `webInterfacePath` | Optional. Where the voice layer lives in the web interface, for the editor preview. |
+
+There is no input-schema field — the platform derives each tool's schema from the method contract. At runtime the platform appends a `## Current User` block (name, roles) to the system prompt; don't author a placeholder for it.
+
+### Frontend SDK: `createVoiceClient()`
+
+The voice client ships as a subpath of the interface SDK so apps that never use voice pay nothing for it:
+
+```typescript
+import { createVoiceClient } from '@mindstudio-ai/interface/voice';
+
+const voice = createVoiceClient();
+
+// Prompts for microphone permission, mints a session, connects.
+// Throws MindStudioInterfaceError('microphone_denied') on refusal.
+const session = await voice.startSession();
+
+session.state;  // 'connecting' | 'listening' | 'thinking' | 'speaking' | 'ended'
+session.on('stateChange', (state) => { });          // on() returns an unsubscribe fn
+
+// Live captions, both sides. Each event carries the segment's FULL text so
+// far (never a delta) — render by upserting on segmentId, not appending.
+session.on('transcript', ({ role, segmentId, text, final }) => { });
+
+session.on('toolCall', ({ method, status }) => { }); // 'running' | 'done' | 'failed'
+session.on('error', (err) => { });
+
+session.mute(); session.unmute(); session.isMuted;
+session.sendText('123 Main Street');  // inject text into the live conversation (addresses, codes)
+session.end();
+```
+
+Agent audio playback is handled inside the SDK (a hidden autoplaying element) — apps never create
+audio elements for the agent. Besides `microphone_denied`, `startSession()` throws
+`MindStudioInterfaceError` with code `voice_concurrency_limit` / `voice_visitor_limit` when the
+app's session limits are hit, and `auth_required` (401) / `role_required` (403) when the
+interface's `auth` block denies the caller.
+
+Past sessions are available as call records with transcripts:
+
+```typescript
+const { sessions } = await voice.listSessions();
+const full = await voice.getSession(sessions[0].id);  // includes transcript
+```
+
+### Platform Behavior
+
+- **Auth**: the config's **required** `auth` block gates session creation — `requireUser: true` limits sessions to authenticated app users, `requireRole` (optional, requires `requireUser: true`) demands at least one of the listed manifest role ids (OR semantics, matching the backend `auth.requireRole(...)`; unknown ids fail the build). Dev preview is exempt; older compiled apps without the block fall back to the manifest's `auth.enabled`. Once inside, sessions run as the **authenticated user** — tool calls carry that user's roles, exactly like the agent interface and the web frontend. Anonymous sessions (when `requireUser: false`) run with no user and no roles, so gated methods reject, and their call history is scoped to the browser's visitor identity.
+- User-side transcripts come from a separate recognition pass and can differ slightly from what the model actually heard — treat them as history, never as input to logic.
+- Sessions are subject to per-app concurrency limits and a maximum duration; both are configurable in the app's settings. Voice minutes and model usage are metered.
+
+### Manifest
+
+```json
+{ "type": "voice", "path": "dist/interfaces/voice/interface.json" }
 ```
 
 ---
@@ -601,7 +776,8 @@ Each interface is declared in `mindstudio.json`:
     { "type": "webhook", "path": "dist/interfaces/webhook/interface.json" },
     { "type": "email", "path": "dist/interfaces/email/interface.json" },
     { "type": "mcp", "path": "dist/interfaces/mcp/interface.json" },
-    { "type": "agent", "path": "dist/interfaces/agent/agent.json" }
+    { "type": "agent", "path": "dist/interfaces/agent/agent.json" },
+    { "type": "voice", "path": "dist/interfaces/voice/interface.json" }
   ]
 }
 ```

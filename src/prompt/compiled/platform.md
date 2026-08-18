@@ -23,6 +23,7 @@ my-app/
       web.md                           web UI spec
       api.md                           API conventions
       agent.md                         agent personality and behavior spec
+      voice.md                         voice agent persona and toolset spec
       cron.md                          scheduled job descriptions
     roadmap/                           feature roadmap (one file per item, type: roadmap)
 
@@ -52,6 +53,10 @@ my-app/
       agent/                             agent interface
         agent.json                         agent config
         system.md                          compiled system prompt
+        tools/                             tool descriptions (one .md per method)
+      voice/                             voice interface
+        interface.json                     voice config
+        system.md                          compiled voice-register system prompt
         tools/                             tool descriptions (one .md per method)
 ```
 
@@ -95,7 +100,7 @@ const { vendor } = await api.approveVendor({ vendorId: '...' });
 
 - **Managed databases.** SQLite with typed schemas. Push a schema change and the platform diffs, migrates, and promotes atomically.
 - **Built-in auth.** Opt-in via manifest. Developer builds login UI, platform handles verification codes (email/SMS), cookie sessions, and role enforcement. Backend methods use `auth.requireRole('admin')` for access control.
-- **Multiple interfaces, one codebase.** Web, API, Cron, Webhook, Email, MCP — all invoke the same methods. Methods don't know which interface called them.
+- **Multiple interfaces, one codebase.** Web, API, Cron, Webhook, Email, MCP, Agent, Voice — all invoke the same methods. Methods don't know which interface called them.
 - **Sandboxed execution.** Each method invocation runs in its own isolated execution context with npm packages pre-installed.
 - **Git-native deployment.** Push to default branch to deploy. Push to feature branch for preview. Rollback is a git revert.
 - **Secrets.** Encrypted environment variables with separate dev/prod values. Injected as `process.env` in methods. For third-party service credentials not covered by the SDK.

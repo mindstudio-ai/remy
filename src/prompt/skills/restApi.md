@@ -141,7 +141,7 @@ Routes are mounted at `/_/api{path}` (e.g. `DELETE /_/api/vendors/abc123`).
 - **Request body** for POST/PUT/PATCH is the input directly (no `{ input: {...} }` wrapper)
 - **Response** is the method output directly (no `{ output: {...} }` wrapper)
 - **Auth** via `Authorization: Bearer sk_...` — an API key resolves to a user with full RBAC, so the
-  method's own `auth.requireRole`/`requireUser` checks apply exactly as they would for that user
+  method's own `auth.requireRole(...)`/`hasRole(...)` checks apply exactly as they would for that user
 - **Streaming**: `Accept: text/event-stream` header returns SSE chunks
 - **Raw request context**: Every API method receives `input._request` with `{ method, headers, rawBody }`.
   `rawBody` is the original unparsed body as a UTF-8 string — needed for signature verification, since

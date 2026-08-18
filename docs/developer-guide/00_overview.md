@@ -57,6 +57,8 @@ The same backend methods power every interface:
 | **Webhook** | Inbound HTTP → method invocation |
 | **Email** | Inbound email → method invocation |
 | **MCP** | AI tool server (methods as tools) |
+| **Agent** | Conversational LLM with methods as tools |
+| **Voice** | Realtime voice conversation with methods as tools |
 
 Your methods don't know or care which interface invoked them.
 
