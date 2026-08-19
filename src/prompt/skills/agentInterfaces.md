@@ -103,6 +103,30 @@ const { threads, nextCursor } = await chat.listThreads();
 const full = await chat.getThread(thread.id);
 await chat.updateThread(thread.id, 'New title');
 await chat.deleteThread(thread.id);
+
+// Progressive auth: threads started anonymously become unreachable after the
+// user signs in (login replaces the session and its visitor identity). Claim
+// them right after your verification/login succeeds so the conversation
+// survives — the client remembers each thread's pre-login token automatically
+// for threads touched this page session.
+await chat.claimThread(thread.id);
+```
+
+**Client tools** — a tool whose effect happens in the browser (open a sheet, navigate, highlight)
+is declared with `target: "client"` and a `name` + inline `inputSchema` instead of a `method`
+(names must not collide with method ids; the schema is authored — there's no method contract to
+derive it from). The agent's invocation arrives as the `client_tool_call` stream event / the
+`onClientToolCall` callback on `sendMessage`; run the action there. Fire-and-forget on this
+surface: the agent is told the action was displayed and keeps going — the user's next message
+closes the loop.
+
+```js
+await chat.sendMessage(thread.id, text, {
+  onText: (delta) => append(delta),
+  onClientToolCall: (name, input) => {
+    if (name === 'showVerification') openVerifySheet(input);
+  },
+});
 ```
 
 **Sending messages (streaming):**

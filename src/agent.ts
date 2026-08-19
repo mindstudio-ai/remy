@@ -142,6 +142,12 @@ export async function runTurn(params: {
   onboardingState: string;
   signal?: AbortSignal;
   onEvent: (event: AgentEvent) => void;
+  /** Pull hook for ASAP-promoted queued messages. Called at each tool
+   * boundary (after tool results are appended, before the next LLM call);
+   * returned entries are injected into the running turn as plain user
+   * messages. The caller owns removal from its queue and terminal
+   * (`absorbed`) accounting for the consumed requestIds. */
+  takeSteering?: () => Promise<TurnEntry[]>;
   resolveExternalTool?: ExternalToolResolver;
   /** Correlation ID from the headless protocol — threaded for structured logging. */
   requestId?: string;
@@ -163,6 +169,7 @@ export async function runTurn(params: {
     onboardingState,
     signal,
     onEvent,
+    takeSteering,
     resolveExternalTool,
     requestId,
     toolRegistry,
@@ -221,7 +228,10 @@ export async function runTurn(params: {
     return;
   }
 
-  for (const entry of keptEntries) {
+  // Push one turn entry into history and emit its user_message event. Used
+  // for the turn's opening entries and for ASAP messages injected mid-turn
+  // via takeSteering.
+  const appendEntry = (entry: TurnEntry): void => {
     const hasAttachments = (entry.attachments?.length ?? 0) > 0;
     const userMsg: Message = { role: 'user', content: entry.text };
     if (entry.hidden) {
@@ -244,6 +254,10 @@ export async function runTurn(params: {
       ...(entry.requestId && { requestId: entry.requestId }),
       ...(entry.queued && { queued: true }),
     });
+  };
+
+  for (const entry of keptEntries) {
+    appendEntry(entry);
   }
 
   // Skip status labels on the very first message — too little context to
@@ -933,6 +947,27 @@ export async function runTurn(params: {
         toolCallId: r.id,
         isToolError: r.isError,
       });
+    }
+
+    // ASAP messages: pull any queued user messages promoted to mid-turn
+    // delivery and inject them at this tool boundary as plain user messages —
+    // the model reconciles them on its next call without the turn restarting.
+    // Skipped once the turn is aborted so a cancelled turn never consumes
+    // queue items.
+    if (takeSteering && !signal?.aborted) {
+      const injected = (await takeSteering()).filter(
+        (e) => e.text.trim().length > 0 || (e.attachments?.length ?? 0) > 0,
+      );
+      if (injected.length > 0) {
+        for (const entry of injected) {
+          appendEntry(entry);
+          // Keep the status watcher's turn context aware of the new request.
+          keptEntries.push(entry);
+        }
+        // The items are already gone from the persisted queue; persist the
+        // session immediately so a crash in between can't drop them.
+        saveSession(state);
+      }
     }
 
     if (signal?.aborted) {

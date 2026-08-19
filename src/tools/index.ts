@@ -65,6 +65,13 @@ export interface Tool {
    * input flag (which the model chooses per call), this is inherent to the tool,
    * so the runtime treats every call as backgrounded regardless of input. */
   backgroundOnly?: boolean;
+  /** How a background completion is delivered to the agent. 'wake' (default)
+   * queues a background_results message that may start a turn when idle —
+   * for tools whose results the agent deferred and must act on. 'passive'
+   * parks the result in the headless holding pen; it never initiates a turn
+   * and instead rides the next real turn as a hidden background_results
+   * entry — for fire-and-forget bookkeeping tools like specSync. */
+  backgroundNotify?: 'wake' | 'passive';
   execute: (
     input: Record<string, any>,
     context?: ToolExecutionContext,
