@@ -66,9 +66,12 @@ import { applyPlanFileSideEffect } from './planFile.js';
 import {
   createSessionStats,
   loadQueue,
+  loadPassiveResults,
   writeStats,
   type SessionStats,
+  type PassiveResult,
 } from './stats.js';
+import { getToolByName } from '../tools/index.js';
 import { MessageQueue, type QueuedMessage } from './messageQueue.js';
 import { resolveAction, getActionChain } from '../automatedActions/resolve.js';
 import {
@@ -162,6 +165,16 @@ export class HeadlessSession {
    */
   private queue!: MessageQueue;
 
+  /**
+   * Holding pen for passive background results (tools with
+   * `backgroundNotify: 'passive'`, e.g. specSync). Deliberately outside the
+   * message queue: pen contents never initiate a turn, never latch the
+   * sandbox's queue-derived busy state, and never trigger resume-on-restart.
+   * Swept into the next real turn as a hidden background_results entry.
+   * Persisted to .remy-stats.json alongside the queue.
+   */
+  private passivePen: PassiveResult[] = [];
+
   // External tool bridge
   private pendingTools = new Map<string, PendingTool>();
   private earlyResults = new Map<string, string>();
@@ -214,6 +227,7 @@ export class HeadlessSession {
       this.persistStats();
       this.emit('queue_changed', { queuedMessages: this.queue.snapshot() });
     });
+    this.passivePen = loadPassiveResults();
 
     if (resumed) {
       this.emit('session_restored', {
@@ -370,10 +384,10 @@ export class HeadlessSession {
   // Stats + queue persistence
   //////////////////////////////////////////////////////////////////////////////
 
-  /** Persist sessionStats + queue snapshot to .remy-stats.json. */
+  /** Persist sessionStats + queue snapshot + passive pen to .remy-stats.json. */
   private persistStats(): void {
     this.sessionStats.updatedAt = Date.now();
-    writeStats(this.sessionStats, this.queue.snapshot());
+    writeStats(this.sessionStats, this.queue.snapshot(), this.passivePen);
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -450,12 +464,18 @@ export class HeadlessSession {
     result: string,
     subAgentMessages?: Message[],
   ): void => {
+    // Delivery class comes from the tool definition. Unknown names (e.g. a
+    // sub-agent reporting under a display name that isn't a registered tool)
+    // default to 'wake' — the historical behavior.
+    const notify = getToolByName(name)?.backgroundNotify ?? 'wake';
+
     // Queue the tool block mutation — applied when safe (not mid-turn)
     this.pendingBlockUpdates.push({ toolCallId, result, subAgentMessages });
 
     log.info('Background complete', {
       toolCallId,
       name,
+      notify,
       requestId: this.currentRequestId,
     });
 
@@ -466,6 +486,18 @@ export class HeadlessSession {
       name,
       result,
     });
+
+    if (notify === 'passive') {
+      // Passive tools never wake the agent (success and failure alike): park
+      // the result in the pen; it rides the next real turn as a hidden
+      // background_results entry via the sweep in executeTurn.
+      this.passivePen.push({ toolCallId, name, result });
+      this.persistStats();
+      if (!this.running) {
+        this.applyPendingBlockUpdates();
+      }
+      return;
+    }
 
     // Queue the synthetic message for the LLM
     this.queue.push({
@@ -552,6 +584,9 @@ export class HeadlessSession {
             // Queue-delivered entries are flagged so the frontend renders the
             // echo (idle sends are rendered optimistically instead).
             ...(e.queued && { queued: true }),
+            // Hidden entries (e.g. the passive background_results sweep) are
+            // flagged so the sandbox/frontend suppress the bubble.
+            ...(e.hidden && { hidden: true }),
           },
           // A merged turn emits one user_message per absorbed entry — each
           // carries its own original requestId, not the turn's.
@@ -931,6 +966,61 @@ export class HeadlessSession {
     this.lastCompleted = null;
     this.turnStart = Date.now();
 
+    // Sweep the passive pen into this turn. executeTurn is the single choke
+    // point every turn shape passes through (idle sends and chain steps via
+    // runSingleTurn, mailbox batches via runMergedTurn), downstream of all
+    // sentinel side-effect machinery — and background_results is a NON_ACTION
+    // sentinel, so the entry is side-effect-free in any turn type. Prepended
+    // (results chronologically precede the triggering message) and hidden
+    // (no transcript bubble — the tool block already shows the completion).
+    if (this.passivePen.length > 0) {
+      const swept = this.passivePen.splice(0);
+      this.persistStats();
+      entries.unshift({
+        text: buildBackgroundResultsMessage(swept),
+        hidden: true,
+      });
+    }
+
+    // Pull hook for ASAP-promoted queued messages, called by runTurn at each
+    // tool boundary. Supplied on every turn — including chain build steps —
+    // so "as soon as possible" means the next stopping point of whatever is
+    // running. Pulls ALL currently-eligible items in FIFO order, deliberately
+    // jumping any chain steps queued ahead of them (that is the point of
+    // promotion — the one place queue FIFO is intentionally violated). The
+    // items' own onboardingState/viewContext are ignored: the running turn's
+    // system prompt is already built. Consumed requestIds are collected for
+    // absorbed terminals below; if the turn ends before a pull, unconsumed
+    // items simply stay queued and drain post-turn in normal FIFO order.
+    const consumedRids: string[] = [];
+    const takeSteering = async (): Promise<TurnEntry[]> => {
+      const items = this.queue.removeWhere(
+        (it) =>
+          it.source === 'user' &&
+          it.delivery === 'asap' &&
+          !this.isDrainBarrier(it),
+      );
+      const steered: TurnEntry[] = [];
+      // Sequential on purpose — see persistEntryAttachments.
+      for (const it of items) {
+        const attachments = it.command.attachments as Attachment[] | undefined;
+        const attachmentHeader =
+          await this.persistEntryAttachments(attachments);
+        const rid = it.command.requestId as string | undefined;
+        if (rid) {
+          consumedRids.push(rid);
+        }
+        steered.push({
+          text: (it.command.text as string) ?? '',
+          attachments,
+          attachmentHeader,
+          requestId: rid,
+          queued: true,
+        });
+      }
+      return steered;
+    };
+
     // Forced compaction gate: if the conversation is approaching the API cap,
     // compact before processing this turn. Coalesces with any in-flight
     // compaction. No timeout — compaction takes as long as it takes.
@@ -948,6 +1038,7 @@ export class HeadlessSession {
         requestId,
         signal: this.currentAbort.signal,
         onEvent: this.onEvent,
+        takeSteering,
         resolveExternalTool: this.resolveExternalTool,
         toolRegistry: this.toolRegistry,
         onBackgroundComplete: this.onBackgroundComplete,
@@ -986,11 +1077,12 @@ export class HeadlessSession {
       // the queue.
     }
 
-    // Terminal events for the other messages absorbed into this merged turn.
-    // Emitted via raw emit (not emitCompleted) so they don't disturb the
-    // primary's completedEmitted/lastCompleted bookkeeping.
+    // Terminal events for the other messages absorbed into this turn: merged
+    // mailbox entries (absorbedRids) and ASAP messages injected mid-turn
+    // (consumedRids). Emitted via raw emit (not emitCompleted) so they don't
+    // disturb the primary's completedEmitted/lastCompleted bookkeeping.
     const outcome = this.primaryOutcome();
-    for (const rid of absorbedRids) {
+    for (const rid of [...absorbedRids, ...consumedRids]) {
       this.emit(
         'completed',
         {
@@ -1365,6 +1457,44 @@ export class HeadlessSession {
         { success: true, cancelledQueued: removed },
         requestId,
       );
+      return;
+    }
+
+    if (action === 'setQueuedDelivery') {
+      // Promote a queued user message to ASAP (mid-turn injection at the next
+      // tool boundary) or demote it back to after-turn. Only plain user
+      // messages qualify — @@automated:: items carry per-turn side effects
+      // and must run alone (see isDrainBarrier); chain/background items are
+      // remy's own pipeline. A miss also covers the promote/consume race
+      // (the item was already injected); the frontend reconciles from
+      // queue_changed either way.
+      const id = parsed.id as string | undefined;
+      const delivery = parsed.delivery as string | undefined;
+      if (!id || (delivery !== 'asap' && delivery !== 'afterTurn')) {
+        this.emit(
+          'completed',
+          {
+            success: false,
+            error:
+              'setQueuedDelivery requires id and delivery ("asap" | "afterTurn")',
+          },
+          requestId,
+        );
+        return;
+      }
+      const target = this.queue
+        .snapshot()
+        .find((it) => it.command.requestId === id);
+      if (!target || target.source !== 'user' || this.isDrainBarrier(target)) {
+        this.emit(
+          'completed',
+          { success: false, error: 'message not found or not promotable' },
+          requestId,
+        );
+        return;
+      }
+      this.queue.setDelivery(id, delivery);
+      this.emit('completed', { success: true }, requestId);
       return;
     }
 

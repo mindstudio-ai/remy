@@ -22,6 +22,12 @@ export interface QueuedMessage {
   source: 'user' | 'chain' | 'background';
   /** When the message was enqueued (ms epoch). */
   enqueuedAt: number;
+  /** Delivery semantics. 'afterTurn' (default, also when absent — including
+   * items persisted before this field existed) waits for the current turn to
+   * end and drains FIFO. 'asap' — user-promoted — is pulled into the running
+   * turn at its next tool boundary. When no turn is running the tag is
+   * ignored and the item drains in normal FIFO order. */
+  delivery?: 'asap' | 'afterTurn';
 }
 
 export class MessageQueue {
@@ -85,6 +91,25 @@ export class MessageQueue {
       this.onChange?.();
     }
     return removed;
+  }
+
+  /**
+   * Change a queued item's delivery semantics, keyed by its command
+   * requestId. Fires onChange (→ persist + queue_changed) on success.
+   * Returns the item, or undefined if no queued item matches (e.g. it was
+   * already consumed).
+   */
+  setDelivery(
+    id: string,
+    delivery: 'asap' | 'afterTurn',
+  ): QueuedMessage | undefined {
+    const item = this.items.find((it) => it.command.requestId === id);
+    if (!item) {
+      return undefined;
+    }
+    item.delivery = delivery;
+    this.onChange?.();
+    return item;
   }
 
   /** Copy of current queue contents (for surfacing on events). */

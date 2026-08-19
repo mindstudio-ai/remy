@@ -73,7 +73,7 @@ export const BROWSER_TOOLS: ToolDefinition[] = [
                   'setViewport',
                 ],
                 description:
-                  'snapshot: accessibility tree of the page (waits for network to settle). click: click an element (animated cursor, full event sequence). type: type text into input (one char at a time, works with React/Vue/Svelte). select: select a dropdown option by text. wait: wait for an element to appear (polls 100ms, waits for network). navigate: navigate to a URL within the app (waits for load, subsequent steps run on new page). evaluate: run JS in the page. styles: read computed CSS styles from elements (pass properties array with camelCase names, or omit for defaults). screenshotFullPage: screenshot of the whole page top-to-bottom (returns a CDN url with dimensions and a written analysis). screenshotViewport: screenshot of just the visible viewport — pass `scrollToSelector` (or `scrollY`) on this step to scroll a section into view and capture it in one atomic step (no separate scroll needed). setViewport: switch the browser between desktop and mobile rendering (pass `mode`: "desktop" or "mobile"). Reloads the page so responsive layouts, media queries, and matchMedia re-evaluate — use it to QA mobile/responsive views.',
+                  'snapshot: accessibility tree of the page (waits for network to settle). click: click an element (animated cursor, full event sequence). type: type text into input (one char at a time, works with React/Vue/Svelte). select: select a dropdown option by text. wait: wait for an element to appear (polls 100ms, waits for network). navigate: navigate to a URL within the app (waits for the route, subsequent steps run on the new page; soft in-app route change by default — pass `fresh: true` for a real full page load; the result reports the URL actually landed on, so app redirects are visible). evaluate: run JS in the page. styles: read computed CSS styles from elements (pass properties array with camelCase names, or omit for defaults). screenshotFullPage: screenshot of the whole page top-to-bottom (returns a CDN url with dimensions and a written analysis). screenshotViewport: screenshot of just the visible viewport — pass `scrollToSelector` (or `scrollY`) on this step to scroll a section into view and capture it in one atomic step (no separate scroll needed). setViewport: switch the browser between desktop and mobile rendering (pass `mode`: "desktop" or "mobile"). Reloads the page so responsive layouts, media queries, and matchMedia re-evaluate — use it to QA mobile/responsive views.',
               },
               ref: {
                 type: 'string',
@@ -119,6 +119,11 @@ export const BROWSER_TOOLS: ToolDefinition[] = [
                 type: 'string',
                 description:
                   'For navigate: the URL to navigate to (e.g., "/quiz", "/settings").',
+              },
+              fresh: {
+                type: 'boolean',
+                description:
+                  'For navigate: force a real full page load (fresh document) instead of a soft in-app route change. Use when testing what a user sees on entry — landing pages, join/invite links, signed-out views — where reusing the SPA’s in-memory state would test the wrong thing.',
               },
               properties: {
                 type: 'array',

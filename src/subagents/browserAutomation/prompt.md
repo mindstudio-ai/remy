@@ -13,6 +13,8 @@ When the content you need to test is behind authentication, use the `setupBrowse
 
 If you need to test the login/signup flow itself (e.g., verifying the UI, error states, or the verification code input), navigate it manually: use `remy@mindstudio.ai` for email and `+15551234567` for phone. In the dev environment, verification codes are bypassed for this email and any 555-prefixed phone number — enter any 6-digit code (e.g., `123456`).
 
+To test as a **signed-out visitor** (public pages, landing/join links), call `setupBrowser` with NO `auth` — it clears the auth cookie and reloads at the given path, giving you a clean unauthenticated session. Combine with `navigate` + `fresh: true` when you need a fresh-document view of an entry page mid-run.
+
 ## Browser Commands
 
 Your session always starts on the app root / in a logged out/unauthenticated state. Use `setupBrowser` to authenticate before testing protected pages.
@@ -40,12 +42,42 @@ Note: the snapshot concatenates inline text and strips whitespace. If you need t
 - `type`: Type text into an input. Characters appear one at a time. Set `clear: true` to clear the field first.
 - `select`: Select a dropdown option by text. Target the `<select>` element, set `option` to the option text.
 - `wait`: Wait for an element to appear (polls every 100ms, default 5s timeout). Also waits for network to settle after the element is found.
-- `navigate`: Navigate to a new URL within the app. Waits for the new page to load before continuing with subsequent steps. Use this instead of evaluate with `window.location.href` when you need to navigate and then continue interacting with the new page. Steps after navigate execute on the new page automatically.
+- `navigate`: Navigate to a new URL within the app. Waits for the route to load before continuing with subsequent steps. Use this instead of evaluate with `window.location.href` when you need to navigate and then continue interacting with the new page. Steps after navigate execute on the new page automatically. Same-origin navigation is a soft in-app route change (like clicking a link in an SPA — in-memory app state survives); set `fresh: true` to force a real full page load with a fresh document instead. Use `fresh: true` when the test is about what a user sees on *entry* — landing pages, join/invite links, "what does a signed-out visitor see" — where reusing the SPA's in-memory state would test the wrong thing. The result reports the URL the page actually landed on, so if the app redirected you (e.g. an auth wall bounced you off a public page), you'll see the real destination — check it instead of assuming the navigation stuck.
 - `evaluate`: Run arbitrary JavaScript in the page and return the result.
 - `styles`: Read computed CSS styles from page elements. Pass a `properties` array with camelCase CSS property names (e.g., `["backgroundColor", "borderRadius", "fontSize"]`). Omit `properties` for a default set covering colors, typography, spacing, borders, shadows, dimensions, and layout. Uses the same targeting as click/type (ref, text, role, label, selector). Omit the target to get styles for all elements from the last snapshot.
 - `screenshotFullPage`: Take a screenshot of the whole page, top to bottom. Returns CDN url with full text analysis and dimensions. Use for overall composition or content past the fold.
 - `screenshotViewport`: Take a screenshot of the visible viewport. Returns CDN url with full text analysis and dimensions. To capture a specific section, set `scrollToSelector` (a CSS selector) — or `scrollY` (an absolute offset) — on this same step; it scrolls the target into view and captures it atomically, so you do NOT need a separate scroll step. Do not use if you can get what you need with other tools - only use when you need to visually see the viewport.
 - `setViewport`: Switch the browser between desktop and mobile rendering. Set `mode` to `"desktop"` or `"mobile"`. Mobile emulates a phone (390-wide, touch, device pixel ratio 2); desktop is the standard wide viewport. This reloads the page so media queries, responsive layouts, and `matchMedia` re-evaluate — the reload clears in-page state, so switch before you set up the state you want to inspect. The mode persists across navigations within a run. Each run starts in the app's default mode, so only use this when you need to check the other one.
+
+### Voice interfaces
+
+Apps with a voice interface are testable end to end — the UI layer included. The sandbox browser
+auto-grants a (silent) microphone, and while a session is live the SDK publishes a handle at
+`window.__MS_VOICE__` so you can converse by text: the agent treats injected text exactly like
+user speech (interrupts and replies), backend tools run for real, and client tools render their
+real UI (cards, sheets) in the page.
+
+The loop:
+
+1. Start a session through the app's real UI — `click` its voice affordance (orb/button). No mic
+   prompt appears. Then `wait` briefly and confirm the session is live:
+   `evaluate: window.__MS_VOICE__?.state` (undefined means no session started — report that,
+   don't improvise).
+2. Speak by injection: `evaluate: window.__MS_VOICE__.sendText("I'd like to book Tuesday at 2")`.
+3. Give the agent a few seconds to respond (replies are generated speech — slower than chat).
+   `wait` for the UI you expect (client-tool cards appear via the app's real handlers), and read
+   the conversation: `evaluate: window.__MS_VOICE__.transcript` (one entry per utterance, both
+   sides, `final` marks settled ones) and `window.__MS_VOICE__.toolCalls` (which tools ran;
+   `done` entries carry the tool's return value).
+4. Verify visuals with `screenshotViewport` like any other flow.
+5. Read `transcript`/`toolCalls` BEFORE ending — then `evaluate: window.__MS_VOICE__.end()` (the
+   handle is removed when the session ends).
+
+Voice sessions are the most expensive thing you can run — real voice-model minutes are metered,
+and the agent speaks its replies out loud even when you type at it. Keep voice tests short and
+purposeful: a handful of turns that exercise the target behavior, then end the session. What you
+cannot test is the audio layer itself (mishearing, interruptions, pronunciation) — never attempt
+to simulate audio; report that scope limit instead.
 
 ### Element targeting (tried in order)
 

@@ -1,7 +1,7 @@
 ---
 name: Voice Interfaces
 what: Realtime voice conversation as a first-class interface — the user talks to the app and its voice agent talks back in sub-second, interruptible speech, calling the app's methods mid-conversation as the authenticated user. The platform handles the media transport, turn-taking, barge-in, and transcripts, so the work is authorship — a persona written for the ear, a small toolset where every tool carries a latency class, and descriptions that say results out loud. Any app whose methods do something interesting can pick up a voice, and it is often the most impressive surface it has.
-when: Before authoring `src/interfaces/voice.md`, choosing a voice model or pipeline, deciding which methods a voice agent gets, or building the voice UI with `createVoiceClient()`.
+when: Before authoring `src/interfaces/voice.md`, choosing a voice model or pipeline, deciding which methods a voice agent gets, building the voice UI with `createVoiceClient()`, or working out why a voice agent behaved the way it did on a call.
 ---
 
 # Building Voice Interfaces
@@ -57,7 +57,8 @@ precisely: "confirm before any tool that changes data," not "always confirm ever
 `always`/`never` makes the agent rigid and unable to handle reasonable exceptions. And start
 minimal: state the role, the boundaries, and the voice mechanics above, then add rules only for
 behaviors that actually misfire in test calls (the transcripts in the call log are the feedback
-loop) rather than front-loading a policy manual.
+loop — `mindstudio-prod voice sessions get` reads a call verbatim) rather than front-loading a
+policy manual.
 
 ### The latency classes
 
@@ -78,24 +79,64 @@ Classify by how the method actually behaves, not by what it is named. A "lookup"
 external service is `slow`. When in doubt between `fast` and `slow`, pick `slow` — a needless
 preamble is mildly chatty; an unexplained silence feels broken.
 
-### Forwarding results to the screen (`forwardResult`)
+### Tool results reach the screen
 
-A tool block may declare `forwardResult: true`. On completion, the platform then delivers the
-tool's raw return value to the session's browser on the SDK's `toolCall` event (`result` field) —
-so the UI can render what the agent just did (the citation it found, the record it pulled up, the
-booking it made) in lockstep with the spoken answer. No polling, no key-threading, no model
-involvement: the correlation is platform-guaranteed and scoped to that one session's client.
+Every successful tool call delivers its raw return value to the session's browser on the SDK's
+`toolCall` event (`result` field, on `done`) — so the UI can render what the agent just did (the
+citation it found, the record it pulled up, the booking it made) in lockstep with the spoken
+answer. No flag, no polling, no key-threading, no model involvement: delivery to the invoking
+session's own client is the same security context as the invocation itself (an RPC response), and
+it's scoped to that one session.
 
-Opt in deliberately, per tool. The forwarded payload is the method's raw return — the same data
-the model sees — so only enable it on tools whose returns are safe to render for the user in the
-call (no internal fields you wouldn't show on screen). Payloads over ~32KB serialized arrive as
-`resultTruncated: true` with no data — keep forwarded returns compact, or have the UI fetch big
-data itself. Failed calls never forward anything.
+Consequence for authoring: **a tool's return value is user-visible by definition.** Return what
+the user may see — no internal fields, keys, or diagnostics you wouldn't put on screen (the same
+discipline as agent-interface tools, whose results render in chat). Payloads over ~32KB serialized
+arrive as `resultTruncated: true` with no data — keep returns compact, or have the UI fetch big
+data itself. Failed calls deliver nothing to the client (the model gets the `{ error }` and speaks
+a decline).
 
 For backend-side correlation (writing results to a table keyed by the call, custom channels), the
 method itself can read `session.voiceSessionId` / `session.visitorId` from the agent SDK
 (`import { session } from '@mindstudio-ai/agent'`) — the same id the browser holds as
 `session.sessionId`, guaranteed by the platform rather than echoed by the model.
+
+### Client tools: actions that happen on screen (`target: "client"`)
+
+A tool whose effect belongs in the browser — open the verification sheet, navigate to a page,
+highlight a record — is declared with `target: "client"` instead of a `method`:
+
+```json
+{
+  "target": "client",
+  "name": "showVerification",
+  "description": "tools/showVerification.md",
+  "inputSchema": { "type": "object", "properties": { "reason": { "type": "string" } } }
+}
+```
+
+The platform never touches the backend for these: the agent's invocation is delivered to the
+session's browser, the app's registered handler runs, and the handler's **return value goes back
+to the agent as the tool result** — a real request/response, so the agent knows the sheet
+actually opened (or that the user dismissed it) and speaks accordingly. Rules:
+
+- `name` instead of `method`; must not collide with any backend method id. No latency class —
+  the agent holds the turn while the browser responds (up to ~30s, then a timeout error).
+- `inputSchema` is authored inline (an object schema) — there's no method contract to derive
+  it from. Keep it small; these are UI directives, not data payloads.
+- The frontend must register a handler, or invocations fail as `unhandled_client_tool`:
+
+```js
+session.registerClientTool('showVerification', async ({ reason }) => {
+  openVerifySheet(reason);
+  return { opened: true };   // what the agent hears back
+});
+```
+
+- One client tool runs at a time per session; the description should tell the agent when to use
+  it and what to say while it's on screen. Throwing from the handler (or returning nothing)
+  becomes an error/ack the agent can speak around.
+- The progressive-auth pattern above is the canonical use: make the verification sheet a client
+  tool and the agent opens it deliberately instead of the frontend inferring it from tool events.
 
 ### Tool descriptions say results out loud
 
@@ -124,24 +165,45 @@ caller.
 
 ### Choosing the model
 
-Two shapes, one `model` field:
+Two shapes, one `model` field. **Use native speech-to-speech unless the user specifically asks
+for a cascaded pipeline** — one realtime model hears and speaks: lowest latency, most natural
+prosody, hears tone and hesitation.
 
-- **Native speech-to-speech** (`{"model": ..., "voice": ...}`) — one realtime model hears and
-  speaks. Lowest latency, most natural prosody, hears tone and hesitation. The default for
-  personality-forward, conversational apps.
-- **Cascaded** (`{"llm": ..., "stt": ..., "tts": ..., "voice": ...}`) — streaming transcription
-  into any chat model in the catalog, streaming speech out. Slightly higher latency, but the brain
-  can be *any* chat model — the right choice when the app's reasoning demands a specific model, or
-  when the agent interface already uses one and the voice should think identically. The blessed
-  streaming pairing is `"stt": "deepgram-nova-3", "tts": "cartesia-sonic-3"` — the lowest-latency
-  combination the platform wires; prefer it unless there's a reason not to (ElevenLabs TTS,
-  `"tts": "elevenlabs-tts"`, is also wired when its voice library fits better). One nuance: cascaded
-  engines speak the `greeting` verbatim (they have a real TTS); speech-to-speech engines have the
-  model say it, so it may paraphrase slightly.
+**Native** (`{"model": ..., "voice": ...}`) — **default to `gpt-realtime-2.1` with voice
+`marin`.**
 
-Ask `askMindStudioSdk` for available ids — realtime, transcription, and speech models are separate
-catalogs, and MindStudio ids don't match vendor ids, so treat ids in this document as illustrative.
-Voice ids are model-specific; query for those too. The user's UI has a picker for changing the model
+- `gpt-realtime-2.1` — the default. Voices: `marin` (default), `cedar`, `alloy`, `ash`,
+  `ballad`, `coral`, `echo`, `sage`, `shimmer`, `verse`.
+- `gpt-realtime-2.1-mini` — the same family, lighter; same voices.
+- `gemini-2.5-flash-native-audio-preview-12-2025` — the Gemini pick, with a large expressive
+  roster: `Puck` (default, upbeat), `Zephyr` (bright), `Charon` (informative), `Kore` (firm),
+  `Fenrir` (excitable), `Leda` (youthful), `Orus` (firm), `Aoede` (breezy), `Callirrhoe`
+  (easy-going), `Autonoe` (bright), `Enceladus` (breathy), `Iapetus` (clear), `Umbriel`
+  (easy-going), `Algieba` (smooth), `Despina` (smooth), `Erinome` (clear), `Algenib` (gravelly),
+  `Rasalgethi` (informative), `Laomedeia` (upbeat), `Achernar` (soft), `Alnilam` (firm),
+  `Schedar` (even), `Gacrux` (mature), `Pulcherrima` (forward), `Achird` (friendly),
+  `Zubenelgenubi` (casual), `Vindemiatrix` (gentle), `Sadachbia` (lively), `Sadaltager`
+  (knowledgeable), `Sulafat` (warm).
+- `gemini-3.1-flash-live-preview` — newer Gemini, same voices as 2.5, but currently can't speak
+  an opening greeting or take mid-call prompt updates (a plugin limitation expected to resolve
+  upstream) — prefer 2.5 until then.
+- `grok-voice-think-fast-2.0` — a distinct personality register. Voices: `eve` (default),
+  `altair`, `ara`, `atlas`, `aurora`, `carina`, `castor`, `celeste`, `cosmo`, `helios`, `helix`,
+  `iris`, `kepler`, `leo`, `liora`, `lumen`, `luna`, `lux`, `naksh`, `orion`, `perseus`, `rex`,
+  `rigel`, `sal`, `sirius`, `ursa`, `zagan`, `zenith`.
+
+**Cascaded** (`{"llm": ..., "stt": ..., "tts": ..., "voice": ...}`) — streaming transcription
+into any chat model in the catalog, streaming speech out. Slightly higher latency; reach for it
+only when the user wants it or the app's reasoning demands a specific chat model (e.g. the agent
+interface already uses one and the voice should think identically). Slots: `stt` is
+`deepgram-nova-3`; `tts` is `cartesia-sonic-3` (voices are per-account Cartesia UUIDs — see
+play.cartesia.ai) or `elevenlabs-tts` (the account's ElevenLabs voice library); `llm` is any chat
+model — ask `askMindStudioSdk` for chat model ids. One nuance: cascaded engines speak the
+`greeting` verbatim (they have a real TTS); speech-to-speech engines have the model say it, so it
+may paraphrase slightly.
+
+The model and voice ids above are current and maintained with the platform — use them as written
+(they are MindStudio ids, not vendor ids). The user's UI has a picker for changing the model
 later, so validate only when you set it.
 
 ### Seeding from an existing agent
@@ -204,13 +266,15 @@ session.on('stateChange', (state) => { });          // on() returns an unsubscri
 // far (never a delta) — render by upserting on segmentId, not appending.
 session.on('transcript', ({ role, segmentId, text, final }) => { });
 
-// status: 'running' | 'done' | 'failed'. Tools declared with `forwardResult: true`
-// carry their return value in `result` on 'done' (or `resultTruncated: true` if >~32KB).
+// status: 'running' | 'done' | 'failed'. Every 'done' carries the tool's raw
+// return value in `result` (or `resultTruncated: true` if >~32KB serialized).
 session.on('toolCall', ({ method, status, result }) => { });
 session.on('error', (err) => { });
 
 session.mute(); session.unmute(); session.isMuted;
 session.sendText('123 Main Street');  // inject text into the live conversation
+await session.refreshIdentity();      // after in-app verification — upgrade the
+                                      // live session anonymous → signed-in in place
 session.end();
 ```
 
@@ -277,7 +341,7 @@ export async function callMeAboutMyOrder(input: { phone: string }) {
   session, not the phone). Omitted/false → anonymous call; role-gated tools decline.
   System/cron invocations have no human identity and always run anonymously.
 - **Production needs a dedicated phone number.** The app owner attaches one ($1/month) via the
-  dashboard or `mindstudio-prod voice numbers` (see "Managing the phone side from the CLI"
+  dashboard or `mindstudio-prod voice numbers` (see "The voice CLI"
   below) — it becomes the caller ID for every call, in dev sessions too, so users always see
   the same number. Without one, deployed calls throw `phone_out_requires_dedicated_number`, and
   dev sessions fall back to a shared platform test number that varies per call (tighter limits
@@ -338,7 +402,7 @@ wrong one wherever the agent's tools can move money, reveal sensitive records, o
 destructive actions. It lives in the interface config deliberately: enabling it is a code
 change, visible in review and auditable via deploys, not a dashboard toggle.
 
-## Managing the phone side from the CLI
+## The voice CLI
 
 The `mindstudio-prod voice` family covers numbers, the call log, and voice policy:
 
@@ -377,7 +441,7 @@ section.
 name: Front Desk
 description: Books appointments and answers questions by voice.
 type: interface/voice
-model: {"model": "gpt-realtime-mini", "voice": "marin"}
+model: {"model": "gpt-realtime-2.1", "voice": "marin"}
 turnDetection: {"eagerness": "medium"}
 greeting: Hey! I can help you book, reschedule, or answer questions — what do you need?
 ---
@@ -435,7 +499,7 @@ The top-level key must match the interface type (`voice`):
   "voice": {
     "name": "Front Desk",
     "description": "Books appointments and answers questions by voice.",
-    "model": "gpt-realtime-mini",
+    "model": "gpt-realtime-2.1",
     "voice": "marin",
     "turnDetection": { "eagerness": "medium" },
     "greeting": "Hey! I can help you book, reschedule, or answer questions — what do you need?",
@@ -537,3 +601,30 @@ frontend or the agent interface. Anonymous sessions (when allowed) have no user 
 gated methods reject, and the caller's history is scoped to their browser's visitor identity.
 That's why role restrictions belong in the tool descriptions — the agent should decline in
 character, not relay a rejection.
+
+### Progressive auth: verify mid-call without dropping the conversation
+
+The best pattern for apps that allow anonymous sessions (`requireUser: false`): let visitors
+explore by voice, and verify only when they hit an account-bound action — without killing the
+live call. Four pieces, all platform rails:
+
+1. **Account-gated tools return a standard not-verified shape** instead of doing the work:
+   `{ verified: false, message: 'The caller is not verified. Offer to verify them before sharing
+   account details.' }`. The agent speaks the offer in character (reinforce tone in the system
+   prompt's verification section). Check with the agent SDK's `auth.userId` inside the method.
+2. **The frontend opens its verification sheet off the same signal.** It already receives every
+   tool's `toolCall` event (and the tool's return in `result`) — when an account tool fires (or
+   returns `verified: false`) while the app has no signed-in user, open the sheet.
+3. **The sheet runs the platform's auth rails** — `auth.sendSmsCode()` / `auth.verifySmsCode()`
+   (or the email pair) from `@mindstudio-ai/interface`. On success the app's session becomes the
+   verified user.
+4. **Hand the verified session back to the live call**: `await session.refreshIdentity()`. The
+   platform upgrades the running voice session in place — subsequent tool calls carry the user's
+   identity and roles, and the agent's Current User context refreshes — no teardown, no lost
+   conversation. (Phone calls don't need this: they verify through the agent's built-in flow.)
+
+`refreshIdentity()` is upgrade-only (anonymous → signed-in; an already-identified session rejects
+with `already_identified`) and requires the session to have been started by this same browser. If
+it fails, ending and restarting the session is the graceful fallback. The chat sibling for agent
+interfaces is `claimThread(threadId)` — anonymous threads become unreachable after login until
+claimed.

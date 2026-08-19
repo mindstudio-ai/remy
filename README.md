@@ -265,6 +265,8 @@ The headless IPC protocol uses request correlation and a unified response patter
 - System events (lifecycle, shutdown) never have a `requestId`
 - Every command ends with exactly one `completed` event: `{event:"completed", requestId, success, error?}`
 - Messages sent while a turn is running are queued. When the turn ends, all contiguous queued user messages and background results are delivered together as **one merged turn**: the first queued message's `requestId` becomes the turn's primary id (stamped on `turn_started` and all streaming events), each absorbed message echoes its own `user_message` with its original `requestId` and `queued: true`, and at turn end the primary `completed` is emitted first, followed immediately by one `completed {…same outcome, absorbed: true}` per other absorbed `requestId`. Automated-action (`@@automated::…@@`) messages and chain steps never merge — they always run one turn each.
+- A queued **user** message can be promoted to ASAP delivery via `setQueuedDelivery`. ASAP items are pulled into the **running** turn at its next tool boundary (injected as plain user messages — no abort, no restart), echo `user_message` with `queued: true` and their own `requestId`, and get a `{…, absorbed: true}` completed with the turn's outcome at turn end. Promotion deliberately jumps ahead of anything else in the queue, including chain steps. If the turn ends before injection, the tag is ignored and the item drains in normal FIFO order.
+- Background tool completions have two delivery classes (per-tool `backgroundNotify` on the tool definition). `wake` (default): the result is queued as a `background_results` message and may start a turn when the agent is idle. `passive` (e.g. `specSync`): the result never enters the queue and never wakes the agent — it parks in a persisted holding pen and rides the next real turn as a hidden `background_results` entry (so it never appears in `queuedMessages`, never affects queue-derived busy state, and never triggers resume-on-restart). Both classes emit `tool_background_complete` immediately.
 - The caller distinguishes command responses from system events with a single check: `if (msg.requestId)`
 
 This enables a simple promise-based RPC layer: send a command with a unique ID, store a pending promise keyed by that ID, resolve it when you see `completed` with the matching ID.
@@ -327,6 +329,14 @@ Cancel pending **queued** messages without touching the in-flight turn. Omit `id
 {"action": "cancelQueued", "requestId": "r6", "id": "r2"}
 ```
 
+#### `setQueuedDelivery`
+
+Change a queued message's delivery semantics: `"asap"` (inject into the running turn at its next tool boundary) or `"afterTurn"` (default — wait for the turn to end). `id` is the `requestId` of a queued message. Only plain queued **user** messages qualify; automated-action messages and chain/background items respond `completed(success:false, error:"message not found or not promotable")` — as does an item already consumed by the running turn. On success a `queue_changed` event carries the updated snapshot (each item's `delivery` field rides on it).
+
+```json
+{"action": "setQueuedDelivery", "requestId": "r7", "id": "r2", "delivery": "asap"}
+```
+
 #### `clear`
 
 Clear conversation history and delete the session file.
@@ -353,7 +363,7 @@ Events are emitted as newline-delimited JSON. Command responses include `request
 |-------|--------|-------------|
 | `ready` | | Headless mode initialized, ready for input |
 | `session_restored` | `messageCount` | Previous session loaded |
-| `queue_changed` | `queuedMessages` | Queue contents changed (any push/shift/drain/cancel). Carries the full current snapshot — an empty array when the queue drains. The live queue-state signal; for the initial snapshot on connect/reconnect, read `queuedMessages` from `get_history`. |
+| `queue_changed` | `queuedMessages` | Queue contents changed (any push/shift/drain/cancel/retag). Carries the full current snapshot — an empty array when the queue drains. Items carry `delivery: "asap"` when promoted (absent = after-turn). The live queue-state signal; for the initial snapshot on connect/reconnect, read `queuedMessages` from `get_history`. |
 | `stopping` | | Shutdown initiated |
 | `stopped` | | Shutdown complete |
 
@@ -365,7 +375,7 @@ All command responses include the `requestId` from the originating command.
 |-------|--------|-------------|
 | `text` | `text`, `parentToolId?` | Streaming text chunk |
 | `thinking` | `text`, `parentToolId?` | Agent's internal reasoning |
-| `user_message` | `text`, `attachments?`, `queued?` | Echo of a user message entering the turn. Queue-delivered messages carry `queued: true` and their own original `requestId` (a merged turn emits one per absorbed message); idle sends echo with the turn's requestId and no `queued` flag. |
+| `user_message` | `text`, `attachments?`, `queued?`, `hidden?` | Echo of a user message entering the turn. Queue-delivered messages (including ASAP items injected mid-turn) carry `queued: true` and their own original `requestId` (a merged turn emits one per absorbed message); idle sends echo with the turn's requestId and no `queued` flag. `hidden: true` marks internal entries (e.g. passive background results) that should not render. |
 | `tool_start` | `id`, `name`, `input`, `partial?`, `parentToolId?` | Tool execution started. `partial: true` means more `tool_start` events will follow for this id (progressive input streaming). |
 | `tool_input_delta` | `id`, `name`, `result`, `parentToolId?` | Progressive tool content (streaming tools only) |
 | `tool_done` | `id`, `name`, `result`, `isError`, `parentToolId?` | Tool execution completed |

@@ -36,6 +36,18 @@ export function createSessionStats(): SessionStats {
   };
 }
 
+/**
+ * A completed passive background result parked in the holding pen — outside
+ * the message queue so it can never wake the agent, latch the sandbox busy
+ * state, or trigger resume-on-restart. Swept into the next real turn as a
+ * hidden background_results entry.
+ */
+export interface PassiveResult {
+  toolCallId: string;
+  name: string;
+  result: string;
+}
+
 /** Load persisted message queue from disk. Returns empty array if absent. */
 export function loadQueue(): QueuedMessage[] {
   try {
@@ -49,14 +61,32 @@ export function loadQueue(): QueuedMessage[] {
   return [];
 }
 
-/** Persist stats + queue to disk. Best-effort (swallows errors). */
-export function writeStats(stats: SessionStats, queue: QueuedMessage[]): void {
+/** Load the persisted passive-result pen. Returns empty array if absent. */
+export function loadPassiveResults(): PassiveResult[] {
+  try {
+    const stats = JSON.parse(readFileSync(STATS_FILE, 'utf-8'));
+    if (Array.isArray(stats.passiveResults)) {
+      return stats.passiveResults as PassiveResult[];
+    }
+  } catch {
+    // No stats file or invalid — start fresh
+  }
+  return [];
+}
+
+/** Persist stats + queue + passive pen to disk. Best-effort (swallows errors). */
+export function writeStats(
+  stats: SessionStats,
+  queue: QueuedMessage[],
+  passiveResults: PassiveResult[],
+): void {
   try {
     writeFileSync(
       STATS_FILE,
       JSON.stringify({
         ...stats,
         queue,
+        passiveResults,
       }),
     );
   } catch {}
