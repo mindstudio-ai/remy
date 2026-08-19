@@ -78,6 +78,25 @@ Classify by how the method actually behaves, not by what it is named. A "lookup"
 external service is `slow`. When in doubt between `fast` and `slow`, pick `slow` — a needless
 preamble is mildly chatty; an unexplained silence feels broken.
 
+### Forwarding results to the screen (`forwardResult`)
+
+A tool block may declare `forwardResult: true`. On completion, the platform then delivers the
+tool's raw return value to the session's browser on the SDK's `toolCall` event (`result` field) —
+so the UI can render what the agent just did (the citation it found, the record it pulled up, the
+booking it made) in lockstep with the spoken answer. No polling, no key-threading, no model
+involvement: the correlation is platform-guaranteed and scoped to that one session's client.
+
+Opt in deliberately, per tool. The forwarded payload is the method's raw return — the same data
+the model sees — so only enable it on tools whose returns are safe to render for the user in the
+call (no internal fields you wouldn't show on screen). Payloads over ~32KB serialized arrive as
+`resultTruncated: true` with no data — keep forwarded returns compact, or have the UI fetch big
+data itself. Failed calls never forward anything.
+
+For backend-side correlation (writing results to a table keyed by the call, custom channels), the
+method itself can read `session.voiceSessionId` / `session.visitorId` from the agent SDK
+(`import { session } from '@mindstudio-ai/agent'`) — the same id the browser holds as
+`session.sessionId`, guaranteed by the platform rather than echoed by the model.
+
 ### Tool descriptions say results out loud
 
 Follow the agent-interface principles for tool descriptions (when to use and when not, parameter
@@ -185,7 +204,9 @@ session.on('stateChange', (state) => { });          // on() returns an unsubscri
 // far (never a delta) — render by upserting on segmentId, not appending.
 session.on('transcript', ({ role, segmentId, text, final }) => { });
 
-session.on('toolCall', ({ method, status }) => { }); // 'running' | 'done' | 'failed'
+// status: 'running' | 'done' | 'failed'. Tools declared with `forwardResult: true`
+// carry their return value in `result` on 'done' (or `resultTruncated: true` if >~32KB).
+session.on('toolCall', ({ method, status, result }) => { });
 session.on('error', (err) => { });
 
 session.mute(); session.unmute(); session.isMuted;
