@@ -132,8 +132,27 @@ export function cleanMessagesForApi(messages: Message[]): Message[] {
     startIdx = checkpointIdx + 1;
   }
 
+  // Drop UI-only messages BEFORE orphan fixing: a synthesized tool block
+  // (e.g. the compaction row for /compact and the forced gate) must never
+  // reach the API. Filtering later is broken — fixOrphanedToolCalls would
+  // have already minted a phantom tool_result for it, which the orphan-result
+  // filter below wouldn't remove (its tool_use id was still visible when
+  // toolUseIds was built), shipping an unpaired tool_result.
+  const apiMessages = messages
+    .slice(startIdx)
+    .filter(
+      (msg) =>
+        !(
+          msg.role === 'assistant' &&
+          Array.isArray(msg.content) &&
+          (msg.content as ContentBlock[]).some(
+            (b) => b.type === 'tool' && b.uiOnly,
+          )
+        ),
+    );
+
   // Fix orphaned tool_use blocks before processing
-  const messagesToProcess = fixOrphanedToolCalls(messages.slice(startIdx));
+  const messagesToProcess = fixOrphanedToolCalls(apiMessages);
 
   // Collect all tool_use IDs present in the post-checkpoint messages
   // so we can detect orphaned tool_results whose tool_use was pruned.

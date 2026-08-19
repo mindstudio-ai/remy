@@ -3,19 +3,8 @@
 import type { Tool } from '../index.js';
 import {
   triggerCompaction,
-  type CompactionSummary,
+  formatSummariesResult,
 } from '../../compaction/trigger.js';
-
-/** Tool-block result text for a finished compaction. */
-function describeOutcome(summaries: CompactionSummary[] | null): string {
-  if (summaries === null) {
-    return 'A compaction checkpoint was already pending — no new compaction was needed.';
-  }
-  if (summaries.length === 0) {
-    return 'Nothing to compact — the conversation is already fully summarized.';
-  }
-  return summaries.map((s) => `## ${s.name}\n\n${s.text}`).join('\n\n');
-}
 
 export const compactConversationTool: Tool = {
   backgroundOnly: true,
@@ -49,13 +38,20 @@ export const compactConversationTool: Tool = {
     triggerCompaction(
       { messages: context.conversationMessages },
       context.apiConfig,
-      { blocking: false, requestId: context.requestId },
+      // origin/toolCallId tell the headless listener a real block exists —
+      // it must not synthesize a UI-only one for this compaction.
+      {
+        blocking: false,
+        requestId: context.requestId,
+        origin: 'tool',
+        toolCallId,
+      },
     )
       .then((summaries) => {
         onBackgroundComplete?.(
           toolCallId,
           'compactConversation',
-          describeOutcome(summaries),
+          formatSummariesResult(summaries),
         );
       })
       .catch((err: any) => {

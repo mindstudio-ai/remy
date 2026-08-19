@@ -39,6 +39,7 @@ import {
   applyPendingSummaries,
   setCompactionListener,
   getInflightCompaction,
+  formatSummariesResult,
 } from '../compaction/trigger.js';
 import { triggerBrandExtraction } from '../brandExtraction/trigger.js';
 import { setLspBaseUrl } from '../tools/_helpers/lsp.js';
@@ -183,6 +184,14 @@ export class HeadlessSession {
   // Tool block updates from background completions (separate from the message queue)
   private pendingBlockUpdates: BlockUpdate[] = [];
 
+  /**
+   * Id of the UI-only tool block synthesized for the in-flight user/gate
+   * compaction (see the compaction listener). Model-invoked compactions have
+   * a real block and never set this. Single slot — triggerCompaction is
+   * single-flight.
+   */
+  private syntheticCompactionId: string | null = null;
+
   // Tool lifecycle management — shared across all nesting depths
   private toolRegistry = new ToolRegistry();
 
@@ -268,15 +277,73 @@ export class HeadlessSession {
         );
         this.sessionStats.compactionInProgress = true;
         this.persistStats();
+
+        // User/gate compactions have no tool block of their own — synthesize
+        // a UI-only one so every compaction renders as a normal tool call
+        // (standard tool row, ToolList, ToolDetail; summary lands in
+        // backgroundResult on completion). Never for 'tool' origin (a real
+        // block exists), and never mid-turn for /compact — appending an
+        // assistant message between a running turn's tool_use message and
+        // its tool_result messages would corrupt pairing for the session.
+        // The gate origin is safe while `running`: it fires before runTurn
+        // pushes anything for the upcoming turn. `uiOnly` keeps the message
+        // out of every API payload (cleanMessagesForApi); `result` is set so
+        // the Agents-tab pending predicate resolves once backgroundResult
+        // lands.
+        const safeToSynthesize =
+          event.origin === 'gate' || (event.origin === 'user' && !this.running);
+        if (!event.toolCallId && safeToSynthesize) {
+          const id = `compact_${Date.now()}`;
+          this.syntheticCompactionId = id;
+          this.state.messages.push({
+            role: 'assistant',
+            content: [
+              {
+                type: 'tool',
+                id,
+                name: 'compactConversation',
+                input: {},
+                startedAt: Date.now(),
+                background: true,
+                uiOnly: true,
+                result: 'Compaction started in the background.',
+              },
+            ],
+          });
+          // Persist now — a reload mid-compaction must still show the row.
+          saveSession(this.state);
+          this.onEvent({
+            type: 'tool_start',
+            id,
+            name: 'compactConversation',
+            input: {},
+            background: true,
+          });
+          this.onEvent({
+            type: 'status',
+            message: 'Compacting conversation',
+            parentToolId: id,
+          });
+        }
       } else {
-        // `summaries` rides the event so the frontend can render the
-        // checkpoint card immediately (the spliced checkpoint itself only
-        // reaches clients on the next full history load).
-        const data = {
-          ...(event.error && { error: event.error }),
-          ...(event.summaries?.length && { summaries: event.summaries }),
-        };
+        const data = event.error ? { error: event.error } : {};
         this.emit('compaction_complete', data, event.requestId);
+
+        // Resolve the synthesized block (success and failure alike) through
+        // the normal background-completion path — compactConversation is
+        // backgroundNotify 'silent', so this updates the block and emits
+        // tool_background_complete without ever telling the model.
+        if (this.syntheticCompactionId) {
+          const id = this.syntheticCompactionId;
+          this.syntheticCompactionId = null;
+          this.onBackgroundComplete(
+            id,
+            'compactConversation',
+            event.error
+              ? `Error: ${event.error}`
+              : formatSummariesResult(event.summaries ?? []),
+          );
+        }
         this.sessionStats.compactionInProgress = false;
         // Only a compaction that actually shrank the context may disarm the
         // forced gate. Zeroing this on the error path too let a session whose
@@ -470,6 +537,7 @@ export class HeadlessSession {
         blocking: true,
         requestId,
         model: this.opts.model,
+        origin: 'gate',
       });
       applyPendingSummaries(this.state);
     } catch {
@@ -1599,6 +1667,7 @@ export class HeadlessSession {
           blocking: false,
           requestId,
           model: this.opts.model,
+          origin: 'user',
         });
         if (!this.running) {
           applyPendingSummaries(this.state);

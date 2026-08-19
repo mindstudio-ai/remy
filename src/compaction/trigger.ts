@@ -119,8 +119,33 @@ export function applyPendingSummaries(state: AgentState): void {
   saveSession(state);
 }
 
+/**
+ * Tool-block result text for a finished compaction — shared by the
+ * compactConversation tool (its own block) and the headless layer (the
+ * synthesized block for user/gate compactions).
+ */
+export function formatSummariesResult(
+  summaries: CompactionSummary[] | null,
+): string {
+  if (summaries === null) {
+    return 'A compaction checkpoint was already pending — no new compaction was needed.';
+  }
+  if (summaries.length === 0) {
+    return 'Nothing to compact — the conversation is already fully summarized.';
+  }
+  return summaries.map((s) => `## ${s.name}\n\n${s.text}`).join('\n\n');
+}
+
 export type CompactionLifecycleEvent =
-  | { type: 'started'; blocking: boolean; requestId?: string }
+  | {
+      type: 'started';
+      blocking: boolean;
+      requestId?: string;
+      /** Who initiated the compaction — see TriggerOptions. */
+      origin?: 'tool' | 'user' | 'gate';
+      /** The model-invoked tool call's block id (origin 'tool' only). */
+      toolCallId?: string;
+    }
   | {
       type: 'complete';
       error?: string;
@@ -148,6 +173,14 @@ export interface TriggerOptions {
   blocking?: boolean;
   /** Correlation id for the lifecycle events surfaced to the listener. */
   requestId?: string;
+  /** Who initiated the compaction. 'tool' = the model called
+   * compactConversation (a real tool block exists — pass its toolCallId);
+   * 'user' = the /compact command; 'gate' = the forced pre-turn gate. The
+   * headless layer synthesizes a UI-only tool block for 'user'/'gate' so
+   * every compaction renders as a normal tool call. */
+  origin?: 'tool' | 'user' | 'gate';
+  /** The originating tool block id (origin 'tool' only). */
+  toolCallId?: string;
   /** Optional global fallback model from startup-time options
    * (`HeadlessOptions.model` / `--model` CLI flag). The trigger composes
    * three-tier resolution: session pick > this fallback > registry default. */
@@ -185,8 +218,8 @@ export function triggerCompaction(
     return Promise.resolve(null);
   }
 
-  const { blocking = false, requestId, model } = opts;
-  listener?.({ type: 'started', blocking, requestId });
+  const { blocking = false, requestId, model, origin, toolCallId } = opts;
+  listener?.({ type: 'started', blocking, requestId, origin, toolCallId });
 
   inflightCompaction = compactConversation(
     state.messages,
