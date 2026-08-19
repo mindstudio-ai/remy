@@ -115,7 +115,8 @@ Two shapes, one `model` field:
   can be *any* chat model — the right choice when the app's reasoning demands a specific model, or
   when the agent interface already uses one and the voice should think identically. The blessed
   streaming pairing is `"stt": "deepgram-nova-3", "tts": "cartesia-sonic-3"` — the lowest-latency
-  combination the platform wires; prefer it unless there's a reason not to. One nuance: cascaded
+  combination the platform wires; prefer it unless there's a reason not to (ElevenLabs TTS,
+  `"tts": "elevenlabs-tts"`, is also wired when its voice library fits better). One nuance: cascaded
   engines speak the `greeting` verbatim (they have a real TTS); speech-to-speech engines have the
   model say it, so it may paraphrase slightly.
 
@@ -138,8 +139,8 @@ someone reading chat aloud.
 - Exposing the whole method surface. Voice is the most curated interface the app has.
 - A generic greeting ("Hello! How can I assist you today?"). The greeting is the first thing anyone
   hears; make it the character's.
-- Writing your own current-user placeholder — the platform appends a `## Current User` block (name,
-  roles) to every system prompt at runtime.
+- Writing your own current-user placeholder — the platform appends a `## Current User` block
+  (email, phone, roles) to every system prompt at runtime.
 
 ## Compiling the Voice Spec
 
@@ -254,7 +255,7 @@ export async function callMeAboutMyOrder(input: { phone: string }) {
   of which number was dialed (the user types any number into a field; identity comes from their
   session, not the phone). Omitted/false → anonymous call; role-gated tools decline.
   System/cron invocations have no human identity and always run anonymously.
-- **Production needs a dedicated phone number.** The app owner attaches one ($2/month) via the
+- **Production needs a dedicated phone number.** The app owner attaches one ($1/month) via the
   dashboard or `mindstudio-prod voice numbers` (see "Managing the phone side from the CLI"
   below) — it becomes the caller ID for every call, in dev sessions too, so users always see
   the same number. Without one, deployed calls throw `phone_out_requires_dedicated_number`, and
@@ -322,17 +323,18 @@ The `mindstudio-prod voice` family covers numbers, the call log, and voice polic
 
 ```bash
 mindstudio-prod voice numbers search --area-code 310   # available numbers to offer the user
-mindstudio-prod voice numbers buy +13105551234         # buy + attach ($2/month — see below)
+mindstudio-prod voice numbers buy +13105551234         # buy + attach ($1/month — see below)
 mindstudio-prod voice numbers release +13105551234     # permanent; no refund, ~15-day quarantine
 mindstudio-prod voice sessions list --limit 10         # call log: web / phone-out / phone-in
 mindstudio-prod voice sessions get <sessionId>         # full transcript + cost breakdown
 ```
 
-Also `voice numbers list`, `voice settings get`/`set` (concurrency, per-visitor,
-max duration). `--help` for flags.
+Also `voice numbers list`, `voice numbers set-name` (outbound caller-ID display
+name; 12-72h carrier propagation), `voice settings get`/`set` (concurrency, per-visitor,
+max duration — `set` merges: only the settings you pass change). `--help` for flags.
 
 **Never buy a number without the user's explicit confirmation** — it starts a recurring
-$2/month workspace charge. Search first, present the options with the price, and only run
+$1/month workspace charge. Search first, present the options with the price, and only run
 `numbers buy` after they've picked one and said yes.
 
 Transcripts are how you iterate on a voice persona: after the user test-calls the agent, read
@@ -366,8 +368,7 @@ Frontmatter fields:
 - `description` — one-liner for listings
 - `model` — JSON string, two shapes: native speech-to-speech `{"model": <realtime model id>,
   "voice": <voice id>}`, or cascaded `{"llm": <chat model id>, "stt": <transcription model id>,
-  "tts": <speech model id>, "voice": <voice id>}`. Optional `config` for model-specific settings.
-  Ids via `askMindStudioSdk`.
+  "tts": <speech model id>, "voice": <voice id>}`. Ids via `askMindStudioSdk`.
 - `turnDetection` — optional; `{"eagerness": "low" | "medium" | "high"}` — how quickly the platform
   decides the user finished speaking. High is snappier; low is more patient (users dictating
   numbers or addresses). Default `medium`.
@@ -475,11 +476,11 @@ Current User block — don't re-fetch it in the context method.
 ## Platform Behavior
 
 - Input schemas are derived from each method's contract — never hand-written.
-- The platform appends a `## Current User` block (name, roles) to the system prompt at runtime;
-  never author a placeholder for it.
+- The platform appends a `## Current User` block (email, phone, roles) to the system prompt at
+  runtime; never author a placeholder for it.
 - Turn detection, barge-in (interruption truncates the agent's context to the audio the user
   actually heard), and background-noise handling are platform-managed; `turnDetection.eagerness` is
-  the only knob.
+  the only knob (not yet wired on Gemini realtime engines — it's a no-op there).
 - Sessions have a per-app concurrency limit and a maximum duration, both configurable in the app's
   settings; an idle session is ended gracefully after a prompt. Voice minutes and model usage are
   metered.

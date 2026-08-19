@@ -631,8 +631,8 @@ greeting: Hey! I can help you book, reschedule, or answer questions — what do 
 |-------|-------------|
 | `name` | Agent display name |
 | `description` | One-liner for listings |
-| `model` | JSON string. Native speech-to-speech: `{"model": <realtime model id>, "voice": <voice id>}`. Cascaded pipeline (any chat model behind a voice): `{"llm": <chat model id>, "stt": <transcription model id>, "tts": <speech model id>, "voice": <voice id>}` — the blessed streaming pairing is `"stt": "deepgram-nova-3", "tts": "cartesia-sonic-3"`. Optional `config` for model-specific settings. Query the MindStudio SDK for available ids — realtime, transcription, and speech models are separate catalogs. |
-| `turnDetection` | Optional. `{"eagerness": "low" \| "medium" \| "high"}` — how quickly the platform decides the user has finished speaking. High is snappier; low is more patient (better when users dictate numbers or addresses). Default `medium`. |
+| `model` | JSON string. Native speech-to-speech: `{"model": <realtime model id>, "voice": <voice id>}`. Cascaded pipeline (any chat model behind a voice): `{"llm": <chat model id>, "stt": <transcription model id>, "tts": <speech model id>, "voice": <voice id>}` — the blessed streaming pairing is `"stt": "deepgram-nova-3", "tts": "cartesia-sonic-3"`; ElevenLabs TTS (`"tts": "elevenlabs-tts"`) is also wired. Query the MindStudio SDK for available ids — realtime, transcription, and speech models are separate catalogs. |
+| `turnDetection` | Optional. `{"eagerness": "low" \| "medium" \| "high"}` — how quickly the platform decides the user has finished speaking. High is snappier; low is more patient (better when users dictate numbers or addresses). Default `medium`. Not yet wired on Gemini realtime engines (a no-op there). |
 | `greeting` | Optional. A spoken opener delivered when the session starts. Omit it and the agent waits for the user to speak first. Verbatim on cascaded engines; model-spoken (may paraphrase slightly) on speech-to-speech. |
 
 The body reads like a character brief in the **voice register** — how the agent sounds, what it cares about, how it behaves — plus the explicit toolset:
@@ -708,7 +708,7 @@ The top-level key must match the interface type (`voice`):
 | `tools` | `{ method, latency, description }` — method `id` from the manifest, a latency class, and a relative path to the tool's markdown description. |
 | `webInterfacePath` | Optional. Where the voice layer lives in the web interface, for the editor preview. |
 
-There is no input-schema field — the platform derives each tool's schema from the method contract. At runtime the platform appends a `## Current User` block (name, roles) to the system prompt; don't author a placeholder for it.
+There is no input-schema field — the platform derives each tool's schema from the method contract. At runtime the platform appends a `## Current User` block (email, phone, roles) to the system prompt; don't author a placeholder for it.
 
 ### Frontend SDK: `createVoiceClient()`
 
@@ -770,7 +770,7 @@ export async function callMeAboutMyOrder(input: { phone: string }) {
 }
 ```
 
-The invoking method is the authorization gate (the interface `auth` block does not apply to calls the backend places deliberately). `assumeIdentity: true` runs the call as the invoking user — Current User block and tool RBAC — regardless of the number dialed; system/cron invocations always run anonymously. Deployed apps require a **dedicated phone number** (attached in app settings, $2/month) which becomes the caller ID everywhere — dev sessions included; without one, dev sessions use a shared platform test number under tighter limits and production calls throw `phone_out_requires_dedicated_number`. `voice.call` returns at dial time (`{ sessionId, status: 'dialing', from, to }`); the outcome (answered/busy/no-answer) lands on the call record. Limits: the app's concurrency policy, a daily outbound cap, a per-call duration ceiling, one active call per callee. Compliance: automated calls require the callee's prior consent (TCPA) — call your own opted-in users, honor calling hours, never dial cold lists.
+The invoking method is the authorization gate (the interface `auth` block does not apply to calls the backend places deliberately). `assumeIdentity: true` runs the call as the invoking user — Current User block and tool RBAC — regardless of the number dialed; system/cron invocations always run anonymously. Deployed apps require a **dedicated phone number** (attached in app settings, $1/month) which becomes the caller ID everywhere — dev sessions included; without one, dev sessions use a shared platform test number under tighter limits and production calls throw `phone_out_requires_dedicated_number`. `voice.call` returns at dial time (`{ sessionId, status: 'dialing', from, to }`); the outcome (answered/busy/no-answer) lands on the call record. Limits: the app's concurrency policy, a daily outbound cap, a per-call duration ceiling, one active call per callee. Compliance: automated calls require the callee's prior consent (TCPA) — call your own opted-in users, honor calling hours, never dial cold lists.
 
 ### Inbound calls
 
@@ -778,7 +778,7 @@ An app with a dedicated number also answers it — the same voice agent, same to
 
 `phone: { "trustCallerId": true }` lets a caller whose number exactly matches an app user's phone skip verification entirely. Caller ID is spoofable — this is an explicit tradeoff for low-stakes, convenience-first apps, and it lives in the interface config so enabling it is a reviewed, deploy-audited code change.
 
-Numbers, the call log (with transcripts), and voice policy settings are all manageable from the `mindstudio-prod voice` CLI family (`voice numbers search/buy/release`, `voice sessions list/get`, `voice settings get/set`). Buying a number is a recurring $2/month charge — agents must get the user's explicit confirmation first.
+Numbers, the call log (with transcripts), and voice policy settings are all manageable from the `mindstudio-prod voice` CLI family (`voice numbers search/buy/release/set-name`, `voice sessions list/get`, `voice settings get/set` — `set` merges, so only the settings you pass change). Buying a number is a recurring $1/month charge — agents must get the user's explicit confirmation first.
 
 ### Manifest
 
