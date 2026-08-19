@@ -18,7 +18,7 @@ This is one of the most powerful pieces of the MindStudio SDK, and it can turn a
 
 This is the tool to reach for whenever a feature would be dramatically more compelling if the app could autonomously research, enrich, or create on behalf of the user. Think about the difference between "user enters a restaurant name and it gets saved" vs. "user enters a restaurant name and gets back a fully researched, illustrated card." Task agents close that gap.
 
-Run tasks in the background — depending on complexity they can take time to complete. Return an early partial result to the user and upsert later with the final result when the agent finishes. The exception is cron and email triggers: there is no user waiting there, so `await` the task instead — those executions run on one-shot workers that exit as soon as the method returns, cutting off any fire-and-forget work.
+Run tasks in the background — depending on complexity they can take time to complete. Return an early partial result to the user and upsert later with the final result when the agent finishes. The exception is cron and email triggers: there is no user waiting there, so `await` the task instead — awaiting is what surfaces its failures in the run's own result.
 
 - **Research and enrichment:** "Given this email, find the person's LinkedIn, role, company, and a headshot" — the model searches, scrapes, extracts, and assembles structured data.
 - **Content creation pipelines:** "Write SEO copy for this product in 3 languages, generate a hero image, extract keywords" — the model calls text generation, image generation, and analysis actions as needed.
