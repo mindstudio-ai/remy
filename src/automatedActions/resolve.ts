@@ -11,7 +11,7 @@ import { readAsset } from '../assets.js';
 import { parseSentinel, automatedMessage } from './sentinel.js';
 
 /** Sentinels that use the @@automated:: prefix but are not action files. */
-const NON_ACTION_SENTINELS = new Set(['background_results']);
+export const NON_ACTION_SENTINELS = new Set(['background_results']);
 
 export interface ResolvedAction {
   message: string;

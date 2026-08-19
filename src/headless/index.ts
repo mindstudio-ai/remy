@@ -38,6 +38,7 @@ import {
   triggerCompaction,
   applyPendingSummaries,
   setCompactionListener,
+  getInflightCompaction,
 } from '../compaction/trigger.js';
 import { triggerBrandExtraction } from '../brandExtraction/trigger.js';
 import { setLspBaseUrl } from '../tools/_helpers/lsp.js';
@@ -228,6 +229,11 @@ export class HeadlessSession {
       this.emit('queue_changed', { queuedMessages: this.queue.snapshot() });
     });
     this.passivePen = loadPassiveResults();
+    // Rewrite stats at boot: sessionStats starts fresh in memory, so this
+    // clears a stale `compactionInProgress: true` left on disk by a crash
+    // mid-compaction (compaction itself never survives a restart) — otherwise
+    // the frontend's stats fallback would show "Compacting…" forever.
+    this.persistStats();
 
     if (resumed) {
       this.emit('session_restored', {
@@ -263,7 +269,13 @@ export class HeadlessSession {
         this.sessionStats.compactionInProgress = true;
         this.persistStats();
       } else {
-        const data = event.error ? { error: event.error } : {};
+        // `summaries` rides the event so the frontend can render the
+        // checkpoint card immediately (the spliced checkpoint itself only
+        // reaches clients on the next full history load).
+        const data = {
+          ...(event.error && { error: event.error }),
+          ...(event.summaries?.length && { summaries: event.summaries }),
+        };
         this.emit('compaction_complete', data, event.requestId);
         this.sessionStats.compactionInProgress = false;
         // Only a compaction that actually shrank the context may disarm the
@@ -275,6 +287,13 @@ export class HeadlessSession {
         }
         this.sessionStats.messageCount = this.state.messages.length;
         this.persistStats();
+        // Messages that arrived during the compaction were queued (see
+        // handleMessage). Kick the drain on success AND failure so they never
+        // strand; the pre-turn gate in executeTurn applies the pending
+        // checkpoint before the drained turn runs. No-ops while running.
+        if (!this.running) {
+          this.kickDrain();
+        }
       }
     });
 
@@ -493,6 +512,16 @@ export class HeadlessSession {
       // background_results entry via the sweep in executeTurn.
       this.passivePen.push({ toolCallId, name, result });
       this.persistStats();
+      if (!this.running) {
+        this.applyPendingBlockUpdates();
+      }
+      return;
+    }
+
+    if (notify === 'silent') {
+      // Silent tools update their tool block (for the UI detail view) and
+      // nothing else — the model is never told, because the outcome reaches
+      // it by another mechanism (compactConversation: the checkpoint itself).
       if (!this.running) {
         this.applyPendingBlockUpdates();
       }
@@ -966,6 +995,19 @@ export class HeadlessSession {
     this.lastCompleted = null;
     this.turnStart = Date.now();
 
+    // Compaction gate: every turn waits for an in-flight compaction and runs
+    // against the compacted history — otherwise the whole turn (every tool
+    // round-trip) bills at full context while the finished checkpoint sits
+    // unapplied. A failed compaction must not block the turn, hence the
+    // swallowed rejection. A cancel during the wait is honored by runTurn's
+    // first aborted check (currentAbort already exists). Placed BEFORE the
+    // passive-pen sweep so pen results landing during the wait ride this turn.
+    const inflight = getInflightCompaction();
+    if (inflight) {
+      await inflight.catch(() => {});
+    }
+    applyPendingSummaries(this.state);
+
     // Sweep the passive pen into this turn. executeTurn is the single choke
     // point every turn shape passes through (idle sends and chain steps via
     // runSingleTurn, mailbox batches via runMergedTurn), downstream of all
@@ -1103,8 +1145,12 @@ export class HeadlessSession {
     parsed: StdinCommand,
     requestId: string | undefined,
   ): Promise<void> {
-    // If a turn is in flight, queue the user message instead of rejecting.
-    if (this.running) {
+    // If a turn OR a compaction is in flight, queue the user message instead
+    // of rejecting. Compaction counts as busy on purpose: running the turn
+    // immediately would bill it at full uncompacted context (the pre-turn
+    // gate in executeTurn would make it wait anyway), and queueing renders it
+    // in the frontend's Queued Messages card with its normal affordances.
+    if (this.running || getInflightCompaction()) {
       // Mirror the requestId onto the stored command so it's used when drained.
       const command: StdinCommand = { ...parsed };
       if (requestId && command.requestId === undefined) {
@@ -1116,7 +1162,13 @@ export class HeadlessSession {
         enqueuedAt: Date.now(),
       });
       // The push fires `queue_changed`; the message's eventual `completed`
-      // (when it drains and runs) is its terminal.
+      // (when it drains and runs) is its terminal. If the compaction finished
+      // between the check above and the push, the listener's kickDrain
+      // already ran against an empty queue — re-kick so this item isn't
+      // stranded until the next wake.
+      if (!this.running && !getInflightCompaction()) {
+        this.kickDrain();
+      }
       return;
     }
 
@@ -1128,6 +1180,10 @@ export class HeadlessSession {
       // or user messages sent during the turn).
       await this.drainQueueLoop();
     } finally {
+      // Abort before dropping the controller: anything still holding this
+      // turn's signal (e.g. a status poller that escaped its own teardown)
+      // dies with the turn instead of running for the process's lifetime.
+      this.currentAbort?.abort();
       this.currentAbort = null;
       this.currentRequestId = undefined;
       this.running = false;
@@ -1219,6 +1275,10 @@ export class HeadlessSession {
     try {
       await this.drainQueueLoop();
     } finally {
+      // Abort before dropping the controller: anything still holding this
+      // turn's signal (e.g. a status poller that escaped its own teardown)
+      // dies with the turn instead of running for the process's lifetime.
+      this.currentAbort?.abort();
       this.currentAbort = null;
       this.currentRequestId = undefined;
       this.running = false;

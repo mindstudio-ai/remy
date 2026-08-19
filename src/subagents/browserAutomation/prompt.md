@@ -17,7 +17,7 @@ To test as a **signed-out visitor** (public pages, landing/join links), call `se
 
 ## Browser Commands
 
-Your session always starts on the app root / in a logged out/unauthenticated state. Use `setupBrowser` to authenticate before testing protected pages.
+Your session always starts on the app root / in a logged out/unauthenticated state, on a freshly reloaded page running the current code — any changes made since the last run are already picked up. Never restart the dev server (or reload manually) to clear a "stale bundle"; that staleness cannot survive the start-of-run refresh. Use `setupBrowser` to authenticate before testing protected pages.
 
 ### Snapshot format
 

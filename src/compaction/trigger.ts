@@ -18,9 +18,19 @@ import { createLogger } from '../logger.js';
 import { resolveModel } from '../models/surfaces.js';
 import { saveSession } from '../session.js';
 import type { AgentState } from '../types.js';
+import type { ContentBlock } from '../api.js';
 import type { ApiConfig } from '../config.js';
 
 const log = createLogger('compaction:trigger');
+
+/** One generated summary, surfaced on the `complete` lifecycle event and as
+ * the trigger promise's resolution — the UI-facing shape of a checkpoint. */
+export interface CompactionSummary {
+  name: string;
+  text: string;
+  recent?: string;
+  startedAt: number;
+}
 
 /**
  * The finished checkpoint waiting to be inserted into state.messages. A single
@@ -29,8 +39,42 @@ const log = createLogger('compaction:trigger');
  */
 let pending: CompactionResult | null = null;
 
-/** The currently in-flight compaction, if any — concurrent callers join this. */
-let inflightCompaction: Promise<void> | null = null;
+/** The currently in-flight compaction, if any — concurrent callers join this.
+ * Resolves with the generated summaries (empty when there was nothing to
+ * summarize); the pending-already-waiting no-op path resolves null. */
+let inflightCompaction: Promise<CompactionSummary[] | null> | null = null;
+
+/**
+ * The in-flight compaction promise, or null when none is running. Used by the
+ * headless layer's pre-turn gate (turns wait for it and then apply the
+ * pending checkpoint) and by handleMessage's queue-during-compaction rule.
+ */
+export function getInflightCompaction(): Promise<
+  CompactionSummary[] | null
+> | null {
+  return inflightCompaction;
+}
+
+/** Extract the UI-facing summaries from a compaction result's checkpoints. */
+function summariesOf(result: CompactionResult): CompactionSummary[] {
+  const out: CompactionSummary[] = [];
+  for (const msg of result.checkpoints) {
+    if (!Array.isArray(msg.content)) {
+      continue;
+    }
+    for (const block of msg.content as ContentBlock[]) {
+      if (block.type === 'summary') {
+        out.push({
+          name: block.name,
+          text: block.text,
+          ...(block.recent && { recent: block.recent }),
+          startedAt: block.startedAt,
+        });
+      }
+    }
+  }
+  return out;
+}
 
 /**
  * Drain the pending checkpoint into the session at a safe point. Call when the
@@ -77,7 +121,14 @@ export function applyPendingSummaries(state: AgentState): void {
 
 export type CompactionLifecycleEvent =
   | { type: 'started'; blocking: boolean; requestId?: string }
-  | { type: 'complete'; error?: string; requestId?: string };
+  | {
+      type: 'complete';
+      error?: string;
+      requestId?: string;
+      /** Generated summaries — present on success when anything was
+       * summarized; consumed by the frontend's checkpoint card. */
+      summaries?: CompactionSummary[];
+    };
 
 export type CompactionListener = (event: CompactionLifecycleEvent) => void;
 
@@ -125,13 +176,13 @@ export function triggerCompaction(
   state: AgentState,
   apiConfig: ApiConfig,
   opts: TriggerOptions = {},
-): Promise<void> {
+): Promise<CompactionSummary[] | null> {
   if (inflightCompaction) {
     return inflightCompaction;
   }
   if (pending) {
     log.info('Compaction skipped — a checkpoint is already waiting to apply');
-    return Promise.resolve();
+    return Promise.resolve(null);
   }
 
   const { blocking = false, requestId, model } = opts;
@@ -144,8 +195,14 @@ export function triggerCompaction(
   )
     .then((result) => {
       pending = result;
-      listener?.({ type: 'complete', requestId });
+      const summaries = summariesOf(result);
+      listener?.({
+        type: 'complete',
+        requestId,
+        ...(summaries.length > 0 && { summaries }),
+      });
       log.info('Compaction complete');
+      return summaries;
     })
     .catch((err: any) => {
       const message = err.message || 'Compaction failed';

@@ -1,9 +1,29 @@
 /** Trigger conversation compaction to free up context space. */
 
 import type { Tool } from '../index.js';
-import { triggerCompaction } from '../../compaction/trigger.js';
+import {
+  triggerCompaction,
+  type CompactionSummary,
+} from '../../compaction/trigger.js';
+
+/** Tool-block result text for a finished compaction. */
+function describeOutcome(summaries: CompactionSummary[] | null): string {
+  if (summaries === null) {
+    return 'A compaction checkpoint was already pending — no new compaction was needed.';
+  }
+  if (summaries.length === 0) {
+    return 'Nothing to compact — the conversation is already fully summarized.';
+  }
+  return summaries.map((s) => `## ${s.name}\n\n${s.text}`).join('\n\n');
+}
 
 export const compactConversationTool: Tool = {
+  backgroundOnly: true,
+  // Silent: the completed summary is written onto the tool block for the UI
+  // detail view only. The model must never receive it as a message — it gets
+  // the summary the correct way, as the checkpoint prefix in every later API
+  // call (cleanMessagesForApi).
+  backgroundNotify: 'silent',
   definition: {
     clearable: false,
     name: 'compactConversation',
@@ -20,15 +40,37 @@ export const compactConversationTool: Tool = {
       return 'Error: compaction requires execution context.';
     }
 
-    // Fire-and-forget: lifecycle events are emitted by the trigger's
-    // registered listener; the agent only needs the synchronous "started"
-    // acknowledgment. Suppress the promise rejection — errors already
-    // surface to the frontend via the listener's compaction_complete event.
+    // Lifecycle events are emitted by the trigger's registered listener; the
+    // agent gets the synchronous "started" ack below, and the finished
+    // summary lands on this tool block via onBackgroundComplete (silent
+    // class — UI only). A coalesced join resolves with the originator's
+    // summaries and still completes the block.
+    const { toolCallId, onBackgroundComplete, toolRegistry } = context;
     triggerCompaction(
       { messages: context.conversationMessages },
       context.apiConfig,
       { blocking: false, requestId: context.requestId },
-    ).catch(() => {});
+    )
+      .then((summaries) => {
+        onBackgroundComplete?.(
+          toolCallId,
+          'compactConversation',
+          describeOutcome(summaries),
+        );
+      })
+      .catch((err: any) => {
+        onBackgroundComplete?.(
+          toolCallId,
+          'compactConversation',
+          `Error: ${err.message || 'Compaction failed'}`,
+        );
+      })
+      .finally(() => {
+        // Background calls skip the turn-end unregister in agent.ts (the
+        // subagent runner normally owns their lifecycle); this tool has no
+        // runner, so release the registry entry here.
+        toolRegistry?.unregister(toolCallId);
+      });
 
     return 'Compaction started in the background.';
   },
