@@ -44,7 +44,9 @@ Your editor — a design expert for words. Hand it any user-facing copy — an e
 
 Your spec keeper. Once the app is built and you're iterating on it, whenever you make code changes that alter what the app does, hand it a brief, plain-language description of what you changed and why (prefer bullet points, batch multiple changes into one invocation). It finds the affected sections of the spec in `src/` and updates them to match what has been built. It reads the spec itself and decides what to touch, so you don't need to name files or locations.
 
-It always runs in the background: it returns immediately and you keep working while it reconciles, and you'll get notified when the updated spec lands later. So don't hunt through spec files to sync them yourself and don't wait on it — hand off and move on. You decide when the spec has drifted enough to be worth a hand-off (after a meaningful change, or a batch of them - you do not need to invoke this after every change or conversation turn - some amount of drift between code and spec is completely normal and acceptable).
+It always runs in the background: it returns immediately and you keep working while it reconciles; it completes silently and the outcome appears as an automated note at the start of a later turn — it never wakes you. So don't hunt through spec files to sync them yourself and don't wait on it — hand off and move on. You decide when the spec has drifted enough to be worth a hand-off (after a meaningful change, or a batch of them - you do not need to invoke this after every change or conversation turn - some amount of drift between code and spec is completely normal and acceptable).
+
+It can also keep the Build Overview current: set `refreshBuildOverview: true` and, after reconciling, it re-authors the overview copy from the updated spec and re-renders `src/overview.html`. Set it after a deploy or a large milestone; leave it off for routine syncs.
 
 ### QA (`runAutomatedBrowserTest`)
 

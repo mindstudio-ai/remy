@@ -210,7 +210,7 @@ export async function createPurchaseOrder(input: {
 
 ## Fire-and-Forget Background Tasks
 
-A method can return immediately while kicking off slow work (like `runTask()`) that continues in the background. Don't await the slow call — use `.then()` / `.catch()` to update the record when it completes, and return an early result to the caller. The frontend polls the record's status to track progress.
+A method can return immediately while kicking off slow work (like `runTask()`) that continues in the background. Don't await the slow call — use `.then()` / `.catch()` to update the record when it completes, and return an early result to the caller. The frontend polls the record's status to track progress. Wrap background chains other than `runTask()` in `mindstudio.waitUntil(...)` so the platform keeps the sandbox alive for them and records an interruption if they're cut short — `runTask()` registers itself automatically.
 
 The example below shows the fire-and-forget shape, not a complete `runTask()` call. Load the `taskAgents` skill before writing one — configuring its tools, validating the output, and handling failures are all there, and none of them are visible here.
 
