@@ -319,10 +319,17 @@ export class HeadlessSession {
             input: {},
             background: true,
           });
+          // Mirror a real backgroundOnly tool's event sequence: execute
+          // returns its ack → tool_done sets `result` on the live block.
+          // Without this the frontend's live block keeps result == null and
+          // the Agents-tab pending predicate (isBg || result == null) spins
+          // forever after completion.
           this.onEvent({
-            type: 'status',
-            message: 'Compacting conversation',
-            parentToolId: id,
+            type: 'tool_done',
+            id,
+            name: 'compactConversation',
+            result: 'Compaction started in the background.',
+            isError: false,
           });
         }
       } else {

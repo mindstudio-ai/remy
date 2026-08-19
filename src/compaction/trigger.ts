@@ -119,10 +119,20 @@ export function applyPendingSummaries(state: AgentState): void {
   saveSession(state);
 }
 
+/** Friendly section headings for the summary document rendered in the UI. */
+const SUMMARY_SECTION_LABELS: Record<string, string> = {
+  conversation: 'Conversation',
+  visualDesignExpert: 'Design Agent Thread',
+  productVision: 'Roadmap Agent Thread',
+};
+
 /**
  * Tool-block result text for a finished compaction — shared by the
  * compactConversation tool (its own block) and the headless layer (the
- * synthesized block for user/gate compactions).
+ * synthesized block for user/gate compactions). Markdown: the frontend
+ * renders it as a paper-sheet document, so a lone conversation summary is
+ * emitted without a redundant heading and multi-section results get
+ * friendly headings.
  */
 export function formatSummariesResult(
   summaries: CompactionSummary[] | null,
@@ -133,7 +143,12 @@ export function formatSummariesResult(
   if (summaries.length === 0) {
     return 'Nothing to compact — the conversation is already fully summarized.';
   }
-  return summaries.map((s) => `## ${s.name}\n\n${s.text}`).join('\n\n');
+  if (summaries.length === 1 && summaries[0].name === 'conversation') {
+    return summaries[0].text;
+  }
+  return summaries
+    .map((s) => `## ${SUMMARY_SECTION_LABELS[s.name] ?? s.name}\n\n${s.text}`)
+    .join('\n\n');
 }
 
 export type CompactionLifecycleEvent =
