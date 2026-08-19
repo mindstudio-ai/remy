@@ -10,10 +10,10 @@
  * `loadSkill` tool result when the trigger fires.
  *
  * The path is listed for *every* skill rather than only loaded ones, which is
- * what keeps this stateless. A `loadSkill` result is clearable, so the body
- * ages out of the conversation like any file read — and the agent can always
- * get it back from the catalog with readFile, including after a compaction that
- * dropped every trace of the original call. Nothing to pin, track, or persist.
+ * what keeps this stateless. A `loadSkill` result ages out of the conversation
+ * like any file read — the agent can always get it back from the catalog with
+ * readFile, including after a compaction that dropped every trace of the
+ * original call. Nothing to pin, track, or persist.
  */
 
 import fs from 'node:fs';

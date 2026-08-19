@@ -56,9 +56,6 @@ export function deriveContext(
 }
 
 export interface Tool {
-  /** Includes `clearable` — see ToolDefinition in api.ts. It used to be a
-   *  sibling of this field, which meant main-agent tools declared it in one
-   *  place and sub-agent tools (bare definition arrays) in another. */
   definition: ToolDefinition;
   /** Tools that only ever run in the background — dispatched detached, returning
    * an immediate ack while work continues. Unlike the opt-in `background: true`
@@ -203,9 +200,7 @@ const ALL_TOOLS: Tool[] = [
  * Main-agent-facing tools that delegate to a sub-agent and return substantive
  * prose work-product (a design report, a QA result, etc.). Their results are
  * worth preserving when serializing the conversation for summarization, unlike
- * mechanical tool results (file reads/edits, grep, bash, screenshots). NOTE:
- * `clearable` is not a usable signal here — `runAutomatedBrowserTest` is
- * clearable while several non-subagent tools are not.
+ * mechanical tool results (file reads/edits, grep, bash, screenshots).
  */
 export const SUBAGENT_TOOL_NAMES = new Set([
   'visualDesignExpert',

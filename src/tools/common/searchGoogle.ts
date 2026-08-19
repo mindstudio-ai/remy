@@ -11,7 +11,6 @@ import { SEARCH_MAX_BUFFER } from '../../subagents/common/runCli.js';
 
 export const searchGoogleTool: Tool = {
   definition: {
-    clearable: false,
     name: 'searchGoogle',
     description:
       'Search Google and return results. Use for research, finding documentation, looking up APIs, or any task where web search would help.',

@@ -21,7 +21,6 @@ interface CodeAction {
 
 export const lspDiagnosticsTool: Tool = {
   definition: {
-    clearable: true,
     name: 'lspDiagnostics',
     description:
       'Get TypeScript diagnostics (type errors, warnings) for a file, with suggested fixes when available. Use this after editing a file to check for errors.',

@@ -10,7 +10,6 @@ import { readSpecTool } from '../../tools/spec/readSpec.js';
 
 export const BROWSER_TOOLS: ToolDefinition[] = [
   {
-    clearable: false,
     name: 'setupBrowser',
     description:
       'Pre-authenticate the browser and optionally navigate to a starting page. Call this before interacting with authenticated content instead of manually logging in. Auth is optional — omit to just navigate without authenticating.',
@@ -45,7 +44,6 @@ export const BROWSER_TOOLS: ToolDefinition[] = [
     },
   },
   {
-    clearable: true,
     name: 'browserCommand',
     description:
       "Interact with the app's live preview by sending browser commands. Commands execute sequentially with an animated cursor. Always start with a snapshot to see the current state and get ref identifiers. The result includes a snapshot field with the final page state after all steps complete. On error, the failing step has an error field and execution stops. Batches that contain an interactive step (click, type, select) also return a `recording` object — one chunk of a continuous per-session rrweb recording that the viewer stitches into a single replay (not a standalone per-call clip). Timeout: 120s.",

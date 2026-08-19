@@ -10,7 +10,6 @@ import type { Tool } from '../index.js';
 
 export const queryDatabaseTool: Tool = {
   definition: {
-    clearable: true,
     name: 'queryDatabase',
     description:
       'Execute a raw SQL query against the dev database and return the results. Use for inspecting data and debugging issues.',

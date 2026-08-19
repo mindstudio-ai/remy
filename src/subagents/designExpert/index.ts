@@ -107,7 +107,6 @@ async function runDesignExpert(
 
 export const designExpertTool: Tool = {
   definition: {
-    clearable: false,
     name: 'visualDesignExpert',
     description: DESCRIPTION,
     inputSchema: {

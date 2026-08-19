@@ -7,7 +7,6 @@ const DEFAULT_MAX = 200;
 
 export const globTool: Tool = {
   definition: {
-    clearable: true,
     name: 'glob',
     description:
       'Find files matching a glob pattern. Returns matching file paths sorted alphabetically (default 200 results). Use this to discover project structure, find files by name or extension, or check if a file exists. Common patterns: "**/*.ts" (all TypeScript files), "src/**/*.tsx" (React components in src), "*.json" (root-level JSON files). Automatically excludes node_modules and .git.',

@@ -7,7 +7,6 @@ const PLAN_FILE = '.remy-plan.md';
 
 export const updatePlanStatusTool: Tool = {
   definition: {
-    clearable: false,
     name: 'updatePlanStatus',
     description:
       'Update the status of the current implementation plan. Use when the user approves or rejects the plan via chat (e.g. "looks good, go ahead" or "scrap it"). Approving sets the plan to active so you can begin implementation. Rejecting deletes the plan.',

@@ -42,7 +42,6 @@ export const specSyncTool: Tool = {
   // next real turn as a hidden background_results note instead.
   backgroundNotify: 'passive',
   definition: {
-    clearable: false,
     name: 'specSync',
     description:
       'Reconcile the spec to bring it in line with code changes you have made. Provide a brief, bulleted list of what changed and why; it finds the affected spec sections and updates them to match. Set `refreshBuildOverview` after a deploy or a large milestone to also re-author the Build Overview from the updated spec. Always runs in the background and completes silently — do not wait for it; its outcome appears as an automated note at the start of a later turn.',
