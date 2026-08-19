@@ -29,6 +29,17 @@ const log = createLogger('session');
 const SESSION_FILE = '.remy-session.json';
 const ARCHIVE_DIR = '.logs/sessions';
 
+// Write a file atomically: write a tmp sibling, then rename. Concurrent
+// readers (the sandbox's git snapshot force-adds this file mid-write, and the
+// C&C server's /agent-session route serves it) must never observe a torn
+// file — a truncated multi-MB session JSON captured into a _draft snapshot
+// would corrupt the restore. rename(2) is atomic within a filesystem.
+function writeFileAtomicSync(file: string, data: string): void {
+  const tmp = `${file}.tmp`;
+  fs.writeFileSync(tmp, data, 'utf-8');
+  fs.renameSync(tmp, file);
+}
+
 // Auto-rotation tunables — the scrollback-depth vs per-snapshot-churn knob.
 // Rotate once the serialized live file exceeds the threshold, keeping roughly
 // the most recent RETAIN_TAIL_BYTES of messages live for scrollback and
@@ -221,7 +232,7 @@ function archiveMessages(
   if (models && Object.keys(models).length > 0) {
     payload.models = models;
   }
-  fs.writeFileSync(dest, JSON.stringify(payload), 'utf-8');
+  writeFileAtomicSync(dest, JSON.stringify(payload));
   // Prime the count cache so a get_history right after an in-process rotation
   // resolves this file's count without a read.
   archiveCountCache.set(path.basename(dest), count);
@@ -572,7 +583,7 @@ export function saveSession(state: AgentState): void {
     ) {
       serialized = JSON.stringify(buildPayload(state));
     }
-    fs.writeFileSync(SESSION_FILE, serialized, 'utf-8');
+    writeFileAtomicSync(SESSION_FILE, serialized);
     log.info('Session saved', { messageCount: state.messages.length });
   } catch (err: any) {
     log.warn('Session save failed', { error: err.message });

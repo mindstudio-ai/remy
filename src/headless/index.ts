@@ -38,6 +38,8 @@ import {
   triggerCompaction,
   applyPendingSummaries,
   setCompactionListener,
+  getInflightCompaction,
+  formatSummariesResult,
 } from '../compaction/trigger.js';
 import { triggerBrandExtraction } from '../brandExtraction/trigger.js';
 import { setLspBaseUrl } from '../tools/_helpers/lsp.js';
@@ -182,6 +184,14 @@ export class HeadlessSession {
   // Tool block updates from background completions (separate from the message queue)
   private pendingBlockUpdates: BlockUpdate[] = [];
 
+  /**
+   * Id of the UI-only tool block synthesized for the in-flight user/gate
+   * compaction (see the compaction listener). Model-invoked compactions have
+   * a real block and never set this. Single slot — triggerCompaction is
+   * single-flight.
+   */
+  private syntheticCompactionId: string | null = null;
+
   // Tool lifecycle management — shared across all nesting depths
   private toolRegistry = new ToolRegistry();
 
@@ -228,6 +238,11 @@ export class HeadlessSession {
       this.emit('queue_changed', { queuedMessages: this.queue.snapshot() });
     });
     this.passivePen = loadPassiveResults();
+    // Rewrite stats at boot: sessionStats starts fresh in memory, so this
+    // clears a stale `compactionInProgress: true` left on disk by a crash
+    // mid-compaction (compaction itself never survives a restart) — otherwise
+    // the frontend's stats fallback would show "Compacting…" forever.
+    this.persistStats();
 
     if (resumed) {
       this.emit('session_restored', {
@@ -262,9 +277,80 @@ export class HeadlessSession {
         );
         this.sessionStats.compactionInProgress = true;
         this.persistStats();
+
+        // User/gate compactions have no tool block of their own — synthesize
+        // a UI-only one so every compaction renders as a normal tool call
+        // (standard tool row, ToolList, ToolDetail; summary lands in
+        // backgroundResult on completion). Never for 'tool' origin (a real
+        // block exists). Both remaining origins only ever execute at safe
+        // append points — 'gate' fires pre-runTurn, and 'user' runs either
+        // idle or as its own drain step (a mid-turn /compact enqueues
+        // instead of running) — so there is never a dangling tool_use to
+        // splice into. `uiOnly` keeps the message out of every API payload
+        // (cleanMessagesForApi); `result` is set so the Agents-tab pending
+        // predicate resolves once backgroundResult lands.
+        if (
+          !event.toolCallId &&
+          (event.origin === 'user' || event.origin === 'gate')
+        ) {
+          const id = `compact_${Date.now()}`;
+          this.syntheticCompactionId = id;
+          this.state.messages.push({
+            role: 'assistant',
+            content: [
+              {
+                type: 'tool',
+                id,
+                name: 'compactConversation',
+                input: {},
+                startedAt: Date.now(),
+                background: true,
+                uiOnly: true,
+                result: 'Compaction started in the background.',
+              },
+            ],
+          });
+          // Persist now — a reload mid-compaction must still show the row.
+          saveSession(this.state);
+          this.onEvent({
+            type: 'tool_start',
+            id,
+            name: 'compactConversation',
+            input: {},
+            background: true,
+          });
+          // Mirror a real backgroundOnly tool's event sequence: execute
+          // returns its ack → tool_done sets `result` on the live block.
+          // Without this the frontend's live block keeps result == null and
+          // the Agents-tab pending predicate (isBg || result == null) spins
+          // forever after completion.
+          this.onEvent({
+            type: 'tool_done',
+            id,
+            name: 'compactConversation',
+            result: 'Compaction started in the background.',
+            isError: false,
+          });
+        }
       } else {
         const data = event.error ? { error: event.error } : {};
         this.emit('compaction_complete', data, event.requestId);
+
+        // Resolve the synthesized block (success and failure alike) through
+        // the normal background-completion path — compactConversation is
+        // backgroundNotify 'silent', so this updates the block and emits
+        // tool_background_complete without ever telling the model.
+        if (this.syntheticCompactionId) {
+          const id = this.syntheticCompactionId;
+          this.syntheticCompactionId = null;
+          this.onBackgroundComplete(
+            id,
+            'compactConversation',
+            event.error
+              ? `Error: ${event.error}`
+              : formatSummariesResult(event.summaries ?? []),
+          );
+        }
         this.sessionStats.compactionInProgress = false;
         // Only a compaction that actually shrank the context may disarm the
         // forced gate. Zeroing this on the error path too let a session whose
@@ -275,6 +361,13 @@ export class HeadlessSession {
         }
         this.sessionStats.messageCount = this.state.messages.length;
         this.persistStats();
+        // Messages that arrived during the compaction were queued (see
+        // handleMessage). Kick the drain on success AND failure so they never
+        // strand; the pre-turn gate in executeTurn applies the pending
+        // checkpoint before the drained turn runs. No-ops while running.
+        if (!this.running) {
+          this.kickDrain();
+        }
       }
     });
 
@@ -451,6 +544,7 @@ export class HeadlessSession {
         blocking: true,
         requestId,
         model: this.opts.model,
+        origin: 'gate',
       });
       applyPendingSummaries(this.state);
     } catch {
@@ -493,6 +587,16 @@ export class HeadlessSession {
       // background_results entry via the sweep in executeTurn.
       this.passivePen.push({ toolCallId, name, result });
       this.persistStats();
+      if (!this.running) {
+        this.applyPendingBlockUpdates();
+      }
+      return;
+    }
+
+    if (notify === 'silent') {
+      // Silent tools update their tool block (for the UI detail view) and
+      // nothing else — the model is never told, because the outcome reaches
+      // it by another mechanism (compactConversation: the checkpoint itself).
       if (!this.running) {
         this.applyPendingBlockUpdates();
       }
@@ -966,6 +1070,19 @@ export class HeadlessSession {
     this.lastCompleted = null;
     this.turnStart = Date.now();
 
+    // Compaction gate: every turn waits for an in-flight compaction and runs
+    // against the compacted history — otherwise the whole turn (every tool
+    // round-trip) bills at full context while the finished checkpoint sits
+    // unapplied. A failed compaction must not block the turn, hence the
+    // swallowed rejection. A cancel during the wait is honored by runTurn's
+    // first aborted check (currentAbort already exists). Placed BEFORE the
+    // passive-pen sweep so pen results landing during the wait ride this turn.
+    const inflight = getInflightCompaction();
+    if (inflight) {
+      await inflight.catch(() => {});
+    }
+    applyPendingSummaries(this.state);
+
     // Sweep the passive pen into this turn. executeTurn is the single choke
     // point every turn shape passes through (idle sends and chain steps via
     // runSingleTurn, mailbox batches via runMergedTurn), downstream of all
@@ -1103,8 +1220,12 @@ export class HeadlessSession {
     parsed: StdinCommand,
     requestId: string | undefined,
   ): Promise<void> {
-    // If a turn is in flight, queue the user message instead of rejecting.
-    if (this.running) {
+    // If a turn OR a compaction is in flight, queue the user message instead
+    // of rejecting. Compaction counts as busy on purpose: running the turn
+    // immediately would bill it at full uncompacted context (the pre-turn
+    // gate in executeTurn would make it wait anyway), and queueing renders it
+    // in the frontend's Queued Messages card with its normal affordances.
+    if (this.running || getInflightCompaction()) {
       // Mirror the requestId onto the stored command so it's used when drained.
       const command: StdinCommand = { ...parsed };
       if (requestId && command.requestId === undefined) {
@@ -1116,7 +1237,13 @@ export class HeadlessSession {
         enqueuedAt: Date.now(),
       });
       // The push fires `queue_changed`; the message's eventual `completed`
-      // (when it drains and runs) is its terminal.
+      // (when it drains and runs) is its terminal. If the compaction finished
+      // between the check above and the push, the listener's kickDrain
+      // already ran against an empty queue — re-kick so this item isn't
+      // stranded until the next wake.
+      if (!this.running && !getInflightCompaction()) {
+        this.kickDrain();
+      }
       return;
     }
 
@@ -1128,6 +1255,10 @@ export class HeadlessSession {
       // or user messages sent during the turn).
       await this.drainQueueLoop();
     } finally {
+      // Abort before dropping the controller: anything still holding this
+      // turn's signal (e.g. a status poller that escaped its own teardown)
+      // dies with the turn instead of running for the process's lifetime.
+      this.currentAbort?.abort();
       this.currentAbort = null;
       this.currentRequestId = undefined;
       this.running = false;
@@ -1164,6 +1295,28 @@ export class HeadlessSession {
   private async drainQueueLoop(): Promise<void> {
     while (this.queue.length > 0) {
       const head = this.queue.peek()!;
+
+      // Queued /compact (clicked mid-turn): run it as its own drain step.
+      // This is a safe boundary — no turn is mid-flight — so the compaction
+      // gets its synthesized tool row, and everything queued behind it runs
+      // against the compacted history (the checkpoint is applied here; the
+      // next drained turn's gate would apply it anyway, but doing it now
+      // keeps the boundary tight). Checked before the sentinel-barrier
+      // branch: the item's text is a display-only sentinel, never an action.
+      // Its `completed` was already emitted at enqueue time. Failures are
+      // reported by the lifecycle listener (compaction_complete {error}) and
+      // must not stall the rest of the queue.
+      if (head.command.action === 'compact') {
+        this.queue.shift();
+        await triggerCompaction(this.state, this.config, {
+          blocking: true,
+          requestId: head.command.requestId as string | undefined,
+          model: this.opts.model,
+          origin: 'user',
+        }).catch(() => {});
+        applyPendingSummaries(this.state);
+        continue;
+      }
 
       if (head.source === 'chain') {
         const item = this.queue.shift()!;
@@ -1219,6 +1372,10 @@ export class HeadlessSession {
     try {
       await this.drainQueueLoop();
     } finally {
+      // Abort before dropping the controller: anything still holding this
+      // turn's signal (e.g. a status poller that escaped its own teardown)
+      // dies with the turn instead of running for the process's lifetime.
+      this.currentAbort?.abort();
       this.currentAbort = null;
       this.currentRequestId = undefined;
       this.running = false;
@@ -1531,15 +1688,47 @@ export class HeadlessSession {
     }
 
     if (action === 'compact') {
-      // Lifecycle events + stats are handled by the registered listener;
-      // here we only await the promise, apply summaries when it's safe, and
-      // emit `completed` for the /compact command itself.
+      // Mid-turn, /compact queues like any other message: it renders as a
+      // "Compact" item in the queue card (removable via cancelQueued, never
+      // promotable) and runs as its own drain step when the turn ends —
+      // which is a safe boundary, so it gets the synthesized tool row a
+      // mid-turn compaction couldn't have. The click is acked immediately;
+      // lifecycle events report the eventual run. Duplicate clicks coalesce
+      // onto the already-queued item.
+      if (this.running) {
+        const alreadyQueued = this.queue
+          .snapshot()
+          .some((it) => it.command.action === 'compact');
+        if (!alreadyQueued) {
+          this.queue.push({
+            command: {
+              action: 'compact',
+              // Display label for the queue card (matches the automated
+              // action idiom); never resolved as an action — drainQueueLoop
+              // routes on command.action before any sentinel handling.
+              text: sentinel('compact'),
+              requestId,
+            } as StdinCommand,
+            source: 'user',
+            enqueuedAt: Date.now(),
+          });
+        }
+        this.emit('completed', { success: true, queued: true }, requestId);
+        return;
+      }
+      // Idle: run now. Lifecycle events + stats are handled by the
+      // registered listener; here we only await the promise, apply
+      // summaries, and emit `completed` for the /compact command itself.
       try {
         await triggerCompaction(this.state, this.config, {
           blocking: false,
           requestId,
           model: this.opts.model,
+          origin: 'user',
         });
+        // Guarded: the complete-listener's kickDrain can win the microtask
+        // race and already be running a drained turn — its gate applies the
+        // checkpoint; splicing here mid-turn would be unsafe.
         if (!this.running) {
           applyPendingSummaries(this.state);
         }

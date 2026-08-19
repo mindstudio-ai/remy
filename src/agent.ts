@@ -37,7 +37,8 @@ import type { ApiConfig } from './config.js';
 
 const log = createLogger('agent');
 import { parsePartialJson } from './parsePartialJson.js';
-import { startStatusWatcher } from './statusWatcher.js';
+import { startStatusWatcher, sanitizeStatusText } from './statusWatcher.js';
+import { NON_ACTION_SENTINELS } from './automatedActions/resolve.js';
 import { friendlyError } from './errors.js';
 
 import { cleanMessagesForApi } from './subagents/common/cleanMessages.js';
@@ -279,6 +280,13 @@ export async function runTurn(params: {
   let lastCompletedInput = '';
   let lastCompletedResult = '';
 
+  // Mutable state for the unified status watcher. Declared outside the loop
+  // because the watcher itself is one-per-turn now; each iteration resets
+  // them and points contentBlocksRef at its own block list.
+  let subAgentText = '';
+  let currentToolNames = '';
+  let contentBlocksRef: ContentBlock[] = [];
+
   // Token usage accumulators across loop iterations
   let turnInputTokens = 0;
   let turnOutputTokens = 0;
@@ -290,392 +298,455 @@ export async function runTurn(params: {
   let lastCallCacheCreation = 0;
   let lastCallCacheRead = 0;
 
-  while (true) {
-    if (signal?.aborted) {
-      onEvent({ type: 'turn_cancelled' });
-      saveSession(state);
-      return;
-    }
-
-    const iterStart = Date.now();
-    const contentBlocks: ContentBlock[] = [];
-    // Start times for each thinking block in arrival order. The platform
-    // emits one `thinking` event with `text: ''` per block start, then
-    // emits all `thinking_complete` events at end of stream from
-    // finalMessage.content. Tracking starts as a queue (rather than a
-    // single accumulator) keeps interleaved-thinking blocks in their
-    // original positions after the contentBlocks sort by startedAt —
-    // a single accumulator caused the second-and-later thinking blocks
-    // to receive startedAt: 0, which then sorted them ahead of every
-    // text/tool block and corrupted the message in a way Anthropic
-    // rejects on the next request via signature validation.
-    const thinkingBlockStartTimes: number[] = [];
-    let thinkingCompleteCount = 0;
-    // Tracks the startedAt of the most recent thinking or redacted_thinking
-    // block so a `redacted_thinking_complete` event (which has no streaming
-    // start time) can sort just after it, before any text/tool block.
-    let lastThinkingRelatedStartedAt: number | undefined;
-    // True when the most recent block-producing event was a text event with
-    // no thinking-block boundary since. New text events merge into the last
-    // text block while this is true; cleared at thinking-block starts so
-    // text segments separated by interleaved thinking stay as distinct
-    // blocks. Without this, two text streams sandwiching a thinking block
-    // get concatenated into one and the resulting assistant message has a
-    // shape that doesn't match what the API originally returned, which
-    // trips Anthropic's thinking-block signature validation on the next
-    // request.
-    let textBlockOpen = false;
-    const toolInputAccumulators = new Map<string, ToolInputAcc>();
-    let stopReason = 'end_turn';
-    // Opaque provider state from this call's `done` event. Round-tripped on
-    // the assistant message so the next request can pass it back verbatim
-    // (required for OpenAI Responses stateless reasoning).
-    let turnProviderMetadata: Record<string, any> | undefined;
-    // Authoritative model id echoed by the adapter on this call's `done`
-    // event; persisted on the assistant message for history attribution.
-    let turnModelId: string | undefined;
-
-    // Mutable state for the unified status watcher
-    let subAgentText = '';
-    let currentToolNames = '';
-
-    const statusWatcher = isFirstMessage
-      ? { stop() {}, pause() {}, resume() {} }
-      : startStatusWatcher({
-          apiConfig,
-          getContext: () => {
-            const parts: string[] = [];
-            // Current activity first — this is what matters most
-            const toolName =
-              currentToolNames ||
-              getToolCalls(contentBlocks)
-                .filter((tc) => !STATUS_EXCLUDED_TOOLS.has(tc.name))
-                .at(-1)?.name ||
-              lastCompletedTools;
-            if (toolName) {
-              parts.push(`Tool: ${toolName}`);
+  // One watcher for the whole turn, stopped in the finally below. It used to
+  // be created per loop iteration, which both multiplied requests (each new
+  // watcher fires immediately) and leaked a live 5s interval on any exit path
+  // that didn't stop it explicitly — the streaming-error path never did, so
+  // an out-of-credits turn left a poller running for the process's lifetime.
+  const statusWatcher = isFirstMessage
+    ? { stop() {}, pause() {}, resume() {} }
+    : startStatusWatcher({
+        apiConfig,
+        getContext: () => {
+          const parts: string[] = [];
+          // Current activity first — this is what matters most
+          const toolName =
+            currentToolNames ||
+            getToolCalls(contentBlocksRef)
+              .filter((tc) => !STATUS_EXCLUDED_TOOLS.has(tc.name))
+              .at(-1)?.name ||
+            lastCompletedTools;
+          if (toolName) {
+            parts.push(`Tool: ${toolName}`);
+          }
+          const toolInput = sanitizeStatusText(lastCompletedInput);
+          if (toolInput) {
+            parts.push(`Tool input: ${toolInput.slice(-1500)}`);
+          }
+          const toolResult = sanitizeStatusText(lastCompletedResult);
+          if (toolResult) {
+            parts.push(`Tool result: ${toolResult.slice(-1500)}`);
+          }
+          const text =
+            subAgentText || getTextContent(contentBlocksRef).slice(-2000);
+          if (text) {
+            parts.push(`Assistant text: ${text}`);
+          }
+          // Background context — stale quickly but useful when nothing else is happening
+          if (onboardingState && onboardingState !== 'onboardingFinished') {
+            parts.push(`Build phase: ${onboardingState}`);
+          }
+          // For automated actions (chained build steps, approveInitialPlan,
+          // etc.), surface only the action name — not the body. The body is
+          // instructional text ("end the turn, build will start") that the
+          // status generator would faithfully but misleadingly summarize as
+          // "Ending turn, build starting." A merged turn can carry both a
+          // background_results entry and plain user text — surface each kind.
+          let hasUserSignal = false;
+          for (const entry of keptEntries) {
+            // Hidden entries were never shown to the user (injected background
+            // results, passive sweeps) — they must not shape a user-facing label.
+            if (entry.hidden) {
+              continue;
             }
-            if (lastCompletedInput) {
-              parts.push(`Tool input: ${lastCompletedInput.slice(-1500)}`);
-            }
-            if (lastCompletedResult) {
-              parts.push(`Tool result: ${lastCompletedResult.slice(-1500)}`);
-            }
-            const text =
-              subAgentText || getTextContent(contentBlocks).slice(-2000);
-            if (text) {
-              parts.push(`Assistant text: ${text}`);
-            }
-            // Background context — stale quickly but useful when nothing else is happening
-            if (onboardingState && onboardingState !== 'onboardingFinished') {
-              parts.push(`Build phase: ${onboardingState}`);
-            }
-            // For automated actions (chained build steps, approveInitialPlan,
-            // etc.), surface only the action name — not the body. The body is
-            // instructional text ("end the turn, build will start") that the
-            // status generator would faithfully but misleadingly summarize as
-            // "Ending turn, build starting." A merged turn can carry both a
-            // background_results entry and plain user text — surface each kind.
-            for (const entry of keptEntries) {
-              const automated = parseSentinel(entry.text);
-              if (automated) {
+            const automated = parseSentinel(entry.text);
+            if (automated) {
+              // Non-action sentinels are plumbing, not actions; their name
+              // ("background_results") leaks straight into the label.
+              if (!NON_ACTION_SENTINELS.has(automated.name)) {
                 parts.push(`Automated action: ${automated.name}`);
-              } else if (entry.text) {
-                parts.push(`User request: ${entry.text.slice(-500)}`);
+                hasUserSignal = true;
               }
+            } else if (entry.text) {
+              parts.push(`User request: ${entry.text.slice(-500)}`);
+              hasUserSignal = true;
             }
-            return parts.join('\n');
-          },
-          onStatus: (label) => onEvent({ type: 'status', message: label }),
-          signal,
-        });
+          }
+          // A turn made up entirely of internal payloads has nothing a label
+          // could honestly describe — returning '' skips the request outright.
+          if (!hasUserSignal && !toolName && !text) {
+            return '';
+          }
+          return parts.join('\n');
+        },
+        onStatus: (label) => onEvent({ type: 'status', message: label }),
+        signal,
+      });
 
-    type ToolInputAcc = {
-      name: string;
-      json: string;
-      started: boolean;
-      lastEmittedCount: number;
-    };
-
-    function getOrCreateAccumulator(id: string, name: string): ToolInputAcc {
-      let acc = toolInputAccumulators.get(id);
-      if (!acc) {
-        acc = { name, json: '', started: false, lastEmittedCount: 0 };
-        toolInputAccumulators.set(id, acc);
-      }
-      return acc;
-    }
-
-    async function handlePartialInput(
-      acc: ToolInputAcc,
-      id: string,
-      name: string,
-      partial: Record<string, any>,
-    ): Promise<void> {
-      const tool = getToolByName(name);
-      if (!tool?.streaming) {
+  try {
+    while (true) {
+      if (signal?.aborted) {
+        onEvent({ type: 'turn_cancelled' });
+        saveSession(state);
         return;
       }
 
-      const {
-        contentField = 'content',
-        transform,
-        partialInput,
-      } = tool.streaming;
+      const iterStart = Date.now();
+      const contentBlocks: ContentBlock[] = [];
+      // Start times for each thinking block in arrival order. The platform
+      // emits one `thinking` event with `text: ''` per block start, then
+      // emits all `thinking_complete` events at end of stream from
+      // finalMessage.content. Tracking starts as a queue (rather than a
+      // single accumulator) keeps interleaved-thinking blocks in their
+      // original positions after the contentBlocks sort by startedAt —
+      // a single accumulator caused the second-and-later thinking blocks
+      // to receive startedAt: 0, which then sorted them ahead of every
+      // text/tool block and corrupted the message in a way Anthropic
+      // rejects on the next request via signature validation.
+      const thinkingBlockStartTimes: number[] = [];
+      let thinkingCompleteCount = 0;
+      // Tracks the startedAt of the most recent thinking or redacted_thinking
+      // block so a `redacted_thinking_complete` event (which has no streaming
+      // start time) can sort just after it, before any text/tool block.
+      let lastThinkingRelatedStartedAt: number | undefined;
+      // True when the most recent block-producing event was a text event with
+      // no thinking-block boundary since. New text events merge into the last
+      // text block while this is true; cleared at thinking-block starts so
+      // text segments separated by interleaved thinking stay as distinct
+      // blocks. Without this, two text streams sandwiching a thinking block
+      // get concatenated into one and the resulting assistant message has a
+      // shape that doesn't match what the API originally returned, which
+      // trips Anthropic's thinking-block signature validation on the next
+      // request.
+      let textBlockOpen = false;
+      const toolInputAccumulators = new Map<string, ToolInputAcc>();
+      let stopReason = 'end_turn';
+      // Opaque provider state from this call's `done` event. Round-tripped on
+      // the assistant message so the next request can pass it back verbatim
+      // (required for OpenAI Responses stateless reasoning).
+      let turnProviderMetadata: Record<string, any> | undefined;
+      // Authoritative model id echoed by the adapter on this call's `done`
+      // event; persisted on the assistant message for history attribution.
+      let turnModelId: string | undefined;
 
-      // Input streaming mode (progressive tool_start with partial: true)
-      if (partialInput) {
-        const result = partialInput(partial, acc.lastEmittedCount);
-        if (!result) {
+      // Point the turn's watcher at this iteration's blocks and clear the
+      // per-iteration activity state it reads.
+      contentBlocksRef = contentBlocks;
+      subAgentText = '';
+      currentToolNames = '';
+
+      type ToolInputAcc = {
+        name: string;
+        json: string;
+        started: boolean;
+        lastEmittedCount: number;
+      };
+
+      function getOrCreateAccumulator(id: string, name: string): ToolInputAcc {
+        let acc = toolInputAccumulators.get(id);
+        if (!acc) {
+          acc = { name, json: '', started: false, lastEmittedCount: 0 };
+          toolInputAccumulators.set(id, acc);
+        }
+        return acc;
+      }
+
+      async function handlePartialInput(
+        acc: ToolInputAcc,
+        id: string,
+        name: string,
+        partial: Record<string, any>,
+      ): Promise<void> {
+        const tool = getToolByName(name);
+        if (!tool?.streaming) {
           return;
         }
-        acc.lastEmittedCount = result.emittedCount;
-        acc.started = true;
-        onEvent({
-          type: 'tool_start',
-          id,
-          name,
-          input: result.input,
-          partial: true,
-        });
-        return;
-      }
 
-      // Content streaming mode (tool_input_delta)
-      const content = partial[contentField];
-      if (typeof content !== 'string') {
-        return;
-      }
+        const {
+          contentField = 'content',
+          transform,
+          partialInput,
+        } = tool.streaming;
 
-      if (!acc.started) {
-        acc.started = true;
-        onEvent({ type: 'tool_start', id, name, input: partial });
-      }
-
-      if (transform) {
-        const result = await transform(partial);
-        if (result === null) {
+        // Input streaming mode (progressive tool_start with partial: true)
+        if (partialInput) {
+          const result = partialInput(partial, acc.lastEmittedCount);
+          if (!result) {
+            return;
+          }
+          acc.lastEmittedCount = result.emittedCount;
+          acc.started = true;
+          onEvent({
+            type: 'tool_start',
+            id,
+            name,
+            input: result.input,
+            partial: true,
+          });
           return;
         }
-        onEvent({ type: 'tool_input_delta', id, name, result });
-      } else {
-        onEvent({ type: 'tool_input_delta', id, name, result: content });
-      }
-    }
 
-    // Stream one LLM turn using the per-turn parent model resolved above.
-    try {
-      for await (const event of streamChatWithRetry(
-        {
-          ...apiConfig,
-          model: parentModel,
-          requestId,
-          system,
-          messages: cleanMessagesForApi(state.messages),
-          tools,
-          signal,
-        },
-        {
-          onRetry: (attempt) => {
-            onEvent({
-              type: 'status',
-              message: `Lost connection, retrying (attempt ${attempt + 2} of 3)`,
-            });
-          },
-        },
-      )) {
-        if (signal?.aborted) {
-          break;
+        // Content streaming mode (tool_input_delta)
+        const content = partial[contentField];
+        if (typeof content !== 'string') {
+          return;
         }
 
-        switch (event.type) {
-          case 'text': {
-            // Append to the last text block when one is open. A thinking-
-            // block start clears textBlockOpen so a text segment after
-            // interleaved thinking starts its own block.
-            const lastBlock = contentBlocks.at(-1);
-            if (lastBlock?.type === 'text' && textBlockOpen) {
-              lastBlock.text += event.text;
-            } else {
-              contentBlocks.push({
-                type: 'text',
-                text: event.text,
-                startedAt: event.ts,
-              });
-            }
-            textBlockOpen = true;
-            onEvent({ type: 'text', text: event.text });
-            break;
+        if (!acc.started) {
+          acc.started = true;
+          onEvent({ type: 'tool_start', id, name, input: partial });
+        }
+
+        if (transform) {
+          const result = await transform(partial);
+          if (result === null) {
+            return;
           }
+          onEvent({ type: 'tool_input_delta', id, name, result });
+        } else {
+          onEvent({ type: 'tool_input_delta', id, name, result: content });
+        }
+      }
 
-          case 'thinking':
-            // The platform emits a `thinking` event with `text: ''` at
-            // each thinking-block start (see AnthropicAdapter handling of
-            // content_block_start for type=thinking). Each empty-text
-            // event marks a new block; record its timestamp so we can
-            // pair it with the matching thinking_complete later, and
-            // close any open text block so subsequent text doesn't merge
-            // across the boundary.
-            if (event.text === '') {
-              thinkingBlockStartTimes.push(event.ts);
-              textBlockOpen = false;
-            }
-            onEvent({ type: 'thinking', text: event.text });
-            break;
-
-          case 'thinking_complete': {
-            const startedAt =
-              thinkingBlockStartTimes[thinkingCompleteCount] ?? event.ts;
-            contentBlocks.push({
-              type: 'thinking',
-              thinking: event.thinking,
-              signature: event.signature,
-              startedAt,
-              completedAt: event.ts,
-            });
-            thinkingCompleteCount++;
-            lastThinkingRelatedStartedAt = startedAt;
-            break;
-          }
-
-          case 'redacted_thinking_complete': {
-            // Anthropic emits redacted_thinking blocks at specific positions
-            // among thinking/text/tool_use; the platform forwards them at
-            // end-of-stream in original message-content order. We have no
-            // streaming-time start event for these (no visible content to
-            // delta through), so synthesize a startedAt that sorts just
-            // after the most recent thinking-related block — preserves
-            // relative order among thinking entries while still placing
-            // them all before text/tool blocks.
-            const startedAt =
-              lastThinkingRelatedStartedAt !== undefined
-                ? lastThinkingRelatedStartedAt + 1
-                : event.ts;
-            contentBlocks.push({
-              type: 'redacted_thinking',
-              data: event.data,
-              startedAt,
-              completedAt: event.ts,
-            });
-            lastThinkingRelatedStartedAt = startedAt;
-            break;
-          }
-
-          case 'tool_input_delta': {
-            // Anthropic: raw JSON string fragments
-            const acc = getOrCreateAccumulator(event.id, event.name);
-            acc.json += event.delta;
-            try {
-              const partial = parsePartialJson(acc.json);
-              await handlePartialInput(acc, event.id, event.name, partial);
-            } catch {
-              // Not enough data to parse yet
-            }
-            break;
-          }
-
-          case 'tool_input_args': {
-            // Gemini: accumulated partial object snapshot
-            const acc = getOrCreateAccumulator(event.id, event.name);
-            await handlePartialInput(acc, event.id, event.name, event.args);
-            break;
-          }
-
-          case 'tool_use': {
-            const tool = getToolByName(event.name);
-            contentBlocks.push({
-              type: 'tool',
-              id: event.id,
-              name: event.name,
-              input: event.input,
-              startedAt: event.ts,
-              ...((event.input.background || tool?.backgroundOnly) && {
-                background: true,
-              }),
-            });
-            const acc = toolInputAccumulators.get(event.id);
-            const wasStreamed = acc?.started ?? false;
-            const isInputStreaming = !!tool?.streaming?.partialInput;
-            log.info('Tool received', {
-              requestId,
-              toolCallId: event.id,
-              name: event.name,
-            });
-            // Emit tool_start if: not streamed yet, OR input-streaming
-            // tool that needs a final non-partial emission.
-            if (!wasStreamed || isInputStreaming) {
+      // Stream one LLM turn using the per-turn parent model resolved above.
+      try {
+        for await (const event of streamChatWithRetry(
+          {
+            ...apiConfig,
+            model: parentModel,
+            requestId,
+            system,
+            messages: cleanMessagesForApi(state.messages),
+            tools,
+            signal,
+          },
+          {
+            onRetry: (attempt) => {
               onEvent({
-                type: 'tool_start',
+                type: 'status',
+                message: `Lost connection, retrying (attempt ${attempt + 2} of 3)`,
+              });
+            },
+          },
+        )) {
+          if (signal?.aborted) {
+            break;
+          }
+
+          switch (event.type) {
+            case 'text': {
+              // Append to the last text block when one is open. A thinking-
+              // block start clears textBlockOpen so a text segment after
+              // interleaved thinking starts its own block.
+              const lastBlock = contentBlocks.at(-1);
+              if (lastBlock?.type === 'text' && textBlockOpen) {
+                lastBlock.text += event.text;
+              } else {
+                contentBlocks.push({
+                  type: 'text',
+                  text: event.text,
+                  startedAt: event.ts,
+                });
+              }
+              textBlockOpen = true;
+              onEvent({ type: 'text', text: event.text });
+              break;
+            }
+
+            case 'thinking':
+              // The platform emits a `thinking` event with `text: ''` at
+              // each thinking-block start (see AnthropicAdapter handling of
+              // content_block_start for type=thinking). Each empty-text
+              // event marks a new block; record its timestamp so we can
+              // pair it with the matching thinking_complete later, and
+              // close any open text block so subsequent text doesn't merge
+              // across the boundary.
+              if (event.text === '') {
+                thinkingBlockStartTimes.push(event.ts);
+                textBlockOpen = false;
+              }
+              onEvent({ type: 'thinking', text: event.text });
+              break;
+
+            case 'thinking_complete': {
+              const startedAt =
+                thinkingBlockStartTimes[thinkingCompleteCount] ?? event.ts;
+              contentBlocks.push({
+                type: 'thinking',
+                thinking: event.thinking,
+                signature: event.signature,
+                startedAt,
+                completedAt: event.ts,
+              });
+              thinkingCompleteCount++;
+              lastThinkingRelatedStartedAt = startedAt;
+              break;
+            }
+
+            case 'redacted_thinking_complete': {
+              // Anthropic emits redacted_thinking blocks at specific positions
+              // among thinking/text/tool_use; the platform forwards them at
+              // end-of-stream in original message-content order. We have no
+              // streaming-time start event for these (no visible content to
+              // delta through), so synthesize a startedAt that sorts just
+              // after the most recent thinking-related block — preserves
+              // relative order among thinking entries while still placing
+              // them all before text/tool blocks.
+              const startedAt =
+                lastThinkingRelatedStartedAt !== undefined
+                  ? lastThinkingRelatedStartedAt + 1
+                  : event.ts;
+              contentBlocks.push({
+                type: 'redacted_thinking',
+                data: event.data,
+                startedAt,
+                completedAt: event.ts,
+              });
+              lastThinkingRelatedStartedAt = startedAt;
+              break;
+            }
+
+            case 'tool_input_delta': {
+              // Anthropic: raw JSON string fragments
+              const acc = getOrCreateAccumulator(event.id, event.name);
+              acc.json += event.delta;
+              try {
+                const partial = parsePartialJson(acc.json);
+                await handlePartialInput(acc, event.id, event.name, partial);
+              } catch {
+                // Not enough data to parse yet
+              }
+              break;
+            }
+
+            case 'tool_input_args': {
+              // Gemini: accumulated partial object snapshot
+              const acc = getOrCreateAccumulator(event.id, event.name);
+              await handlePartialInput(acc, event.id, event.name, event.args);
+              break;
+            }
+
+            case 'tool_use': {
+              const tool = getToolByName(event.name);
+              contentBlocks.push({
+                type: 'tool',
                 id: event.id,
                 name: event.name,
                 input: event.input,
+                startedAt: event.ts,
+                ...((event.input.background || tool?.backgroundOnly) && {
+                  background: true,
+                }),
               });
+              const acc = toolInputAccumulators.get(event.id);
+              const wasStreamed = acc?.started ?? false;
+              const isInputStreaming = !!tool?.streaming?.partialInput;
+              log.info('Tool received', {
+                requestId,
+                toolCallId: event.id,
+                name: event.name,
+              });
+              // Emit tool_start if: not streamed yet, OR input-streaming
+              // tool that needs a final non-partial emission.
+              if (!wasStreamed || isInputStreaming) {
+                onEvent({
+                  type: 'tool_start',
+                  id: event.id,
+                  name: event.name,
+                  input: event.input,
+                  // Mirror the content-block stamp above so the live event
+                  // matches what a history reload shows — without it the
+                  // frontend renders background rows as already complete.
+                  ...(isBackgroundCall({
+                    name: event.name,
+                    input: event.input,
+                  }) && { background: true }),
+                });
+              }
+              break;
             }
-            break;
+
+            case 'done':
+              stopReason = event.stopReason;
+              turnProviderMetadata = event.providerMetadata;
+              turnModelId = event.modelId;
+              turnLlmCalls++;
+              lastCallInputTokens = event.usage.inputTokens;
+              lastCallCacheCreation = event.usage.cacheCreationTokens ?? 0;
+              lastCallCacheRead = event.usage.cacheReadTokens ?? 0;
+              turnInputTokens += lastCallInputTokens;
+              turnOutputTokens += event.usage.outputTokens;
+              turnCacheCreation += lastCallCacheCreation;
+              turnCacheRead += lastCallCacheRead;
+              recordUsage({
+                ts: Date.now(),
+                requestId,
+                agentName: 'parent',
+                modelId: event.modelId,
+                inputTokens: event.usage.inputTokens,
+                outputTokens: event.usage.outputTokens,
+                cacheCreationTokens: event.usage.cacheCreationTokens,
+                cacheReadTokens: event.usage.cacheReadTokens,
+                cost: nanoToDollars(event.cost),
+                billingEvents: event.billingEvents,
+                durationMs: Date.now() - iterStart,
+                toolNames: contentBlocks
+                  .filter(
+                    (b): b is ContentBlock & { type: 'tool' } =>
+                      b.type === 'tool',
+                  )
+                  .map((b) => b.name),
+              });
+              break;
+
+            case 'error':
+              // Stop before emitting so an in-flight tick can't land a status
+              // label after the error (same reason as the turn_done path).
+              statusWatcher.stop();
+              // `friendlyError` rewrites the human-readable string; the machine
+              // `code` (e.g. `insufficient_credits/balance`) passes through
+              // untouched so the frontend can drive interactive recovery.
+              onEvent({
+                type: 'error',
+                error: friendlyError(event.error),
+                ...(event.code ? { code: event.code } : {}),
+              });
+              return;
           }
-
-          case 'done':
-            stopReason = event.stopReason;
-            turnProviderMetadata = event.providerMetadata;
-            turnModelId = event.modelId;
-            turnLlmCalls++;
-            lastCallInputTokens = event.usage.inputTokens;
-            lastCallCacheCreation = event.usage.cacheCreationTokens ?? 0;
-            lastCallCacheRead = event.usage.cacheReadTokens ?? 0;
-            turnInputTokens += lastCallInputTokens;
-            turnOutputTokens += event.usage.outputTokens;
-            turnCacheCreation += lastCallCacheCreation;
-            turnCacheRead += lastCallCacheRead;
-            recordUsage({
-              ts: Date.now(),
-              requestId,
-              agentName: 'parent',
-              modelId: event.modelId,
-              inputTokens: event.usage.inputTokens,
-              outputTokens: event.usage.outputTokens,
-              cacheCreationTokens: event.usage.cacheCreationTokens,
-              cacheReadTokens: event.usage.cacheReadTokens,
-              cost: nanoToDollars(event.cost),
-              billingEvents: event.billingEvents,
-              durationMs: Date.now() - iterStart,
-              toolNames: contentBlocks
-                .filter(
-                  (b): b is ContentBlock & { type: 'tool' } =>
-                    b.type === 'tool',
-                )
-                .map((b) => b.name),
-            });
-            break;
-
-          case 'error':
-            // `friendlyError` rewrites the human-readable string; the machine
-            // `code` (e.g. `insufficient_credits/balance`) passes through
-            // untouched so the frontend can drive interactive recovery.
-            onEvent({
-              type: 'error',
-              error: friendlyError(event.error),
-              ...(event.code ? { code: event.code } : {}),
-            });
-            return;
+        }
+      } catch (err: any) {
+        if (signal?.aborted) {
+          // Fetch abort throws — this is expected
+        } else {
+          throw err;
         }
       }
-    } catch (err: any) {
-      if (signal?.aborted) {
-        // Fetch abort throws — this is expected
-      } else {
-        throw err;
-      }
-    }
 
-    if (signal?.aborted) {
-      statusWatcher.stop();
-      // Record whatever the assistant produced before cancellation
+      if (signal?.aborted) {
+        statusWatcher.stop();
+        // Record whatever the assistant produced before cancellation
+        if (contentBlocks.length > 0) {
+          contentBlocks.push({
+            type: 'text',
+            text: '\n\n(cancelled)',
+            startedAt: Date.now(),
+          });
+          state.messages.push({
+            role: 'assistant',
+            content: [...contentBlocks].sort(
+              (a, b) => a.startedAt - b.startedAt,
+            ),
+            usage: {
+              inputTokens: turnInputTokens,
+              outputTokens: turnOutputTokens,
+              cacheCreationTokens: turnCacheCreation || undefined,
+              cacheReadTokens: turnCacheRead || undefined,
+              llmCalls: turnLlmCalls,
+            },
+            ...(turnProviderMetadata && {
+              providerMetadata: turnProviderMetadata,
+            }),
+            model: turnModelId ?? parentModel,
+            ...(modelOverride && { modelOverride }),
+          });
+        }
+        onEvent({ type: 'turn_cancelled' });
+        saveSession(state);
+        return;
+      }
+
+      // Record assistant message in conversation history (skip if empty)
       if (contentBlocks.length > 0) {
-        contentBlocks.push({
-          type: 'text',
-          text: '\n\n(cancelled)',
-          startedAt: Date.now(),
-        });
         state.messages.push({
           role: 'assistant',
           content: [...contentBlocks].sort((a, b) => a.startedAt - b.startedAt),
@@ -693,290 +764,272 @@ export async function runTurn(params: {
           ...(modelOverride && { modelOverride }),
         });
       }
-      onEvent({ type: 'turn_cancelled' });
-      saveSession(state);
-      return;
-    }
 
-    // Record assistant message in conversation history (skip if empty)
-    if (contentBlocks.length > 0) {
-      state.messages.push({
-        role: 'assistant',
-        content: [...contentBlocks].sort((a, b) => a.startedAt - b.startedAt),
-        usage: {
-          inputTokens: turnInputTokens,
-          outputTokens: turnOutputTokens,
-          cacheCreationTokens: turnCacheCreation || undefined,
-          cacheReadTokens: turnCacheRead || undefined,
-          llmCalls: turnLlmCalls,
-        },
-        ...(turnProviderMetadata && { providerMetadata: turnProviderMetadata }),
-        model: turnModelId ?? parentModel,
-        ...(modelOverride && { modelOverride }),
-      });
-    }
-
-    // If no tool calls, the turn is complete
-    const toolCalls = getToolCalls(contentBlocks);
-    if (stopReason !== 'tool_use' || toolCalls.length === 0) {
-      statusWatcher.stop();
-      saveSession(state);
-      onEvent({
-        type: 'turn_done',
-        stats: {
-          inputTokens: turnInputTokens,
-          outputTokens: turnOutputTokens,
-          cacheCreationTokens: turnCacheCreation || undefined,
-          cacheReadTokens: turnCacheRead || undefined,
-          llmCalls: turnLlmCalls,
-          lastCallInputTokens,
-          lastCallCacheCreation: lastCallCacheCreation || undefined,
-          lastCallCacheRead: lastCallCacheRead || undefined,
-        },
-      });
-      return;
-    }
-
-    // Execute all tool calls in parallel (skip if cancelled)
-    log.info('Tools executing', {
-      requestId,
-      count: toolCalls.length,
-      tools: toolCalls.map((tc) => tc.name),
-    });
-
-    // Update status watcher context for tool execution phase
-    currentToolNames = toolCalls
-      .filter((tc) => !STATUS_EXCLUDED_TOOLS.has(tc.name))
-      .map((tc) => tc.name)
-      .join(', ');
-
-    const wrappedOnEvent = (e: AgentEvent) => {
-      // Capture sub-agent text for status watcher context
-      if ('parentToolId' in e && e.parentToolId) {
-        if (e.type === 'text') {
-          subAgentText = e.text;
-        } else if (e.type === 'tool_start') {
-          subAgentText = `Using ${e.name}`;
-        }
-      }
-      onEvent(e);
-    };
-    const subAgentMessages = new Map<string, import('./api.js').Message[]>();
-    const results = await Promise.all(
-      toolCalls.map(async (tc) => {
-        if (signal?.aborted) {
-          return { id: tc.id, result: USER_CANCELLED_RESULT, isError: true };
-        }
-
-        const toolStart = Date.now();
-
-        // Controllable promise — can be settled externally by stop/restart
-        let settle!: (result: string, isError: boolean) => void;
-        const resultPromise = new Promise<{
-          id: string;
-          result: string;
-          isError: boolean;
-        }>((res) => {
-          settle = (result, isError) => res({ id: tc.id, result, isError });
-        });
-
-        // Per-tool abort — cascades from parent turn signal
-        let toolAbort = new AbortController();
-
-        // Whether this slot has already been settled (prevent double-settle)
-        let settled = false;
-        const safeSettle = (result: string, isError: boolean) => {
-          if (settled) {
-            return;
-          }
-          settled = true;
-          signal?.removeEventListener('abort', cascadeAbort);
-          settle(result, isError);
-        };
-
-        const cascadeAbort = () => {
-          toolAbort.abort();
-          // Force-settle the tool so Promise.all doesn't hang
-          safeSettle(USER_CANCELLED_RESULT, true);
-        };
-        signal?.addEventListener('abort', cascadeAbort, { once: true });
-
-        // The execution function — can be called multiple times for restart
-        const run = async (input: Record<string, any>) => {
-          try {
-            let result: string;
-            if (EXTERNAL_TOOLS.has(tc.name) && resolveExternalTool) {
-              saveSession(state);
-              log.info('Waiting for external tool result', {
-                requestId,
-                toolCallId: tc.id,
-                name: tc.name,
-              });
-              const blocksUser = USER_BLOCKING_EXTERNAL_TOOLS.has(tc.name);
-              if (blocksUser) {
-                statusWatcher.pause();
-              }
-              try {
-                result = await resolveExternalTool(tc.id, tc.name, input);
-              } finally {
-                if (blocksUser) {
-                  statusWatcher.resume();
-                }
-              }
-            } else {
-              result = await executeTool(tc.name, input, {
-                apiConfig,
-                model,
-                models: state.models,
-                signal: toolAbort.signal,
-                onEvent: wrappedOnEvent,
-                resolveExternalTool,
-                toolCallId: tc.id,
-                requestId,
-                onboardingState,
-                subAgentMessages,
-                conversationMessages: state.messages,
-                toolRegistry,
-                onBackgroundComplete,
-                onLog: (line) =>
-                  wrappedOnEvent({
-                    type: 'tool_input_delta',
-                    id: tc.id,
-                    name: tc.name,
-                    result: line,
-                  }),
-              });
-            }
-            safeSettle(capToolResult(result), result.startsWith('Error'));
-          } catch (err: any) {
-            safeSettle(`Error: ${err.message}`, true);
-          }
-        };
-
-        // Register for lifecycle management
-        const entry = {
-          id: tc.id,
-          name: tc.name,
-          input: tc.input,
-          abortController: toolAbort,
-          startedAt: toolStart,
-          settle: safeSettle,
-          rerun: (newInput: Record<string, any>) => {
-            // Reset for new execution
-            settled = false;
-            toolAbort = new AbortController();
-            signal?.addEventListener('abort', () => toolAbort.abort(), {
-              once: true,
-            });
-            entry.abortController = toolAbort;
-            entry.input = newInput;
-            run(newInput);
-          },
-        };
-        toolRegistry?.register(entry);
-
-        // Start execution
-        run(tc.input);
-
-        // Await result (transparent to stop/restart)
-        const r = await resultPromise;
-        // Background tools stay registered — the sub-agent runner manages
-        // their lifecycle and unregisters on completion.
-        if (!isBackgroundCall(tc)) {
-          toolRegistry?.unregister(tc.id);
-        }
-
-        log.info('Tool completed', {
-          requestId,
-          toolCallId: tc.id,
-          name: tc.name,
-          durationMs: Date.now() - toolStart,
-          isError: r.isError,
-        });
-        onEvent({
-          type: 'tool_done',
-          id: tc.id,
-          name: tc.name,
-          result: r.result,
-          isError: r.isError,
-        });
-        if (!r.isError && BRAND_TRIGGERING_TOOLS.has(tc.name)) {
-          triggerBrandExtraction(
-            apiConfig,
-            resolveModel('brandExtractor', state.models, model),
-          );
-        }
-        return r;
-      }),
-    );
-
-    statusWatcher.stop();
-
-    // Attach results and sub-agent histories to tool content blocks
-    for (const r of results) {
-      const block = contentBlocks.find(
-        (b) => b.type === 'tool' && b.id === r.id,
-      );
-      if (block?.type === 'tool') {
-        block.result = r.result;
-        block.isError = r.isError;
-        block.completedAt = Date.now();
-        const msgs = subAgentMessages.get(r.id);
-        if (msgs) {
-          block.subAgentMessages = msgs;
-        }
-      }
-    }
-
-    // Remember what tools just ran so the streaming watcher has context
-    // while waiting for the model's first token in the next iteration.
-    const lastNonExcluded = toolCalls.filter(
-      (tc) => !STATUS_EXCLUDED_TOOLS.has(tc.name),
-    );
-    lastCompletedTools = lastNonExcluded.map((tc) => tc.name).join(', ');
-    lastCompletedInput = JSON.stringify(lastNonExcluded.at(-1)?.input ?? {});
-    lastCompletedResult = results.at(-1)?.result ?? '';
-
-    // Append tool results as user messages (with toolCallId to link them).
-    // This must happen even on cancellation — the assistant message already
-    // has tool_use blocks, so the API requires matching tool_result messages.
-    for (const r of results) {
-      state.messages.push({
-        role: 'user',
-        content: r.result,
-        toolCallId: r.id,
-        isToolError: r.isError,
-      });
-    }
-
-    // ASAP messages: pull any queued user messages promoted to mid-turn
-    // delivery and inject them at this tool boundary as plain user messages —
-    // the model reconciles them on its next call without the turn restarting.
-    // Skipped once the turn is aborted so a cancelled turn never consumes
-    // queue items.
-    if (takeSteering && !signal?.aborted) {
-      const injected = (await takeSteering()).filter(
-        (e) => e.text.trim().length > 0 || (e.attachments?.length ?? 0) > 0,
-      );
-      if (injected.length > 0) {
-        for (const entry of injected) {
-          appendEntry(entry);
-          // Keep the status watcher's turn context aware of the new request.
-          keptEntries.push(entry);
-        }
-        // The items are already gone from the persisted queue; persist the
-        // session immediately so a crash in between can't drop them.
+      // If no tool calls, the turn is complete
+      const toolCalls = getToolCalls(contentBlocks);
+      if (stopReason !== 'tool_use' || toolCalls.length === 0) {
+        statusWatcher.stop();
         saveSession(state);
+        onEvent({
+          type: 'turn_done',
+          stats: {
+            inputTokens: turnInputTokens,
+            outputTokens: turnOutputTokens,
+            cacheCreationTokens: turnCacheCreation || undefined,
+            cacheReadTokens: turnCacheRead || undefined,
+            llmCalls: turnLlmCalls,
+            lastCallInputTokens,
+            lastCallCacheCreation: lastCallCacheCreation || undefined,
+            lastCallCacheRead: lastCallCacheRead || undefined,
+          },
+        });
+        return;
       }
-    }
 
-    if (signal?.aborted) {
-      onEvent({ type: 'turn_cancelled' });
-      saveSession(state);
-      return;
-    }
+      // Execute all tool calls in parallel (skip if cancelled)
+      log.info('Tools executing', {
+        requestId,
+        count: toolCalls.length,
+        tools: toolCalls.map((tc) => tc.name),
+      });
 
-    // Loop back — the next iteration sends conversation with tool
-    // results and the model continues from where it left off
+      // Update status watcher context for tool execution phase
+      currentToolNames = toolCalls
+        .filter((tc) => !STATUS_EXCLUDED_TOOLS.has(tc.name))
+        .map((tc) => tc.name)
+        .join(', ');
+
+      const wrappedOnEvent = (e: AgentEvent) => {
+        // Capture sub-agent text for status watcher context
+        if ('parentToolId' in e && e.parentToolId) {
+          if (e.type === 'text') {
+            subAgentText = e.text;
+          } else if (e.type === 'tool_start') {
+            subAgentText = `Using ${e.name}`;
+          }
+        }
+        onEvent(e);
+      };
+      const subAgentMessages = new Map<string, import('./api.js').Message[]>();
+      const results = await Promise.all(
+        toolCalls.map(async (tc) => {
+          if (signal?.aborted) {
+            return { id: tc.id, result: USER_CANCELLED_RESULT, isError: true };
+          }
+
+          const toolStart = Date.now();
+
+          // Controllable promise — can be settled externally by stop/restart
+          let settle!: (result: string, isError: boolean) => void;
+          const resultPromise = new Promise<{
+            id: string;
+            result: string;
+            isError: boolean;
+          }>((res) => {
+            settle = (result, isError) => res({ id: tc.id, result, isError });
+          });
+
+          // Per-tool abort — cascades from parent turn signal
+          let toolAbort = new AbortController();
+
+          // Whether this slot has already been settled (prevent double-settle)
+          let settled = false;
+          const safeSettle = (result: string, isError: boolean) => {
+            if (settled) {
+              return;
+            }
+            settled = true;
+            signal?.removeEventListener('abort', cascadeAbort);
+            settle(result, isError);
+          };
+
+          const cascadeAbort = () => {
+            toolAbort.abort();
+            // Force-settle the tool so Promise.all doesn't hang
+            safeSettle(USER_CANCELLED_RESULT, true);
+          };
+          signal?.addEventListener('abort', cascadeAbort, { once: true });
+
+          // The execution function — can be called multiple times for restart
+          const run = async (input: Record<string, any>) => {
+            try {
+              let result: string;
+              if (EXTERNAL_TOOLS.has(tc.name) && resolveExternalTool) {
+                saveSession(state);
+                log.info('Waiting for external tool result', {
+                  requestId,
+                  toolCallId: tc.id,
+                  name: tc.name,
+                });
+                const blocksUser = USER_BLOCKING_EXTERNAL_TOOLS.has(tc.name);
+                if (blocksUser) {
+                  statusWatcher.pause();
+                }
+                try {
+                  result = await resolveExternalTool(tc.id, tc.name, input);
+                } finally {
+                  if (blocksUser) {
+                    statusWatcher.resume();
+                  }
+                }
+              } else {
+                result = await executeTool(tc.name, input, {
+                  apiConfig,
+                  model,
+                  models: state.models,
+                  signal: toolAbort.signal,
+                  onEvent: wrappedOnEvent,
+                  resolveExternalTool,
+                  toolCallId: tc.id,
+                  requestId,
+                  onboardingState,
+                  subAgentMessages,
+                  conversationMessages: state.messages,
+                  toolRegistry,
+                  onBackgroundComplete,
+                  onLog: (line) =>
+                    wrappedOnEvent({
+                      type: 'tool_input_delta',
+                      id: tc.id,
+                      name: tc.name,
+                      result: line,
+                    }),
+                });
+              }
+              safeSettle(capToolResult(result), result.startsWith('Error'));
+            } catch (err: any) {
+              safeSettle(`Error: ${err.message}`, true);
+            }
+          };
+
+          // Register for lifecycle management
+          const entry = {
+            id: tc.id,
+            name: tc.name,
+            input: tc.input,
+            abortController: toolAbort,
+            startedAt: toolStart,
+            settle: safeSettle,
+            rerun: (newInput: Record<string, any>) => {
+              // Reset for new execution
+              settled = false;
+              toolAbort = new AbortController();
+              signal?.addEventListener('abort', () => toolAbort.abort(), {
+                once: true,
+              });
+              entry.abortController = toolAbort;
+              entry.input = newInput;
+              run(newInput);
+            },
+          };
+          toolRegistry?.register(entry);
+
+          // Start execution
+          run(tc.input);
+
+          // Await result (transparent to stop/restart)
+          const r = await resultPromise;
+          // Background tools stay registered — the sub-agent runner manages
+          // their lifecycle and unregisters on completion.
+          if (!isBackgroundCall(tc)) {
+            toolRegistry?.unregister(tc.id);
+          }
+
+          log.info('Tool completed', {
+            requestId,
+            toolCallId: tc.id,
+            name: tc.name,
+            durationMs: Date.now() - toolStart,
+            isError: r.isError,
+          });
+          onEvent({
+            type: 'tool_done',
+            id: tc.id,
+            name: tc.name,
+            result: r.result,
+            isError: r.isError,
+          });
+          if (!r.isError && BRAND_TRIGGERING_TOOLS.has(tc.name)) {
+            triggerBrandExtraction(
+              apiConfig,
+              resolveModel('brandExtractor', state.models, model),
+            );
+          }
+          return r;
+        }),
+      );
+
+      // Attach results and sub-agent histories to tool content blocks
+      for (const r of results) {
+        const block = contentBlocks.find(
+          (b) => b.type === 'tool' && b.id === r.id,
+        );
+        if (block?.type === 'tool') {
+          block.result = r.result;
+          block.isError = r.isError;
+          block.completedAt = Date.now();
+          const msgs = subAgentMessages.get(r.id);
+          if (msgs) {
+            block.subAgentMessages = msgs;
+          }
+        }
+      }
+
+      // Remember what tools just ran so the streaming watcher has context
+      // while waiting for the model's first token in the next iteration.
+      const lastNonExcluded = toolCalls.filter(
+        (tc) => !STATUS_EXCLUDED_TOOLS.has(tc.name),
+      );
+      lastCompletedTools = lastNonExcluded.map((tc) => tc.name).join(', ');
+      lastCompletedInput = JSON.stringify(lastNonExcluded.at(-1)?.input ?? {});
+      lastCompletedResult = results.at(-1)?.result ?? '';
+
+      // Append tool results as user messages (with toolCallId to link them).
+      // This must happen even on cancellation — the assistant message already
+      // has tool_use blocks, so the API requires matching tool_result messages.
+      for (const r of results) {
+        state.messages.push({
+          role: 'user',
+          content: r.result,
+          toolCallId: r.id,
+          isToolError: r.isError,
+        });
+      }
+
+      // ASAP messages: pull any queued user messages promoted to mid-turn
+      // delivery and inject them at this tool boundary as plain user messages —
+      // the model reconciles them on its next call without the turn restarting.
+      // Skipped once the turn is aborted so a cancelled turn never consumes
+      // queue items.
+      if (takeSteering && !signal?.aborted) {
+        const injected = (await takeSteering()).filter(
+          (e) => e.text.trim().length > 0 || (e.attachments?.length ?? 0) > 0,
+        );
+        if (injected.length > 0) {
+          for (const entry of injected) {
+            appendEntry(entry);
+            // Keep the status watcher's turn context aware of the new request.
+            keptEntries.push(entry);
+          }
+          // The items are already gone from the persisted queue; persist the
+          // session immediately so a crash in between can't drop them.
+          saveSession(state);
+        }
+      }
+
+      if (signal?.aborted) {
+        statusWatcher.stop();
+        onEvent({ type: 'turn_cancelled' });
+        saveSession(state);
+        return;
+      }
+
+      // Loop back — the next iteration sends conversation with tool
+      // results and the model continues from where it left off
+    }
+  } finally {
+    // Last line of defense: no exit path — including a thrown streaming
+    // error — may leave the interval alive.
+    statusWatcher.stop();
   }
 }

@@ -67,6 +67,10 @@ export type ContentBlock =
       background?: boolean;
       /** Final result from a backgrounded sub-agent (set when background work completes). */
       backgroundResult?: string;
+      /** UI/history-only tool block (e.g. the synthesized row for a user- or
+       * gate-initiated compaction). Any message containing one is dropped
+       * from API payloads by cleanMessagesForApi — the model never sees it. */
+      uiOnly?: boolean;
     }
   | {
       type: 'summary';

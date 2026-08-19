@@ -70,8 +70,11 @@ export interface Tool {
    * for tools whose results the agent deferred and must act on. 'passive'
    * parks the result in the headless holding pen; it never initiates a turn
    * and instead rides the next real turn as a hidden background_results
-   * entry — for fire-and-forget bookkeeping tools like specSync. */
-  backgroundNotify?: 'wake' | 'passive';
+   * entry — for fire-and-forget bookkeeping tools like specSync. 'silent'
+   * updates the tool block (UI detail view) and nothing else — the model is
+   * never told, because the outcome reaches it by another mechanism (e.g.
+   * compactConversation: the model sees the checkpoint itself). */
+  backgroundNotify?: 'wake' | 'passive' | 'silent';
   execute: (
     input: Record<string, any>,
     context?: ToolExecutionContext,

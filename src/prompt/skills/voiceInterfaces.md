@@ -53,9 +53,8 @@ than any other surface.
 Structure the compiled prompt as short **labeled sections** — Role & Objective, Personality & Tone,
 Rules, and (when the app has a real call flow) Conversation Flow — with bullets over paragraphs;
 realtime models find and follow sectioned rules far more reliably than prose. Scope rules
-precisely: "confirm before any tool that changes data," not "always confirm everything" — blanket
-`always`/`never` makes the agent rigid and unable to handle reasonable exceptions. And start
-minimal: state the role, the boundaries, and the voice mechanics above, then add rules only for
+precisely; blanket `always`/`never` makes the agent rigid and unable to handle reasonable exceptions. 
+And start minimal: state the role, the boundaries, and the voice mechanics above, then add rules only for
 behaviors that actually misfire in test calls (the transcripts in the call log are the feedback
 loop — `mindstudio-prod voice sessions get` reads a call verbatim) rather than front-loading a
 policy manual.

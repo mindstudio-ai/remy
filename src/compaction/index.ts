@@ -238,7 +238,21 @@ function getConversationMessagesForSummary(
     }
   }
 
-  return messages.slice(startIdx, endIndex);
+  // UI-only messages (synthesized compaction tool rows) are invisible to the
+  // model, so the summarizer must not see them either — otherwise the
+  // synthetic row itself counts as summarizable content and a /compact on an
+  // otherwise-empty range attempts a pointless LLM call.
+  return messages
+    .slice(startIdx, endIndex)
+    .filter(
+      (msg) =>
+        !(
+          Array.isArray(msg.content) &&
+          (msg.content as ContentBlock[]).some(
+            (b) => b.type === 'tool' && b.uiOnly,
+          )
+        ),
+    );
 }
 
 /**
