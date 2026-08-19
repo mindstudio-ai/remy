@@ -92,12 +92,62 @@ The Build Overview already exists at \`${OVERVIEW_FILE}\`. Read it, then update 
 Then reply with a one-line summary of what you changed.`;
 }
 
+/**
+ * Shared render core: assemble the brief (a present file keys the delivery
+ * text — edit-in-place vs fresh-from-shell) and dispatch the design expert.
+ * `opts.background` alone decides detach vs await — the main tool backgrounds
+ * refreshes (they'd otherwise block the turn); specSync always runs it
+ * foreground within its own already-detached run (nesting a backgrounded
+ * expert inside a background subagent would report completion against the
+ * wrong tool block — see productVision's writePitchDeck for the precedent).
+ * Stores the expert's transcript against context.toolCallId, so callers pass
+ * the context whose toolCallId owns this render.
+ */
+export async function renderBuildOverview(
+  content: string,
+  context: ToolExecutionContext,
+  opts: { background: boolean },
+): Promise<string> {
+  if (!content) {
+    return 'Error: writeBuildOverview requires non-empty `content` (the overview copy).';
+  }
+
+  const exists = fs.existsSync(OVERVIEW_FILE);
+  const task = `<overview_copy>${content}</overview_copy>
+
+${DESIGN_BRIEF}
+
+${exists ? refreshDelivery() : initialDelivery()}`;
+
+  try {
+    if (opts.background) {
+      // Detach — return an ack now; the design expert writes the file itself
+      // and reports via the completion queue.
+      const result = await runDesignExpertRender(
+        { task, background: true, reportingName: 'writeBuildOverview' },
+        context,
+      );
+      context.subAgentMessages?.set(context.toolCallId, result.messages);
+      return result.text;
+    }
+
+    const result = await runDesignExpertRender({ task }, context);
+    context.subAgentMessages?.set(context.toolCallId, result.messages);
+    if (!fs.existsSync(OVERVIEW_FILE)) {
+      return `Error: the design expert did not write ${OVERVIEW_FILE}. Its reply was:\n${result.text}`;
+    }
+    return `Build overview written to ${OVERVIEW_FILE}. ${result.text}`;
+  } catch (err: any) {
+    return `Error generating build overview: ${err.message}`;
+  }
+}
+
 export const buildOverviewTool: Tool = {
   definition: {
     clearable: false,
     name: 'writeBuildOverview',
     description:
-      "Generate or refresh the Build Overview — the project's home page in the Spec tab: a single-page, plain-language reference of everything the app actually contains, including the parts the user can't see (data stores, backend operations, access and roles, background jobs, seeded scenarios, the design system). You author the full copy: read the manifest and spec and state, plainly and exactly, what genuinely exists — real names and accurate counts — in calm, declarative, present-tense outcome language, with no persuasion or hype. Describe only what exists. Pass the complete copy as `content`; the design expert lays it out and skins it to the app's brand using your copy verbatim — it typesets your words, it does not rewrite them, so polish the copy before you pass it. Generate it at the end of a build and refresh it after meaningful work.",
+      "Generate or refresh the Build Overview — the project's home page in the Spec tab: a single-page, plain-language reference of everything the app actually contains, including the parts the user can't see (data stores, backend operations, access and roles, background jobs, seeded scenarios, the design system). You author the full copy: read the manifest and spec and state, plainly and exactly, what genuinely exists — real names and accurate counts — in calm, declarative, present-tense outcome language, with no persuasion or hype. Describe only what exists. Pass the complete copy as `content`; the design expert lays it out and skins it to the app's brand using your copy verbatim — it typesets your words, it does not rewrite them, so polish the copy before you pass it. Generate it at the end of a build; routine refreshes ride specSync's `refreshBuildOverview` flag instead, so call this directly only for the initial generation or when the user explicitly asks.",
     inputSchema: {
       type: 'object',
       properties: {
@@ -120,49 +170,20 @@ export const buildOverviewTool: Tool = {
     }
 
     const content = ((input.content as string) ?? '').trim();
-    if (!content) {
-      return 'Error: writeBuildOverview requires non-empty `content` (the overview copy).';
+
+    // File present = refresh; absent = initial generation. The initial overview
+    // is shown at the reveal and must be written before the turn ends;
+    // refreshes run detached. Empty content errors inside the helper without
+    // dispatching, so it must not mark the call backgrounded.
+    const background = Boolean(content) && fs.existsSync(OVERVIEW_FILE);
+    if (background) {
+      // agent.ts gates registry cleanup on `tc.input.background`, and this
+      // tool has no `background` schema field — but `input` IS `tc.input` by
+      // reference, so setting it here keeps the detached render registered
+      // (stoppable) and lets runSubAgent unregister it on completion, exactly
+      // like a natively-backgrounded subagent tool.
+      input.background = true;
     }
-
-    // File present = refresh; absent = initial generation. This keys both the
-    // delivery instructions (edit-in-place vs. write-fresh) and foreground vs.
-    // background: the initial overview is shown at the reveal and must be
-    // written before the turn ends; refreshes run detached.
-    const exists = fs.existsSync(OVERVIEW_FILE);
-    const task = `<overview_copy>${content}</overview_copy>
-
-${DESIGN_BRIEF}
-
-${exists ? refreshDelivery() : initialDelivery()}`;
-
-    try {
-      if (exists) {
-        // Refresh in the background — return an ack now; the design expert
-        // writes the file itself and reports via the completion queue.
-        //
-        // agent.ts gates registry cleanup on `tc.input.background`, and this
-        // tool has no `background` schema field — but `input` IS `tc.input` by
-        // reference, so setting it here keeps the detached render registered
-        // (stoppable) and lets runSubAgent unregister it on completion, exactly
-        // like a natively-backgrounded subagent tool.
-        input.background = true;
-        const result = await runDesignExpertRender(
-          { task, background: true, reportingName: 'writeBuildOverview' },
-          context,
-        );
-        context.subAgentMessages?.set(context.toolCallId, result.messages);
-        return result.text;
-      }
-
-      // Initial build: foreground.
-      const result = await runDesignExpertRender({ task }, context);
-      context.subAgentMessages?.set(context.toolCallId, result.messages);
-      if (!fs.existsSync(OVERVIEW_FILE)) {
-        return `Error: the design expert did not write ${OVERVIEW_FILE}. Its reply was:\n${result.text}`;
-      }
-      return `Build overview written to ${OVERVIEW_FILE}. ${result.text}`;
-    } catch (err: any) {
-      return `Error generating build overview: ${err.message}`;
-    }
+    return renderBuildOverview(content, context, { background });
   },
 };

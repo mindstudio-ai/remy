@@ -6,13 +6,22 @@
  * Always runs in the background (backgroundOnly) and serializes via a FIFO lock so
  * two reconciliations never run at once. Read + spec-write tools only — it never
  * edits code. Available only after onboarding is finished.
+ *
+ * With `refreshBuildOverview` set (post-deploy / large milestones), the run also
+ * gains writeBuildOverview: after reconciling, it authors fresh overview copy
+ * from the updated spec and the design expert re-renders src/overview.html —
+ * foreground within this run, never nested-background.
  */
 
 import type { Tool, ToolExecutionContext } from '../../tools/index.js';
 import { readAsset } from '../../assets.js';
 import { runSubAgent } from '../runner.js';
 import { loadSpecIndex, loadPlatformBrief } from '../common/context.js';
-import { executeTool } from '../../tools/index.js';
+import { executeTool, deriveContext } from '../../tools/index.js';
+import {
+  buildOverviewTool,
+  renderBuildOverview,
+} from '../../tools/spec/writeBuildOverview.js';
 import { SPEC_SYNC_TOOLS } from './tools.js';
 import { acquireSpecSyncLock } from './lock.js';
 import { resolveModel } from '../../models/surfaces.js';
@@ -36,7 +45,7 @@ export const specSyncTool: Tool = {
     clearable: false,
     name: 'specSync',
     description:
-      'Reconcile the spec to bring it in line with code changes you have made. Provide a brief, bulleted list of what changed and why; it finds the affected spec sections and updates them to match. Always runs in the background and completes silently — do not wait for it; its outcome appears as an automated note at the start of a later turn.',
+      'Reconcile the spec to bring it in line with code changes you have made. Provide a brief, bulleted list of what changed and why; it finds the affected spec sections and updates them to match. Set `refreshBuildOverview` after a deploy or a large milestone to also re-author the Build Overview from the updated spec. Always runs in the background and completes silently — do not wait for it; its outcome appears as an automated note at the start of a later turn.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -44,6 +53,11 @@ export const specSyncTool: Tool = {
           type: 'string',
           description:
             'What you changed in the code and why, in plain language — the way you would explain it to a teammate. The specialist reads the spec itself and decides which sections to update; you do not need to name files or spec locations.',
+        },
+        refreshBuildOverview: {
+          type: 'boolean',
+          description:
+            'Also refresh the Build Overview (src/overview.html) after reconciling — the specialist authors fresh copy from the updated spec and re-renders the page. Set this after a deploy or a large milestone; leave it off for routine syncs.',
         },
       },
       required: ['task'],
@@ -77,12 +91,40 @@ export const specSyncTool: Tool = {
     }
     const system = parts.join('\n\n');
 
+    // With refreshBuildOverview set, the run gains the writeBuildOverview
+    // tool (its description carries the full copy-authoring contract) and a
+    // task directive to use it after reconciling. Deterministic gating: an
+    // unflagged run cannot touch the overview.
+    const refreshOverview = input.refreshBuildOverview === true;
+    const tools = refreshOverview
+      ? [...SPEC_SYNC_TOOLS, buildOverviewTool.definition]
+      : SPEC_SYNC_TOOLS;
+    const task = refreshOverview
+      ? `${input.task}\n\nAfter reconciling the spec, refresh the Build Overview: author the complete updated copy from the freshly-reconciled spec (follow the writeBuildOverview tool description) and call \`writeBuildOverview\` once with the final copy.`
+      : input.task;
+
     const result = await runSubAgent({
       system,
-      task: input.task,
-      tools: SPEC_SYNC_TOOLS,
+      task,
+      tools,
       externalTools: new Set<string>(),
-      executeTool: (name, toolInput) => executeTool(name, toolInput, context),
+      executeTool: (name, toolInput, toolCallId, _onLog, sams) => {
+        // Overview render runs foreground within this already-detached run —
+        // never nested-background (see renderBuildOverview) — against a child
+        // context so the expert's events and transcript attach to the inner
+        // writeBuildOverview call.
+        if (name === 'writeBuildOverview') {
+          const childCtx = toolCallId
+            ? { ...deriveContext(context, toolCallId), subAgentMessages: sams }
+            : { ...context, subAgentMessages: sams };
+          return renderBuildOverview(
+            String(toolInput.content ?? '').trim(),
+            childCtx,
+            { background: false },
+          );
+        }
+        return executeTool(name, toolInput, context);
+      },
       apiConfig: context.apiConfig,
       model: resolveModel('specSync', context.models, context.model),
       subAgentId: 'specSync',
