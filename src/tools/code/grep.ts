@@ -30,7 +30,6 @@ function formatResults(stdout: string, max: number, mode: OutputMode): string {
 
 export const grepTool: Tool = {
   definition: {
-    clearable: true,
     name: 'grep',
     description:
       "Search file contents for a regex pattern. Returns matching lines with file paths and line numbers (default 50 results). Use this to find where something is used, locate function definitions, or search for patterns across the codebase. Set outputMode to 'count' for per-file match counts (like grep -c) or 'filesWithMatches' for just the file paths (like grep -l). Add context (like grep -C), or contextBefore/contextAfter (like grep -B/-A), to include surrounding lines. Set caseInsensitive (like grep -i) for a case-insensitive search. For finding a symbol's definition precisely, prefer the definition tool if LSP is available. Automatically excludes node_modules and .git.",

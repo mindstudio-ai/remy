@@ -8,7 +8,6 @@ import { acquireFileLock } from '../_helpers/fileLock.js';
 
 export const writeFileTool: Tool = {
   definition: {
-    clearable: true,
     name: 'writeFile',
     description:
       "Create a new file or completely overwrite an existing one. Parent directories are created automatically. Use this for new files or full rewrites. For targeted changes to existing files, use editFile instead — it preserves the parts you don't want to change and avoids errors from forgetting to include unchanged code.",

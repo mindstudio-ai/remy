@@ -14,7 +14,6 @@ const MAX_OUTPUT_BYTES = 30_000;
 
 export const bashTool: Tool = {
   definition: {
-    clearable: true,
     name: 'bash',
     description:
       'Run a shell command and return stdout + stderr. 120-second timeout by default (configurable). Use for: npm install/build/test, git operations, tsc --noEmit, or any CLI tool. Prefer dedicated tools over bash when available (use grep instead of bash + rg, readFile instead of bash + cat). Output is truncated to 500 lines or 30KB, whichever comes first. If a command would emit a lot of data, narrow it down (grep, head/tail, --short flags) rather than reading everything.',

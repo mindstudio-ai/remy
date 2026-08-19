@@ -3,7 +3,6 @@ import { runMindstudioCli } from '../../common/runMindstudioCli.js';
 import { SCRAPE_MAX_BUFFER } from '../../common/runCli.js';
 
 export const definition: ToolDefinition = {
-  clearable: false,
   name: 'scrapeWebUrl',
   description:
     'Fetch the content of a web page as markdown. Use when reading sites from search results or specific things the user wants to incorporate.',

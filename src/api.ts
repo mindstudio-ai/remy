@@ -128,31 +128,14 @@ export interface Message {
  * Tool definition sent to the LLM — vendor-agnostic JSON Schema format.
  *
  * The one shape, for every agent. There used to be a second declaration in
- * `src/tools/index.ts` without `clearable`, so which flavour you got depended on
- * which module you imported from and a definition written against one wouldn't
- * type against the other.
+ * `src/tools/index.ts`, so which flavour you got depended on which module you
+ * imported from and a definition written against one wouldn't type against
+ * the other.
  */
 export interface ToolDefinition {
   name: string;
   description: string;
   inputSchema: Record<string, any>;
-  /**
-   * Whether this tool's results can be cleared from old turns to save context.
-   * Omitted counts as clearable — only an explicit `false` protects results.
-   *
-   * true = results are ephemeral (file contents, diffs, search results, terminal
-   * output). false = results carry decisions, guidance, or user input that must
-   * persist.
-   *
-   * Declared here and nowhere else, for main agent and sub-agents alike. The
-   * server reads it straight off the wire — youai-api's AnthropicAdapter builds
-   * its clear-exclusion list from the tools in the request — so there is nothing
-   * for remy to derive or send alongside. It previously lived in two places at
-   * once: on the `Tool` wrapper for main-agent tools, inside the definition for
-   * sub-agent tools, with both call paths recomputing the same list into a
-   * now-removed `excludeToolsFromClearing` request param.
-   */
-  clearable?: boolean;
 }
 
 // Events yielded by the SSE stream. All events include an optional `ts`

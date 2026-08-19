@@ -29,7 +29,6 @@ function isBinary(buffer: Buffer): boolean {
 
 export const readFileTool: Tool = {
   definition: {
-    clearable: true,
     name: 'readFile',
     description:
       "Read a file's contents with line numbers. Always read a file before editing it — never guess at contents. By default returns the first 500 lines, and at most 64KB — a file with very wide lines (a CSV, a minified bundle) comes back short of 500 lines, so read a narrower range or grep rather than paging through it. To read a specific range, pass startLine and endLine (1-indexed, inclusive) — e.g. to read lines 253–343, pass startLine: 253, endLine: 343. To read the end of a file or log, pass tail (the number of lines from the end). Line numbers in the output correspond to what editFile expects. For a large file, locate the relevant section first (symbols or grep), then read just that range.",

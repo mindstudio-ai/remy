@@ -10,7 +10,6 @@ import type { Tool } from '../index.js';
 
 export const editsFinishedTool: Tool = {
   definition: {
-    clearable: false,
     name: 'editsFinished',
     description:
       'Signal that file edits are complete. Call this after you finish writing/editing files so the live preview updates cleanly. The preview is paused while you edit to avoid showing broken intermediate states — this unpauses it. If you forget to call this, the preview updates when your turn ends.',

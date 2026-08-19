@@ -5,7 +5,6 @@ import { lspRequest } from '../_helpers/lsp.js';
 
 export const restartProcessTool: Tool = {
   definition: {
-    clearable: false,
     name: 'restartProcess',
     description:
       'Restart a managed sandbox process. Use this after running npm install or changing package.json to restart the dev server so it picks up new dependencies.',

@@ -9,7 +9,6 @@ import { acquireFileLock } from '../_helpers/fileLock.js';
 
 export const writeSpecTool: Tool = {
   definition: {
-    clearable: true,
     name: 'writeSpec',
     description:
       'Create a new spec file or completely overwrite an existing one in src/. Parent directories are created automatically. Use this for new spec files or full rewrites. For targeted changes to existing specs, use editSpec instead.',
