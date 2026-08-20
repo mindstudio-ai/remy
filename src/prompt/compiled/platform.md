@@ -12,7 +12,7 @@ my-app/
 
   src/                               ← authored source (no code)
     app.md                             backend spec (MSFM)
-    references/                        supporting material (PDFs, notes, diagrams)
+    references/                        supporting material (PDFs, notes, diagrams) — context for the agent, not consumed by the platform
     interfaces/
       @brand/                          shared brand identity
         visual.md                        aesthetic direction, surfaces, spacing
@@ -34,7 +34,7 @@ my-app/
         common/                          shared helpers (imported by methods, not methods themselves)
         *.ts                             one file per method (named async function export)
       .scenarios/                      seed data scripts (dev only, not deployed)
-      package.json                     backend dependencies
+      package.json                     backend dependencies — only declared packages are available at runtime
 
     interfaces/                        interface projections
       web/                               full project directory (Vite + React)
@@ -60,21 +60,11 @@ my-app/
         tools/                             tool descriptions (one .md per method)
 ```
 
-## What Goes Where
+## Platform Limits
 
-| What | Where | Notes |
-|------|-------|-------|
-| Method handlers | `dist/methods/src/*.ts` | One file per method, named export |
-| Table definitions | `dist/methods/src/tables/*.ts` | One file per table |
-| Shared helpers | `dist/methods/src/common/*.ts` | Imported by methods, not invokable directly |
-| Scenarios | `dist/methods/.scenarios/*.ts` | Seed data for testing (not deployed) |
-| Backend dependencies | `dist/methods/package.json` | Only declared packages are available at runtime |
-| Web interface | `dist/interfaces/web/` | Full Vite + React project directory |
-| Interface configs | `dist/interfaces/*/interface.json` | One per non-web interface type |
-| Specs | `src/*.md` | Natural language, MSFM format |
-| Brand identity | `src/interfaces/@brand/` | visual.md (aesthetic), colors.md (palette), typography.md (fonts), voice.md (tone), assets/ |
-| Roadmap | `src/roadmap/*.md` | Feature roadmap items (type: roadmap). One file per feature with status, dependencies, and history. |
-| Reference material | `src/references/` | Context for the agent, not consumed by platform |
+Two things the platform cannot do — be upfront when a request heads this way:
+- Native mobile apps (iOS/Android). Mobile-responsive web apps are fine.
+- Real-time multiplayer with persistent connections (no WebSocket support). Turn-based or async multiplayer works great.
 
 ## The Two SDKs
 

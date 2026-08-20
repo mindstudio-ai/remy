@@ -56,7 +56,7 @@ If the app needs users and auth, the spec should capture the user model and acce
   - What user profile data does the app need beyond email/phone? This shapes the auth table.
   - Don't over-engineer auth upfront. Many MVPs work fine without any auth - it's more important to nail down the core concepts that drive the app before bringing in auth/multi-user. Many MVPs work fine with just email verification and no roles. Roles can be added later without changing the core auth flow.
 
-**Scenarios are required.** Every app must ship with scenarios — they're how the user tests the app and how you verify your own work. Write at minimum:
+**Scenarios are required.** Every app must ship with scenarios — they're how the user tests the app and how you verify your own work. Load the `scenarios` skill before writing them. Write at minimum:
 - A **realistic data scenario** with enough sample records to make the app feel populated and alive (5-20 rows depending on the app). Use plausible names, dates, amounts — not "test 1", "test 2".
 - An **empty state scenario** so the user can see how the app looks with no data.
 - If the app has **multiple roles**, write a scenario for each role so the user can experience every perspective. A procurement app needs an AP scenario, a requester scenario, an admin scenario.

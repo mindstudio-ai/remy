@@ -1,3 +1,9 @@
+---
+name: Scenarios
+what: Seed scripts that reset the dev database to a specific state — the platform truncates all tables, runs an async function of plain `db.push()` calls, then impersonates a role, so the same scenario always produces the same state. They're how the user tests the app from each role's perspective and how a freshly built app makes its first impression already populated with data that fits its vibe. Declared in the manifest, written at `dist/methods/.scenarios/`.
+when: Before writing or editing a scenario — including the initial build, where scenarios are required. Covers file placement and imports, truncate semantics, what scenarios must not touch (file stores, data sources), and seeding realistic data and bespoke images.
+---
+
 # Scenarios
 
 Scenarios are seed scripts that set up the dev database into a specific state for testing. Instead of manually creating data through the app, run a scenario and get a repeatable starting point. A scenario is just an async function that uses the same `db.push()` calls as methods — no new API to learn.

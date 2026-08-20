@@ -1,3 +1,9 @@
+---
+name: Secrets & Environment Variables
+what: Encrypted per-app secrets injected into backend method execution as `process.env`, with separate dev and prod values resolved automatically by execution context — test keys in the sandbox, live keys in releases, same code. Only for third-party services the MindStudio SDK doesn't already cover (a Stripe key, a webhook signing secret, a direct external API): the SDK handles auth, billing, and key management for AI models and platform integrations itself, so most apps never need one. Backend-only — secrets never reach frontends or interfaces.
+when: Before wiring a credential for an external service the SDK doesn't provide — never for AI model keys or platform-provided integrations (use the SDK), and never in frontend code.
+---
+
 # Secrets & Environment Variables
 
 Apps can store encrypted secrets (API keys, database URLs, tokens) that get injected into method execution as `process.env` variables. Secrets have separate dev and prod values — dev values are used in the editor sandbox, prod values are used in deployed releases.

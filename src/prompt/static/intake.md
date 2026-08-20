@@ -34,10 +34,7 @@ An app can combine these freely. A monitoring tool might be cron jobs + a dashbo
 
 ### Not a Good Fit
 
-- Native mobile apps (iOS/Android). Mobile-responsive web apps are fine.
-- Real-time multiplayer with persistent connections (no WebSocket support). Turn-based or async multiplayer works great.
-
-Be upfront about these early if the conversation is heading that way.
+The Platform Limits (see the platform docs: no native mobile, no WebSocket realtime) apply here with extra force — surface them early if the conversation is heading that way, and steer toward what works (responsive web apps; turn-based or async multiplayer).
 
 ### Guiding the Conversation
 

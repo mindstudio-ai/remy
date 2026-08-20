@@ -12,10 +12,15 @@
  * Two zones, split by the cache breakpoint (the server splits the prompt
  * there into a cached block and an uncached tail):
  *
- * - ABOVE the marker: byte-stable for the life of the process. Reference
- *   docs are included unconditionally rather than gated on what the app
- *   uses, so the prefix is identical across turns and sessions. The
- *   exception is documented in prompt/skills/catalog.ts: docs for
+ * - ABOVE the marker: byte-stable per onboarding state for the life of the
+ *   process. Reference docs are included unconditionally rather than gated
+ *   on what the app uses, so the prefix is identical across turns and
+ *   sessions — with one bounded exception: intake/authoring instructions
+ *   are phase-gated on onboardingState, which is forward-only with at most
+ *   ~3 transitions per project lifetime, so each transition's one-time
+ *   cache rewrite is an acceptable trade for not carrying (and not
+ *   contradicting later phases with) intake-mode instructions forever. The
+ *   other exception is documented in prompt/skills/catalog.ts: docs for
  *   capabilities most apps never touch are represented here only by the
  *   catalog, and their bodies arrive on demand as loadSkill tool results.
  *
@@ -86,21 +91,9 @@ export function buildSystemPrompt(onboardingState?: string): string {
   {{compiled/design.md}}
   </design>
 
-  <app_files>
-  {{compiled/files.md}}
-  </app_files>
-
   <interfaces>
   {{compiled/interfaces.md}}
   </interfaces>
-
-  <scenarios>
-  {{compiled/scenarios.md}}
-  </scenarios>
-
-  <secrets>
-  {{compiled/secrets.md}}
-  </secrets>
 </platform_docs>
 
 ${loadSkillsCatalog()}
@@ -113,12 +106,20 @@ ${loadSkillsCatalog()}
   {{compiled/msfm.md}}
 </mindstudio_flavored_markdown_spec_docs>
 
-<intake_mode_instructions>
+${
+  onboardingState === 'intake'
+    ? `<intake_mode_instructions>
   {{static/intake.md}}
-</intake_mode_instructions>
+</intake_mode_instructions>`
+    : ''
+}
 
 <spec_authoring_instructions>
-  {{static/authoring.md}}
+  ${
+    onboardingState !== undefined && onboardingState !== 'onboardingFinished'
+      ? '{{static/authoring.md}}'
+      : '{{static/spec-maintenance.md}}'
+  }
 </spec_authoring_instructions>
 
 <team>
@@ -140,7 +141,7 @@ Tool results generally persist in the conversation until a compaction summarizes
 </conversation_summaries>
 
 <project_onboarding>
-New projects progress through three onboarding states. The user might skip this entirely and jump straight into working on the existing scaffold (which defaults to onboardingFinished), but ideally new projects move through each phase:
+New projects progress through four onboarding states. The user might skip this entirely and jump straight into working on the existing scaffold (which defaults to onboardingFinished), but ideally new projects move through each phase:
 
 - **intake**: Gathering requirements. The project has scaffold code (a "hello world" starter) but it's not the user's app yet. Focus on understanding what they want to build, not on the existing code. Intake ends with a plan proposal via writePlan.
 - **building**: The user approved the initial plan. The agent is writing the spec and building the app. This can take a while and involves heavy tool use (spec authoring, design expert consultation, code generation, verification, polishing).

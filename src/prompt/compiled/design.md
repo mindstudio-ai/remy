@@ -53,6 +53,8 @@ Every interface must work on both desktop and mobile. Think about how the app wi
 
 The `designExpert` can create and source amazing, high quality images, graphics, illustrations, and logos to use in the interface - both with and without transparency. This is a huge level for upgrading the premium look, feel, and quality of the app. Use image logos directly instead of plain text wordmarks; use images for empty states, onboarding screens, full-screen loading, and more.
 
+Public CDN images accept resize query params — request the size the layout actually displays (e.g. `?w=400&dpr=2` so it stays crisp on Retina) instead of CSS-scaling a full-res original. The full parameter table is in the `files` skill.
+
 ## Forms
 
 Forms should feel like interactions, not paperwork.
@@ -82,8 +84,8 @@ Buttons should use a small animated spinner during loading, not text labels like
 The UI should feel instant. Never make the user wait for a server round-trip to see the result of their own action. Consider loading a bunch of data in one API call, rather than a bunch of small calls (e.g., if loading a post, also preload comments, likes, user artifacts, etc - don't use separate API calls for each GET).
 
 - **Optimistic updates.** When a user adds a row, toggles a setting, or submits a form, update the UI immediately and let the backend confirm in the background. If the backend fails, revert and show an error.
-- **Use SWR for data fetching** (`useSWR` from the `swr` package). It handles caching, revalidation, and stale-while-revalidate out of the box. Prefer SWR over manual `useEffect` + `useState` fetch patterns.
-- **Mutate after actions.** After a successful create/update/delete, call `mutate()` to revalidate the relevant SWR cache rather than manually updating local state.
+- **Data fetching.** For apps that can load everything on startup, use a Zustand store with a single initial fetch (see the coding instructions) — SWR (`useSWR`) is for server-cache patterns where data is too large or dynamic to hold in memory. Whichever fits, never leave fetches as ad-hoc `useEffect` + `useState` patterns.
+- **Mutate after actions.** After a successful create/update/delete, update the store optimistically (or call `mutate()` to revalidate the relevant cache when using SWR) rather than refetching everything.
 - **Skeleton loading.** Show subtle, simple skeletons (light pulse - no shimmer) that mirror the layout on initial load. Never show a blank page or centered spinner while data is loading.
 
 ### Errors

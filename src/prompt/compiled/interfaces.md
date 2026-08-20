@@ -61,7 +61,7 @@ const api = createClient<{
 const { vendorId } = await api.submitVendorRequest({ name: 'Acme' });
 const { vendors } = await api.listVendors();
 
-// File upload → client-direct to the app's file store (see Files & Storage).
+// File upload → client-direct to the app's file store (load the `files` skill for the backend side).
 // A backend method mints an upload token; the browser uploads straight to storage.
 const token = await api.getUploadSlot({ filename: file.name, contentType: file.type });
 const { key, url } = await platform.upload(token, file);
@@ -79,11 +79,9 @@ auth.getCurrentUser()               // AppUser { id, email, phone, roles, create
 auth.currentUser                    // same as getCurrentUser() (sync getter)
 auth.isAuthenticated()              // boolean
 auth.onAuthStateChanged(cb)         // fires immediately + on transitions; returns unsubscribe
-auth.sendEmailCode(email)           // → { verificationId }
-auth.verifyEmailCode(verId, code)   // → AppUser (sets session)
-auth.sendSmsCode(phone)             // → { verificationId }
-auth.verifySmsCode(verId, code)     // → AppUser (sets session)
 auth.logout()                       // clears session
+// Verification flows (send/verify email + SMS codes, delegated sign-in, API keys)
+// are in the `auth` skill — load it before building login/signup.
 ```
 
 For apps with an agent interface, the SDK also provides `createAgentChatClient()` for thread management and streaming chat. Load the `agentInterfaces` skill for its usage — thread APIs, streaming callbacks, and attachments are all there.
@@ -154,43 +152,27 @@ Each has its own skill carrying the config shape, the input the method receives,
 
 ## Cron
 
-Scheduled method execution — a method plus a cron expression, synced to the platform on deploy.
-
-**Load the `scheduledJobs` skill** before adding one.
+Scheduled method execution — a method plus a cron expression, synced to the platform on deploy. **Load the `scheduledJobs` skill** before adding one.
 
 ## Webhook
 
-Inbound HTTP endpoints that invoke a method directly and synchronously — the caller waits for the method to finish. Use for receiving webhooks from external services (Stripe, GitHub, Shopify, Slack, Twilio). Direct inbound webhooks with signature verification work natively; do **not** build confirmation-token or polling workarounds.
-
-Routing is by a secret in the URL rather than an auth header, which is what makes it the right fit for provider callbacks — they can't send a bearer token. The API interface is the alternative when the caller can.
-
-**Load the `webhooks` skill** before adding one — the secret semantics, endpoint URL, input shape, and signature verification are all there.
+Inbound HTTP endpoints that invoke a method directly and synchronously. Use for provider callbacks (Stripe, GitHub, Shopify, Slack, Twilio) — signature verification works natively; do **not** build confirmation-token or polling workarounds. Routing is by a secret in the URL rather than an auth header, which is what fits callers that can't send a bearer token; the API interface is the alternative when they can. **Load the `webhooks` skill** before adding one.
 
 ## Email
 
-Inbound email triggers. Each app has one email-handler method; the platform routes all inbound mail destined for the app — across any of its address tiers — to that method. Addresses on the app's subdomain are catchall, so per-purpose addresses (`support@`, `receipts@`) work without registering anything.
-
-**Load the `inboundEmail` skill** before writing the handler — address tiers, `approvedSenders`, the input shape, in-thread replies, and attachments are all there.
+Inbound email triggers: one handler method per app, and the platform routes all inbound mail for the app to it. Addresses on the app's subdomain are catchall, so per-purpose addresses (`support@`, `receipts@`) work without registering anything. **Load the `inboundEmail` skill** before writing the handler.
 
 ## MCP (Model Context Protocol)
 
-Expose the app to *external* AI agents — Claude Desktop, Cursor, other people's agents, anything that speaks MCP. Unlike the agent interface (which *is* an agent — its own LLM, personality, and chat UI), MCP has no model of its own; it's the app projected as an MCP server for an outside AI to drive.
-
-It supports the full MCP surface: tools (methods the agent can call), resources (read-only app data addressable by URI), prompts (parameterized templates), and instructions (server-level guidance for the whole toolset). The platform hosts the server, handles auth, and derives every tool's input schema from the method contract.
-
-**Load the `mcpInterfaces` skill** before authoring `src/interfaces/mcp.md`. Because the consumer is an external agent with no knowledge of your app, the descriptions are the product — the skill carries both how to write them and the full config contract.
+The app projected as an MCP server for *external* AI agents to drive (Claude Desktop, Cursor, other people's agents). Unlike the agent interface — which IS an agent, with its own LLM — MCP has no model of its own. The platform hosts the server, handles auth, and derives tool schemas from method contracts. **Load the `mcpInterfaces` skill** before authoring `src/interfaces/mcp.md` — the consumer knows nothing about your app, so the descriptions are the product.
 
 ## Agent (Conversational Interface)
 
-A conversational interface where an LLM has access to the app's methods as tools. Unlike MCP (which exposes methods for external agents), the agent interface IS the agent — it has its own personality, system prompt, and model config, and orchestrates tool calls against the app's methods internally. Chat runs as the authenticated user, so every tool call carries that user's roles. The config must declare an `auth` block (`{ "requireUser": boolean, "requireRole"?: string[] }`) gating who may chat at all.
-
-**Load the `agentInterfaces` skill** before authoring `src/interfaces/agent.md` or building the chat UI — the spec frontmatter, compiled output, `agent.json`, and the entire frontend surface are all there.
+A conversational interface where the app's own LLM orchestrates its methods as tools — its own personality, system prompt, and model config (the inverse of MCP). Chat runs as the authenticated user, so every tool call carries that user's roles, and the config must declare an `auth` block (`{ "requireUser": boolean, "requireRole"?: string[] }`) gating who may chat at all. **Load the `agentInterfaces` skill** before authoring `src/interfaces/agent.md` or building the chat UI.
 
 ## Voice (Realtime Conversation)
 
-The app's agent as a live voice conversation — the user talks, and the agent answers in sub-second, interruptible speech, calling methods mid-conversation. A sibling of the agent interface, not a mode of it: its own spec, a persona written for the ear rather than the screen, and a smaller toolset where every tool carries a latency class governing how the agent handles the wait out loud. Sessions run as the authenticated user, so tool calls carry that user's roles; the platform handles the realtime media, turn-taking, barge-in, and transcripts. The config must declare an `auth` block (`{ "requireUser": boolean, "requireRole"?: string[] }`) gating who may start a session at all.
-
-**Load the `voiceInterfaces` skill** before authoring `src/interfaces/voice.md` or building the voice UI — the spoken-register rules, latency classes, spec format, `interface.json`, and the `createVoiceClient()` frontend surface are all there.
+The app's agent as a live, interruptible voice conversation — a sibling of the agent interface, not a mode of it, with its own spec and a smaller toolset where every tool carries a latency class. Sessions run as the authenticated user, and the config must declare the same `auth` block gating who may start a session. **Load the `voiceInterfaces` skill** before authoring `src/interfaces/voice.md` or building the voice UI.
 
 ## Manifest Declaration
 
