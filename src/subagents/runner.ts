@@ -23,7 +23,7 @@ import { recordUsage, nanoToDollars } from '../usageLedger.js';
 const log = createLogger('sub-agent');
 import type { AgentEvent, ExternalToolResolver } from '../types.js';
 import { type ToolRegistry, USER_CANCELLED_RESULT } from '../toolRegistry.js';
-import { capToolResult } from '../toolResultCap.js';
+import { capToolResult, capSubAgentTranscript } from '../historyLimits.js';
 import type { ApiConfig } from '../config.js';
 import { startStatusWatcher, sanitizeStatusText } from '../statusWatcher.js';
 import { cleanMessagesForApi } from './common/cleanMessages.js';
@@ -473,7 +473,7 @@ export async function runSubAgent(
                 // tool with no self-imposed cap — browserCommand returns a full
                 // accessibility snapshot on every call — accumulates uncapped and
                 // walks the sub-agent straight into the model's context limit. This
-                // is the path toolResultCap.ts was written for: browserCommand runs
+                // is the path capToolResult was written for: browserCommand runs
                 // only here, in the browserAutomation sub-agent, never on the main
                 // agent, so the main-agent cap never covered it.
                 safeSettle(capToolResult(result), result.startsWith('Error'));
@@ -544,7 +544,9 @@ export async function runSubAgent(
             block.completedAt = Date.now();
             const innerMsgs = subAgentMessages.get(r.id);
             if (innerMsgs) {
-              block.subAgentMessages = innerMsgs;
+              // Same bound as the main agent applies (agent.ts): nested
+              // transcripts are persisted for display, not live context.
+              block.subAgentMessages = capSubAgentTranscript(innerMsgs);
             }
 
             // Capture artifact if this tool is in the captureArtifacts list
