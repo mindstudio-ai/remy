@@ -23,7 +23,7 @@ import { writeFileAtomicSync } from './atomicWrite.js';
 import { createLogger } from './logger.js';
 import { findSafeInsertionPoint } from './compaction/index.js';
 import { findLastSummaryCheckpoint } from './subagents/common/cleanMessages.js';
-import { capToolResult } from './toolResultCap.js';
+import { capToolResult, capSubAgentTranscript } from './toolResultCap.js';
 
 const log = createLogger('session');
 
@@ -69,6 +69,18 @@ const ARCHIVE_COUNT_RE = /\.c(\d+)\.json$/;
 // live total that getHistoryPage owns.
 export const HISTORY_DEFAULT_LIMIT = 500;
 export const HISTORY_MAX_LIMIT = 2000;
+
+// Byte ceiling on a single get_history page, enforced after the message-count
+// limit. The count limit alone cannot bound a page: message sizes vary by
+// orders of magnitude (a capped tool result is 256KB; pre-cap sessions and
+// sealed archives hold multi-MB messages). The sandbox builds its WS init
+// frame from one of these pages and the editor drops any connection that
+// hasn't hydrated within 15s — a 16MB page reproducibly wedged an app in a
+// permanent reconnect loop ("Connection Lost"). At the observed ~1.2MB/s
+// through the stdin/stdout IPC + transform + WS pipeline, 2MB keeps the
+// worst-case page comfortably inside that deadline; the frontend lazy-loads
+// older pages, so nothing is lost — just paged.
+export const HISTORY_PAGE_MAX_BYTES = 2 * 1024 * 1024;
 
 // Read-path caches (get_history). Archives are sealed/immutable, so a filename
 // is a safe cache key. archiveCountCache is tiny (a filename→count int) and
@@ -116,18 +128,28 @@ export function loadSession(state: AgentState): boolean {
 /**
  * Cap oversized tool results already stored in a loaded session, in place.
  *
- * Heals sessions poisoned before the ingestion cap existed (toolResultCap):
+ * Heals sessions poisoned before the ingestion caps existed (toolResultCap):
  * an assistant tool block's `result` and its paired tool-result user message
  * `content` can each hold a multi-MB blob that makes every subsequent request
- * body exceed the gateway limit (HTTP 413). Capping on load shrinks them so the
- * session sends again; it only trims context that was never successfully sent
- * (the oversized turn 413'd every time), so nothing the model used is lost.
+ * body exceed the gateway limit (HTTP 413), and a tool block's persisted
+ * sub-agent transcript (`subAgentMessages`) can hold megabytes of uncapped
+ * browser snapshots that make get_history pages — and therefore the sandbox
+ * init frame — too large to deliver. Capping on load shrinks both so the
+ * session sends and serves again; it only trims context that was never
+ * successfully sent or that sub-agents treat as stale, so nothing the model
+ * used is lost.
  */
 function capOversizedResults(msg: Message): void {
   if (msg.role === 'assistant' && Array.isArray(msg.content)) {
     for (const block of msg.content as ContentBlock[]) {
-      if (block.type === 'tool' && typeof block.result === 'string') {
+      if (block.type !== 'tool') {
+        continue;
+      }
+      if (typeof block.result === 'string') {
         block.result = capToolResult(block.result);
+      }
+      if (Array.isArray(block.subAgentMessages)) {
+        block.subAgentMessages = capSubAgentTranscript(block.subAgentMessages);
       }
     }
   } else if (
@@ -339,6 +361,13 @@ function parseArchive(name: string): Message[] | null {
     const messages: Message[] = Array.isArray(data?.messages)
       ? (data.messages as Message[])
       : [];
+    // Same heal loadSession applies to the live file, at the same boundary
+    // (disk → memory): archives sealed before the ingestion caps existed can
+    // hold multi-MB messages, and get_history serves pages straight from this
+    // cache. The file itself stays sealed — only the parsed copy is capped.
+    for (const msg of messages) {
+      capOversizedResults(msg);
+    }
     archiveCountCache.set(name, messages.length);
     archiveMsgCache.set(name, messages);
     while (archiveMsgCache.size > ARCHIVE_MSG_CACHE_MAX) {
@@ -517,6 +546,41 @@ export function getHistoryPage(
     const to = endIndex - archivedCount;
     for (let i = from; i < to; i++) {
       messages.push(state.messages[i]);
+    }
+  }
+
+  // Enforce the byte ceiling: keep the newest messages that fit, shifting
+  // startIndex forward over what's dropped (the array maps 1:1 onto
+  // [startIndex, endIndex), so the page stays contiguous and the caller's
+  // next `before = startIndex` walk picks up exactly where this page cut).
+  // The newest message is always kept, even alone over budget.
+  if (messages.length > 1) {
+    let bytes = 0;
+    let cut = 0;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      bytes += Buffer.byteLength(JSON.stringify(messages[i]), 'utf-8') + 1;
+      if (bytes > HISTORY_PAGE_MAX_BYTES && i < messages.length - 1) {
+        cut = i + 1;
+        break;
+      }
+    }
+    if (cut > 0) {
+      // Same boundary rule as the limit clamp above, in the other direction:
+      // never begin the page on a tool_result whose tool_use was dropped.
+      while (
+        cut < messages.length - 1 &&
+        messages[cut]?.role === 'user' &&
+        messages[cut]?.toolCallId
+      ) {
+        cut++;
+      }
+      messages.splice(0, cut);
+      startIndex += cut;
+      log.info('History page trimmed to byte budget', {
+        dropped: cut,
+        kept: messages.length,
+        startIndex,
+      });
     }
   }
 

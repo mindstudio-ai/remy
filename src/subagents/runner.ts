@@ -23,7 +23,7 @@ import { recordUsage, nanoToDollars } from '../usageLedger.js';
 const log = createLogger('sub-agent');
 import type { AgentEvent, ExternalToolResolver } from '../types.js';
 import { type ToolRegistry, USER_CANCELLED_RESULT } from '../toolRegistry.js';
-import { capToolResult } from '../toolResultCap.js';
+import { capToolResult, capSubAgentTranscript } from '../toolResultCap.js';
 import type { ApiConfig } from '../config.js';
 import { startStatusWatcher, sanitizeStatusText } from '../statusWatcher.js';
 import { cleanMessagesForApi } from './common/cleanMessages.js';
@@ -544,7 +544,9 @@ export async function runSubAgent(
             block.completedAt = Date.now();
             const innerMsgs = subAgentMessages.get(r.id);
             if (innerMsgs) {
-              block.subAgentMessages = innerMsgs;
+              // Same bound as the main agent applies (agent.ts): nested
+              // transcripts are persisted for display, not live context.
+              block.subAgentMessages = capSubAgentTranscript(innerMsgs);
             }
 
             // Capture artifact if this tool is in the captureArtifacts list

@@ -46,7 +46,7 @@ import { parseSentinel } from './automatedActions/sentinel.js';
 import { triggerBrandExtraction } from './brandExtraction/trigger.js';
 import { resolveModel, filterModelPicks } from './models/surfaces.js';
 import { USER_CANCELLED_RESULT } from './toolRegistry.js';
-import { capToolResult } from './toolResultCap.js';
+import { capToolResult, capSubAgentTranscript } from './toolResultCap.js';
 
 // Tools whose success can change a brand-extraction gate input: spec writes
 // (may touch @brand/ or design/color|typography specs) and metadata updates
@@ -305,6 +305,15 @@ export async function runTurn(params: {
   let lastCallInputTokens = 0;
   let lastCallCacheCreation = 0;
   let lastCallCacheRead = 0;
+
+  // Abnormal-stop recoveries this turn. A `repetition` stop (the API caught a
+  // degenerate repetition loop, aborted the stream, and truncated the repeated
+  // tail) or a `max_tokens` stop with no tool call are both pathologies, not
+  // finished turns — nudge the model to continue instead of silently ending
+  // (which killed MVP builds mid-chain). Capped so a model that immediately
+  // degenerates again can't keep the turn alive forever.
+  let abnormalStopRecoveries = 0;
+  const MAX_ABNORMAL_STOP_RECOVERIES = 2;
 
   // One watcher for the whole turn, stopped in the finally below. It used to
   // be created per loop iteration, which both multiplied requests (each new
@@ -776,8 +785,33 @@ export async function runTurn(params: {
         });
       }
 
-      // If no tool calls, the turn is complete
       const toolCalls = getToolCalls(contentBlocks);
+
+      // Abnormal stop with no tool call — recover instead of ending the turn.
+      if (
+        toolCalls.length === 0 &&
+        (stopReason === 'repetition' || stopReason === 'max_tokens') &&
+        abnormalStopRecoveries < MAX_ABNORMAL_STOP_RECOVERIES &&
+        !signal?.aborted
+      ) {
+        abnormalStopRecoveries++;
+        log.warn('Abnormal stop — nudging model to continue', {
+          requestId,
+          stopReason,
+          attempt: abnormalStopRecoveries,
+        });
+        const nudge =
+          'Your previous response was cut off — it degenerated into repeated ' +
+          'text or hit the output limit, and the repeated portion was ' +
+          'removed. Reassess where you are in the task and continue from ' +
+          'where you left off. Prefer a tool call over restating what you ' +
+          'were about to do.';
+        state.messages.push({ role: 'user', content: nudge, hidden: true });
+        onEvent({ type: 'user_message', text: nudge, hidden: true });
+        continue;
+      }
+
+      // If no tool calls, the turn is complete
       if (stopReason !== 'tool_use' || toolCalls.length === 0) {
         statusWatcher.stop();
         saveSession(state);
@@ -981,7 +1015,10 @@ export async function runTurn(params: {
           block.completedAt = Date.now();
           const msgs = subAgentMessages.get(r.id);
           if (msgs) {
-            block.subAgentMessages = msgs;
+            // Persisted transcripts are display/stale-resume data, not live
+            // context — bound them so one browser run against a dense page
+            // can't put megabytes into the session (see toolResultCap.ts).
+            block.subAgentMessages = capSubAgentTranscript(msgs);
           }
         }
       }
