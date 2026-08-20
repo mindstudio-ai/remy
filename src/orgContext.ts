@@ -10,10 +10,12 @@
  *
  * The cache holds the full envelope; renderOrgContextBlock surfaces the facts
  * Remy can act on — org name, delegated availability, the delegated-only
- * constraint, and a light pointer that org design foundations exist. The "how"
- * (signInWithRemy() / handleRemyRedirect() wiring, the "Continue with {Org}"
- * label) lives in the auth docs; the design system itself goes only to the
- * design expert (designExpert/prompt.ts), never to the main agent.
+ * constraint, and a light pointer that org design foundations exist. How to
+ * *act* on the facts lives in the resident auth core (compiled/auth.md); the
+ * implementation detail (signInWithRemy() / handleRemyRedirect() wiring, the
+ * "Continue with {Org}" label) lives in the `auth` skill; the design system
+ * itself goes only to the design expert (designExpert/prompt.ts), never to the
+ * main agent.
  */
 
 import { fetchRemyContext, type RemyContext } from './api.js';
@@ -54,7 +56,7 @@ export function getOrgContext(): RemyContext | null {
 
 /**
  * Render the org-context facts for the system-prompt tail. Auth facts are facts
- * only (interpretation lives in the auth docs); the design-foundations line is a
+ * only (interpretation lives in the resident auth core); the design-foundations line is a
  * light pointer — it deliberately does NOT hand the parent the design system
  * itself (the design expert holds and applies that), just enough that the parent
  * won't re-gather foundational visual/branding requirements the design expert

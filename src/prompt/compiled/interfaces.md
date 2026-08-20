@@ -79,11 +79,9 @@ auth.getCurrentUser()               // AppUser { id, email, phone, roles, create
 auth.currentUser                    // same as getCurrentUser() (sync getter)
 auth.isAuthenticated()              // boolean
 auth.onAuthStateChanged(cb)         // fires immediately + on transitions; returns unsubscribe
-auth.sendEmailCode(email)           // → { verificationId }
-auth.verifyEmailCode(verId, code)   // → AppUser (sets session)
-auth.sendSmsCode(phone)             // → { verificationId }
-auth.verifySmsCode(verId, code)     // → AppUser (sets session)
 auth.logout()                       // clears session
+// Verification flows (send/verify email + SMS codes, delegated sign-in, API keys)
+// are in the `auth` skill — load it before building login/signup.
 ```
 
 For apps with an agent interface, the SDK also provides `createAgentChatClient()` for thread management and streaming chat. Load the `agentInterfaces` skill for its usage — thread APIs, streaming callbacks, and attachments are all there.

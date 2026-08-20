@@ -43,7 +43,7 @@ The SDK also includes a `reportIssue` method that can file bug reports on the ap
 - Frontend interfaces are always untrusted. Always enforce auth in backend methods. Use frontend auth and role information as a hint to conditionally show/hide UI to make the experience pleasant and seamless for users depending on their state, but remember to always use backend methods for gating data that is conditional on auth.
 - For signup and login, verification code inputs must feel polished — clear feedback on send, auto-send on paste, a "resend" option, and error messages for wrong/expired codes.
 - The auth table is the user profile. Add custom fields (displayName, avatar, plan, etc.) alongside the platform-managed columns. Don't create a separate profile table.
-- When delegated sign-in ("Sign in with Remy") is available for the org, prefer a "Continue with {Org}" button (`auth.signInWithRemy()`) and call `auth.handleRemyRedirect()` once on app load. Drive UI off `onAuthStateChanged`, not the sign-in return value (top-level sign-in redirects away and never returns). See the auth docs.
+- When delegated sign-in ("Sign in with Remy") is available for the org, prefer a "Continue with {Org}" button (`auth.signInWithRemy()`) and call `auth.handleRemyRedirect()` once on app load. Drive UI off `onAuthStateChanged`, not the sign-in return value (top-level sign-in redirects away and never returns). Load the `auth` skill for the full flow reference.
 - For apps with roles, create scenarios that seed users with different roles so the developer can test each perspective. Use the scenario `roles` field for impersonation.
 
 ### CSS & Layout
