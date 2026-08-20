@@ -48,7 +48,15 @@ import { resolveModel, filterModelPicks } from './models/surfaces.js';
 import { USER_CANCELLED_RESULT } from './toolRegistry.js';
 import { capToolResult } from './toolResultCap.js';
 
-const BRAND_TRIGGERING_TOOLS = new Set(['writeSpec', 'editSpec']);
+// Tools whose success can change a brand-extraction gate input: spec writes
+// (may touch @brand/ or design/color|typography specs) and metadata updates
+// (mindstudio.json name/description/iconUrl). The gate hash inside the trigger
+// makes false positives free.
+const BRAND_TRIGGERING_TOOLS = new Set([
+  'writeSpec',
+  'editSpec',
+  'setProjectMetadata',
+]);
 
 // Content block helpers
 function getTextContent(blocks: ContentBlock[]): string {
