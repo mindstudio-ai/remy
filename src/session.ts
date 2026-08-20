@@ -23,35 +23,22 @@ import { writeFileAtomicSync } from './atomicWrite.js';
 import { createLogger } from './logger.js';
 import { findSafeInsertionPoint } from './compaction/index.js';
 import { findLastSummaryCheckpoint } from './subagents/common/cleanMessages.js';
-import { capToolResult, capSubAgentTranscript } from './toolResultCap.js';
+// All byte limits (rotation thresholds, page budget, result caps) live in
+// historyLimits.ts — one module tells the whole size-discipline story.
+import {
+  capMessageForHistory,
+  HISTORY_PAGE_MAX_BYTES,
+  HISTORY_DEFAULT_LIMIT,
+  HISTORY_MAX_LIMIT,
+  ROTATE_THRESHOLD_BYTES,
+  RETAIN_TAIL_BYTES,
+  ARCHIVE_RETENTION_BYTES,
+} from './historyLimits.js';
 
 const log = createLogger('session');
 
 const SESSION_FILE = '.remy-session.json';
 const ARCHIVE_DIR = '.logs/sessions';
-
-// Auto-rotation tunables — the scrollback-depth vs per-snapshot-churn knob.
-// Rotate once the serialized live file exceeds the threshold, keeping roughly
-// the most recent RETAIN_TAIL_BYTES of messages live for scrollback and
-// archiving the rest. RETAIN must stay below THRESHOLD so rotation isn't
-// constant.
-//
-// Set generously: the sealed-archive design (each rotation writes a new
-// write-once file) is what removes the real hazard — the same growing blob
-// being rewritten on every snapshot. The threshold only caps the worst-case
-// size of a single snapshot's live-file rewrite. The incident that motivated
-// this was a 124 MB file; 32 MB keeps worst-case churn far below that while
-// leaving deep scrollback intact.
-const ROTATE_THRESHOLD_BYTES = 32 * 1024 * 1024;
-const RETAIN_TAIL_BYTES = 16 * 1024 * 1024;
-
-// Retention cap for the sealed archives under ARCHIVE_DIR. Rotation is
-// archive-not-delete, so without a cap .logs/sessions/ grows forever and — via
-// the app's _draft snapshot — bloats the whole-repo tar the git server
-// re-uploads on every flush. Keep the most recent archives up to this many
-// bytes (enough scrollback for debugging/support) and drop the oldest; always
-// keep at least the newest archive, even if it alone exceeds the budget.
-const ARCHIVE_RETENTION_BYTES = 64 * 1024 * 1024;
 
 // Shared archive-filename helpers (used by pruneArchives and the get_history
 // read path). Every archive is `${label}-${ts}[.c${count}].json`; the ISO `ts`
@@ -63,24 +50,6 @@ const ARCHIVE_NAME_RE = /^(cleared|rotated)-.*\.json$/;
 const archiveSortKey = (name: string): string =>
   name.replace(/^(cleared|rotated)-/, '');
 const ARCHIVE_COUNT_RE = /\.c(\d+)\.json$/;
-
-// Page sizes for the paginated get_history read path. Live here (not in the
-// headless handler) because clamping now happens against the global archive +
-// live total that getHistoryPage owns.
-export const HISTORY_DEFAULT_LIMIT = 500;
-export const HISTORY_MAX_LIMIT = 2000;
-
-// Byte ceiling on a single get_history page, enforced after the message-count
-// limit. The count limit alone cannot bound a page: message sizes vary by
-// orders of magnitude (a capped tool result is 256KB; pre-cap sessions and
-// sealed archives hold multi-MB messages). The sandbox builds its WS init
-// frame from one of these pages and the editor drops any connection that
-// hasn't hydrated within 15s — a 16MB page reproducibly wedged an app in a
-// permanent reconnect loop ("Connection Lost"). At the observed ~1.2MB/s
-// through the stdin/stdout IPC + transform + WS pipeline, 2MB keeps the
-// worst-case page comfortably inside that deadline; the frontend lazy-loads
-// older pages, so nothing is lost — just paged.
-export const HISTORY_PAGE_MAX_BYTES = 2 * 1024 * 1024;
 
 // Read-path caches (get_history). Archives are sealed/immutable, so a filename
 // is a safe cache key. archiveCountCache is tiny (a filename→count int) and
@@ -126,56 +95,23 @@ export function loadSession(state: AgentState): boolean {
 }
 
 /**
- * Cap oversized tool results already stored in a loaded session, in place.
- *
- * Heals sessions poisoned before the ingestion caps existed (toolResultCap):
- * an assistant tool block's `result` and its paired tool-result user message
- * `content` can each hold a multi-MB blob that makes every subsequent request
- * body exceed the gateway limit (HTTP 413), and a tool block's persisted
- * sub-agent transcript (`subAgentMessages`) can hold megabytes of uncapped
- * browser snapshots that make get_history pages — and therefore the sandbox
- * init frame — too large to deliver. Capping on load shrinks both so the
- * session sends and serves again; it only trims context that was never
- * successfully sent or that sub-agents treat as stale, so nothing the model
- * used is lost.
- */
-function capOversizedResults(msg: Message): void {
-  if (msg.role === 'assistant' && Array.isArray(msg.content)) {
-    for (const block of msg.content as ContentBlock[]) {
-      if (block.type !== 'tool') {
-        continue;
-      }
-      if (typeof block.result === 'string') {
-        block.result = capToolResult(block.result);
-      }
-      if (Array.isArray(block.subAgentMessages)) {
-        block.subAgentMessages = capSubAgentTranscript(block.subAgentMessages);
-      }
-    }
-  } else if (
-    msg.role === 'user' &&
-    msg.toolCallId &&
-    typeof msg.content === 'string'
-  ) {
-    msg.content = capToolResult(msg.content);
-  }
-}
-
-/**
  * Ensure every tool_use has a matching tool_result, and cap oversized results.
  *
  * If an assistant message has tool blocks in its content but the
  * following messages don't include matching tool_result entries
  * (e.g., due to a crash or cancellation bug), inject synthetic
- * error results so the API doesn't reject the conversation. Also caps any
- * oversized tool result already in history (see capOversizedResults).
+ * error results so the API doesn't reject the conversation. Also heals any
+ * oversized message already in history — sessions written before the
+ * ingestion caps existed can hold multi-MB results and sub-agent transcripts
+ * (see capMessageForHistory in historyLimits.ts for what gets capped and why
+ * trimming is safe).
  */
 function sanitizeMessages(messages: Message[]): Message[] {
   const result: Message[] = [];
 
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[i];
-    capOversizedResults(msg);
+    capMessageForHistory(msg);
     result.push(msg);
 
     if (msg.role !== 'assistant' || !Array.isArray(msg.content)) {
@@ -366,7 +302,7 @@ function parseArchive(name: string): Message[] | null {
     // hold multi-MB messages, and get_history serves pages straight from this
     // cache. The file itself stays sealed — only the parsed copy is capped.
     for (const msg of messages) {
-      capOversizedResults(msg);
+      capMessageForHistory(msg);
     }
     archiveCountCache.set(name, messages.length);
     archiveMsgCache.set(name, messages);

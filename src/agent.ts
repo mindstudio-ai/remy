@@ -46,7 +46,7 @@ import { parseSentinel } from './automatedActions/sentinel.js';
 import { triggerBrandExtraction } from './brandExtraction/trigger.js';
 import { resolveModel, filterModelPicks } from './models/surfaces.js';
 import { USER_CANCELLED_RESULT } from './toolRegistry.js';
-import { capToolResult, capSubAgentTranscript } from './toolResultCap.js';
+import { capToolResult, capSubAgentTranscript } from './historyLimits.js';
 
 // Tools whose success can change a brand-extraction gate input: spec writes
 // (may touch @brand/ or design/color|typography specs) and metadata updates
@@ -1017,7 +1017,7 @@ export async function runTurn(params: {
           if (msgs) {
             // Persisted transcripts are display/stale-resume data, not live
             // context — bound them so one browser run against a dense page
-            // can't put megabytes into the session (see toolResultCap.ts).
+            // can't put megabytes into the session (see historyLimits.ts).
             block.subAgentMessages = capSubAgentTranscript(msgs);
           }
         }
