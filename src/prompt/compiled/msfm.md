@@ -223,19 +223,4 @@ clipboard fallback for unsupported browsers.
   Added share button to haiku detail view.
 ```
 
-Unbuilt item:
-
-```markdown
----
-name: Daily Prompt Engine
-type: roadmap
-status: not-started
-description: A new writing prompt every day, tuned to the user's style and interests.
-requires: []
-effort: small
----
-
-Generate a personalized daily writing prompt based on the user's past haikus,
-preferred themes, and seasonal context. Surface it as a gentle nudge on the
-home screen, not a notification.
-```
+Unbuilt item — same shape with `status: not-started`, a body describing the intended feature, and no History section (History is appended when it's built).

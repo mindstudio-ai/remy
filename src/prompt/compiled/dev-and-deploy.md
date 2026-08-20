@@ -48,14 +48,7 @@ Every live deploy runs an automated Lighthouse audit of the app. Pull it via `mi
 
 ### Database Migrations on Deploy
 
-Schema changes are automatic:
-- **New tables** — `CREATE TABLE` applied automatically
-- **New columns** — `ALTER TABLE ADD COLUMN` applied automatically
-- **Dropped columns** — `ALTER TABLE DROP COLUMN` applied automatically when a column is removed from the interface
-- **Dropped tables** — `DROP TABLE` applied automatically when a table file is removed from the manifest
-- **Type changes and renames** — not supported in the automatic migration path
-
-Schema changes are always applied to a clone of the live database, never directly. If DDL fails, the live database is untouched and the release is marked `failed`.
+Schema changes are automatic — adds and drops of tables/columns are diffed from the table definitions and applied as DDL (type changes and renames are not supported; full rules in the Tables docs). Changes are always applied to a clone of the live database, never directly. If DDL fails, the live database is untouched and the release is marked `failed`.
 
 ### Rollback
 

@@ -168,17 +168,7 @@ Building the query progressively (one `.filter` per optional input) is the canon
 
 ### Role-Gated Operation
 
-```typescript
-export async function deleteVendor(input: { vendorId: string }) {
-  auth.requireRole('admin');
-
-  const vendor = await Vendors.get(input.vendorId);
-  if (!vendor) throw new Error('Vendor not found.');
-
-  const { deleted } = await Vendors.remove(input.vendorId);
-  return { deleted };
-}
-```
+Same shape as any method, with `auth.requireRole('admin')` (or the relevant role) as the first line — it throws for callers without the role, so nothing below it runs unauthorized.
 
 ### Multi-Table Transaction
 
@@ -319,30 +309,6 @@ input._request: {
 
 `rawBody` preserves the exact bytes the client sent — whitespace, key ordering, encoding. Use it for signature verification.
 
-**There are two inbound HTTP interfaces and they expose the raw body differently.** This one is the API interface, at `input._request.rawBody`. The Webhook interface puts it at top-level `input.rawBody` and routes by a secret in the URL instead of a bearer token, which usually suits provider callbacks better since a provider can't send one. Load the `webhooks` skill before choosing — the example below is the API-interface shape and won't work unchanged in a webhook handler.
-
-```typescript
-export async function stripeWebhook(input: {
-  type: string;
-  data: any;
-  _request: { headers: Record<string, string>; rawBody: string };
-}) {
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-
-  const event = stripe.webhooks.constructEvent(
-    input._request.rawBody,
-    input._request.headers['stripe-signature'],
-    process.env.STRIPE_WEBHOOK_SECRET!,
-  );
-
-  switch (event.type) {
-    case 'payment_intent.succeeded':
-      // ...
-      break;
-  }
-
-  return { received: true };
-}
-```
+**There are two inbound HTTP interfaces and they expose the raw body differently.** The API interface puts it at `input._request.rawBody`; the Webhook interface puts it at top-level `input.rawBody` and routes by a secret in the URL instead of a bearer token, which usually suits provider callbacks better since a provider can't send one. Load the `webhooks` skill before writing a signature-verifying handler (e.g. Stripe's `constructEvent` over the raw bytes) — the input shape depends on which interface you chose.
 
 For most methods, you don't need `_request` — the parsed path params, query params, and body fields are already on `input` directly.
