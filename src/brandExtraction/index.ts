@@ -10,10 +10,14 @@
  * to force structured text output → persist the result.
  *
  * Gate inputs (changes to these trigger regeneration):
- *   - src/app.md
  *   - any .md under an `@brand/` directory
  *   - any src/**\/*.md whose frontmatter `type` starts with design/color or design/typography
  *   - the brand-bearing fields of mindstudio.json (name / description / iconUrl)
+ *
+ * Deliberately NOT gated: src/app.md. Its body changes with nearly every spec
+ * edit while its brand signal (the name in its frontmatter) is also stated in
+ * the manifest, so gating it meant re-extracting on almost every write. The
+ * app.md head slice still reaches the corpus — it just doesn't trigger a run.
  *
  * Generation reads the full src/ tree, but only dedicated brand specs are sent
  * whole; every other file contributes a head slice. A mature app's spec tree
@@ -121,25 +125,11 @@ function isDedicatedBrandFile(filePath: string): boolean {
   );
 }
 
-/**
- * A file carries brand signal if it is a dedicated brand spec or the app spec —
- * `src/app.md`'s frontmatter states the name and description the wordmark comes
- * from. Shared by the gate hash and the corpus ordering so both agree on what
- * "brand-relevant" means. Note this is broader than `isDedicatedBrandFile`:
- * app.md gates regeneration but is still head-sliced, since only its opening
- * carries brand signal.
- */
-function isBrandRelevant(filePath: string): boolean {
-  return (
-    filePath === path.join('src', 'app.md') || isDedicatedBrandFile(filePath)
-  );
-}
-
 function computeInputHash(): string {
   const entries: Array<{ path: string; content: string }> = [];
 
   for (const filePath of walkMdFiles('src')) {
-    if (isBrandRelevant(filePath)) {
+    if (isDedicatedBrandFile(filePath)) {
       entries.push({ path: filePath, content: readSafe(filePath) });
     }
   }
@@ -318,14 +308,14 @@ const BRAND_CORPUS_CHAR_LIMIT = 2_400_000;
  * Assemble the `src/` markdown tree (plus the brand-bearing manifest fields)
  * into one corpus. Every file in the tree is represented, so brand signal can't
  * hide in a file nobody thought to classify — but only dedicated brand specs are
- * sent whole. Ordered brand-relevant-first so the cap, if it ever fires, drops
+ * sent whole. Ordered dedicated-brand-first so the cap, if it ever fires, drops
  * incidental files rather than brand-bearing ones.
  */
 function buildCorpus(): string {
   const all = walkMdFiles('src');
   const ordered = [
-    ...all.filter(isBrandRelevant),
-    ...all.filter((f) => !isBrandRelevant(f)),
+    ...all.filter(isDedicatedBrandFile),
+    ...all.filter((f) => !isDedicatedBrandFile(f)),
   ];
 
   const files: Array<{ path: string; content: string }> = [];
