@@ -172,6 +172,7 @@ export const ALLOWED_MODELS_BY_TYPE: Partial<Record<ModelType, string[]>> = {
     'kimi-k3',
     'deepseek-v4-flash-0731',
     'qwen3.8-2.4t-a95b-deepinfra',
+    'qwen3.8-27b-deepinfra',
     'minimax-m3',
   ],
   // vision: undefined — unconstrained
