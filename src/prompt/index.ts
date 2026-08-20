@@ -9,20 +9,31 @@
  * top (primacy), reference docs in the middle, behavioral instructions
  * at the bottom (recency — what we most need the model to follow).
  *
- * Everything above the cache breakpoint is static, so the prefix is identical
- * across turns, sessions, and onboarding states — which is why reference docs
- * are included unconditionally rather than gated on what the app uses. The
- * exception is documented in prompt/skills/catalog.ts: docs for capabilities
- * most apps never touch are represented here only by the catalog, and their
- * bodies arrive on demand as loadSkill tool results.
+ * Two zones, split by the cache breakpoint (the server splits the prompt
+ * there into a cached block and an uncached tail):
+ *
+ * - ABOVE the marker: byte-stable for the life of the process. Reference
+ *   docs are included unconditionally rather than gated on what the app
+ *   uses, so the prefix is identical across turns and sessions. The
+ *   exception is documented in prompt/skills/catalog.ts: docs for
+ *   capabilities most apps never touch are represented here only by the
+ *   catalog, and their bodies arrive on demand as loadSkill tool results.
+ *
+ * - BELOW the marker: the small dynamic tail (date, onboarding state, app
+ *   identity, plan status). The tail sits ahead of the entire conversation
+ *   in the provider's cache prefix, so any changed byte here re-writes the
+ *   whole history at cache-write rates. That's acceptable only because
+ *   every field changes rarely — at most a handful of times per project,
+ *   or daily for the date — and mostly outside warm-cache windows. Keep it
+ *   that way: nothing per-turn, nothing per-view, and no inventories
+ *   (manifest dumps, spec/file listings) — the agent discovers project
+ *   structure on demand with readFile/listSpecFiles/glob.
  */
 
 import { readAsset } from '../assets.js';
 import {
   loadProjectRoot,
-  loadProjectManifest,
-  loadProjectFileListing,
-  loadSpecFileMetadata,
+  loadAppIdentity,
   loadPlanStatus,
 } from './static/projectContext.js';
 import { renderOrgContextBlock } from '../orgContext.js';
@@ -36,32 +47,7 @@ function resolveIncludes(template: string): string {
   return result.replace(/\n{3,}/g, '\n\n').trim();
 }
 
-export interface ViewContext {
-  mode:
-    | 'intake'
-    | 'preview'
-    | 'spec'
-    | 'code'
-    | 'databases'
-    | 'scenarios'
-    | 'logs';
-  openFiles?: string[];
-  activeFile?: string;
-}
-
-export function buildSystemPrompt(
-  onboardingState?: string,
-  viewContext?: ViewContext,
-): string {
-  const projectContext = [
-    loadProjectRoot(),
-    loadProjectManifest(),
-    loadSpecFileMetadata(),
-    loadProjectFileListing(),
-  ]
-    .filter(Boolean)
-    .join('\n');
-
+export function buildSystemPrompt(onboardingState?: string): string {
   const now = new Date().toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
@@ -70,8 +56,6 @@ export function buildSystemPrompt(
 
   const template = `
 {{static/identity.md}}
-
-Current date: ${now}
 
 <platform_docs>
   <platform>
@@ -152,7 +136,7 @@ ${loadSkillsCatalog()}
 <conversation_summaries>
 Your conversation history may include <prior_conversation_summary> blocks in the user's messages. These are automated summaries of earlier messages that have been compacted to save context space. The user does not see this summary, they see the full conversation history in their UI. Treat the summary as ground truth for what happened before, but do not reference it directly to the user ("as mentioned in the summary..."). Just continue naturally as if you remember the prior work.
 
-Old tool results are periodically cleared from the conversation to save context space. This is automatic and expected — you don't need to note down or preserve information from tool results. If you need to reference something from an earlier tool call, just re-read the file or re-run the query.
+Tool results generally persist in the conversation until a compaction summarizes them. In rare cases very old tool results may be trimmed when the conversation nears the context limit. Either way, if you need something from an earlier tool call and can't see it anymore, just re-read the file or re-run the query.
 </conversation_summaries>
 
 <project_onboarding>
@@ -164,24 +148,21 @@ New projects progress through three onboarding states. The user might skip this 
 - **onboardingFinished**: The project is built and ready. Full development mode with all tools available. From here on, keep spec and code in sync as changes are made.
 </project_onboarding>
 
+${loadProjectRoot()}
+
+${renderOrgContextBlock()}
+
 {{static/instructions.md}}
 
 <!-- cache_breakpoint -->
+
+Current date: ${now}
 
 <current_project_onboarding_state>
   ${onboardingState ?? 'onboardingFinished'}
 </current_project_onboarding_state>
 
-<project_context>
-${projectContext}
-</project_context>
-
-${renderOrgContextBlock()}
-
-<view_context>
-The user is currently in ${viewContext?.mode ?? 'code'} mode.
-${viewContext?.activeFile ? `Active file: ${viewContext.activeFile}` : ''}
-</view_context>
+${loadAppIdentity()}
 
 ${loadPlanStatus(onboardingState)}
 `;

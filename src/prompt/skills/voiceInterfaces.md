@@ -99,6 +99,12 @@ method itself can read `session.voiceSessionId` / `session.visitorId` from the a
 (`import { session } from '@mindstudio-ai/agent'`) — the same id the browser holds as
 `session.sessionId`, guaranteed by the platform rather than echoed by the model.
 
+Voice sessions also carry `session.medium` (`'web' | 'phone-in' | 'phone-out'`) and, on phone
+calls, `session.sip` (`{ to, fromNumber }`) — use `medium` in tool methods and the session-context
+method to branch web vs phone behavior (what to prefetch, how to phrase context). Treat
+`session.sip.fromNumber` as context only, never identity: caller ID is spoofable, so don't gate
+data or roles on it — in-call verification is the auth rail.
+
 ### Client tools: actions that happen on screen (`target: "client"`)
 
 A tool whose effect belongs in the browser — open the verification sheet, navigate to a page,
@@ -136,6 +142,11 @@ session.registerClientTool('showVerification', async ({ reason }) => {
   becomes an error/ack the agent can speak around.
 - The progressive-auth pattern above is the canonical use: make the verification sheet a client
   tool and the agent opens it deliberately instead of the frontend inferring it from tool events.
+- Phone sessions never see client tools — there is no browser on a call, so the platform drops
+  them from the toolset and tells the agent it's on a phone call with no screen. Verification
+  branches by itself: on a phone the agent gets the platform's in-call verify tools instead of
+  the app's sheet. Nothing to author; just don't make a client tool the only path to something
+  phone callers need.
 
 ### Tool descriptions say results out loud
 
@@ -338,7 +349,10 @@ export async function callMeAboutMyOrder(input: { phone: string }) {
   who it's talking to (Current User block) and every tool call carries their roles — regardless
   of which number was dialed (the user types any number into a field; identity comes from their
   session, not the phone). Omitted/false → anonymous call; role-gated tools decline.
-  System/cron invocations have no human identity and always run anonymously.
+  System/cron invocations have no human identity and always run anonymously. Anonymous outbound
+  calls (deployed) get the same in-call verification flow as inbound — the callee proves
+  possession of the number that was dialed, or verifies by email — so an anonymous call can
+  still upgrade to a known user mid-conversation.
 - **Production needs a dedicated phone number.** The app owner attaches one ($1/month) via the
   dashboard or `mindstudio-prod voice numbers` (see "The voice CLI"
   below) — it becomes the caller ID for every call, in dev sessions too, so users always see
