@@ -926,10 +926,7 @@ export class HeadlessSession {
     const onboardingState =
       (parsed.onboardingState as string) ?? 'onboardingFinished';
     this.currentOnboardingState = onboardingState;
-    const system = buildSystemPrompt(
-      onboardingState,
-      parsed.viewContext as any,
-    );
+    const system = buildSystemPrompt(onboardingState);
 
     // Pre-enqueue the whole chain at the head so the full pipeline is visible
     // up front and user messages queue behind it. Only the head expands the
@@ -1023,25 +1020,21 @@ export class HeadlessSession {
       );
     }
 
-    // The batch shares one system prompt: onboardingState is uniform across
-    // the batch by construction (drain barrier), viewContext is the user's
-    // latest editor location.
+    // onboardingState is uniform across the batch by construction (drain
+    // barrier).
     const onboardingState =
       (batch.find((b) => b.command.onboardingState !== undefined)?.command
         .onboardingState as string | undefined) ??
       this.currentOnboardingState ??
       'onboardingFinished';
     this.currentOnboardingState = onboardingState;
-    const viewContext = [...batch]
-      .reverse()
-      .find((b) => b.command.viewContext !== undefined)?.command.viewContext;
 
     await this.executeTurn({
       entries,
       requestId: primaryRid,
       absorbedRids,
       onboardingState,
-      system: buildSystemPrompt(onboardingState, viewContext as any),
+      system: buildSystemPrompt(onboardingState),
     });
   }
 
@@ -1105,8 +1098,8 @@ export class HeadlessSession {
     // running. Pulls ALL currently-eligible items in FIFO order, deliberately
     // jumping any chain steps queued ahead of them (that is the point of
     // promotion — the one place queue FIFO is intentionally violated). The
-    // items' own onboardingState/viewContext are ignored: the running turn's
-    // system prompt is already built. Consumed requestIds are collected for
+    // items' own onboardingState is ignored: the running turn's system
+    // prompt is already built. Consumed requestIds are collected for
     // absorbed terminals below; if the turn ends before a pull, unconsumed
     // items simply stay queued and drain post-turn in normal FIFO order.
     const consumedRids: string[] = [];
