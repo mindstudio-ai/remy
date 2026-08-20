@@ -1,3 +1,9 @@
+---
+name: Files, Storage & CDN
+what: Per-app blob storage the database doesn't model — user uploads, generated documents, marketing images. Stores are private by default (reads authed by the app session, or short-lived signed share links) or deliberately public — public files are CDN-served on the app's own domain and images resize on the fly via query params (width, height, crop, format, dpr), so the frontend requests the size it displays instead of CSS-scaling originals. User uploads go client-direct: the backend mints a token and the browser uploads straight to storage, bytes never pass through a method. SDK actions that produce files (generateImage, generatePdf, …) can write straight into a store, and the CLI uploads build-time assets (heroes, logos, OG images) so binaries never land in git. One store is shared across dev and prod on purpose.
+when: Before defining a file store or writing any upload, download, share-link, or image-serving code — user uploads, generated documents, marketing assets, config blobs, anything durable the app stores outside the database.
+---
+
 # Files & Storage
 
 Per-app blob storage: user uploads, generated documents, images, marketing assets. **Think of a store

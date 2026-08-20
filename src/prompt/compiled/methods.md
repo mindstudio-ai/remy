@@ -91,7 +91,7 @@ await mindstudio.sendEmail({
 // a handler. It has the full input shape and the threading rules; getting the headers
 // wrong sends a reply that starts a new conversation instead of continuing one.
 
-// Store a file → returns a stable URL (define the store at module scope; see Files & Storage)
+// Store a file → returns a stable URL (define the store at module scope; load the `files` skill)
 const { url } = await Reports.put(buffer, { contentType: 'application/pdf', filename: 'report.pdf' });
 
 // Web scraping

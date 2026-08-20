@@ -53,6 +53,8 @@ Every interface must work on both desktop and mobile. Think about how the app wi
 
 The `designExpert` can create and source amazing, high quality images, graphics, illustrations, and logos to use in the interface - both with and without transparency. This is a huge level for upgrading the premium look, feel, and quality of the app. Use image logos directly instead of plain text wordmarks; use images for empty states, onboarding screens, full-screen loading, and more.
 
+Public CDN images accept resize query params — request the size the layout actually displays (e.g. `?w=400&dpr=2` so it stays crisp on Retina) instead of CSS-scaling a full-res original. The full parameter table is in the `files` skill.
+
 ## Forms
 
 Forms should feel like interactions, not paperwork.

@@ -4,9 +4,10 @@
  * Each tool exports a `definition` (JSON Schema sent to the LLM) and
  * an `execute` function (runs locally when the LLM calls the tool).
  *
- * Tool availability is determined by the project's onboarding state:
- *   - intake / initialSpecAuthoring:  spec tools only (authoring)
- *   - initialCodegen / onboardingFinished:  spec tools + code tools
+ * The full tool set is available in every onboarding state — deliberately
+ * invariant so the provider's tools-tier cache prefix stays identical
+ * across turns and sessions (see getToolDefinitions). Phase behavior is
+ * steered by the prompt, not by hiding tools.
  */
 
 import type { AgentEvent, ExternalToolResolver } from '../types.js';

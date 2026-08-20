@@ -60,6 +60,12 @@ my-app/
         tools/                             tool descriptions (one .md per method)
 ```
 
+## Platform Limits
+
+Two things the platform cannot do — be upfront when a request heads this way:
+- Native mobile apps (iOS/Android). Mobile-responsive web apps are fine.
+- Real-time multiplayer with persistent connections (no WebSocket support). Turn-based or async multiplayer works great.
+
 ## The Two SDKs
 
 **Backend: `@mindstudio-ai/agent`** — used inside methods. Provides `db` (database), `auth` (access control), and platform capabilities (AI, integrations, connectors). Pre-installed in the sandbox; must also be declared in `dist/methods/package.json`.

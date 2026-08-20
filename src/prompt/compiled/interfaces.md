@@ -61,7 +61,7 @@ const api = createClient<{
 const { vendorId } = await api.submitVendorRequest({ name: 'Acme' });
 const { vendors } = await api.listVendors();
 
-// File upload → client-direct to the app's file store (see Files & Storage).
+// File upload → client-direct to the app's file store (load the `files` skill for the backend side).
 // A backend method mints an upload token; the browser uploads straight to storage.
 const token = await api.getUploadSlot({ filename: file.name, contentType: file.type });
 const { key, url } = await platform.upload(token, file);
