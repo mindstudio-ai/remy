@@ -212,14 +212,11 @@ export const SUBAGENT_TOOL_NAMES = new Set([
   'askMindStudioSdk',
 ]);
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function getTools(_onboardingState: string): Tool[] {
-  return ALL_TOOLS;
-}
-
-/** Tool definitions array — sent to the LLM in each request. */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function getToolDefinitions(_onboardingState: string): ToolDefinition[] {
+/** Tool definitions array — sent to the LLM in each request. The set is
+ * deliberately invariant (no onboarding-state gating): a stable tool list
+ * keeps the provider's tools-tier cache prefix identical across turns,
+ * sessions, and onboarding states. */
+export function getToolDefinitions(): ToolDefinition[] {
   return ALL_TOOLS.map((t) => t.definition);
 }
 
@@ -230,9 +227,6 @@ export function getToolByName(name: string): Tool | undefined {
 
 /**
  * Execute a tool by name. Returns the tool's string output.
- *
- * Looks up from ALL known tools — the onboarding state only gates
- * what the LLM sees, not what can execute.
  */
 export function executeTool(
   name: string,

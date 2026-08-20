@@ -144,8 +144,13 @@ Options: `topK` (default 5, max 50), `scoreThreshold`, `filter`, `mode`, `maxPer
 `highlight`, and two switches covered under *Tuning* (`rerank`, `hybrid`).
 
 Each hit also carries `retrievalRank` and `retrievalScore` — where retrieval put it *before*
-reranking. Comparing that with its final position is how you see what reranking actually did. The call
-returns `latencyMs` alongside `results`.
+reranking. Comparing that with its final position is how you see what reranking actually did.
+
+Alongside `results` the call returns `latencyMs` and `mode` — what the search **actually did**:
+`{ search, hybrid, reranked, pipelineVersion }`. Check it when a result surprises you: an omitted
+`mode` option falls back to the corpus's own configuration, and `reranked` is false when reranking
+was skipped or failed open. It's how you tell a deliberate lexical search from one whose option never
+arrived.
 
 ### Filtering
 
@@ -180,9 +185,17 @@ await Logs.search('ERR-7741X', { mode: 'lexical' });
 
 ### Highlighting
 
-`highlight: true` adds `matches` to each hit — `{ start, end }` offsets into `text`
-(`text.slice(start, end)` is a matched term), for rendering highlighted excerpts. Matching is
-keyword-based, so a hit that matched semantically may report an empty array.
+`highlight: true` adds `matches` to each hit — `{ start, end, token }` offsets into `text`
+(`text.slice(start, end)` is the matched term, and `token` says which query term it was, for
+colouring or grouping). Matching is keyword-based, so a hit that matched semantically may report an
+empty array.
+
+Only the query's **distinctive** terms are marked, not all of them. English function words (`the`,
+`for`, `is`, `of`) are never marked, and where a passage holds more matches than it can usefully
+show, the rarest terms win the space. So `what is the policy for parental leave` marks `policy`,
+`parental` and `leave` and nothing else — otherwise a natural-language query lights up most of the
+passage and you'd need your own stopword list to render anything. Words you filtered on (`contains`,
+`phrase`) are always marked.
 
 ### Reproducibility
 

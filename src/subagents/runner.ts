@@ -12,6 +12,7 @@
 import {
   streamChatWithRetry,
   generateBackgroundAck,
+  type CachePolicy,
   type Message,
   type ContentBlock,
   type ToolDefinition,
@@ -54,6 +55,12 @@ export interface SubAgentConfig {
   toolRegistry?: ToolRegistry;
   /** Prior conversation history for this subagent — prepended to messages for continuity. */
   history?: Message[];
+  /** Prompt-caching profile for this run's LLM calls. Defaults to 'run'
+   * (5m-TTL breakpoints): subagent loops iterate in seconds, and a 1–3 call
+   * run loses money at the 1h 2× cache-write rate. History-carrying agents
+   * whose thread is re-sent across parent turns (designExpert,
+   * productVision) pass 'conversation' for 1h-TTL cross-invocation reuse. */
+  cachePolicy?: CachePolicy;
   /** Run in background — return initial response immediately, continue working. */
   background?: boolean;
   /** Optional FIFO lock acquired around the (background) run so concurrent
@@ -100,6 +107,7 @@ export async function runSubAgent(
     acquireLock,
     onBackgroundComplete,
     captureArtifacts,
+    cachePolicy = 'run',
   } = config;
 
   // Structured data captured from tool results when captureArtifacts is set.
@@ -229,6 +237,7 @@ export async function runSubAgent(
               system: fullSystem,
               messages: cleanMessagesForApi(messages),
               tools,
+              cachePolicy,
               signal,
             },
             {

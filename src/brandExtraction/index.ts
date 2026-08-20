@@ -26,6 +26,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { streamChat } from '../api.js';
 import { readAsset } from '../assets.js';
+import { writeFileAtomicSync } from '../atomicWrite.js';
 import { createLogger } from '../logger.js';
 import { recordUsage, nanoToDollars } from '../usageLedger.js';
 
@@ -258,6 +259,9 @@ async function extractBrand(
       system: EXTRACT_PROMPT,
       messages: [{ role: 'user', content: corpus }],
       tools: [],
+      // One call per extraction over a corpus that changes with every spec
+      // edit — never re-read, so a cache write is pure waste.
+      cachePolicy: 'oneshot',
     })) {
       if (event.type === 'text') {
         responseText += event.text;
@@ -488,12 +492,10 @@ function pickFont(raw: unknown): BrandFont | undefined {
 //////////////////////////////////////////////////////////////////////////////
 
 function persistBrand(brand: AppBrand, inputHash: string): void {
-  const tmp = `${BRAND_FILE}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify(brand, null, 2), 'utf-8');
-  fs.renameSync(tmp, BRAND_FILE);
+  writeFileAtomicSync(BRAND_FILE, JSON.stringify(brand, null, 2));
 
   const cache: CacheRecord = { inputHash, generatedAt: Date.now() };
-  fs.writeFileSync(CACHE_FILE, JSON.stringify(cache, null, 2), 'utf-8');
+  writeFileAtomicSync(CACHE_FILE, JSON.stringify(cache, null, 2));
 }
 
 function readCache(): CacheRecord | null {

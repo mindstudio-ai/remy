@@ -19,6 +19,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { Message, ContentBlock } from './api.js';
 import type { AgentState } from './agent.js';
+import { writeFileAtomicSync } from './atomicWrite.js';
 import { createLogger } from './logger.js';
 import { findSafeInsertionPoint } from './compaction/index.js';
 import { findLastSummaryCheckpoint } from './subagents/common/cleanMessages.js';
@@ -28,17 +29,6 @@ const log = createLogger('session');
 
 const SESSION_FILE = '.remy-session.json';
 const ARCHIVE_DIR = '.logs/sessions';
-
-// Write a file atomically: write a tmp sibling, then rename. Concurrent
-// readers (the sandbox's git snapshot force-adds this file mid-write, and the
-// C&C server's /agent-session route serves it) must never observe a torn
-// file — a truncated multi-MB session JSON captured into a _draft snapshot
-// would corrupt the restore. rename(2) is atomic within a filesystem.
-function writeFileAtomicSync(file: string, data: string): void {
-  const tmp = `${file}.tmp`;
-  fs.writeFileSync(tmp, data, 'utf-8');
-  fs.renameSync(tmp, file);
-}
 
 // Auto-rotation tunables — the scrollback-depth vs per-snapshot-churn knob.
 // Rotate once the serialized live file exceeds the threshold, keeping roughly
@@ -110,7 +100,15 @@ export function loadSession(state: AgentState): boolean {
       return true;
     }
   } catch {
-    // No session file or invalid — start fresh
+    // Unreadable session file — quarantine it before starting fresh, or the
+    // first saveSession would overwrite the only copy of the history. A
+    // missing file (the normal fresh start) lands here too; the rename just
+    // ENOENTs and the inner catch swallows it.
+    try {
+      const quarantine = `${SESSION_FILE}.corrupt-${Date.now()}`;
+      fs.renameSync(SESSION_FILE, quarantine);
+      log.warn(`Session file unreadable — quarantined to ${quarantine}`);
+    } catch {}
   }
   return false;
 }

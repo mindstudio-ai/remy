@@ -1,6 +1,7 @@
 /** Update the status of .remy-plan.md (approve or reject). */
 
 import fs from 'node:fs/promises';
+import { writeFileAtomic } from '../../atomicWrite.js';
 import type { Tool } from '../index.js';
 
 const PLAN_FILE = '.remy-plan.md';
@@ -42,14 +43,15 @@ export const updatePlanStatusTool: Tool = {
     }
 
     if (status === 'rejected') {
-      await fs.unlink(PLAN_FILE);
+      // Tolerate a double-reject (the rejectPlan sentinel may have already
+      // removed the file) rather than surfacing a spurious ENOENT.
+      await fs.unlink(PLAN_FILE).catch(() => {});
       return 'Plan rejected and removed.';
     }
 
-    await fs.writeFile(
+    await writeFileAtomic(
       PLAN_FILE,
       content.replace(/^status:\s*\w+/m, `status: ${status}`),
-      'utf-8',
     );
     return 'Plan approved. Proceeding with implementation.';
   },

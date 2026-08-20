@@ -385,15 +385,21 @@ How answering works:
   in-call verification flow. The agent can serve whatever anonymous callers are allowed, and
   offers verification when the caller wants something account-bound.
 - **Verification uses the app's own auth methods** (`sms-code` / `email-code` from the
-  manifest), existing accounts only — there is no sign-up over the phone:
-  - SMS: a code is texted to the number the caller is calling from, if an account has that
-    number on file. No other number is possible by design.
-  - Email: the caller says their address; the platform matches it against the app's users
-    (transcription-tolerant — no letter-by-letter spelling ceremony) and emails the account's
-    stored address a code.
-  - The flow never confirms or denies that an account exists — a code is "sent if an account
-    matches", always phrased that neutrally. The persona should offer verification naturally
-    when it unlocks something, never as a robotic gate.
+  manifest):
+  - SMS: a code is texted to the phone number on the call (no other number is possible by
+    design), and confirming it signs the caller in — **creating their account if they're new**,
+    the same find-or-create policy `sms-code` has on web (enabling the method is what enables
+    sign-up; there is no separate toggle on either surface). After a first-time caller verifies,
+    the session-context method re-fires with the fresh identity — that's the hook for seeding a
+    new account with data.
+  - Email: existing accounts only — the caller says their address; the platform matches it
+    against the app's users (transcription-tolerant — no letter-by-letter spelling ceremony) and
+    emails the account's stored address a code. There is no sign-up by email over the phone: a
+    call can't reliably capture a verbatim never-seen address, so new callers sign up by text
+    instead.
+  - The email flow never confirms or denies that an account exists — a code is "sent if an
+    account matches", always phrased that neutrally. The persona should offer verification
+    naturally when it unlocks something, never as a robotic gate.
 - **Verified mid-call, upgraded mid-call**: once the code checks out, the session becomes that
   user's — Current User block, roles on every tool call — without redialing.
 

@@ -30,7 +30,7 @@
  */
 
 import { createLogger } from '../logger.js';
-import type { Attachment, Message } from '../api.js';
+import type { Attachment, ContentBlock, Message } from '../api.js';
 import { resolveConfig } from '../config.js';
 import { initOrgContext } from '../orgContext.js';
 import { buildSystemPrompt } from '../prompt/index.js';
@@ -280,15 +280,21 @@ export class HeadlessSession {
 
         // User/gate compactions have no tool block of their own — synthesize
         // a UI-only one so every compaction renders as a normal tool call
-        // (standard tool row, ToolList, ToolDetail; summary lands in
-        // backgroundResult on completion). Never for 'tool' origin (a real
-        // block exists). Both remaining origins only ever execute at safe
-        // append points — 'gate' fires pre-runTurn, and 'user' runs either
-        // idle or as its own drain step (a mid-turn /compact enqueues
+        // (standard tool row, ToolList, ToolDetail). Never for 'tool' origin
+        // (a real block exists). Both remaining origins only ever execute at
+        // safe append points — 'gate' fires pre-runTurn, and 'user' runs
+        // either idle or as its own drain step (a mid-turn /compact enqueues
         // instead of running) — so there is never a dangling tool_use to
         // splice into. `uiOnly` keeps the message out of every API payload
-        // (cleanMessagesForApi); `result` is set so the Agents-tab pending
-        // predicate resolves once backgroundResult lands.
+        // (cleanMessagesForApi).
+        //
+        // Deliberately a FOREGROUND block, unlike the model-invoked
+        // compactConversation tool (backgroundOnly): the user is actively
+        // waiting on these — a typed /compact, or a gate compaction blocking
+        // the next turn — so both the chat row and the Agents-tab list show
+        // the normal pending spinner (result == null) rather than the
+        // ambient background dot. Completion arrives as a real tool_done in
+        // the 'complete' branch below.
         if (
           !event.toolCallId &&
           (event.origin === 'user' || event.origin === 'gate')
@@ -304,9 +310,7 @@ export class HeadlessSession {
                 name: 'compactConversation',
                 input: {},
                 startedAt: Date.now(),
-                background: true,
                 uiOnly: true,
-                result: 'Compaction started in the background.',
               },
             ],
           });
@@ -317,39 +321,48 @@ export class HeadlessSession {
             id,
             name: 'compactConversation',
             input: {},
-            background: true,
-          });
-          // Mirror a real backgroundOnly tool's event sequence: execute
-          // returns its ack → tool_done sets `result` on the live block.
-          // Without this the frontend's live block keeps result == null and
-          // the Agents-tab pending predicate (isBg || result == null) spins
-          // forever after completion.
-          this.onEvent({
-            type: 'tool_done',
-            id,
-            name: 'compactConversation',
-            result: 'Compaction started in the background.',
-            isError: false,
           });
         }
       } else {
         const data = event.error ? { error: event.error } : {};
         this.emit('compaction_complete', data, event.requestId);
 
-        // Resolve the synthesized block (success and failure alike) through
-        // the normal background-completion path — compactConversation is
-        // backgroundNotify 'silent', so this updates the block and emits
-        // tool_background_complete without ever telling the model.
+        // Complete the synthesized block directly: set result/isError on the
+        // block and emit a real (late) tool_done — the only event carrying
+        // that pair. Direct mutation is safe here because user/gate
+        // compactions never complete mid-LLM-loop (the gate is awaited
+        // pre-turn; /compact runs idle or as its own drain step), so there is
+        // no in-flight request whose payload this could race.
         if (this.syntheticCompactionId) {
           const id = this.syntheticCompactionId;
           this.syntheticCompactionId = null;
-          this.onBackgroundComplete(
+          const result = event.error
+            ? `Error: ${event.error}`
+            : formatSummariesResult(event.summaries ?? []);
+          const isError = !!event.error;
+          for (let i = this.state.messages.length - 1; i >= 0; i--) {
+            const msg = this.state.messages[i];
+            if (msg.role !== 'assistant' || !Array.isArray(msg.content)) {
+              continue;
+            }
+            const block = (msg.content as ContentBlock[]).find(
+              (b) => b.type === 'tool' && b.id === id,
+            );
+            if (block && block.type === 'tool') {
+              block.result = result;
+              block.isError = isError;
+              block.completedAt = Date.now();
+              saveSession(this.state);
+              break;
+            }
+          }
+          this.onEvent({
+            type: 'tool_done',
             id,
-            'compactConversation',
-            event.error
-              ? `Error: ${event.error}`
-              : formatSummariesResult(event.summaries ?? []),
-          );
+            name: 'compactConversation',
+            result,
+            isError,
+          });
         }
         this.sessionStats.compactionInProgress = false;
         // Only a compaction that actually shrank the context may disarm the

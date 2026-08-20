@@ -43,13 +43,13 @@ Remy saves conversation history to `.remy-session.json` in the working directory
 
 ## Tools
 
-Tool availability depends on the project's onboarding state, sent by the sandbox on each message.
+The full tool set is always available — it is deliberately invariant (no onboarding-state gating) so the provider's tools-tier cache prefix stays identical across turns and sessions. The sections below are thematic groupings only.
 
-### Common Tools (all onboarding states)
+### Common Tools
 
 | Tool | Description |
 |------|-------------|
-| `setProjectOnboardingState` | Advance the onboarding flow (intake → initialSpecReview → initialCodegen → onboardingFinished) |
+| `setProjectOnboardingState` | Advance the onboarding flow (intake → building → buildComplete → onboardingFinished) |
 | `setProjectName` | Set the project name |
 | `promptUser` | Ask the user structured questions (form or inline display) |
 | `confirmDestructiveAction` | Confirm a destructive or irreversible action with the user |
@@ -73,8 +73,6 @@ Available in all onboarding states. Used for authoring and editing MSFM specs in
 | `listSpecFiles` | List all files in the `src/` directory tree |
 
 ### Code Tools
-
-Available from `initialCodegen` onward.
 
 | Tool | Description |
 |------|-------------|
@@ -100,9 +98,7 @@ Available when `--lsp-url` is passed.
 | `lspDiagnostics` | Type errors and warnings for a file, with suggested quick fixes |
 | `restartProcess` | Restart a managed sandbox process (e.g., dev server after npm install) |
 
-### Post-Onboarding Tools
-
-Available only when `onboardingState` is `onboardingFinished`.
+### Development & Publishing Tools
 
 | Tool | Description |
 |------|-------------|
@@ -174,11 +170,7 @@ src/
   logger.ts              Structured logging
 
   prompt/
-    index.ts             System prompt builder (onboarding-state-aware)
-    actions/             Built-in prompts for runCommand actions
-      sync.md
-      publish.md
-      buildFromInitialSpec.md
+    index.ts             System prompt builder (static prefix + small dynamic tail)
     static/              Behavioral instruction fragments
       identity.md
       intake.md
@@ -187,7 +179,7 @@ src/
       instructions.md
       team.md
       lsp.md
-      projectContext.ts  Reads manifest, spec metadata, file listing at runtime
+      projectContext.ts  Reads project root, app identity, plan status at runtime
     compiled/            Platform docs distilled for agent consumption
     sources/             Prompt source material (hand-maintained)
 
@@ -267,7 +259,7 @@ The headless IPC protocol uses request correlation and a unified response patter
 - Messages sent while a turn is running are queued. When the turn ends, all contiguous queued user messages and background results are delivered together as **one merged turn**: the first queued message's `requestId` becomes the turn's primary id (stamped on `turn_started` and all streaming events), each absorbed message echoes its own `user_message` with its original `requestId` and `queued: true`, and at turn end the primary `completed` is emitted first, followed immediately by one `completed {…same outcome, absorbed: true}` per other absorbed `requestId`. Automated-action (`@@automated::…@@`) messages and chain steps never merge — they always run one turn each.
 - A queued **user** message can be promoted to ASAP delivery via `setQueuedDelivery`. ASAP items are pulled into the **running** turn at its next tool boundary (injected as plain user messages — no abort, no restart), echo `user_message` with `queued: true` and their own `requestId`, and get a `{…, absorbed: true}` completed with the turn's outcome at turn end. Promotion deliberately jumps ahead of anything else in the queue, including chain steps. If the turn ends before injection, the tag is ignored and the item drains in normal FIFO order.
 - Background tool completions have three delivery classes (per-tool `backgroundNotify` on the tool definition). `wake` (default): the result is queued as a `background_results` message and may start a turn when the agent is idle. `passive` (e.g. `specSync`): the result never enters the queue and never wakes the agent — it parks in a persisted holding pen and rides the next real turn as a hidden `background_results` entry (so it never appears in `queuedMessages`, never affects queue-derived busy state, and never triggers resume-on-restart). `silent` (e.g. `compactConversation`): the tool block is updated for the UI and the model is never told — its outcome reaches the model by another mechanism. All classes emit `tool_background_complete` immediately. `specSync` also takes a `refreshBuildOverview` flag (set post-deploy / post-milestone, prompted via the publish flow): the run gains the `writeBuildOverview` tool and re-authors the Build Overview from the freshly-reconciled spec — the design-expert render runs foreground within specSync's already-detached run, never nested-background.
-- Compaction lifecycle rides `compaction_started {blocking}` / `compaction_complete {error?}` system events. Every compaction also renders as a normal `compactConversation` tool call: the model-invoked tool has its own block, and user (`/compact`) or gate-initiated compactions get a **synthesized UI-only tool block** in history (standard `tool_start {background: true}` → `tool_background_complete` lifecycle; the summary lands in the block's `backgroundResult`, and the block is excluded from every API payload — the model receives the summary via the checkpoint prefix instead). Every turn passes a **compaction gate**: it waits for any in-flight compaction and applies the finished checkpoint before running, so no turn ever bills at the uncompacted context. Messages received while a compaction is in flight are queued exactly like mid-turn messages (they appear in `queuedMessages` and drain — with merged-turn semantics — when the compaction completes, on success and failure alike). A `compact` command received **mid-turn** queues too: it's acked immediately with `completed {success: true, queued: true}` (duplicate clicks coalesce onto the queued item), appears in `queuedMessages` as a removable `@@automated::compact@@` user item, and runs as its own drain step when the turn ends — everything queued behind it runs against the compacted history.
+- Compaction lifecycle rides `compaction_started {blocking}` / `compaction_complete {error?}` system events. Every compaction also renders as a normal `compactConversation` tool call. The **model-invoked** tool is a real background tool (its block completes via `tool_background_complete`; the summary lands in `backgroundResult`). User (`/compact`) and gate-initiated compactions instead get a **synthesized UI-only foreground block** in history — the user is actively waiting on these, so they follow the normal foreground lifecycle: `tool_start` with no result, then a (late) `tool_done {result, isError}` carrying the summary or the error when the compaction finishes. Either way the block is excluded from every API payload — the model receives the summary via the checkpoint prefix instead. Every turn passes a **compaction gate**: it waits for any in-flight compaction and applies the finished checkpoint before running, so no turn ever bills at the uncompacted context. Messages received while a compaction is in flight are queued exactly like mid-turn messages (they appear in `queuedMessages` and drain — with merged-turn semantics — when the compaction completes, on success and failure alike). A `compact` command received **mid-turn** queues too: it's acked immediately with `completed {success: true, queued: true}` (duplicate clicks coalesce onto the queued item), appears in `queuedMessages` as a removable `@@automated::compact@@` user item, and runs as its own drain step when the turn ends — everything queued behind it runs against the compacted history.
 - The caller distinguishes command responses from system events with a single check: `if (msg.requestId)`
 
 This enables a simple promise-based RPC layer: send a command with a unique ID, store a pending promise keyed by that ID, resolve it when you see `completed` with the matching ID.
@@ -287,8 +279,7 @@ Send a user message to the agent.
 Fields:
 - `requestId` — caller-provided correlation ID (echoed on all response events)
 - `text` — the user message (required unless `runCommand` is set)
-- `onboardingState` — controls tool availability and prompt context. One of: `intake`, `initialSpecAuthoring`, `initialCodegen`, `onboardingFinished` (default: `onboardingFinished`)
-- `viewContext` — `{ mode, openFiles?, activeFile? }` for prompt context
+- `onboardingState` — the project's onboarding phase, reflected in the system prompt's dynamic tail and plan-status behavior. One of: `intake`, `building`, `buildComplete`, `onboardingFinished` (default: `onboardingFinished`)
 - `attachments` — array of `{ url, extractedTextUrl? }` for file attachments
 - `runCommand` — triggers a built-in action prompt (`"sync"`, `"publish"`, `"buildFromInitialSpec"`)
 
@@ -379,7 +370,8 @@ All command responses include the `requestId` from the originating command.
 | `user_message` | `text`, `attachments?`, `queued?`, `hidden?` | Echo of a user message entering the turn. Queue-delivered messages (including ASAP items injected mid-turn) carry `queued: true` and their own original `requestId` (a merged turn emits one per absorbed message); idle sends echo with the turn's requestId and no `queued` flag. `hidden: true` marks internal entries (e.g. passive background results) that should not render. |
 | `tool_start` | `id`, `name`, `input`, `partial?`, `parentToolId?` | Tool execution started. `partial: true` means more `tool_start` events will follow for this id (progressive input streaming). |
 | `tool_input_delta` | `id`, `name`, `result`, `parentToolId?` | Progressive tool content (streaming tools only) |
-| `tool_done` | `id`, `name`, `result`, `isError`, `parentToolId?` | Tool execution completed |
+| `tool_done` | `id`, `name`, `result`, `isError`, `parentToolId?` | Tool execution completed. For a background tool this carries the synchronous ack; for a synthesized user/gate compaction block it arrives late, when the compaction finishes, carrying the summary (or error). |
+| `tool_background_complete` | `id`, `name`, `result`, `parentToolId?` | A background tool's detached work finished; `result` belongs in the block's `backgroundResult`. Emitted for all `backgroundNotify` classes. |
 | `status` | `message` | Contextual status label (e.g., "Writing files...") |
 | `error` | `error` | Error message (may precede `completed`) |
 | `history` | `messages` | Response to `get_history` |

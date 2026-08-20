@@ -5,7 +5,8 @@
  * message queue so queued work survives process restarts.
  */
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
+import { writeFileAtomicSync } from '../atomicWrite.js';
 import type { QueuedMessage } from './messageQueue.js';
 
 const STATS_FILE = '.remy-stats.json';
@@ -81,7 +82,10 @@ export function writeStats(
   passiveResults: PassiveResult[],
 ): void {
   try {
-    writeFileSync(
+    // Atomic: the sandbox watcher broadcasts this file to the frontend on
+    // every change, and loadQueue/loadPassiveResults re-read it on restart —
+    // a torn write could drop the persisted queue.
+    writeFileAtomicSync(
       STATS_FILE,
       JSON.stringify({
         ...stats,

@@ -22,7 +22,7 @@ import { PROJECT_ROOT } from '../../projectRoot.js';
  * isn't the project — a container often has several.
  */
 export function loadProjectRoot(): string {
-  return `\n## Project Root\n\`${PROJECT_ROOT}\`\n\nFile paths are relative to this directory. Every tool operates here and bash commands run it it.`;
+  return `\n## Project Root\n\`${PROJECT_ROOT}\`\n\nFile paths are relative to this directory. Every tool operates here and bash commands run in it.`;
 }
 
 /**
