@@ -469,7 +469,12 @@ function isRetryableError(error: string): boolean {
     /HTTP 5\d\d/i.test(error) ||
     /Stream stalled/i.test(error) ||
     /overloaded/i.test(error) ||
-    /terminated/i.test(error)
+    /terminated/i.test(error) ||
+    // Anthropic fetches url-source image blocks server-side on every call;
+    // a transient failure anywhere in that chain (S3 signing edge, resize
+    // proxy, their fetcher) surfaces as this message. The images themselves
+    // are fine — the same URLs typically succeed on the next attempt.
+    /Unable to download/i.test(error)
   );
 }
 
