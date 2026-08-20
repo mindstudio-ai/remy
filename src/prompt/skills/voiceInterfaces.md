@@ -105,6 +105,11 @@ method to branch web vs phone behavior (what to prefetch, how to phrase context)
 `session.sip.fromNumber` as context only, never identity: caller ID is spoofable, so don't gate
 data or roles on it — in-call verification is the auth rail.
 
+Ordinary web method calls carry the same context (`session.channel === 'web'` with `visitorId`),
+so correlating a browser's web activity with its voice calls can key on `session.visitorId` on
+both sides — one browser, one visitor id, web and voice alike. `session.voiceSessionId` remains
+the per-call key when you need to distinguish individual calls.
+
 ### Client tools: actions that happen on screen (`target: "client"`)
 
 A tool whose effect belongs in the browser — open the verification sheet, navigate to a page,
