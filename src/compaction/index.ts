@@ -655,6 +655,10 @@ async function runSummaryCall(
     // Always empty. With a toolset available the model picks `tool_use` over
     // producing a summary, leaving summaryText empty.
     tools: [],
+    // Each summary call carries a unique 100-200KB chunk that is never
+    // re-read (parallel siblings can't read each other's in-flight writes
+    // either) — a cache write here is pure waste.
+    cachePolicy: 'oneshot',
   })) {
     if (event.type === 'text') {
       summaryText += event.text;

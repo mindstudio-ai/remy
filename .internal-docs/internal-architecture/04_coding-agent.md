@@ -108,15 +108,18 @@ The C&C server maps these events to WebSocket broadcasts, so the browser sees ag
 
 ## System Prompt
 
-Dynamically assembled from multiple sources:
+Two zones, split by the `<!-- cache_breakpoint -->` marker (the server splits the prompt there into a cached block and an uncached tail):
 
+**Static prefix (byte-stable per process, cached):**
 1. **Base instructions** — identity ("You are Remy, a coding agent for MindStudio apps"), workflow (understand → change → verify → iterate), editing practices, search strategy
-2. **LSP section** (if configured) — instructions to use LSP tools for type intelligence
-3. **Agent instructions file** — first match of: `CLAUDE.md`, `.claude/instructions.md`, `AGENTS.md`, `REMY.md`, `.cursorrules`
-4. **`mindstudio.json`** — full manifest JSON, giving the agent awareness of methods, tables, roles, interfaces, scenarios
-5. **Project file listing** — top-level files and directories
+2. **Platform reference docs** — compiled docs for the manifest format, tables, methods, auth, interfaces, etc., plus the skills catalog (bodies load on demand via `loadSkill`)
+3. **LSP section** — instructions to use LSP tools for type intelligence (unconditional, nested in the code-authoring section)
+4. **Project root and org context** — both process-constant
 
-The manifest inclusion is key: it means the agent knows the app's structure before it reads a single file. It can reason about which methods exist, what the data model looks like, and which interfaces are configured.
+**Dynamic tail (small and slow-churning by design):**
+5. **Current date**, **onboarding state**, **app identity** (name + description parsed from `mindstudio.json`), and **plan status**
+
+Project inventories are deliberately NOT included — no manifest dump, no spec-file listing, no directory listing. The agent discovers structure on demand (`readFile mindstudio.json`, `listSpecFiles`, `glob`). The tail sits ahead of the entire conversation in the provider's cache prefix, so anything in it must change rarely: inventories churn on every edit and would re-write the full conversation cache each time.
 
 ---
 

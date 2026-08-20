@@ -59,6 +59,8 @@ export const productVisionTool: Tool = {
       system: getProductVisionPrompt(),
       task: input.task,
       history: history.length > 0 ? history : undefined,
+      // History-carrying thread re-sent across parent turns — 1h-TTL profile.
+      cachePolicy: 'conversation',
       tools: VISION_TOOLS,
       externalTools: new Set<string>(),
       executeTool: (name, input, toolCallId, _onLog, sams) => {

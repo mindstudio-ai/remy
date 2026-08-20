@@ -7,6 +7,7 @@
  */
 
 import fs from 'node:fs';
+import { writeFileAtomicSync } from '../../../atomicWrite.js';
 
 const SAMPLE_FILE = '.remy-design-sample.json';
 
@@ -39,7 +40,7 @@ function load(): SampleIndices | null {
 
 function save(indices: SampleIndices): void {
   try {
-    fs.writeFileSync(SAMPLE_FILE, JSON.stringify(indices));
+    writeFileAtomicSync(SAMPLE_FILE, JSON.stringify(indices));
   } catch {
     // Non-fatal — next call will regenerate
   }

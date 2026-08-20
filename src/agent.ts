@@ -176,7 +176,7 @@ export async function runTurn(params: {
     toolRegistry,
     onBackgroundComplete,
   } = params;
-  const tools = getToolDefinitions(onboardingState);
+  const tools = getToolDefinitions();
 
   // Per-build executor model: the approve message may carry a `buildModel`
   // that runs this build turn's parent surface on a non-default model. Scoped
@@ -508,6 +508,9 @@ export async function runTurn(params: {
             system,
             messages: cleanMessagesForApi(state.messages),
             tools,
+            // The parent is one long-lived conversation re-read across turns
+            // with multi-minute gaps — the 1h-TTL profile.
+            cachePolicy: 'conversation',
             signal,
           },
           {

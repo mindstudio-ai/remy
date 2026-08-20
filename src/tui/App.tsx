@@ -35,7 +35,9 @@ export function App({ apiConfig, model }: Props) {
     return s;
   });
   const [sessionRestored] = useState(() => agentState.messages.length > 0);
-  const [system] = useState(() => buildSystemPrompt());
+  // The TUI has no onboarding flow — pass the state explicitly so the prompt
+  // agrees with the onboardingState handed to runTurn below by construction.
+  const [system] = useState(() => buildSystemPrompt('onboardingFinished'));
 
   // Cancel current turn on Escape
   useInput((input, key) => {

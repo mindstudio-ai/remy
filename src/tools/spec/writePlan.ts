@@ -1,6 +1,6 @@
 /** Write an implementation plan to .remy-plan.md for user review. */
 
-import fs from 'node:fs/promises';
+import { writeFileAtomic } from '../../atomicWrite.js';
 import type { Tool } from '../index.js';
 
 const PLAN_FILE = '.remy-plan.md';
@@ -25,7 +25,10 @@ export const writePlanTool: Tool = {
   async execute(input) {
     const content = input.content as string;
     const file = `---\nstatus: pending\n---\n\n${content}`;
-    await fs.writeFile(PLAN_FILE, file, 'utf-8');
+    // Atomic so the sandbox's file watcher can never read (and broadcast) a
+    // torn plan — a mid-write empty read is how the approval overlay once
+    // failed to appear.
+    await writeFileAtomic(PLAN_FILE, file);
     return 'Plan written to .remy-plan.md. Waiting for user approval.';
   },
 };

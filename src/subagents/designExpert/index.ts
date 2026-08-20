@@ -68,6 +68,8 @@ async function runDesignExpert(
     }),
     task: opts.task,
     history: history.length > 0 ? history : undefined,
+    // History-carrying thread re-sent across parent turns — 1h-TTL profile.
+    cachePolicy: 'conversation',
     tools: opts.render ? DESIGN_EXPERT_RENDER_TOOLS : DESIGN_EXPERT_TOOLS,
     externalTools: new Set<string>(),
     executeTool: (name, input, toolCallId, onLog, sams) => {

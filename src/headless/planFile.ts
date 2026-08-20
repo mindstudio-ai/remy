@@ -4,7 +4,8 @@
  * <pending_plan>/<approved_plan> note reflects the new state.
  */
 
-import { readFileSync, writeFileSync, unlinkSync } from 'node:fs';
+import { readFileSync, unlinkSync } from 'node:fs';
+import { writeFileAtomicSync } from '../atomicWrite.js';
 import { hasSentinel } from '../automatedActions/sentinel.js';
 
 const PLAN_FILE = '.remy-plan.md';
@@ -17,10 +18,9 @@ export function applyPlanFileSideEffect(rawText: string): void {
   ) {
     try {
       const plan = readFileSync(PLAN_FILE, 'utf-8');
-      writeFileSync(
+      writeFileAtomicSync(
         PLAN_FILE,
         plan.replace(/^status:\s*pending/m, 'status: approved'),
-        'utf-8',
       );
     } catch {}
   } else if (hasSentinel(rawText, 'rejectPlan')) {

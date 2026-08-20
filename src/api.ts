@@ -226,6 +226,20 @@ export interface BillingEvent {
  * requests, and a final done/error event. The caller (agent loop) decides
  * what to do with tool_use events (execute tools, send results back).
  */
+/**
+ * Prompt-caching aggressiveness hint, honored by the platform's Anthropic
+ * adapter (other providers ignore it). Absent = 'conversation' server-side,
+ * and old servers drop the field — either way behavior degrades to today's.
+ *
+ * - 'conversation': 1h-TTL cache breakpoints. Long-lived threads whose
+ *   prefix is re-read across turns with multi-minute gaps.
+ * - 'run': 5m-TTL breakpoints. Short-lived runs iterating in seconds —
+ *   5m writes bill 1.25× vs 2× for 1h, breaking even at ~2 reuses.
+ * - 'oneshot': no cache directives; billed as plain input. For prompts that
+ *   are never re-read (summary chunks, one-off extractions).
+ */
+export type CachePolicy = 'conversation' | 'run' | 'oneshot';
+
 export async function* streamChat(
   params: ApiConfig & {
     /** Authoritative model ID. Required — callers resolve via
@@ -237,6 +251,7 @@ export async function* streamChat(
     maxTokens?: number;
     temperature?: number;
     config?: Record<string, any>;
+    cachePolicy?: CachePolicy;
     subAgentId?: string;
     requestId?: string;
     signal?: AbortSignal;
