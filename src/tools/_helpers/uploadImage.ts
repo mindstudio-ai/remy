@@ -28,14 +28,18 @@ const log = createLogger('uploadImage');
 
 const UPLOAD_TIMEOUT_MS = 60_000;
 
-/** Formats the vision models read. Same list `headless/attachments.ts` uses to
- * split an upload into an image block vs. a document. */
+/** Formats the platform can serve to a vision model. The rasters pass
+ * through untouched; SVG is accepted here because the platform rasterizes it
+ * to PNG at analysis/generation time (youai-api resolveModelImageUrl).
+ * Deliberately NOT the same list as `headless/attachments.ts` — that one
+ * feeds Anthropic image blocks directly, which reject SVG. */
 const CONTENT_TYPES: Record<string, string> = {
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
   '.gif': 'image/gif',
   '.webp': 'image/webp',
+  '.svg': 'image/svg+xml',
 };
 
 /**

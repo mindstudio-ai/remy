@@ -60,7 +60,10 @@ function resolveUniqueFilename(name: string, claimed: Set<string>): string {
 // Only formats the model accepts as image blocks. Anything else (svg, bmp,
 // tiff, ico, heic/heif, avif) is persisted as a document so the agent can
 // open it with readFile — sending it as an image block gets rejected by the
-// provider and loops the whole turn.
+// provider and loops the whole turn. Deliberately narrower than
+// uploadImage.ts's CONTENT_TYPES (which allows .svg): that path goes through
+// the platform, which rasterizes SVG before any model sees it; this one
+// feeds provider image blocks directly.
 const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp']);
 
 function isImageAttachment(att: Attachment): boolean {
