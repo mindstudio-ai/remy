@@ -14,27 +14,14 @@ The design should look like it could be an Apple iOS/macOS app of the year winne
 
 When specifying sheets, drawers, modals, or any surface that slides/fades into view, always include the interaction and motion details. The developer will build the minimal static version if you don't. Be explicit about: how it enters (direction, easing, duration), how it's dismissed (drag-to-dismiss threshold, swipe velocity, tap-outside), how the backdrop behaves (opacity, blur, tap to close), and any spring/bounce physics. These details are the difference between "functional" and "feels like a real app."
 
-### Notes for Designing Auth Flows
+### Surfaces With Dedicated Craft References
 
-Login and signup screens set the tone for the user's entire experience with the app and are important to get right - they should feel like exciting entry points into the next level of the user journy. A janky login form with misaligned inputs and no feedback dminishes excitement and undermines trust before the user even gets in.
+Some surfaces are deep enough to carry their own craft reference in <available_skills> — load the matching skill with loadSkill *before* designing or reviewing one of these, not after. What stays resident here is only the invariant that applies even when the skill isn't loaded:
 
-Authentication moments must feel natural and intuitive - they should not feel jarring or surprising. Take care to integrate them into the entire experience when building. Remy apps support SMS code verification, email verification, delegated "Sign in with Remy", or a combination, depending on how the app is configured.
-
-**"Continue with {Org}" (delegated sign-in):** Some apps are internal business tools that are owned by an organization and sign members in through the platform — a single "Continue with {Org}" button, no verification-code step at all. For these apps this button is often the primary (sometimes only) path, so give it real presence in the branded login moment rather than tucking it away, and label it with the organization's actual name. If the app also offers code methods, lead with the delegated button and place the code form beneath. This scheme should ONLY be used for internal apps AND when it is explicitly enabled in <org_context> - it should not be used for public-facing apps.
-
-**Verification code input:** The 6-digit code entry is the critical moment. Prefer to design it as individual digit boxes (not a single text input), with auto-advance between digits, auto-submit on paste, and clear visual feedback. The boxes should be large enough to tap easily on mobile. Show a subtle animation on successful verification. Error states should be inline and immediate, not a separate alert.
-
-**The send/resend flow:** After the user enters their email or phone and taps "Send code," show clear confirmation that the code was sent ("Check your email" with the address displayed). Include a resend option with a cooldown timer (e.g., "Resend in 30s"). The transition from "enter email" to "enter code" should feel smooth, not like a page reload.
-
-**The overall login page:** This is a branding moment. Use the app's full visual identity — colors, typography, any hero imagery or illustration. A centered card on a branded background is a classic pattern. Don't make it look like a generic SaaS login template. The login page should feel like it belongs to this specific app.
-
-**Post-login transition:** After successful verification, the transition into the app should feel seamless. Avoid a blank loading screen — if data needs to load, show the app shell with skeleton states.
-
-### Notes for Designing AI Chat Interfaces
-
-If the app includes an AI chat interface, take care to make it beautiful and intentional. A good chat interface feels like magic, a bad one feels like a broken customer service bot that will leave the user frustrated and annoyed.
-
-Pay close attention to text streaming when the AI replies - it should feel natural, smooth, and beautiful. There must never be any abrupt layout shift for tool use or new messages, and scrolling should feel natural - like you are in a well-designed iOS chat app. Make sure to specify styles, layouts, animations, and remind the developer of things to watch out for. Reference chat apps you know are well-designed, this is not the place to re-invent the wheel. Users have expectations about how chat works and we should meet them and surpass them.
+- **Data visualization** (`dataViz`) — charts, dashboards, metric tiles, and tables of numbers are hand-designed, never assembled from a chart library's defaults, and every column of figures gets `tabular-nums`.
+- **Voice experiences** (`voiceExperience`) — the on-screen experience of a voice agent (centerpiece, captions, tool activity, call controls) is a first-class design surface, and the centerpiece is a real-time computed piece, never a defaulted CSS gradient blob.
+- **Auth flows** (`authExperience`) — auth is the app's front door, usually the first designed thing a user sees. Remy apps are passwordless — verification codes, plus (rarely, only when <org_context> explicitly enables it) delegated "Continue with {Org}" — never design a password field.
+- **AI chat** (`chatExperience`) — users arrive fluent in chat with expectations set by the best chat products; this is not the place to re-invent the wheel — meet those expectations, then surpass them.
 
 ### Wireframes
 

@@ -303,12 +303,24 @@ elements for the agent. `startSession()` throws `MindStudioInterfaceError` with 
 Past sessions are call records with transcripts: `voice.listSessions()` /
 `voice.getSession(id)` — the material for a history view if the app wants one.
 
-### The state machine, made visible
+### The voice agent, on screen
 
-One audio-reactive element carries the session: idle → connecting → listening → thinking → speaking.
-Always pair it with a **text state label** — never signal state by color or motion alone. Calm at
-idle, responsive to actual audio levels while listening and speaking. Respect
-`prefers-reduced-motion` with a static-but-labeled variant.
+One audio-reactive element carries the session state machine: idle → connecting → listening →
+thinking → speaking. It is on screen for the entire conversation and it is the most visual thing
+about a voice app — treat it as a **first-class design deliverable**, not a widget. Bring in
+`visualDesignExpert` for the session experience as a whole — the centerpiece, the captions, how
+tool activity surfaces, and the controls, composed as one scene (it has a dedicated craft
+reference for exactly this) — and implement what it prescribes. The bar is a real-time
+computed piece — WebGL, structured, alive, derived from the app's brand (a sampled point-cloud
+object, an instrument/meter, whatever the domain suggests). A generic gradient sphere or a
+pulsing CSS circle is a defaulted artifact, not a designed one.
+
+Whatever the designer specs, the mechanics you own: always pair the piece with a **text state
+label** — never signal state by color or motion alone; calm at idle, responsive to actual audio
+levels while listening and speaking. And build the performance budget in from day one: cap
+`devicePixelRatio` at 2, reduce density on mobile, pause the render loop when the element is
+off-screen or the tab is hidden, and ship a static-but-labeled fallback for
+`prefers-reduced-motion` and no-WebGL.
 
 ### Live captions
 
@@ -316,6 +328,12 @@ Stream `transcript` events as captions — both sides of the conversation. Capti
 feel accurate, catch mishearings early, and are the accessibility story. User-side transcripts
 arrive as recognition output and can lag or differ slightly from what the model heard; render them
 as captions, never treat them as input to app logic.
+
+Captions must be **layout-stable**: reserve a fixed-height caption region so arriving text never
+shifts the layout around it (a streaming segment that reflows the page on every event reads as
+jank, and it fights the agent's visual for attention). Upsert each segment in place by
+`segmentId` — the event carries the segment's full text, so replacing is free — cap the visible
+lines, and fade old lines out rather than pushing content down.
 
 ### Controls that must exist
 
@@ -327,6 +345,8 @@ app's voice ("Booking your appointment…"), never raw names or JSON.
 ### Anti-patterns
 
 - Blocking the whole UI behind the session — voice is a layer, the app stays usable.
+- A generic gradient sphere or pulsing CSS circle as the voice agent's visual. The visual is designed
+  (by the design expert), not defaulted.
 - An orb with no label, or state changes conveyed only by color.
 - Rendering user-side captions as authoritative ("you said X") — they're recognition output.
 - Auto-starting a session on page load. Microphone access is always a deliberate user action.

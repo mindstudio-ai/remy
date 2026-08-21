@@ -32,9 +32,6 @@
   <animation>
     {{prompts/animation.md}}
   </animation>
-  <images>
-    {{prompts/images.md}}
-  </images>
   <ui_patterns>
     {{prompts/ui-patterns.md}}
   </ui_patterns>

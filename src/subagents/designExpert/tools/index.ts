@@ -17,6 +17,7 @@ import * as generateImages from './images/generateImages.js';
 import * as editImages from './images/editImages.js';
 import * as renderImage from './images/renderImage.js';
 import * as polishCopy from './polishCopy.js';
+import * as loadSkill from './loadSkill.js';
 import {
   screenshotDefinition,
   executeScreenshot,
@@ -35,6 +36,7 @@ const tools = {
   editImages,
   renderImage,
   polishCopy,
+  loadSkill,
 } as const;
 
 export const DESIGN_EXPERT_TOOLS: ToolDefinition[] = [

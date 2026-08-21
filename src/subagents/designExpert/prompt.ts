@@ -10,6 +10,7 @@
 
 import fs from 'node:fs';
 import { readAsset } from '../../assets.js';
+import { designSkillCatalog } from './skills/catalog.js';
 import { loadSpecIndex } from '../common/context.js';
 import { getOrgContext } from '../../orgContext.js';
 import { getSampleIndices } from './data/sampleCache.js';
@@ -123,6 +124,15 @@ export function getDesignExpertPrompt(
       '{{ui_case_studies}}',
       getUiInspirationSample(indices.uiInspiration),
     );
+
+  // The craft-skill catalog. Appended in code rather than as a prompt.md
+  // include because it's computed from the skills directory, not a fragment —
+  // and it must land before the breakpoint: the block is fixed for the
+  // process lifetime (ids feed the loadSkill enum), so it's cache-stable.
+  const skillsBlock = designSkillCatalog.renderCatalogBlock();
+  if (skillsBlock) {
+    prompt += `\n\n${skillsBlock}`;
+  }
 
   prompt += '\n\n<!-- cache_breakpoint -->';
   if (specContext) {

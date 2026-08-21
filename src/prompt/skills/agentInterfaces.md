@@ -183,7 +183,7 @@ Images are sent as vision input; documents have their text extracted server-side
 
 ### Layout
 
-Ask `visualDesignExpert` for ideas about how to design the chat UI in a way that is appropriate and unique to the app.
+The chat UI is a first-class design deliverable, not a bolted-on widget. Bring in `visualDesignExpert` for the chat experience as a whole — message design, streaming behavior, tool-activity presentation, the composer, and the empty state, composed as one surface (it has a dedicated craft reference for exactly this) — and implement what it prescribes. The rules below are the floor, not the direction.
 
 User messages visually distinct from assistant messages (right-aligned, different background, or both). Keep it clean — no avatars unless they add meaning. Generous vertical spacing between messages so the conversation breathes. Use clean, beautiful animation where it is additive.
 

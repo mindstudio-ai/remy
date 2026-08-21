@@ -1,3 +1,9 @@
+---
+name: Images & Visual Assets
+what: Generating, editing, and browser-rendering production imagery for the app — editorial photography, illustrations, icons and logos, Open Graph share images, transparent assets, and token-exact rendered graphics, all delivered as ready-to-use CDN URLs. The image tools (generateImages, editImages, renderImage) are always available; this reference is how to use them well — prompt craft, the engine split between model and browser, icon/OG recipes, CDN transforms — and when imagery is genuinely additive versus shoehorned decoration.
+when: Before generating, editing, or rendering any image (generateImages / editImages / renderImage), or before specifying imagery, icons, logos, or share images in a design.
+---
+
 ## Photo and Image Guidelines
 
 Important: All images used in the app might be high resolution and high quality. If serving them via the mindstudio cdn, make sure to specify the ?dpr=3 param for retina displays.
