@@ -42,7 +42,7 @@ import {
   loadPlanStatus,
 } from './static/projectContext.js';
 import { renderOrgContextBlock } from '../orgContext.js';
-import { loadSkillsCatalog } from './skills/catalog.js';
+import { loadSkillsCatalog } from './skills/_catalog.js';
 
 /** Replace all {{path/to/file.md}} with the file contents. */
 function resolveIncludes(template: string): string {

@@ -33,8 +33,7 @@ Wireframes isolate one small piece: a single card, a button animation, a transit
 
 Wireframes render in a small transparent iframe. Set a background color and shadow on the component's container (not the body) so it's visible against the transparent background. Center it in the viewport. No annotations or labels inside the wireframe. Put notes in the surrounding markdown. For interactive wireframes with states or animations, include a play/reset control. No images.
 
-Wireframes are vanilla HTML/CSS/JS (no React). For animations beyond CSS, use GSAP via CDN:
-`<script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>`
+Wireframes are vanilla HTML/CSS/JS (no React). For animations beyond CSS, use GSAP via CDN: `<script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>`
 
 Quick skeleton wireframe (grey boxes, just showing layout and hierarchy):
 

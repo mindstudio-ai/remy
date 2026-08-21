@@ -93,8 +93,7 @@ export async function approveVendor(input: { vendorId: string }) {
 }
 ```
 
-See [Tables & Database](04_tables-and-database.md), [Files & Storage](11_files-and-storage.md), and
-[Methods](05_methods.md) for the full API.
+See [Tables & Database](04_tables-and-database.md), [Files & Storage](11_files-and-storage.md), and [Methods](05_methods.md) for the full API.
 
 ### Frontend: `@mindstudio-ai/interface`
 
