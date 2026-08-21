@@ -112,13 +112,7 @@ await chat.deleteThread(thread.id);
 await chat.claimThread(thread.id);
 ```
 
-**Client tools** — a tool whose effect happens in the browser (open a sheet, navigate, highlight)
-is declared with `target: "client"` and a `name` + inline `inputSchema` instead of a `method`
-(names must not collide with method ids; the schema is authored — there's no method contract to
-derive it from). The agent's invocation arrives as the `client_tool_call` stream event / the
-`onClientToolCall` callback on `sendMessage`; run the action there. Fire-and-forget on this
-surface: the agent is told the action was displayed and keeps going — the user's next message
-closes the loop.
+**Client tools** — a tool whose effect happens in the browser (open a sheet, navigate, highlight) is declared with `target: "client"` and a `name` + inline `inputSchema` instead of a `method` (names must not collide with method ids; the schema is authored — there's no method contract to derive it from). The agent's invocation arrives as the `client_tool_call` stream event / the `onClientToolCall` callback on `sendMessage`; run the action there. Fire-and-forget on this surface: the agent is told the action was displayed and keeps going — the user's next message closes the loop.
 
 ```js
 await chat.sendMessage(thread.id, text, {
@@ -183,7 +177,7 @@ Images are sent as vision input; documents have their text extracted server-side
 
 ### Layout
 
-Ask `visualDesignExpert` for ideas about how to design the chat UI in a way that is appropriate and unique to the app.
+The chat UI is a first-class design deliverable, not a bolted-on widget. Bring in `visualDesignExpert` for the chat experience as a whole — message design, streaming behavior, tool-activity presentation, the composer, and the empty state, composed as one surface (it has a dedicated craft reference for exactly this) — and implement what it prescribes. The rules below are the floor, not the direction.
 
 User messages visually distinct from assistant messages (right-aligned, different background, or both). Keep it clean — no avatars unless they add meaning. Generous vertical spacing between messages so the conversation breathes. Use clean, beautiful animation where it is additive.
 
@@ -236,8 +230,7 @@ The chat UI uses the app's design system — colors, typography, voice from `@br
 
 ## Spec: `src/interfaces/agent.md`
 
-The human-readable spec. Frontmatter contains structured fields; the prose body is the behavioral spec —
-voice, personality, capabilities, rules — written in MSFM.
+The human-readable spec. Frontmatter contains structured fields; the prose body is the behavioral spec — voice, personality, capabilities, rules — written in MSFM.
 
 ```yaml
 ---
@@ -250,15 +243,10 @@ description: Conversational agent that helps users manage their to-do list.
 Frontmatter fields:
 
 - `name` — agent display name
-- `model` — JSON string with `model` (MindStudio model ID), `temperature`, `maxResponseTokens`, and
-  optional `config` (model-specific settings like `reasoning`, `tools`, etc.). Ask `askMindStudioSdk`
-  for available model IDs and their config options — MindStudio's ids don't match vendor ids, so treat
-  any id in this document's examples as illustrative rather than current. The user's UI has a visual picker for changing it later, so only validate
-  the model when you're setting it; if the value changes afterwards, assume it's correct.
+- `model` — JSON string with `model` (MindStudio model ID), `temperature`, `maxResponseTokens`, and optional `config` (model-specific settings like `reasoning`, `tools`, etc.). Ask `askMindStudioSdk` for available model IDs and their config options — MindStudio's ids don't match vendor ids, so treat any id in this document's examples as illustrative rather than current. The user's UI has a visual picker for changing it later, so only validate the model when you're setting it; if the value changes afterwards, assume it's correct.
 - `description` — one-liner for agent card/listing
 
-The prose body contains sections like Voice & Personality, Capabilities, Behavior — whatever structure
-serves the agent's character. This is compiled into the system prompt and tool descriptions.
+The prose body contains sections like Voice & Personality, Capabilities, Behavior — whatever structure serves the agent's character. This is compiled into the system prompt and tool descriptions.
 
 ## Compiled Output: `dist/interfaces/agent/`
 
@@ -291,9 +279,7 @@ dist/interfaces/agent/
 }
 ```
 
-**The token-limit field is renamed during compilation.** The spec frontmatter calls it
-`maxResponseTokens`; the compiled `agent.json` calls it `maxTokens`. Same value, two names — carry it
-across rather than copying the key.
+**The token-limit field is renamed during compilation.** The spec frontmatter calls it `maxResponseTokens`; the compiled `agent.json` calls it `maxTokens`. Same value, two names — carry it across rather than copying the key.
 
 | Field | Description |
 |-------|-------------|
@@ -313,29 +299,17 @@ Declare it in `mindstudio.json`:
 
 ## Auth
 
-**Every agent config declares an `auth` block.** Agent chat spends the owner's money on every
-message without necessarily touching a backend method, so the platform gates the lobby itself —
-enforced at thread creation and message send:
+**Every agent config declares an `auth` block.** Agent chat spends the owner's money on every message without necessarily touching a backend method, so the platform gates the lobby itself — enforced at thread creation and message send:
 
 ```json
 "auth": { "requireUser": true, "requireRole": ["support-agent", "admin"] }
 ```
 
-- `requireUser: true` — only authenticated app users may chat; `false` — anyone, including
-  anonymous visitors. Most apps want `true`; choose `false` deliberately (a public concierge).
-- `requireRole` (optional) — the user must hold **at least one** of the listed manifest role ids
-  (OR semantics, same as the backend `auth.requireRole(...)`). Omit or leave empty for no role
-  gate. Requires `requireUser: true`. Unknown role ids fail the build.
-- Denials surface to the frontend SDK as `MindStudioInterfaceError` with code `auth_required`
-  (401) or `role_required` (403).
+- `requireUser: true` — only authenticated app users may chat; `false` — anyone, including anonymous visitors. Most apps want `true`; choose `false` deliberately (a public concierge).
+- `requireRole` (optional) — the user must hold **at least one** of the listed manifest role ids (OR semantics, same as the backend `auth.requireRole(...)`). Omit or leave empty for no role gate. Requires `requireUser: true`. Unknown role ids fail the build.
+- Denials surface to the frontend SDK as `MindStudioInterfaceError` with code `auth_required` (401) or `role_required` (403).
 - Dev preview is exempt — the builder is never locked out while testing.
-- Older compiled apps without the block fall back to the manifest's `auth.enabled` (auth-enabled →
-  users only; no auth → public). New configs always declare it explicitly.
+- Older compiled apps without the block fall back to the manifest's `auth.enabled` (auth-enabled → users only; no auth → public). New configs always declare it explicitly.
 
-Once inside, agent chat runs as the **authenticated user**, not as a system role — tool calls
-carry that user's roles, so a method gated with `auth.requireRole` behaves exactly as it would if
-the user had called it from the web frontend. That's what makes exposing real methods safe; it's
-also why role restrictions belong in the tool descriptions, so the agent can decline gracefully
-instead of surfacing a rejection. Anonymous visitors (when allowed) are scoped by a per-browser
-visitor identity: their threads are private to their browser, and gated methods still reject.
+Once inside, agent chat runs as the **authenticated user**, not as a system role — tool calls carry that user's roles, so a method gated with `auth.requireRole` behaves exactly as it would if the user had called it from the web frontend. That's what makes exposing real methods safe; it's also why role restrictions belong in the tool descriptions, so the agent can decline gracefully instead of surfacing a rejection. Anonymous visitors (when allowed) are scoped by a per-browser visitor identity: their threads are private to their browser, and gated methods still reject.
 

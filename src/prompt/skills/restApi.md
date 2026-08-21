@@ -6,24 +6,15 @@ when: Before authoring `src/interfaces/api.md` or adding an `api` interface with
 
 # REST API Interfaces
 
-REST endpoints for external consumers — other services, mobile apps, integrations. This is separate
-from the web frontend's internal RPC (`@mindstudio-ai/interface` calls `/_/methods` directly and does
-not use the API interface). The API interface lives at `/_/api/` and exposes only the methods you
-choose to route.
+REST endpoints for external consumers — other services, mobile apps, integrations. This is separate from the web frontend's internal RPC (`@mindstudio-ai/interface` calls `/_/methods` directly and does not use the API interface). The API interface lives at `/_/api/` and exposes only the methods you choose to route.
 
-Use it for sync endpoints for other services, a public REST API, batch tools — anything where
-something outside the app's own frontend needs to call a method over HTTP.
+Use it for sync endpoints for other services, a public REST API, batch tools — anything where something outside the app's own frontend needs to call a method over HTTP.
 
-**For provider webhooks (Stripe, GitHub, Shopify) there are two native paths**, and they are easy to
-confuse. This interface handles them with bearer auth and `input._request.rawBody`. The Webhook
-interface handles them with secret-in-URL routing and a top-level `input.rawBody` — usually the better
-fit for provider callbacks, since providers can't send a bearer token. Load the `webhooks` skill before
-choosing.
+**For provider webhooks (Stripe, GitHub, Shopify) there are two native paths**, and they are easy to confuse. This interface handles them with bearer auth and `input._request.rawBody`. The Webhook interface handles them with secret-in-URL routing and a top-level `input.rawBody` — usually the better fit for provider callbacks, since providers can't send a bearer token. Load the `webhooks` skill before choosing.
 
 ## Spec: `src/interfaces/api.md`
 
-The human-readable spec. Frontmatter declares the API name and description; the body maps methods to
-REST routes using MSFM.
+The human-readable spec. Frontmatter declares the API name and description; the body maps methods to REST routes using MSFM.
 
 ```yaml
 ---
@@ -33,8 +24,7 @@ type: interface/api
 ---
 ```
 
-Routes are declared as `VERB /path → methodExportName` under resource headings, with annotations for
-params and descriptions:
+Routes are declared as `VERB /path → methodExportName` under resource headings, with annotations for params and descriptions:
 
 ```markdown
 ## Vendors
@@ -140,10 +130,6 @@ Routes are mounted at `/_/api{path}` (e.g. `DELETE /_/api/vendors/abc123`).
 - **Query params** are merged into input for GET requests: `?status=approved` → `{ status: "approved" }`
 - **Request body** for POST/PUT/PATCH is the input directly (no `{ input: {...} }` wrapper)
 - **Response** is the method output directly (no `{ output: {...} }` wrapper)
-- **Auth** via `Authorization: Bearer sk_...` — an API key resolves to a user with full RBAC, so the
-  method's own `auth.requireRole(...)`/`hasRole(...)` checks apply exactly as they would for that user
+- **Auth** via `Authorization: Bearer sk_...` — an API key resolves to a user with full RBAC, so the method's own `auth.requireRole(...)`/`hasRole(...)` checks apply exactly as they would for that user
 - **Streaming**: `Accept: text/event-stream` header returns SSE chunks
-- **Raw request context**: Every API method receives `input._request` with `{ method, headers, rawBody }`.
-  `rawBody` is the original unparsed body as a UTF-8 string — needed for signature verification, since
-  providers HMAC the raw payload and a re-serialized body won't match. For most methods you don't need
-  `_request` at all.
+- **Raw request context**: Every API method receives `input._request` with `{ method, headers, rawBody }`. `rawBody` is the original unparsed body as a UTF-8 string — needed for signature verification, since providers HMAC the raw payload and a re-serialized body won't match. For most methods you don't need `_request` at all.

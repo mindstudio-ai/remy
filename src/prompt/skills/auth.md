@@ -390,13 +390,7 @@ Roles are declared in the manifest, stored as an array column on the user table,
 
 ## Interface-Level Auth (Agent + Voice)
 
-Agent and voice interfaces additionally declare auth **in their config** (a required `auth` key:
-`{ "requireUser": boolean, "requireRole"?: string[] }`) because those sessions spend money without
-necessarily calling a backend method — the platform gates the lobby itself, before any model or
-media spend. `requireRole` uses the same manifest role ids with OR semantics. Denials reach the
-frontend SDK as `MindStudioInterfaceError` codes `auth_required` (401) and `role_required` (403) —
-route them to the app's login flow. See the `agentInterfaces` / `voiceInterfaces` skills for the
-full contract. Method-level `auth.requireRole(...)` checks still apply to every tool call inside.
+Agent and voice interfaces additionally declare auth **in their config** (a required `auth` key: `{ "requireUser": boolean, "requireRole"?: string[] }`) because those sessions spend money without necessarily calling a backend method — the platform gates the lobby itself, before any model or media spend. `requireRole` uses the same manifest role ids with OR semantics. Denials reach the frontend SDK as `MindStudioInterfaceError` codes `auth_required` (401) and `role_required` (403) — route them to the app's login flow. See the `agentInterfaces` / `voiceInterfaces` skills for the full contract. Method-level `auth.requireRole(...)` checks still apply to every tool call inside.
 
 ## Apps Without Auth
 

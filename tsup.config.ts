@@ -88,21 +88,27 @@ function checkPrompts() {
     }
   }
 
-  // A skill missing frontmatter is skipped by the catalog, so the agent can't
-  // see it exists — quieter than a missing file and just as broken.
-  for (const file of readdirSync(resolve('src/prompt/skills'))) {
-    if (!file.endsWith('.md')) {
+  // A skill missing frontmatter is skipped by its catalog, so the agent can't
+  // see it exists — quieter than a missing file and just as broken. One dir
+  // per skillCatalog instance: the main agent's and the design expert's.
+  for (const dir of ['prompt/skills', 'subagents/designExpert/skills']) {
+    if (!existsSync(resolve('src', dir))) {
       continue;
     }
-    const body = readFileSync(resolve('src/prompt/skills', file), 'utf-8');
-    const fm = body.match(/^---\n([\s\S]*?)\n---/)?.[1] ?? '';
-    for (const field of ['name', 'what', 'when']) {
-      if (!new RegExp(`^${field}:\\s*\\S`, 'm').test(fm)) {
-        errors.push(`skills/${file} is missing \`${field}\` frontmatter`);
+    for (const file of readdirSync(resolve('src', dir))) {
+      if (!file.endsWith('.md')) {
+        continue;
       }
-    }
-    if (!existsSync(resolve('dist/prompt/skills', file))) {
-      errors.push(`skill not copied to dist: skills/${file}`);
+      const body = readFileSync(resolve('src', dir, file), 'utf-8');
+      const fm = body.match(/^---\n([\s\S]*?)\n---/)?.[1] ?? '';
+      for (const field of ['name', 'what', 'when']) {
+        if (!new RegExp(`^${field}:\\s*\\S`, 'm').test(fm)) {
+          errors.push(`${dir}/${file} is missing \`${field}\` frontmatter`);
+        }
+      }
+      if (!existsSync(resolve('dist', dir, file))) {
+        errors.push(`skill not copied to dist: ${dir}/${file}`);
+      }
     }
   }
 

@@ -51,33 +51,17 @@ Note: the snapshot concatenates inline text and strips whitespace. If you need t
 
 ### Voice interfaces
 
-Apps with a voice interface are testable end to end — the UI layer included. The sandbox browser
-auto-grants a (silent) microphone, and while a session is live the SDK publishes a handle at
-`window.__MS_VOICE__` so you can converse by text: the agent treats injected text exactly like
-user speech (interrupts and replies), backend tools run for real, and client tools render their
-real UI (cards, sheets) in the page.
+Apps with a voice interface are testable end to end — the UI layer included. The sandbox browser auto-grants a (silent) microphone, and while a session is live the SDK publishes a handle at `window.__MS_VOICE__` so you can converse by text: the agent treats injected text exactly like user speech (interrupts and replies), backend tools run for real, and client tools render their real UI (cards, sheets) in the page.
 
 The loop:
 
-1. Start a session through the app's real UI — `click` its voice affordance (orb/button). No mic
-   prompt appears. Then `wait` briefly and confirm the session is live:
-   `evaluate: window.__MS_VOICE__?.state` (undefined means no session started — report that,
-   don't improvise).
+1. Start a session through the app's real UI — `click` its voice affordance (orb/button). No mic prompt appears. Then `wait` briefly and confirm the session is live: `evaluate: window.__MS_VOICE__?.state` (undefined means no session started — report that, don't improvise).
 2. Speak by injection: `evaluate: window.__MS_VOICE__.sendText("I'd like to book Tuesday at 2")`.
-3. Give the agent a few seconds to respond (replies are generated speech — slower than chat).
-   `wait` for the UI you expect (client-tool cards appear via the app's real handlers), and read
-   the conversation: `evaluate: window.__MS_VOICE__.transcript` (one entry per utterance, both
-   sides, `final` marks settled ones) and `window.__MS_VOICE__.toolCalls` (which tools ran;
-   `done` entries carry the tool's return value).
+3. Give the agent a few seconds to respond (replies are generated speech — slower than chat). `wait` for the UI you expect (client-tool cards appear via the app's real handlers), and read the conversation: `evaluate: window.__MS_VOICE__.transcript` (one entry per utterance, both sides, `final` marks settled ones) and `window.__MS_VOICE__.toolCalls` (which tools ran; `done` entries carry the tool's return value).
 4. Verify visuals with `screenshotViewport` like any other flow.
-5. Read `transcript`/`toolCalls` BEFORE ending — then `evaluate: window.__MS_VOICE__.end()` (the
-   handle is removed when the session ends).
+5. Read `transcript`/`toolCalls` BEFORE ending — then `evaluate: window.__MS_VOICE__.end()` (the handle is removed when the session ends).
 
-Voice sessions are the most expensive thing you can run — real voice-model minutes are metered,
-and the agent speaks its replies out loud even when you type at it. Keep voice tests short and
-purposeful: a handful of turns that exercise the target behavior, then end the session. What you
-cannot test is the audio layer itself (mishearing, interruptions, pronunciation) — never attempt
-to simulate audio; report that scope limit instead.
+Voice sessions are the most expensive thing you can run — real voice-model minutes are metered, and the agent speaks its replies out loud even when you type at it. Keep voice tests short and purposeful: a handful of turns that exercise the target behavior, then end the session. What you cannot test is the audio layer itself (mishearing, interruptions, pronunciation) — never attempt to simulate audio; report that scope limit instead.
 
 ### Element targeting (tried in order)
 

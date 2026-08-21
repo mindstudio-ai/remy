@@ -584,19 +584,9 @@ dist/interfaces/agent/
 
 ### Auth
 
-**Every agent config declares an `auth` block.** Agent chat spends the owner's money on every
-message without necessarily touching a backend method, so the platform gates the lobby itself —
-enforced at thread creation and message send. `requireUser: true` limits chat to authenticated app
-users; `requireRole` (optional, requires `requireUser: true`) additionally demands at least one of
-the listed manifest role ids (OR semantics, matching the backend `auth.requireRole(...)`). Unknown
-role ids fail the build. Denials surface to the frontend SDK as `MindStudioInterfaceError` with
-code `auth_required` (401) or `role_required` (403). Dev preview is exempt. Older compiled apps
-without the block fall back to the manifest's `auth.enabled`.
+**Every agent config declares an `auth` block.** Agent chat spends the owner's money on every message without necessarily touching a backend method, so the platform gates the lobby itself — enforced at thread creation and message send. `requireUser: true` limits chat to authenticated app users; `requireRole` (optional, requires `requireUser: true`) additionally demands at least one of the listed manifest role ids (OR semantics, matching the backend `auth.requireRole(...)`). Unknown role ids fail the build. Denials surface to the frontend SDK as `MindStudioInterfaceError` with code `auth_required` (401) or `role_required` (403). Dev preview is exempt. Older compiled apps without the block fall back to the manifest's `auth.enabled`.
 
-Once inside, agent chat runs as the **authenticated user**, not as a system role — tool calls
-carry that user's roles, so method-level `auth.requireRole` checks behave exactly as they would
-from the web frontend. Anonymous visitors (when allowed) are scoped by a per-browser visitor
-identity: their threads are private to their browser, and gated methods still reject.
+Once inside, agent chat runs as the **authenticated user**, not as a system role — tool calls carry that user's roles, so method-level `auth.requireRole` checks behave exactly as they would from the web frontend. Anonymous visitors (when allowed) are scoped by a per-browser visitor identity: their threads are private to their browser, and gated methods still reject.
 
 ### Manifest
 
@@ -738,11 +728,7 @@ session.sendText('123 Main Street');  // inject text into the live conversation 
 session.end();
 ```
 
-Agent audio playback is handled inside the SDK (a hidden autoplaying element) — apps never create
-audio elements for the agent. Besides `microphone_denied`, `startSession()` throws
-`MindStudioInterfaceError` with code `voice_concurrency_limit` / `voice_visitor_limit` when the
-app's session limits are hit, and `auth_required` (401) / `role_required` (403) when the
-interface's `auth` block denies the caller.
+Agent audio playback is handled inside the SDK (a hidden autoplaying element) — apps never create audio elements for the agent. Besides `microphone_denied`, `startSession()` throws `MindStudioInterfaceError` with code `voice_concurrency_limit` / `voice_visitor_limit` when the app's session limits are hit, and `auth_required` (401) / `role_required` (403) when the interface's `auth` block denies the caller.
 
 Past sessions are available as call records with transcripts:
 

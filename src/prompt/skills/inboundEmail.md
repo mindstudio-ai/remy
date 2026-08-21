@@ -6,17 +6,13 @@ when: Before writing an email-handler method, adding an `email` interface, or pr
 
 # Inbound Email Interfaces
 
-Inbound email triggers. Each app has **one** email-handler method; the platform routes all inbound
-mail destined for the app — across any of its address tiers — to that method.
+Inbound email triggers. Each app has **one** email-handler method; the platform routes all inbound mail destined for the app — across any of its address tiers — to that method.
 
-The addresses themselves are configured at the project level by the user through the Remy platform.
-Your job is the `interface.json` and the method that handles the mail, not domain registration or MX
-records.
+The addresses themselves are configured at the project level by the user through the Remy platform. Your job is the `interface.json` and the method that handles the mail, not domain registration or MX records.
 
 ## Address tiers
 
-Three tiers, all delivered to the same handler method. The new tiers are catchall (no localpart
-registration); the legacy tier is specific-localpart and frozen for new apps.
+Three tiers, all delivered to the same handler method. The new tiers are catchall (no localpart registration); the legacy tier is specific-localpart and frozen for new apps.
 
 | Tier | Address | How it's set up |
 |---|---|---|
@@ -24,13 +20,9 @@ registration); the legacy tier is specific-localpart and frozen for new apps.
 | Custom domain | `*@<their-domain>` | The user adds a domain in the dashboard's email-domains settings and points one MX record at `mx.msagent.ai`. Not something the agent provisions. |
 | Legacy `mindstudio-hooks.com` | `<name>@mindstudio-hooks.com` | Existing apps only — frozen for new apps. Don't recommend it; treat as read-only history. |
 
-Because the new tiers are catchall, `to` carries an arbitrary localpart. Methods that need to branch on
-it should read `input.to` (e.g. `if (input.to.startsWith('support@')) ...`). This is what makes
-per-purpose addresses free: you don't register `support@` anywhere, you just check for it.
+Because the new tiers are catchall, `to` carries an arbitrary localpart. Methods that need to branch on it should read `input.to` (e.g. `if (input.to.startsWith('support@')) ...`). This is what makes per-purpose addresses free: you don't register `support@` anywhere, you just check for it.
 
-A verified custom domain (and the app's `madewithremy.com` subdomain) also **sends** outbound mail, not
-just receives — `sendEmail` picks the app's own-brand sender automatically, configured in the
-dashboard's **Email** settings.
+A verified custom domain (and the app's `madewithremy.com` subdomain) also **sends** outbound mail, not just receives — `sendEmail` picks the app's own-brand sender automatically, configured in the dashboard's **Email** settings.
 
 ## Config (`interface.json`)
 
@@ -45,10 +37,7 @@ The top-level key must match the interface type (`email`):
 }
 ```
 
-`approvedSenders` is optional. When set, only senders matching an exact address or `*@domain.com`
-wildcard reach the method; everything else is rejected by the platform with `400 invalid_sender` before
-the method runs (silently — the sender isn't bounced). Matching is case-insensitive. The same list
-applies uniformly across all three address tiers.
+`approvedSenders` is optional. When set, only senders matching an exact address or `*@domain.com` wildcard reach the method; everything else is rejected by the platform with `400 invalid_sender` before the method runs (silently — the sender isn't bounced). Matching is case-insensitive. The same list applies uniformly across all three address tiers.
 
 Declare it in `mindstudio.json`:
 
@@ -78,9 +67,7 @@ Declare it in `mindstudio.json`:
 
 ## Replying in thread
 
-Replies go out through the SDK's `sendEmail` action (its full parameter list is in the SDK actions
-reference in your system prompt). Set `inReplyTo` to the incoming `messageId` and `references` to
-`[...references, messageId]`. Send to `replyTo` when it's set, otherwise `from`.
+Replies go out through the SDK's `sendEmail` action (its full parameter list is in the SDK actions reference in your system prompt). Set `inReplyTo` to the incoming `messageId` and `references` to `[...references, messageId]`. Send to `replyTo` when it's set, otherwise `from`.
 
 ```typescript
 await mindstudio.sendEmail({
@@ -95,22 +82,14 @@ await mindstudio.sendEmail({
 });
 ```
 
-`sendEmail` returns `{ recipients, cc, bcc, from }` — who it sent to and the sender used. It does
-**not** return the sent message's own `Message-ID`, so thread off *inbound* mail, never off messages
-you sent.
+`sendEmail` returns `{ recipients, cc, bcc, from }` — who it sent to and the sender used. It does **not** return the sent message's own `Message-ID`, so thread off *inbound* mail, never off messages you sent.
 
 ## Attachments and size limits
 
-`attachments[]` is an array of CDN URLs — the platform has already received and uploaded the files.
-Fetch them server-side via the URL when you need the bytes; pass them through as URLs to UI or
-downstream services.
+`attachments[]` is an array of CDN URLs — the platform has already received and uploaded the files. Fetch them server-side via the URL when you need the bytes; pass them through as URLs to UI or downstream services.
 
-Max inbound message size is 25 MB total (including all attachments). Oversized messages are rejected by
-the platform before the method runs.
+Max inbound message size is 25 MB total (including all attachments). Oversized messages are rejected by the platform before the method runs.
 
 ## Auth
 
-Methods invoked through this interface run with `auth.roles: ['system']` — the platform is calling, not
-a user session, so there's no user to impersonate. Use `auth.requireRole('system')` to gate methods that
-should only be reachable via email. The auth reference in your system prompt covers the system role in
-full.
+Methods invoked through this interface run with `auth.roles: ['system']` — the platform is calling, not a user session, so there's no user to impersonate. Use `auth.requireRole('system')` to gate methods that should only be reachable via email. The auth reference in your system prompt covers the system role in full.

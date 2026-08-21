@@ -89,23 +89,16 @@ The experience of building with Remy is itself compelling. Remy asking smart que
 
 ## Common Reactions
 
-**"So it's like Cursor or Claude Code?"**
-Those are code-level tools. They help you write and edit code faster within your existing codebase. Remy works at a higher level. You describe the application in a spec, and the code is compiled from that. You're not editing TypeScript line by line. You're defining what the app does and the code follows. Different starting point entirely.
+**"So it's like Cursor or Claude Code?"** Those are code-level tools. They help you write and edit code faster within your existing codebase. Remy works at a higher level. You describe the application in a spec, and the code is compiled from that. You're not editing TypeScript line by line. You're defining what the app does and the code follows. Different starting point entirely.
 
-**"So it's like Bolt / Lovable / Replit Agent?"**
-Closer, but different in important ways. Those tools generate frontends from prompts. Often impressive-looking, but typically no real backend, no persistent database, no auth system. Remy builds the full stack: backend methods, typed SQL database, auth with real verification codes and sessions. And it's all backed by a spec that stays in sync as the project evolves. The spec is what makes iteration reliable. It's not a chat log of prompts. It's a structured document that both you and the agent can reason about.
+**"So it's like Bolt / Lovable / Replit Agent?"** Closer, but different in important ways. Those tools generate frontends from prompts. Often impressive-looking, but typically no real backend, no persistent database, no auth system. Remy builds the full stack: backend methods, typed SQL database, auth with real verification codes and sessions. And it's all backed by a spec that stays in sync as the project evolves. The spec is what makes iteration reliable. It's not a chat log of prompts. It's a structured document that both you and the agent can reason about.
 
-**"Is this no-code?"**
-No. There's real code underneath: TypeScript, any framework, any npm package. You can read it, edit it, extend it. The difference is the source of truth is a spec document, not the code itself. Think of it as a higher-level programming language.
+**"Is this no-code?"** No. There's real code underneath: TypeScript, any framework, any npm package. You can read it, edit it, extend it. The difference is the source of truth is a spec document, not the code itself. Think of it as a higher-level programming language.
 
-**"So it's vibe coding?"**
-More structured than that. The spec format has annotations that carry real precision: data types, validation rules, edge cases. It's not "throw a prompt and hope." The spec stays in sync with the code and grows with the project.
+**"So it's vibe coding?"** More structured than that. The spec format has annotations that carry real precision: data types, validation rules, edge cases. It's not "throw a prompt and hope." The spec stays in sync with the code and grows with the project.
 
-**"Can it build [specific thing]?"**
-If it's a full-stack web app with a backend, probably yes. Native mobile apps and real-time multiplayer with persistent connections aren't supported yet. Be honest about the boundaries.
+**"Can it build [specific thing]?"** If it's a full-stack web app with a backend, probably yes. Native mobile apps and real-time multiplayer with persistent connections aren't supported yet. Be honest about the boundaries.
 
-**"What happens when AI writes bad code?"**
-The spec is the source of truth, not the code. If the generated code has issues, you fix it, or you fix the spec and recompile. As models get better, the compiled output gets better automatically. You don't rewrite the app. You recompile it.
+**"What happens when AI writes bad code?"** The spec is the source of truth, not the code. If the generated code has issues, you fix it, or you fix the spec and recompile. As models get better, the compiled output gets better automatically. You don't rewrite the app. You recompile it.
 
-**"Why wouldn't I just use [framework/tool] directly?"**
-You can, and many people should. Remy is for when you want a complete, deployed, full-stack application and you'd rather describe what it does than wire up all the infrastructure yourself. It's not replacing your favorite editor. It's a different level of abstraction.
+**"Why wouldn't I just use [framework/tool] directly?"** You can, and many people should. Remy is for when you want a complete, deployed, full-stack application and you'd rather describe what it does than wire up all the infrastructure yourself. It's not replacing your favorite editor. It's a different level of abstraction.

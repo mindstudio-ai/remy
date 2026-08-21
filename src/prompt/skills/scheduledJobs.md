@@ -31,8 +31,7 @@ The top-level key must match the interface type (`cron`):
 }
 ```
 
-Standard cron expression format. `method` is the id of a method in `methods[]`. Jobs are synced to the
-platform on deploy.
+Standard cron expression format. `method` is the id of a method in `methods[]`. Jobs are synced to the platform on deploy.
 
 Declare it in `mindstudio.json`:
 
@@ -42,10 +41,6 @@ Declare it in `mindstudio.json`:
 
 ## Auth
 
-Methods invoked through this interface run with `auth.roles: ['system']` — the platform is calling, not
-a user session, so there's no user to impersonate. Use `auth.requireRole('system')` to gate methods that
-should only be reachable on a schedule. The auth reference in your system prompt covers the system role
-in full.
+Methods invoked through this interface run with `auth.roles: ['system']` — the platform is calling, not a user session, so there's no user to impersonate. Use `auth.requireRole('system')` to gate methods that should only be reachable on a schedule. The auth reference in your system prompt covers the system role in full.
 
-A scheduled job that needs to act on user data acts as the system, not as any user, so it reaches
-everything. Scope what it touches in the method itself rather than relying on role checks to narrow it.
+A scheduled job that needs to act on user data acts as the system, not as any user, so it reaches everything. Scope what it touches in the method itself rather than relying on role checks to narrow it.
