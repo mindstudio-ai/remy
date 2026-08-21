@@ -20,7 +20,7 @@
  *   ~3 transitions per project lifetime, so each transition's one-time
  *   cache rewrite is an acceptable trade for not carrying (and not
  *   contradicting later phases with) intake-mode instructions forever. The
- *   other exception is documented in prompt/skills/catalog.ts: docs for
+ *   other exception is documented in prompt/skills/_catalog.ts: docs for
  *   capabilities most apps never touch are represented here only by the
  *   catalog, and their bodies arrive on demand as loadSkill tool results.
  *

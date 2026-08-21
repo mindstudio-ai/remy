@@ -10,7 +10,7 @@
 
 import fs from 'node:fs';
 import { readAsset } from '../../assets.js';
-import { designSkillCatalog } from './skills/catalog.js';
+import { designSkillCatalog } from './skills/_catalog.js';
 import { loadSpecIndex } from '../common/context.js';
 import { getOrgContext } from '../../orgContext.js';
 import { getSampleIndices } from './data/sampleCache.js';

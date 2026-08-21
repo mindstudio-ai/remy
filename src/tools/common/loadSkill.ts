@@ -2,7 +2,7 @@
  * Load a reference doc that isn't carried in the system prompt.
  *
  * The catalog of what's available — and the trigger for each — is resident in
- * `<available_skills>`; see prompt/skills/catalog.ts for why these docs live
+ * `<available_skills>`; see prompt/skills/_catalog.ts for why these docs live
  * one layer away. A loaded body ages out of the conversation at the next
  * compaction like any file read; the catalog keeps the path resident so it
  * can be re-read, which is why nothing here tracks what's currently loaded.
@@ -13,7 +13,7 @@ import {
   SKILL_IDS,
   getSkill,
   readSkillBody,
-} from '../../prompt/skills/catalog.js';
+} from '../../prompt/skills/_catalog.js';
 
 export const loadSkillTool: Tool = {
   definition: {

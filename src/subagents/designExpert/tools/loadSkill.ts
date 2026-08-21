@@ -9,7 +9,7 @@
  */
 
 import type { ToolDefinition } from '../../../api.js';
-import { designSkillCatalog } from '../skills/catalog.js';
+import { designSkillCatalog } from '../skills/_catalog.js';
 
 export const definition: ToolDefinition = {
   name: 'loadSkill',
