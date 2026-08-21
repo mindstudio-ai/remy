@@ -43,6 +43,52 @@ export function buildScreenshotAnalysisPrompt(opts?: {
   return p;
 }
 
+export interface RenderHtmlResult {
+  /** Hosted URL of the captured PNG. Dev-session scratch storage — callers
+   * that need the image to outlive the session must re-host it. */
+  url: string;
+  /** Output dimensions in pixels (css × scale). */
+  width: number;
+  height: number;
+}
+
+/**
+ * Render an agent-authored HTML document in the sandbox browser and capture
+ * it as a PNG at exact dimensions. Renders in a fresh tab — never touches the
+ * app preview page. Used for deterministic brand graphics where the design
+ * agent composes HTML/CSS and needs real pixels back.
+ */
+export async function renderHtmlViaSidecar(opts: {
+  html: string;
+  width: number;
+  height: number;
+  /** True-alpha PNG — only meaningful when the document leaves its own
+   * background transparent. */
+  transparent?: boolean;
+  /** Device scale factor (output pixels = css × scale). Clamped to 1–3
+   * tunnel-side. */
+  scale?: number;
+}): Promise<RenderHtmlResult> {
+  const result = await sidecarRequest(
+    '/render-html',
+    {
+      html: opts.html,
+      width: opts.width,
+      height: opts.height,
+      ...(opts.transparent ? { transparent: true } : {}),
+      ...(opts.scale != null ? { scale: opts.scale } : {}),
+    },
+    { timeout: VIEWPORT_CAPTURE_TIMEOUT_MS },
+  );
+  const url = result?.url;
+  if (!url) {
+    throw new Error(
+      `No URL in sidecar render response. The browser may not be ready yet. Response: ${JSON.stringify(result)}`,
+    );
+  }
+  return { url, width: result.width, height: result.height };
+}
+
 export interface ScreenshotOptions {
   /** Analysis prompt. Pass `false` to skip analysis and return just the URL. */
   prompt?: string | false;
@@ -55,13 +101,12 @@ export interface ScreenshotOptions {
    * Viewport captures skip the pre-roll scroll, so they're faster and far less
    * failure-prone for long pages. */
   fullPage?: boolean;
-  /** Exact-size capture: clip to these viewport dimensions, for rendering a
-   * fixed-size artifact like a 1200×630 Open Graph share card. Both must be set
+  /** Exact-size capture: clip to these viewport dimensions. Both must be set
    * together; providing them forces a viewport capture (overrides `fullPage`). */
   width?: number;
   height?: number;
   /** Output format. Defaults to 'jpeg' (existing behavior). Use 'png' for crisp
-   * flat graphics like share cards, where JPEG artifacts show on sharp type. */
+   * flat graphics, where JPEG artifacts show on sharp type. */
   format?: 'png' | 'jpeg';
   /** Called for each log line emitted during CLI execution. */
   onLog?: (line: string) => void;

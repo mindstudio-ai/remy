@@ -26,7 +26,7 @@ import { resolveModel } from '../../models/surfaces.js';
 export const screenshotDefinition: ToolDefinition = {
   name: 'screenshot',
   description:
-    "Capture a screenshot of the app preview and get a description of what's on screen. Choose `fullPage`: `false` captures just the visible viewport (fast — for a specific section the page is scrolled to), `true` captures the entire page top-to-bottom (slower — for overall composition or content past the fold). Captures the settled page state — it cannot catch animations, transitions, or transient state. The analysis is not precise about every detail — for example it cannot reliably identify specific fonts by name, only describe what the letterforms look like. Optionally provide specific questions about what you're looking for. Use a bulleted list to ask many questions at once. To ask additional questions about a screenshot you have already captured, pass its URL as `imageUrl` to skip recapture; `imageUrl` also accepts the disk path of an image file (a user upload, a saved asset) to analyze that instead of the preview. If the screenshot requires interaction first (logging in, clicking a tab, dismissing a modal, scrolling to a section), use the instructions param to describe the steps. To render a fixed-size image such as an Open Graph share card, set `width` and `height` (e.g. 1200 × 630) and `format: 'png'`: the tool navigates to `path`, clips to exactly those pixel dimensions, and returns the image URL.",
+    "Capture a screenshot of the app preview and get a description of what's on screen. Choose `fullPage`: `false` captures just the visible viewport (fast — for a specific section the page is scrolled to), `true` captures the entire page top-to-bottom (slower — for overall composition or content past the fold). Captures the settled page state — it cannot catch animations, transitions, or transient state. The analysis is not precise about every detail — for example it cannot reliably identify specific fonts by name, only describe what the letterforms look like. Optionally provide specific questions about what you're looking for. Use a bulleted list to ask many questions at once. To ask additional questions about a screenshot you have already captured, pass its URL as `imageUrl` to skip recapture; `imageUrl` also accepts the disk path of an image file (a user upload, a saved asset) to analyze that instead of the preview. If the screenshot requires interaction first (logging in, clicking a tab, dismissing a modal, scrolling to a section), use the instructions param to describe the steps. To capture at exact pixel dimensions, set `width` and `height`: the tool clips to exactly that viewport and returns the image URL.",
   inputSchema: {
     type: 'object',
     properties: {
@@ -64,7 +64,7 @@ export const screenshotDefinition: ToolDefinition = {
         type: 'string',
         enum: ['png', 'jpeg'],
         description:
-          "Output image format. Defaults to 'jpeg'. Use 'png' for crisp flat graphics like share cards, where JPEG artifacts show on sharp type and edges.",
+          "Output image format. Defaults to 'jpeg'. Use 'png' for crisp flat graphics where JPEG artifacts show on sharp type and edges.",
       },
       instructions: {
         type: 'string',

@@ -65,13 +65,23 @@ Editorial photography is the right call for hero images, landing pages, marketin
 
 The developer should never need to source their own imagery. Always provide URLs.
 
+### Rendered graphics — renderImage
+
+`renderImage` renders a self-contained HTML document you author in a real browser and returns a durably hosted PNG at exact pixel dimensions, with a fidelity review. It is the deterministic counterpart to `generateImages`: exact hex colors, real loaded webfonts, precise geometry. Route any token-exact graphic through it — share cards, wordmarks, flat/geometric icon tiles, badges, anything where letterforms and spacing carry the design. Use the image model for organic, photographic, and illustrated work; use the browser for precision.
+
+Author it as HTML/CSS. The renderer waits for fonts to load before capturing. Size `html`/`body` to the full dimensions with `margin: 0`. When you need glyphs, inline a known-good SVG from something like Tabler or build the shape from CSS. Set `scale: 2` for crisp raster masters. `transparentBackground: true` with no background on `html`/`body` gives a true-alpha PNG with clean edeges.
+
 ### Icons and logos
 
 App icons and logos require work and thinking to get right. Prefer to use logos and icons as opposed to generic wordmarks when representing the app in UI (e.g., in navigation, on landing pages, login moments, etc).
 
+Match the engine to the icon direction: the smooth 3D emoji style below is `generateImages` territory; a flat, geometric, or design-system icon (a solid tile with a glyph, exact brand tokens) should be composed as HTML/CSS and rendered with `renderImage` instead.
+
 **What works:** Smooth 3D rendering in the style of 2026-era macOS/iOS app icons - apple emoji/nintendo style works really well for beautiful iconography. One clear object or symbol — rounded, immediately recognizable. Clean surfaces with soft lighting and gentle shadows. Two or three accent colors, not a rainbow. Always full bleed.
 
 **What doesn't work:** Flat illustration looks dated, photorealistic rendering is too noisy at small sizes, overly detailed scenes become illegible.
+
+An app icon master must be a full-bleed square with sharp corners — the OS applies its own rounded-corner mask, so a result that comes back pre-rounded, inset on a background, framed, bordered, or floating with a drop shadow is unusable, not a style choice. Image models drift toward exactly that mockup presentation because their training data is full of App Store screenshots. Check each generation's analysis before accepting an icon: the artwork must reach all four edges with square corners. If a variant comes back inset or pre-rounded, regenerate rather than settle for it.
 
 Keep logos and icons consistent - if you already have a logo, use `editImages` to turn it into an icon, and vice versa.
 
@@ -79,7 +89,7 @@ Keep logos and icons consistent - if you already have a logo, use `editImages` t
 
 OG images show up in iMessage, Slack, Twitter, etc. at small sizes. They're a mood piece, not a messaging opportunity. Keep text minimal: the app name and at most a short tagline (three to five words). Think App Store feature card — one beautiful composition that makes someone want to tap. The text should feel integrated into the scene, not pasted on a background.
 
-A share card is a wordmark, a short line, and a logo on a brand field — **compose it as HTML, don't generate it with the image model.** A generated image gives you odd letterforms and no brand fidelity; HTML gives you the real SVG lockup, the actual brand fonts, exact colors, and pixel-perfect spacing. Author a self-contained HTML document sized to 1200 × 630 — the lockup inline as SVG, the brand fonts inlined as base64 (so nothing loads late and captures as a fallback), the palette and type exact — then capture it with the `screenshot` tool at `width: 1200, height: 630, format: 'png'`, a faithful real-browser render. Don't route it through a document/HTML-to-image "openGraph" render mode; that pipeline strips CSS backgrounds. The same compose-and-capture approach beats generation for any precise brand graphic where letterforms and spacing carry the design.
+A share card is a wordmark, a short line, and a logo on a brand field — **compose it as HTML and render it with `renderImage` at 1200 × 630, don't generate it with the image model.** A generated image gives you odd letterforms and no brand fidelity; a browser render gives you the real lockup, the actual brand fonts, exact colors, and pixel-perfect spacing. The returned URL is durably hosted and ready to hand over for app metadata; pass `savePath` (e.g. `dist/interfaces/web/public/og-image.png`) when the deployed site should also self-host the asset for its `og:image` meta tags. Don't route it through a document/HTML-to-image "openGraph" render mode; that pipeline strips CSS backgrounds.
 
 ### When to use images
 

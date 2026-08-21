@@ -12,7 +12,7 @@ import { enhanceImagePrompt } from './enhancePrompt.js';
 import type { ApiConfig } from '../../../../config.js';
 
 const ANALYZE_PROMPT =
-  'You are reviewing this image for a visual designer sourcing assets for a project. Describe: what the image depicts, the mood and color palette, how the lighting and composition work, any text present in the image, whether there are any issues (artifacts, distortions), and how it could be used in a layout for an app or website. Be concise and practical. Respond only with your analysis as Markdown (starting with the title "Asset Review") and absolutely no other text. Do not use emojis - use unicode if you need symbols.';
+  'You are reviewing this image for a visual designer sourcing assets for a project. Describe: what the image depicts, the mood and color palette, how the lighting and composition work, any text present in the image, whether there are any issues (artifacts, distortions), whether the artwork extends fully to all four edges of the canvas or sits inset (call out any baked-in border, frame, rounded-corner mask, drop-shadow margin, or mockup presentation such as an icon rendered on a background or device), and how it could be used in a layout for an app or website. Be concise and practical. Respond only with your analysis as Markdown (starting with the title "Asset Review") and absolutely no other text. Do not use emojis - use unicode if you need symbols.';
 
 export interface ImageGeneratorOptions {
   prompts: string[];
@@ -42,6 +42,40 @@ export interface ImageGeneratorOptions {
   apiConfig?: ApiConfig;
 }
 
+/** The `size` options gpt-image-2 declares in the platform catalog. */
+const OPENAI_IMAGE_SIZES: Array<[number, number]> = [
+  [768, 1024],
+  [1024, 768],
+  [1024, 1024],
+  [1024, 1536],
+  [1536, 1024],
+  [1280, 2560],
+  [2560, 1280],
+  [1440, 2560],
+  [2560, 1440],
+  [1792, 2400],
+  [2400, 1792],
+  [2400, 2880],
+  [2560, 2560],
+];
+
+/** Snap requested pixel dimensions to the nearest declared `size` option —
+ * aspect-ratio fidelity first (it drives layout), then closest area. */
+function snapToOpenAiImageSize(width: number, height: number): string {
+  let best = OPENAI_IMAGE_SIZES[0];
+  let bestScore = Infinity;
+  for (const [w, h] of OPENAI_IMAGE_SIZES) {
+    const aspectDiff = Math.abs(Math.log(w / h / (width / height)));
+    const areaDiff = Math.abs(Math.log((w * h) / (width * height)));
+    const score = aspectDiff * 8 + areaDiff;
+    if (score < bestScore) {
+      bestScore = score;
+      best = [w, h];
+    }
+  }
+  return `${best[0]}x${best[1]}`;
+}
+
 export async function generateImageAssets(
   opts: ImageGeneratorOptions,
 ): Promise<string> {
@@ -61,7 +95,16 @@ export async function generateImageAssets(
   const width = opts.width || 2048;
   const height = opts.height || 2048;
 
-  const config: Record<string, any> = { width, height };
+  // Dimension inputs vary by model the same way source-image inputs do below:
+  // pixel-dimension models (seedream) declare `width`/`height`; OpenAI image
+  // models (gpt-image-2) declare a `size` select with a fixed option list.
+  // Set both forms and let the platform's config whitelist keep whichever the
+  // chosen model declares.
+  const config: Record<string, any> = {
+    width,
+    height,
+    size: snapToOpenAiImageSize(width, height),
+  };
   if (sourceImages?.length) {
     // Image models accept source images under different config keys (and
     // different shapes). The platform whitelists config against the chosen
