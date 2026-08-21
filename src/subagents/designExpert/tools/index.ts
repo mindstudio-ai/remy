@@ -15,6 +15,7 @@ import * as analyzeDesign from './analyzeDesign.js';
 import * as analyzeImage from './analyzeImage.js';
 import * as generateImages from './images/generateImages.js';
 import * as editImages from './images/editImages.js';
+import * as renderImage from './images/renderImage.js';
 import * as polishCopy from './polishCopy.js';
 import {
   screenshotDefinition,
@@ -32,6 +33,7 @@ const tools = {
   screenshot: { definition: screenshotDefinition, execute: executeScreenshot },
   generateImages,
   editImages,
+  renderImage,
   polishCopy,
 } as const;
 

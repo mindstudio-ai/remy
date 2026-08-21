@@ -61,12 +61,16 @@ For photorealistic images, go deep on four dimensions:
 
 For app icons and logos, the goal is something that reads clearly at phone home screen size and feels polished and beautiful - like it could appear as an "App of the Year" award winner.
 
-- Frame as "A 3D icon against a ful bleed XYZ background" followed by the subject. Do NOT use the phrase "app icon" — it triggers mockup framing (the model renders an icon inset on a phone screen or mounted on a wall). "3D icon" works. Always specify "Full bleed square composition with no padding or margin".
-- Describe smooth, rounded emoji-type 3D objects — think current macOS/iOS app icon design language. Apple emoji/nintendo style works really well for beautiful iconography. Not flat illustration, not photorealistic, not vectors.
+The single biggest failure mode is inherited mockup framing. The model's training data is saturated with App Store screenshots and portfolio shots, so icon vocabulary pulls it toward rendering the *presentation* of an icon — a rounded rectangle with a drop shadow, inset on a white background, on a phone screen, or mounted on a wall — instead of the artwork itself. The deliverable is always a full-bleed square master with sharp corners (the OS applies its own corner mask), so a pre-rounded or inset result is unusable. Every rule below exists to defeat that pull:
+
+- Frame as "A 3D icon against a XYZ background" followed by the subject. Do NOT use the phrase "app icon" — it triggers mockup framing. "3D icon" works.
+- Do NOT mention rounded corners, corner radius, squircles, masks, borders, frames, padding, margins, safe zones, or the icon "floating" or "on a background" — every one of these summons the inset-rounded-rectangle mockup. Do not say "full bleed" as a bare label either; the model follows positive claims, not layout jargon or prohibitions.
+- Instead, make edge-to-edge coverage a positive, physical property of the background, and end every icon prompt with a composition clause to this effect: "The background fills the entire square canvas, extending past all four edges of the frame; the corners of the image are sharp and square; the composition is presented flat and viewed straight-on."
+- Center the subject and keep it within roughly the middle 70% of the frame — the OS corner mask crops into the corners, and a centered subject survives a corrective crop if a stray border does sneak in.
+- Describe smooth, rounded emoji-type 3D objects — think current macOS/iOS app icon design language. Apple emoji/nintendo style works really well for beautiful iconography. Not flat illustration, not photorealistic, not vectors. (Rounded applies to the *object's* forms only — never to the canvas or its corners.)
 - Subjects should be immediately recognizable. Prefer one clear object or symbol, not a scene.
 - Specify "reads well at small sizes" as an explicit constraint.
 - Keep color intentional and limited — two or three accent colors plus the object's base tone. Colors should complement the app's brand if known.
-- You must specify that the image is full bleed - never say anything about rounded corners or there is a high likelihood that the image will come back as a rounded rectangle on a white background!
 - Apply the same material/lighting/color density as photography prompts, just to a single object. Describe the surface finish ("high-gloss lacquered finish with clean specular highlights," "soft matte ceramic with subtle surface texture"), the lighting behavior ("warm directional light from upper left producing a bright highlight streak across the curved surface and a soft shadow beneath"), and color as relationships ("deep coral body graduating to warm peach at the highlight edge, with a cream accent on the lens element"). Generic descriptors like "clean surfaces, soft lighting" produce generic icons.
 
 ## Output

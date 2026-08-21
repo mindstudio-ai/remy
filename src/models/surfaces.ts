@@ -92,7 +92,7 @@ export const MODEL_SURFACES = {
     userPickable: true,
   },
   imageGeneration: {
-    default: 'seedream-4.5',
+    default: 'gpt-image-2',
     label: 'Image Generation',
     description:
       'Creates images for your product — icons, illustrations, photos, and any other visual assets.',
