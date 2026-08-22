@@ -8,9 +8,9 @@ This file is the complete API reference. No other documentation is needed to use
 
 There are 150+ actions available. Do NOT try to read or load them all at once. Follow this discovery flow:
 
-1. **Identify yourself** — Call `changeName` to set your display name (use your name or whatever your user calls you). If you have a profile picture or icon, call `uploadFile` to upload it, then `changeProfilePicture` with the returned URL. This helps users identify your requests in their logs.
-2. **Discover** — Call `listActions` (MCP tool) or `mindstudio list-actions --summary` (CLI) to get a compact `{ action: description }` map of everything available (~3k tokens).
-3. **Drill in** — Once you identify the right action, look up its full signature in the reference below, or call `mindstudio info <action>` (CLI) for parameter details.
+1. **Identify yourself** — Call `changeName` to set your display name (use your name or whatever your user calls you). If you have a profile picture, pass its public image URL to `changeProfilePicture`. This helps users identify your requests in their logs.
+2. **Ask** — Use `mindstudio ask "your question"` (CLI) or the `ask` MCP tool for SDK guidance. It knows every action, model, and connector and returns working TypeScript code with real model IDs and config options. Examples: `mindstudio ask "generate an image with FLUX"`, `mindstudio ask "what models support vision?"`, `mindstudio ask "how do I send a Slack message?"`.
+3. **Browse** — For manual discovery, call `listActions` (MCP tool) or `mindstudio list-actions --summary` (CLI) to get a compact `{ action: description }` map of everything available (~3k tokens). Call `mindstudio info <action>` (CLI) for parameter details.
 4. **Call it** — Invoke the action with the required parameters. All actions share the same calling convention (see below).
 
 For specific use cases:
@@ -19,6 +19,7 @@ For specific use cases:
 - **Pre-built agents**: Call `listAgents()` to see what's available → `runAgent({ appId })` to execute one. **Important:** Not all agents are configured for API use. Do not try to run an agent just because it appears in the list — only run agents the user specifically asks you to run.
 - **Model selection**: Call `listModelsSummary()` or `listModelsSummaryByType("llm_chat")` to browse models, then pass the model ID as `modelOverride.model` to actions like `generateText`. Use the summary endpoints (not `listModels`) to keep token usage low.
 - **Cost estimation**: AI-powered actions (text generation, image generation, video, audio, etc.) cost money. Call `estimateStepCost(stepType, stepInput)` before running these and confirm with the user before proceeding — unless they've explicitly given permission to go ahead. Non-AI actions (data lookups, OAuth connectors, etc.) are generally free.
+- **Task agents**: For multi-step tasks that need autonomous tool use (research, content creation, data enrichment), use `runTask()`. Provide a prompt, input, tools, an output contract, and a tool-use model id. The SDK runs a tool-use loop — calling the model, executing tools, feeding results back — until structured output is produced. Tools are SDK action names and/or your own app methods, written as `{ appMethod: "saveVendor", description: "when to use it" }`. App methods run as the user who invoked the method that started the task, with their roles, so the agent can read and write app state on their behalf. Prefer `outputSchema` for the output contract: plain JSON Schema (`type`/`properties`/`required`/`enum`/`items`; nullable via type arrays like `["string","null"]` — no `oneOf`/`$ref`/`nullable`). Output is validated every turn with automatic repair, `result.output` is fully typed from the schema (no generic argument, no `parsedSuccessfully` check), and the call throws `MindStudioError` code `task_output_schema_mismatch` if the agent cannot produce conforming output. Example: `runTask({ prompt: "Research this restaurant and save it", input: { name: "Tartine" }, tools: ["searchGoogle", "fetchUrl", { appMethod: "saveRestaurant", description: "Persist the researched restaurant." }], outputSchema: { type: "object", properties: { name: { type: "string" }, url: { type: ["string", "null"] } }, required: ["name"] }, model: yourModelId })`. The legacy `structuredOutputExample` option (an example object the model imitates) still works but is unvalidated — check `result.parsedSuccessfully` before using its output. Pass a current tool-use model id (call `listModels` or ask). Don't hardcode one.
 
 ## Install
 
@@ -103,23 +104,20 @@ MCP client config (standalone binary — recommended):
 
 ## Setup
 
+Inside MindStudio apps (auth is automatic):
+```typescript
+import { mindstudio, db, auth, Roles, stream } from '@mindstudio-ai/agent';
+
+const { imageUrl } = await mindstudio.generateImage({ prompt: 'a sunset' });
+```
+
+External usage (API key required):
 ```typescript
 import { MindStudioAgent } from '@mindstudio-ai/agent';
-
-// With API key (or set MINDSTUDIO_API_KEY env var)
 const agent = new MindStudioAgent({ apiKey: 'your-key' });
 ```
 
 Your MindStudio API key authenticates all requests. MindStudio routes to the correct AI provider (OpenAI, Google, Anthropic, etc.) server-side — you do NOT need separate provider API keys.
-
-Constructor options:
-```typescript
-new MindStudioAgent({
-  apiKey?: string,     // Auth token. Falls back to MINDSTUDIO_API_KEY env var.
-  baseUrl?: string,    // API base URL. Defaults to "https://v1.mindstudio-api.com".
-  maxRetries?: number, // Retries on 429 rate limit (default: 3). Uses Retry-After header for delay.
-})
-```
 
 ## Models
 
@@ -128,10 +126,10 @@ Direct access to 200+ AI models from every major provider — all through a sing
 Use `listModels()` or `listModelsByType()` for full model details, or `listModelsSummary()` / `listModelsSummaryByType()` for a lightweight list (id, name, type, tags) suitable for LLM context windows. Pass a model ID to `modelOverride.model` in methods like `generateText` to select a specific model:
 
 ```typescript
-const { models } = await agent.listModelsByType('llm_chat');
+const { models } = await mindstudio.listModelsByType('llm_chat');
 const model = models.find(m => m.name.includes("Gemini"));
 
-const { content } = await agent.generateText({
+const { content } = await mindstudio.generateText({
   message: 'Hello',
   modelOverride: {
     model: model.id,
@@ -145,23 +143,43 @@ const { content } = await agent.generateText({
 
 Every method has the signature:
 ```typescript
-agent.methodName(input: InputType, options?: { appId?: string, threadId?: string }): Promise<OutputType & StepExecutionMeta>
+mindstudio.methodName(input: InputType, options?: { appId?, threadId?, onLog? }): Promise<OutputType & StepExecutionMeta>
 ```
 
-The first argument is the step-specific input object. The optional second argument controls thread/app context.
+The first argument is the step-specific input object. The optional second argument controls thread/app context and debug logging.
+
+**Debug logging**: Pass `onLog` in the options to get real-time debug logs during execution (SSE streaming). Works on ALL step methods:
+```typescript
+await mindstudio.generateImage({ prompt: '...' }, {
+  onLog: (event) => console.log(`[${event.tag}] ${event.value}`),
+});
+// event: { value: string, tag: string, ts: number }
+```
+
+**`stream()` — push real-time updates to the frontend:**
+```typescript
+import { mindstudio, stream } from '@mindstudio-ai/agent';
+
+// String → 'token' event (frontend receives via onToken, accumulated text)
+await stream('Processing...');
+
+// Object → 'data' event (frontend receives via onStreamData, NOT onToken)
+await stream({ status: 'generating', progress: 50 });
+```
+These are different event types — do not mix them up. `stream()` is silently ignored when no SSE connection is active (safe to include unconditionally). For long-running steps, combine `onLog` with `stream()` to push progress to the frontend.
 
 **Results are returned flat** — output fields are spread at the top level alongside metadata:
 
 ```typescript
-const { content } = await agent.generateText({ message: 'Hello' });
+const { content } = await mindstudio.generateText({ message: 'Hello' });
 
 // Full result shape for any method:
-const result = await agent.generateText({ message: `Hello` });
+const result = await mindstudio.generateText({ message: `Hello` });
 result.content;              // step-specific output field
 result.$appId;               // string — app ID for this execution
 result.$threadId;            // string — thread ID for this execution
 result.$rateLimitRemaining;  // number | undefined — API calls remaining in rate limit window
-result.$billingCost;         // number | undefined — cost in credits for this call
+result.$billingCost;         // number | undefined — cost in nanodollars (1e-9 USD; divide by 1e9 for dollars, e.g. 40000000 = $0.04)
 result.$billingEvents;       // object[] | undefined — itemized billing events
 ```
 
@@ -170,8 +188,8 @@ result.$billingEvents;       // object[] | undefined — itemized billing events
 Pass `$appId`/`$threadId` from a previous result to maintain conversation state, variable state, or other context across calls:
 
 ```typescript
-const r1 = await agent.generateText({ message: 'My name is Alice' });
-const r2 = await agent.generateText(
+const r1 = await mindstudio.generateText({ message: 'My name is Alice' });
+const r2 = await mindstudio.generateText(
   { message: 'What is my name?' },
   { threadId: r1.$threadId, appId: r1.$appId },
 );
@@ -185,7 +203,7 @@ All errors throw `MindStudioError`:
 import { MindStudioError } from '@mindstudio-ai/agent';
 
 try {
-  await agent.generateImage({ prompt: '...' });
+  await mindstudio.generateImage({ prompt: '...' });
 } catch (err) {
   if (err instanceof MindStudioError) {
     err.message; // Human-readable error message
@@ -202,7 +220,7 @@ try {
 
 For action types not covered by generated methods:
 ```typescript
-const result = await agent.executeStep('stepType', { ...params });
+const result = await mindstudio.executeStep('stepType', { ...params });
 ```
 
 ## Batch execution
@@ -211,7 +229,7 @@ Execute multiple steps in parallel in a single request. Maximum 50 steps per bat
 Individual step failures do not affect other steps — partial success is possible.
 
 ```typescript
-const result = await agent.executeStepBatch([
+const result = await mindstudio.executeStepBatch([
   { stepType: 'generateImage', step: { prompt: 'a sunset' } },
   { stepType: 'textToSpeech', step: { text: 'hello world' } },
 ], { appId?, threadId? });
@@ -221,8 +239,8 @@ result.results;          // BatchStepResult[] — same order as input
 result.results[0].stepType;  // string
 result.results[0].output;    // object | undefined (step output on success)
 result.results[0].error;     // string | undefined (error message on failure)
-result.results[0].billingCost; // number | undefined (cost on success)
-result.totalBillingCost;  // number | undefined
+result.results[0].billingCost; // number | undefined (cost in nanodollars on success)
+result.totalBillingCost;  // number | undefined — nanodollars (divide by 1e9 for USD)
 result.appId;            // string
 result.threadId;         // string
 ```
@@ -250,7 +268,9 @@ Automatically add subtitles to a video
 Analyze an image using a vision model based on a text prompt.
 - Uses the configured vision model to generate a text analysis of the image.
 - The prompt should describe what to look for or extract from the image.
-- Input: `{ prompt: string, imageUrl: string, visionModelOverride?: { model: string, config?: object } | { model: string, temperature: number, maxResponseTokens: number, ignorePreamble?: boolean, userMessagePreprocessor?: { dataSource?: string, messageTemplate?: string, maxResults?: number, enabled?: boolean, shouldInherit?: boolean }, preamble?: string, multiModelEnabled?: boolean, editResponseEnabled?: boolean, config?: object } }`
+- Pass imageUrl for a single image, or imageUrls for multiple images analyzed together in one request.
+- Most vision models (OpenAI, Grok, Gemini) accept multiple images in one request. Ideogram describe is single-image only.
+- Input: `{ prompt: string, imageUrl?: string, imageUrls?: string[], visionModelOverride?: { model: string, config?: object } | { model: string, temperature: number, maxResponseTokens: number, ignorePreamble?: boolean, userMessagePreprocessor?: { dataSource?: string, messageTemplate?: string, maxResults?: number, enabled?: boolean, shouldInherit?: boolean }, preamble?: string, multiModelEnabled?: boolean, editResponseEnabled?: boolean, config?: object } }`
 - Output: `{ analysis: string }`
 
 #### analyzeVideo
@@ -283,7 +303,7 @@ Convert each page of a PDF document into a PNG image.
 - Output: `{ imageUrls: string[] }`
 
 #### createDataSource
-Create a new empty vector data source for the current app.
+Legacy v1 data sources. v2 apps should use `dataSources.defineDataSource()` from @mindstudio-ai/agent instead, which owns parsing, chunking, embedding and citations. Create a new empty vector data source for the current app.
 - Creates a new data source (vector database) associated with the current app version.
 - The data source is created empty — use the "Upload Data Source Document" block to add documents.
 - Returns the new data source ID which can be used in subsequent blocks.
@@ -299,7 +319,7 @@ Create a draft email in the connected Gmail account.
 - Output: `{ draftId: string }`
 
 #### deleteDataSource
-Delete a vector data source from the current app.
+Legacy v1 data sources. v2 apps should use `dataSources.defineDataSource()` from @mindstudio-ai/agent instead, which owns parsing, chunking, embedding and citations. Delete a vector data source from the current app.
 - Soft-deletes a data source (vector database) by marking it as deleted.
 - The Milvus partition is cleaned up asynchronously by a background cron job.
 - The data source must belong to the current app version.
@@ -307,7 +327,7 @@ Delete a vector data source from the current app.
 - Output: `unknown`
 
 #### deleteDataSourceDocument
-Delete a single document from a data source.
+Legacy v1 data sources. v2 apps should use `dataSources.defineDataSource()` from @mindstudio-ai/agent instead, which owns parsing, chunking, embedding and citations. Delete a single document from a data source.
 - Soft-deletes a document by marking it as deleted.
 - Requires both the data source ID and document ID.
 - After deletion, reloads vectors into Milvus so the data source reflects the change immediately.
@@ -392,16 +412,18 @@ Extract audio MP3 from a video file
 - Output: `{ audioUrl: string }`
 
 #### extractText
-Download a file from a URL and extract its text content. Supports PDFs, plain text files, and other document formats.
+Download a file from a URL and extract its text content. Supports PDFs (including scanned/image-based PDFs via OCR), plain text files, and other document formats.
 - Best suited for PDFs and raw text/document files. For web pages, use the scrapeUrl step instead.
+- Handles both text-layer PDFs and image-based/scanned PDFs (e.g. Figma/Canva exports, scanned documents). Image-based PDFs are processed with OCR automatically — there is no need to convert PDF pages to images first.
 - Accepts a single URL, a comma-separated list of URLs, or a JSON array of URLs.
 - Files are rehosted on the MindStudio CDN before extraction.
+- Optionally set `model` to a specific document-extraction model (`mistral-ocr-latest`, `llamaparse`, `google-document-ai`); omit to use the platform default.
 - Maximum file size is 50MB per URL.
-- Input: `{ url: string | string[] }`
+- Input: `{ url: string | string[], model?: string }`
 - Output: `{ text: string | string[] }`
 
 #### fetchDataSourceDocument
-Fetch the full extracted text contents of a document in a data source.
+Legacy v1 data sources. v2 apps should use `dataSources.defineDataSource()` from @mindstudio-ai/agent instead, which owns parsing, chunking, embedding and citations. Fetch the full extracted text contents of a document in a data source.
 - Loads a document by ID and returns its full extracted text content.
 - The document must have been successfully processed (status "done").
 - Also returns document metadata (name, summary, word count).
@@ -413,6 +435,14 @@ Fetch recent message history from a Slack channel.
 - The user is responsible for connecting their Slack workspace and selecting the channel
 - Input: `{ connectionId?: string, channelId: string, limit?: number, startDate?: string, endDate?: string, includeImages?: boolean, includeRawMessage?: boolean }`
 - Output: `{ messages: { from: string, content: string, timestamp?: string, images?: string[], rawMessage?: { app_id?: string, assistant_app_thread?: { first_user_thread_reply?: string, title?: string, title_blocks?: unknown[] }, attachments?: { actions?: unknown[], app_id?: string, app_unfurl_url?: string, author_icon?: string, author_id?: string, author_link?: string, author_name?: string, author_subname?: string, blocks?: unknown[], bot_id?: string, bot_team_id?: string, callback_id?: string, channel_id?: string, channel_name?: string, channel_team?: string, color?: string, fallback?: string, fields?: unknown[], file_id?: string, filename?: string, files?: unknown[], footer?: string, footer_icon?: string, from_url?: string, hide_border?: boolean, hide_color?: boolean, id?: number, image_bytes?: number, image_height?: number, image_url?: string, image_width?: number, indent?: boolean, is_app_unfurl?: boolean, is_file_attachment?: boolean, is_msg_unfurl?: boolean, is_reply_unfurl?: boolean, is_thread_root_unfurl?: boolean, list?: unknown, list_record?: unknown, list_record_id?: string, list_records?: unknown[], list_schema?: unknown[], list_view?: unknown, list_view_id?: string, message_blocks?: unknown[], metadata?: unknown, mimetype?: string, mrkdwn_in?: string[], msg_subtype?: string, original_url?: string, pretext?: string, preview?: unknown, service_icon?: string, service_name?: string, service_url?: string, size?: number, text?: string, thumb_height?: number, thumb_url?: string, thumb_width?: number, title?: string, title_link?: string, ts?: string, url?: string, video_html?: string, video_html_height?: number, video_html_width?: number, video_url?: string }[], blocks?: { accessory?: unknown, alt_text?: string, api_decoration_available?: boolean, app_collaborators?: string[], app_id?: string, author_name?: string, block_id?: string, bot_user_id?: string, button_label?: string, call?: unknown, call_id?: string, description?: unknown, developer_trace_id?: string, dispatch_action?: boolean, element?: unknown, elements?: unknown[], expand?: boolean, external_id?: string, fallback?: string, fields?: unknown[], file?: unknown, file_id?: string, function_trigger_id?: string, hint?: unknown, image_bytes?: number, image_height?: number, image_url?: string, image_width?: number, is_animated?: boolean, is_workflow_app?: boolean, label?: unknown, optional?: boolean, owning_team_id?: string, provider_icon_url?: string, provider_name?: string, sales_home_workflow_app_type?: number, share_url?: string, slack_file?: unknown, source?: string, text?: unknown, thumbnail_url?: string, title?: unknown, title_url?: string, trigger_subtype?: string, trigger_type?: string, type?: unknown, url?: string, video_url?: string, workflow_id?: string }[], bot_id?: string, bot_profile?: { app_id?: string, deleted?: boolean, icons?: unknown, id?: string, name?: string, team_id?: string, updated?: number }, client_msg_id?: string, display_as_bot?: boolean, edited?: { ts?: string, user?: string }, files?: { access?: string, alt_txt?: string, app_id?: string, app_name?: string, attachments?: unknown[], blocks?: unknown[], bot_id?: string, can_toggle_canvas_lock?: boolean, canvas_printing_enabled?: boolean, canvas_template_mode?: string, cc?: unknown[], channel_actions_count?: number, channel_actions_ts?: string, channels?: string[], comments_count?: number, converted_pdf?: string, created?: number, deanimate?: string, deanimate_gif?: string, display_as_bot?: boolean, dm_mpdm_users_with_file_access?: unknown[], duration_ms?: number, edit_link?: string, edit_timestamp?: number, editable?: boolean, editor?: string, editors?: string[], external_id?: string, external_type?: string, external_url?: string, favorites?: unknown[], file_access?: string, filetype?: string, from?: unknown[], groups?: string[], has_more?: boolean, has_more_shares?: boolean, has_rich_preview?: boolean, headers?: unknown, hls?: string, hls_embed?: string, id?: string, image_exif_rotation?: number, ims?: string[], initial_comment?: unknown, is_channel_space?: boolean, is_external?: boolean, is_public?: boolean, is_restricted_sharing_enabled?: boolean, is_starred?: boolean, last_editor?: string, last_read?: number, lines?: number, lines_more?: number, linked_channel_id?: string, list_csv_download_url?: string, list_limits?: unknown, list_metadata?: unknown, media_display_type?: string, media_progress?: unknown, mimetype?: string, mode?: string, mp4?: string, mp4_low?: string, name?: string, non_owner_editable?: boolean, num_stars?: number, org_or_workspace_access?: string, original_attachment_count?: number, original_h?: string, original_w?: string, permalink?: string, permalink_public?: string, pinned_to?: string[], pjpeg?: string, plain_text?: string, pretty_type?: string, preview?: string, preview_highlight?: string, preview_is_truncated?: boolean, preview_plain_text?: string, private_channels_with_file_access_count?: number, private_file_with_access_count?: number, public_url_shared?: boolean, quip_thread_id?: string, reactions?: unknown[], saved?: unknown, sent_to_self?: boolean, shares?: unknown, show_badge?: boolean, simplified_html?: string, size?: number, source_team?: string, subject?: string, subtype?: string, team_pref_version_history_enabled?: boolean, teams_shared_with?: unknown[], template_conversion_ts?: number, template_description?: string, template_icon?: string, template_name?: string, template_title?: string, thumb_1024?: string, thumb_1024_gif?: string, thumb_1024_h?: string, thumb_1024_w?: string, thumb_160?: string, thumb_160_gif?: string, thumb_160_h?: string, thumb_160_w?: string, thumb_360?: string, thumb_360_gif?: string, thumb_360_h?: string, thumb_360_w?: string, thumb_480?: string, thumb_480_gif?: string, thumb_480_h?: string, thumb_480_w?: string, thumb_64?: string, thumb_64_gif?: string, thumb_64_h?: string, thumb_64_w?: string, thumb_720?: string, thumb_720_gif?: string, thumb_720_h?: string, thumb_720_w?: string, thumb_80?: string, thumb_800?: string, thumb_800_gif?: string, thumb_800_h?: string, thumb_800_w?: string, thumb_80_gif?: string, thumb_80_h?: string, thumb_80_w?: string, thumb_960?: string, thumb_960_gif?: string, thumb_960_h?: string, thumb_960_w?: string, thumb_gif?: string, thumb_pdf?: string, thumb_pdf_h?: string, thumb_pdf_w?: string, thumb_tiny?: string, thumb_video?: string, thumb_video_h?: number, thumb_video_w?: number, timestamp?: number, title?: string, title_blocks?: unknown[], to?: unknown[], transcription?: unknown, update_notification?: number, updated?: number, url_private?: string, url_private_download?: string, url_static_preview?: string, user?: string, user_team?: string, username?: string, vtt?: string }[], icons?: { emoji?: string, image_36?: string, image_48?: string, image_64?: string, image_72?: string }, inviter?: string, is_locked?: boolean, latest_reply?: string, metadata?: { event_payload?: unknown, event_type?: string }, parent_user_id?: string, purpose?: string, reactions?: { count?: number, name?: string, url?: string, users?: string[] }[], reply_count?: number, reply_users?: string[], reply_users_count?: number, root?: { bot_id?: string, icons?: unknown, latest_reply?: string, parent_user_id?: string, reply_count?: number, reply_users?: string[], reply_users_count?: number, subscribed?: boolean, subtype?: string, text?: string, thread_ts?: string, ts?: string, type?: string, username?: string }, subscribed?: boolean, subtype?: string, team?: string, text?: string, thread_ts?: string, topic?: string, ts?: string, type?: string, upload?: boolean, user?: string, username?: string, x_files?: string[] } }[] }`
+
+#### generate3dModel
+Generate a 3D model using a 3D generation model.
+- Text-to-3D models use the prompt field.
+- Image-to-3D and multi-view models take image URLs through the selected model's configuration inputs.
+- The output is standardized as a GLB URL plus optional FBX/OBJ/USDZ, thumbnail, texture maps, and provider task ID.
+- Input: `{ prompt?: string, intermediateAsset?: boolean, threeDModelOverride?: { model: string, config?: object } }`
+- Output: `{ prompt?: string, glbUrl: string, fbxUrl?: string, objUrl?: string, usdzUrl?: string, thumbnailUrl?: string, textureUrls?: object[], providerTaskId?: string, resolvedConfig?: object }`
 
 #### generateAsset
 Generate an HTML asset and export it as a webpage, PDF, or image
@@ -466,6 +496,14 @@ Send a message to an AI model and return the response, or echo a system message.
 - Source "system" echoes the message content directly (no AI call).
 - Mode "background" saves the result to a variable. Mode "foreground" streams it to the user (not available in direct execution).
 - Structured output (JSON/CSV) can be enforced via structuredOutputType and structuredOutputExample.
+- When executed inside a v2 app method (managed sandbox or local dev tunnel),
+LLM token output can be streamed to the frontend in real time via an SSE
+side-channel. The frontend opts in by passing { stream: true } to the method
+invocation via @mindstudio-ai/interface. Tokens are published to Redis
+pub/sub as they arrive and forwarded as SSE events on the invoke response.
+The method code itself is unchanged — streaming is transparent to the
+developer. See V2ExecutionService.ts and the invoke handler in V2Apps for
+the server-side plumbing.
 - Input: `{ message: string, source?: "user" | "system", modelOverride?: { model: string, temperature: number, maxResponseTokens: number, ignorePreamble?: boolean, userMessagePreprocessor?: { dataSource?: string, messageTemplate?: string, maxResults?: number, enabled?: boolean, shouldInherit?: boolean }, preamble?: string, multiModelEnabled?: boolean, editResponseEnabled?: boolean, config?: object }, structuredOutputType?: "text" | "json" | "csv", structuredOutputExample?: string, chatHistoryMode?: "include" | "exclude" }`
 - Output: `{ content: string }`
 
@@ -501,13 +539,6 @@ Get info about a media file
 - Input: `{ mediaUrl: string }`
 - Output: `{ metadata: string }`
 
-#### httpRequest
-Make an HTTP request to an external endpoint and return the response.
-- Supports GET, POST, PATCH, DELETE, and PUT methods.
-- Body can be raw JSON/text, URL-encoded form data, or multipart form data.
-- Input: `{ url: string, method: string, headers: object, queryParams: object, body: string, bodyItems: object, contentType: "none" | "application/json" | "application/x-www-form-urlencoded" | "multipart/form-data" | "custom", customContentType: string, testData?: object }`
-- Output: `{ ok: boolean, status: number, statusText: string, response: string }`
-
 #### imageFaceSwap
 Replace a face in an image with a face from another image using AI.
 - Requires both a target image and a face source image.
@@ -527,7 +558,7 @@ Insert b-roll clips into a base video at a timecode, optionally with an xfade tr
 - Output: `{ videoUrl: string }`
 
 #### listDataSources
-List all data sources for the current app.
+Legacy v1 data sources. v2 apps should use `dataSources.defineDataSource()` from @mindstudio-ai/agent instead, which owns parsing, chunking, embedding and citations. List all data sources for the current app.
 - Returns metadata for every data source associated with the current app version.
 - Each entry includes the data source ID, name, description, status, and document list.
 - Input: `object`
@@ -629,7 +660,7 @@ when parameterize is false.
 - Output: `{ rows: unknown[], changes: number }`
 
 #### queryDataSource
-Search a vector data source (RAG) and return relevant document chunks.
+Legacy v1 data sources. v2 apps should use `dataSources.defineDataSource()` from @mindstudio-ai/agent instead, which owns parsing, chunking, embedding and citations. Search a vector data source (RAG) and return relevant document chunks.
 - Queries a vectorized data source and returns the most relevant chunks.
 - Useful for retrieval-augmented generation (RAG) workflows.
 - Input: `{ dataSourceId: string, query: string, maxResults: number }`
@@ -652,9 +683,10 @@ Replace personally identifiable information in text with placeholders using Micr
 
 #### removeBackgroundFromImage
 Remove the background from an image using AI, producing a transparent PNG.
-- Uses the Bria background removal model via fal.ai.
+- Uses the Bria background removal model via fal.ai by default.
+- Uses WaveSpeed's Ideogram background removal model when type is "advanced".
 - Output is re-hosted on the CDN as a PNG with transparency.
-- Input: `{ imageUrl: string }`
+- Input: `{ type?: "standard" | "advanced", imageUrl: string, autoCrop?: boolean }`
 - Output: `{ imageUrl: string }`
 
 #### resizeVideo
@@ -699,22 +731,31 @@ Extract text, HTML, or structured content from one or more web pages.
 - Accepts a single URL or multiple URLs (as a JSON array, comma-separated, or newline-separated).
 - Output format controls the result shape: "text" returns markdown, "html" returns raw HTML, "json" returns structured scraper data.
 - Can optionally capture a screenshot of each page.
-- Input: `{ url: string, service?: "default" | "firecrawl", autoEnhance?: boolean, pageOptions?: { onlyMainContent: boolean, screenshot: boolean, waitFor: number, replaceAllPathsWithAbsolutePaths: boolean, headers: object, removeTags: string[], mobile: boolean } }`
-- Output: `{ content: string | string[] | { text: string, html: string, json?: object, screenshotUrl?: string, metadata?: { title: string, description: string, url: string, image: string } } | { text: string, html: string, json?: object, screenshotUrl?: string, metadata?: { title: string, description: string, url: string, image: string } }[], screenshot?: string }`
+- Input: `{ url: string, service?: "default" | "firecrawl", autoEnhance?: boolean, outputFormat?: "text" | "json" | "html", pageOptions?: { onlyMainContent: boolean, screenshot: boolean, waitFor: number, replaceAllPathsWithAbsolutePaths: boolean, headers: object, removeTags: string[], mobile: boolean } }`
+- Output: `{ content: string | string[] | { text: string, html: string, json?: object, screenshotUrl?: string, metadata?: { title: string, description: string, url: string, image: string }, error?: { code: string, message: string } } | { text: string, html: string, json?: object, screenshotUrl?: string, metadata?: { title: string, description: string, url: string, image: string }, error?: { code: string, message: string } }[], screenshot?: string | string[] }`
 
 #### scrapeXPost
 Scrape data from a single X (Twitter) post by URL.
 - Returns structured post data (text, html, optional json/screenshot/metadata).
 - Optionally saves the text content to a variable.
 - Input: `{ url: string }`
-- Output: `{ post: { text: string, html: string, json?: object, screenshotUrl?: string, metadata?: { title: string, description: string, url: string, image: string } } }`
+- Output: `{ post: { text: string, html: string, json?: object, screenshotUrl?: string, metadata?: { title: string, description: string, url: string, image: string }, error?: { code: string, message: string } } }`
 
 #### scrapeXProfile
 Scrape public profile data from an X (Twitter) account by URL.
 - Returns structured profile data.
 - Optionally saves the result to a variable.
 - Input: `{ url: string }`
-- Output: `{ profile: { text: string, html: string, json?: object, screenshotUrl?: string, metadata?: { title: string, description: string, url: string, image: string } } }`
+- Output: `{ profile: { text: string, html: string, json?: object, screenshotUrl?: string, metadata?: { title: string, description: string, url: string, image: string }, error?: { code: string, message: string } } }`
+
+#### screenshotUrl
+Capture a screenshot of a web page as a PNG image.
+- Takes a viewport or full-page screenshot of the given URL.
+- Returns a CDN-hosted PNG image URL.
+- Viewport mode captures only the visible area; fullPage captures the entire scrollable page.
+- You can customize viewport width/height, add a delay, or wait for a CSS selector before capturing.
+- Input: `{ url: string, mode?: "viewport" | "fullPage", width?: number, height?: number, delay?: number, waitFor?: string }`
+- Output: `{ screenshotUrl: string }`
 
 #### searchGmailEmails
 Search for emails in the connected Gmail account using a Gmail search query. To list recent inbox emails, pass an empty query string.
@@ -764,14 +805,27 @@ Search the web using the Perplexity API and return structured results.
 - Output: `{ results: { title: string, description: string, url: string }[] }`
 
 #### sendEmail
-Send an email to one or more configured recipient addresses.
-- Recipient email addresses are resolved from OAuth connections configured by the app creator. The user running the workflow does not specify the recipient directly.
+Send an email to one or more recipient addresses.
+- Use the "to" field to send to one or more specific recipient email addresses directly. Allowed recipients depend on the sender: when the app sends from a domain it owns (a verified custom domain or its <slug>.madewithremy.com subdomain) any recipient is allowed; when it falls back to the shared Remy address, recipients must be verified app users or members of the app's organization. (v1 apps cannot use a direct "to" — they must resolve recipients via a connection.)
+- Alternatively, recipient email addresses can be resolved from OAuth connections configured by the app creator via connectionId. The user running the workflow does not specify the recipient directly.
+- Use "cc" and "bcc" to add visible / hidden recipients (a string or an array). They are subject to the same recipient rules as "to".
+- "to" is optional only in the sense that recipients can come from elsewhere — omit it and supply "cc"/"bcc" for a hidden-list send, or omit all three and recipients are resolved from an OAuth connection. Naming nobody at all is an error.
+- Bcc-only sends are supported: with no "to" or "cc", the To: header is addressed to the app's own sender address (the standard "undisclosed recipients" pattern) so recipients can't see each other. The returned "recipients" reflects that auto-filled address.
+- Every recipient counts toward the app's daily outbound cap, including cc and bcc.
+- The sender defaults automatically: v2 apps send from the app's own identity — its verified custom domain if set, else its platform subdomain (noreply@<slug>.madewithremy.com), else the default Remy address.
+- Optionally set "from" to a custom handle, but ONLY if the app has a custom domain or subdomain: a bare handle ("support" → support@<app-domain>), a full "support@your-domain.com", or "Name <support@your-domain.com>". The domain must be one the app owns, or the step fails.
 - If the body is a URL to a hosted HTML file on the CDN, the HTML is fetched and used as the email body.
-- When generateHtml is enabled, the body text is converted to a styled HTML email using an AI model.
+- The body is interpreted automatically: if it already looks like HTML it is sent as HTML, otherwise it is rendered from Markdown. Every email is sent as multipart with a plain-text alternative auto-derived from the body (better deliverability).
+- Set bodyType to override interpretation: "html" (send as-is), "markdown" (render to HTML), or "text" (plain text only, no HTML part). Default is "auto".
+- Optionally set "text" to supply your own plain-text alternative instead of the auto-derived one.
+- Use "attachments" to attach files by URL. Each entry is a URL string, or an object { url, filename?, contentType? } to control the attachment's displayed filename and MIME type.
+- When generateHtml is enabled, the body text is converted to a styled HTML email using an AI model (implies an HTML body).
+- Set replyTo to control the Reply-To address for replies.
+- For threaded replies in a shared inbox, set inReplyTo (the Message-ID being replied to) and references (prior Message-IDs in the thread).
 - connectionId can be a comma-separated list to send to multiple recipients.
 - The special connectionId "trigger_email" uses the email address that triggered the workflow.
-- Input: `{ subject: string, body: string, connectionId?: string, generateHtml?: boolean, generateHtmlInstructions?: string, generateHtmlModelOverride?: { model: string, temperature: number, maxResponseTokens: number, ignorePreamble?: boolean, userMessagePreprocessor?: { dataSource?: string, messageTemplate?: string, maxResults?: number, enabled?: boolean, shouldInherit?: boolean }, preamble?: string, multiModelEnabled?: boolean, editResponseEnabled?: boolean, config?: object }, attachments?: string[] }`
-- Output: `{ recipients: string[] }`
+- Input: `{ subject: string, body: string, to?: string | string[], cc?: string | string[], bcc?: string | string[], connectionId?: string, generateHtml?: boolean, generateHtmlInstructions?: string, generateHtmlModelOverride?: { model: string, temperature: number, maxResponseTokens: number, ignorePreamble?: boolean, userMessagePreprocessor?: { dataSource?: string, messageTemplate?: string, maxResults?: number, enabled?: boolean, shouldInherit?: boolean }, preamble?: string, multiModelEnabled?: boolean, editResponseEnabled?: boolean, config?: object }, attachments?: (string | { url: string, filename?: string, contentType?: string })[], from?: string, bodyType?: "auto" | "html" | "markdown" | "text", text?: string, replyTo?: string, inReplyTo?: string, references?: string[] }`
+- Output: `{ recipients: string[], cc: string[], bcc: string[], from: string }`
 
 #### sendGmailDraft
 Send an existing draft from the connected Gmail account.
@@ -787,6 +841,15 @@ Send an email from the connected Gmail account.
 - messageType controls the body format: "plain" for plain text, "html" for raw HTML, "markdown" for auto-converted markdown.
 - Input: `{ to: string, subject: string, message: string, connectionId?: string, messageType: "plain" | "html" | "markdown" }`
 - Output: `{ messageId: string }`
+
+#### sendSlackDirectMessage
+Send a direct message to a Slack user via a connected bot.
+- The user is responsible for connecting their Slack workspace
+- The recipient is identified by their Slack user ID
+- Supports both simple text messages and Slack blocks messages
+- Text messages can use limited markdown (slack-only formatting—e.g., headers are just rendered as bold)
+- Input: `{ slackUserId: string, messageType: "string" | "blocks", message: string, connectionId?: string }`
+- Output: `unknown`
 
 #### sendSMS
 Send an SMS or MMS message to a phone number configured via OAuth connection.
@@ -896,7 +959,7 @@ Add or remove labels on Gmail messages, identified by message IDs or a search qu
 - Output: `{ updatedMessageIds: string[] }`
 
 #### uploadDataSourceDocument
-Upload a file into an existing data source from a URL or raw text content.
+Legacy v1 data sources. v2 apps should use `dataSources.defineDataSource()` from @mindstudio-ai/agent instead, which owns parsing, chunking, embedding and citations. Upload a file into an existing data source from a URL or raw text content.
 - If "file" is a single URL, the file is downloaded from that URL and uploaded.
 - If "file" is any other string, a .txt document is created from that content and uploaded.
 - The block waits (polls) for processing to complete before transitioning, up to 5 minutes.
@@ -1051,18 +1114,6 @@ Fetch rows from a Coda table with optional pagination.
 - When outputFormat is 'csv', the variable receives CSV text. The direct execution output always returns parsed rows.
 - Input: `{ connectionId?: string, docId: string, tableId: string, limit?: number | string, outputFormat?: "json" | "csv" }`
 - Output: `{ rows: { id: string, values: object }[] }`
-
-### Facebook
-
-#### scrapeFacebookPage
-Scrape a Facebook page
-- Input: `{ pageUrl: string }`
-- Output: `{ data: unknown }`
-
-#### scrapeFacebookPosts
-Get all the posts for a Facebook page
-- Input: `{ pageUrl: string }`
-- Output: `{ data: unknown }`
 
 ### Gmail
 
@@ -1308,33 +1359,6 @@ Look up professional information about a person by their email address using Hun
 - Input: `{ email: string }`
 - Output: `{ data: { first_name: string, last_name: string, email: string, position: string | null, seniority: string | null, department: string | null, linkedin_url: string | null, twitter: string | null, phone_number: string | null, company: { name: string, domain: string, industry: string | null } | null } | { error: string } }`
 
-### Instagram
-
-#### scrapeInstagramComments
-Get all the comments for an Instagram post
-- Input: `{ postUrl: string, resultsLimit: string }`
-- Output: `{ data: unknown }`
-
-#### scrapeInstagramMentions
-Scrape an Instagram profile's mentions
-- Input: `{ profileUrl: string, resultsLimit: string }`
-- Output: `{ data: unknown }`
-
-#### scrapeInstagramPosts
-Get all the posts for an Instagram profile
-- Input: `{ profileUrl: string, resultsLimit: string, onlyPostsNewerThan: string }`
-- Output: `{ data: unknown }`
-
-#### scrapeInstagramProfile
-Scrape an Instagram profile
-- Input: `{ profileUrl: string }`
-- Output: `{ data: unknown }`
-
-#### scrapeInstagramReels
-Get all the reels for an Instagram profile
-- Input: `{ profileUrl: string, resultsLimit: string }`
-- Output: `{ data: unknown }`
-
 ### LinkedIn
 
 #### postToLinkedIn
@@ -1348,12 +1372,60 @@ Create a post on LinkedIn from the connected account.
 - Input: `{ message: string, visibility: "PUBLIC" | "CONNECTIONS", imageUrl?: string, videoUrl?: string, documentUrl?: string, articleUrl?: string, titleText?: string, descriptionText?: string, connectionId?: string }`
 - Output: `unknown`
 
-### Meta Threads
+### Meshy
 
-#### scrapeMetaThreadsProfile
-Scrape a Meta Threads profile
-- Input: `{ profileUrl: string }`
-- Output: `{ data: unknown }`
+#### meshyAnimate
+Apply a preset animation to a rigged 3D character model using Meshy.
+- Requires a rig_task_id from a previously completed Meshy rigging step.
+- Select an animation from Meshy's library of 600+ preset animations.
+- Only works with humanoid (bipedal) rigged characters.
+- Supports post-processing: FPS change (24/25/30/60), FBX-to-USDZ conversion, or armature extraction.
+- Animation categories: DailyActions, WalkAndRun, Fighting, Dancing, BodyMovements.
+- Input: `{ rigTaskId: string, actionId: number }`
+- Output: `{ glbUrl: string, fbxUrl?: string, objUrl?: string, usdzUrl?: string, thumbnailUrl?: string, textureUrls?: object[], animations?: { name: string, glbUrl?: string, fbxUrl?: string }[], providerTaskId?: string }`
+
+#### meshyImageTo3d
+Generate a 3D model from one or more images using Meshy. Uses the multi-image-to-3D endpoint.
+- Accepts 1-4 image URLs. All images should depict the same object from different angles for best results.
+- By default generates with textures. Set shouldTexture to false for mesh-only output.
+- Uses should_remesh: false to preserve UV mapping integrity.
+- Input: `{ imageUrls: string[], shouldTexture?: boolean, topology?: string, targetPolycount?: number, symmetryMode?: string, poseMode?: string, textureImageUrl?: string }`
+- Output: `{ glbUrl: string, fbxUrl?: string, objUrl?: string, usdzUrl?: string, thumbnailUrl?: string, textureUrls?: object[], animations?: { name: string, glbUrl?: string, fbxUrl?: string }[], providerTaskId?: string }`
+
+#### meshyRemesh
+Remesh an existing 3D model to adjust topology, polygon count, or convert formats using Meshy.
+- Provide either an input task ID (from a previous Meshy step) or a model URL.
+- Defaults to triangle topology with 30,000 target polys.
+- Useful for reducing face count before rigging (max 300k faces for rigging).
+- Input: `{ inputTaskId?: string, modelUrl?: string, topology?: string, targetPolycount?: number, resizeHeight?: number }`
+- Output: `{ glbUrl: string, fbxUrl?: string, objUrl?: string, usdzUrl?: string, thumbnailUrl?: string, textureUrls?: object[], animations?: { name: string, glbUrl?: string, fbxUrl?: string }[], providerTaskId?: string }`
+
+#### meshyRig
+Auto-rig a humanoid 3D model and generate basic walking/running animations using Meshy.
+- Only works well with standard humanoid (bipedal) models with clearly defined limbs.
+- Prefers model_url over input_task_id for cleaner rigging input.
+- Models with more than 300,000 faces should be remeshed first.
+- Returns rigged model files and optional basic animations.
+- Input: `{ inputTaskId?: string, modelUrl?: string, heightMeters?: number }`
+- Output: `{ glbUrl: string, fbxUrl?: string, objUrl?: string, usdzUrl?: string, thumbnailUrl?: string, textureUrls?: object[], animations?: { name: string, glbUrl?: string, fbxUrl?: string }[], providerTaskId?: string }`
+
+#### meshyTextTo3d
+Generate a 3D model preview from a text prompt using Meshy. Produces an untextured mesh (preview stage).
+- Creates a text-to-3D preview task (mesh generation only, no texture).
+- Use the Meshy Texture step to apply textures to the preview.
+- Maximum prompt length is 600 characters.
+- Input: `{ prompt: string, modelType?: string, topology?: string, targetPolycount?: number, symmetryMode?: string, poseMode?: string }`
+- Output: `{ glbUrl: string, fbxUrl?: string, objUrl?: string, usdzUrl?: string, thumbnailUrl?: string, textureUrls?: object[], animations?: { name: string, glbUrl?: string, fbxUrl?: string }[], providerTaskId?: string }`
+
+#### meshyTexture
+Apply or replace textures on a 3D model using a text prompt or reference image via Meshy.
+- Provide either an input task ID (from a previous Meshy step) or a model URL.
+- Provide either a text style prompt or an image style URL to guide texturing.
+- Supports .glb, .gltf, .obj, .fbx, .stl model formats when using modelUrl.
+- By default preserves original UVs (enableOriginalUv = true).
+- Works with any model source: text-to-3D previews, image-to-3D, remeshed models, or external files.
+- Input: `{ inputTaskId?: string, modelUrl?: string, textStylePrompt?: string, imageStyleUrl?: string, enableOriginalUv?: boolean, enablePbr?: boolean }`
+- Output: `{ glbUrl: string, fbxUrl?: string, objUrl?: string, usdzUrl?: string, thumbnailUrl?: string, textureUrls?: object[], animations?: { name: string, glbUrl?: string, fbxUrl?: string }[], providerTaskId?: string }`
 
 ### Notion
 
@@ -1372,6 +1444,62 @@ Update the content of an existing Notion page.
 - "append" mode adds content to the end of the page. "overwrite" mode deletes all existing blocks first.
 - Input: `{ pageId: string, content: string, mode: "append" | "overwrite", connectionId?: string }`
 - Output: `{ pageId: string, pageUrl: string }`
+
+### Particle Podcasts
+
+#### particlePodcastsFindMentions
+Find every dialogue line mentioning a specific entity or company across all podcasts.
+- Provide `entityId` (for people, products, places) OR `companyId` (for organizations). At least one is required.
+- Use `contextLines` to include surrounding dialogue with each mention (default behavior is set by Particle).
+- Resolve a name to an `entityId` / `companyId` first via Search Companies (or by inspecting a Search Dialogue response).
+- Cursor-paginated; expect potentially large result sets for popular entities.
+- Input: `{ entityId?: string, companyId?: string, contextLines?: number, limit?: number, cursor?: string }`
+- Output: `unknown`
+
+#### particlePodcastsGetEpisode
+Fetch full metadata for a single episode: details, speakers, entities, clips, and ads — merged into one response.
+- Pass an episode ID or slug as `id`.
+- Returns five sub-resources merged: `episode` (metadata), `speakers` (diarized speaker list), `entities` (knowledge-graph mentions), `clips` (AI-extracted highlights), `ads` (detected ad spots).
+- Use Get Episode Transcript separately when you need the full transcript text — it isn't bundled here because the payload is large and has its own format/range options.
+- Bills as 5 units against the get-episode event type (one per sub-call).
+- Input: `{ id: string }`
+- Output: `unknown`
+
+#### particlePodcastsGetEpisodeTranscript
+Fetch the diarized transcript for an episode in dialogue, plain text, or SRT subtitle format.
+- Pass an episode ID or slug as `id`.
+- Use `format` = "dialogue" (default, with speaker turns), "text" (plain), or "srt" (subtitle).
+- Filter to a single speaker with `speaker`, or to a time range with `start` / `end` (seconds).
+- Transcripts are large — prefer time-range filtering when you only need a snippet.
+- Input: `{ id: string, format?: "dialogue" | "text" | "srt", speaker?: string, start?: number, end?: number }`
+- Output: `unknown`
+
+#### particlePodcastsSearchCompanies
+Search the Particle knowledge graph for companies by name, ticker, domain, CIK, or QID.
+- Provide one or more identifiers: `q` (free-text name), `ticker` (e.g. "TSLA"), `domain` (e.g. "tesla.com"), `cik` (SEC), or `qid` (Wikidata).
+- Use this to resolve a company name to a canonical `companyId` for use with Find Mentions or Search Dialogue.
+- Returned company objects include slugs, domains, and IDs — any of these can be passed to downstream blocks.
+- Input: `{ q?: string, ticker?: string, domain?: string, cik?: string, qid?: string, entityId?: string, updatedAfter?: string, limit?: number, cursor?: string }`
+- Output: `unknown`
+
+#### particlePodcastsSearchDialogue
+Search across podcast dialogue using semantic or keyword search. Returns matched lines grouped by episode.
+- Provide `semanticSearch` for meaning-based discovery ("find moments where someone talks about market timing") or `keywordSearch` for exact phrase/proper-noun matching. At least one must be provided.
+- Filter to a specific entity or company by passing `entityId` / `companyId`.
+- Each returned dialogue line carries the source episode + speaker so you can chain to Get Episode or Get Episode Transcript for context.
+- Cursor-paginated.
+- Input: `{ semanticSearch?: string, keywordSearch?: string, entityId?: string, companyId?: string, limit?: number, cursor?: string }`
+- Output: `unknown`
+
+#### particlePodcastsSearchPodcasts
+Search and list podcasts in the Particle catalog by keyword, topic, or language.
+- Use `q` for free-text keyword search across podcast titles and descriptions.
+- Use `topic` to filter to a Particle taxonomy topic.
+- Use `language` (BCP 47, e.g. "en") to restrict to a language.
+- Returns podcast objects with canonical IDs and slugs. Pass either to other Particle Podcasts blocks.
+- Cursor-paginated; pass the returned `cursor` back to `cursor` for the next page.
+- Input: `{ q?: string, topic?: string, language?: string, suitabilityTier?: string, limit?: number, cursor?: string }`
+- Output: `unknown`
 
 ### X
 
@@ -1415,6 +1543,66 @@ For example, has:media alone is invalid, but #AI has:media is valid.
 - Input: `{ query: string, scope: "recent" | "all", options: { startTime?: string, endTime?: string, maxResults?: number } }`
 - Output: `{ posts: { id: string, authorId: string, dateCreated: string, text: string, stats: { retweets: number, replies: number, likes: number } }[] }`
 
+### You.com
+
+#### youDotComFinanceResearch
+Ask a financial research question using You.com Finance Research and return the sourced response.
+- Use this for financial questions such as company analysis, earnings, market research, filings, macroeconomics, and due diligence.
+- researchEffort supports deep (default) or exhaustive.
+- Finance Research returns the same response shape as Web Research, but searches a finance-optimized index.
+- Use it for cited synthesis, not raw price feeds or structured time-series exports.
+- Input: `{ input: string, researchEffort?: "deep" | "exhaustive" }`
+- Output: `{ data: object | unknown[] }`
+
+#### youDotComGetPageContent
+Fetch clean Markdown, HTML, or metadata for known URLs using the You.com Contents API.
+- Use this step when you already know the URLs. Use Web Search with livecrawl when You.com should discover pages from a query.
+- A single request supports up to 10 URLs.
+- Request only the formats you need. Markdown is recommended for LLM consumption.
+- Increase crawlTimeout for JavaScript-heavy pages, up to 60 seconds.
+- Individual pages can partially fail; check each returned item before processing.
+- Input: `{ urls: string[], formats?: ("markdown" | "html" | "metadata")[], crawlTimeout?: number }`
+- Output: `{ data: object | unknown[] }`
+
+#### youDotComLiveNews
+Fetch live news articles through the You.com Search API and return the full structured response.
+- Defaults freshness to day for breaking or recent news.
+- Use country and language together to monitor regional or non-English news.
+- Use livecrawl: 'news' with livecrawlFormats: ['markdown'] when you need full article text.
+- Use a custom freshness range like YYYY-MM-DDtoYYYY-MM-DD for historical news windows.
+- Input: `{ query: string, freshness?: string, count?: number, country?: string, language?: string, safesearch?: "off" | "moderate" | "strict", livecrawl?: "news" | "all", livecrawlFormats?: ("markdown" | "html")[] }`
+- Output: `{ data: object | unknown[] }`
+
+#### youDotComWebResearch
+Ask a research question and return a grounded You.com Research API answer with sources.
+- Use Web Search when you need raw URLs and snippets. Use Web Research when you want a synthesized answer with citations.
+- researchEffort controls depth and latency: lite, standard, deep, or exhaustive. standard is a good default.
+- sourceControl can restrict, exclude, or boost domains, and can apply freshness or country filters.
+- includeDomains cannot be combined with excludeDomains or boostDomains.
+- outputSchema returns structured output.content and is supported by standard, deep, and exhaustive, not lite.
+- Input: `{ input: string, researchEffort?: "lite" | "standard" | "deep" | "exhaustive", sourceControl?: { includeDomains?: string[], excludeDomains?: string[], boostDomains?: string[], freshness?: string, country?: string } | string, outputSchema?: object | string }`
+- Output: `{ data: object | unknown[] }`
+
+#### youDotComWebSearch
+Search the web and news using the You.com Search API and return the full structured response.
+- Query supports You.com search operators:
+| Operator | Description | Example |
+| -------- | ----------- | ------- |
+| site: | Search within a domain and its subdomains | site:uscourts.gov |
+| filetype: | Search for a specific file type | filetype:pdf |
+| + | Require the exact term after the operator | +GAAP |
+| - | Exclude the exact term after the operator | -prs |
+| AND | Require both expressions | guitar AND Fender |
+| OR | Match either expression | guitar OR drum |
+| NOT | Negate an expression | NOT site:uscourts.gov |
+- Use livecrawl with livecrawlFormats: ['markdown'] when you need full page content instead of snippets.
+- Use the Get Page Content step when you already know the URLs to fetch.
+- Use freshness for recency: day, week, month, year, or YYYY-MM-DDtoYYYY-MM-DD.
+- Use country (ISO 3166-1 alpha-2) and language (BCP 47) to focus results geographically or linguistically.
+- includeDomains cannot be combined with excludeDomains or boostDomains.
+- Input: `{ query: string, count?: number, freshness?: string, country?: string, language?: string, offset?: number, safesearch?: "off" | "moderate" | "strict", livecrawl?: "web" | "news" | "all", livecrawlFormats?: ("markdown" | "html")[], crawlTimeout?: number, includeDomains?: string[], excludeDomains?: string[], boostDomains?: string[] }`
+- Output: `{ data: object | unknown[] }`
+
 ### YouTube
 
 #### fetchYoutubeCaptions
@@ -1429,7 +1617,7 @@ Retrieve metadata and recent videos for a YouTube channel.
 - Accepts a YouTube channel URL (e.g. https://www.youtube.com/@ChannelName or /channel/ID).
 - Returns channel info and video listings as a JSON object.
 - Input: `{ channelUrl: string }`
-- Output: `{ channel: object }`
+- Output: `object`
 
 #### fetchYoutubeComments
 Retrieve comments for a YouTube video.
@@ -1443,7 +1631,7 @@ Retrieve metadata for a YouTube video (title, description, stats, channel info).
 - Returns video metadata, channel info, and engagement stats.
 - Video format data is excluded from the response.
 - Input: `{ videoUrl: string }`
-- Output: `{ video: object }`
+- Output: `object`
 
 #### searchYoutube
 Search for YouTube videos by keyword.
@@ -1457,7 +1645,7 @@ Retrieve trending videos on YouTube by category and region.
 - Categories: "now" (trending now), "music", "gaming", "films".
 - Supports country and language filtering.
 - Input: `{ bp: "now" | "music" | "gaming" | "films", hl: string, gl: string }`
-- Output: `{ trends: object }`
+- Output: `object`
 
 ### Helpers
 
@@ -1567,7 +1755,7 @@ Output:
 Estimate the cost of executing a step before running it. Pass the same step config you would use for execution.
 
 ```typescript
-const estimate = await agent.estimateStepCost('generateText', { message: 'Hello' });
+const estimate = await mindstudio.estimateStepCost('generateText', { message: 'Hello' });
 ```
 
 - `stepType`: string — The action name (e.g. `"generateText"`).
@@ -1581,9 +1769,9 @@ Output:
   estimates?: {
     eventType: string;       // Billing event type
     label: string;           // Human-readable cost label
-    unitPrice: number;       // Price per unit in billing units
+    unitPrice: number;       // Price per unit in nanodollars (1e-9 USD)
     unitType: string;        // What constitutes a unit (e.g. "token", "request")
-    estimatedCost?: number;  // Estimated total cost, or null if not estimable
+    estimatedCost?: number;  // Estimated total cost in nanodollars, or null if not estimable
     quantity: number;        // Number of billable units
   }[]
 }
@@ -1593,22 +1781,22 @@ Output:
 Update the display name of the authenticated agent. Useful for agents to set their own name after connecting.
 
 ```typescript
-await agent.changeName('My Agent');
+await mindstudio.changeName('My Agent');
 ```
 
 #### `changeProfilePicture(profilePictureUrl)`
 Update the profile picture of the authenticated agent. Useful for agents to set their own avatar after connecting.
 
 ```typescript
-await agent.changeProfilePicture('https://example.com/avatar.png');
+await mindstudio.changeProfilePicture('https://example.com/avatar.png');
 ```
 
 #### `uploadFile(content, options)`
-Upload a file to the MindStudio CDN. Gets a signed upload URL, PUTs the file content, and returns the permanent public URL.
+**Deprecated for app file storage** — use the `files` store below (`files.defineStore(...).put(...)`): private by default, app-scoped, and served on the app's own domain. `uploadFile` uploads to the shared account media CDN and remains only for account-level assets (e.g. an agent avatar for `changeProfilePicture`). Gets a signed upload URL, PUTs the file content, and returns the permanent public URL.
 
 ```typescript
 import { readFileSync } from 'fs';
-const { url } = await agent.uploadFile(readFileSync('photo.png'), { extension: 'png', type: 'image/png' });
+const { url } = await mindstudio.uploadFile(readFileSync('photo.png'), { extension: 'png', type: 'image/png' });
 ```
 
 - `content`: `Buffer | Uint8Array` — The file content.
@@ -1616,3 +1804,95 @@ const { url } = await agent.uploadFile(readFileSync('photo.png'), { extension: '
 - `options.type`: string (optional) — MIME type (e.g. `"image/png"`). Determines which CDN subdomain is used.
 
 Output: `{ url: string }` — The permanent public CDN URL.
+
+#### `files` — per-app file storage (private by default)
+Typed per-app file storage: user uploads, generated documents, images, marketing assets. Think of a store as a CDN-backed bucket the app talks to — NOT app-defined state like a `db` table. The API is *shaped* like the `db` namespace (define a store at module scope, then read/write), but its contents aren't modeled by code, and one store is shared across dev and prod (a file uploaded in the dev editor is already live in prod at the same URL). Creates are safe by default because keys default to unique (UUID, or a content-addressed hash); the operations to treat with care are `delete(key)` and overwriting a fixed key. Files are served on the app's own domain: private stores (the default) are signed / session-authorized; public stores are world-readable, CDN-served, and images resize via query params (e.g. `?w=400&h=300&fit=cover`). Prefer this over the deprecated `uploadFile()` for app storage.
+
+```typescript
+import { files } from '@mindstudio-ai/agent';
+
+// Define stores at module scope (access is pinned here).
+export const Uploads = files.defineStore('uploads');                  // private (default)
+export const Assets  = files.defineStore('assets', { access: 'public' });
+
+// Store bytes and get a ready-to-use URL.
+const file = await Uploads.put(buffer, { contentType: 'application/pdf', filename: 'report.pdf' });
+file.url;              // stable on-domain URL for a logged-in user (drop into <img>/<a download>)
+await file.shareUrl(); // absolute signed URL that works with NO session (email/embed); default 24h
+```
+
+Store methods:
+- `put(content, { key?, contentType?, filename?, contentAddressed? })` → `StoredFile`. `content` is `Buffer | Uint8Array | string`. Omit `key` for a random UUID; `contentAddressed: true` derives an immutable `<sha256>.<ext>` key.
+- `get(key)` → `Buffer` · `head(key)` → `StoredFile` · `exists(key)` → `boolean`
+- `list({ prefix?, cursor?, limit? })` → `{ files: StoredFile[]; cursor? }`
+- `delete(key)` → `void`
+- `shareUrl(key, { expiresIn? })` → signed absolute URL (private stores; no session needed)
+
+`StoredFile`: `{ store, key, access, size?, contentType?, updatedAt?, url, shareUrl() }`.
+
+`defineStore(name, options?)` options: `access: 'public' | 'private'` (default private), `maxSize` (bytes; cap for client-direct uploads), `contentTypes` (allowlist for client-direct uploads).
+
+User uploads (client-direct — bytes go straight to storage, never through the app backend): a backend method mints a token, the frontend submits it with `@mindstudio-ai/interface`.
+```typescript
+// backend method
+const token = await Uploads.createUploadToken({ contentType, maxSize: 25 * 1024 * 1024 });
+return token;
+// frontend (@mindstudio-ai/interface)
+import { platform } from '@mindstudio-ai/interface';
+const { url } = await platform.upload(token, file, { onProgress });
+```
+
+Generated assets: any action that produces a file (`generateImage`, `generateVideo`, `generateSpeech`, `generatePdf`, `upscaleImage`, …) can put its output straight into one of these stores — pass the store handle as `store` in the OPTIONS object (second argument). Optional: omit it and the asset goes to the shared MindStudio CDN as before. Reach for it when the asset belongs to the app — private to a user, or listed alongside its other files.
+
+```typescript
+const { imageUrl } = await mindstudio.generateImage({ prompt: 'a red sneaker' }, { store: Assets });
+```
+
+#### `dataSources` — searchable document corpora (RAG)
+
+Declare a data source at module scope and import the handle. The platform owns parsing, chunking, embedding, storage and tenant isolation; every hit returns a citation.
+```typescript
+import { dataSources } from '@mindstudio-ai/agent';
+export const Policies = dataSources.defineDataSource('policies');
+
+// search
+const { results } = await Policies.search('what are the payment terms?', { topK: 5 });
+// options: topK (default 5, max 50), scoreThreshold, filter, mode, maxPerDocument, highlight, rerank, hybrid
+const context = results.map((r) => r.text).join(String.fromCharCode(10, 10));
+
+// narrow before ranking: metadata tags, filename, pages, required words
+await Policies.search('termination clause', {
+  filter: { metadata: { department: 'legal', year: [2025, 2026] }, phrase: 'notice period' },
+  maxPerDocument: 2,  // stop one document monopolizing the results
+});
+
+// mode: 'hybrid' (default) | 'semantic' | 'lexical'. Lexical skips the query
+// embedding — fastest, right for identifier-shaped queries (error codes, SKUs).
+await Policies.search('ERR-7741X', { mode: 'lexical' });
+
+// add a document (background — poll documents() for status)
+await Policies.add(buffer, { filename: 'policy.pdf', contentType: 'application/pdf', metadata: { department: 'legal' } });
+const docs = await Policies.documents();
+
+// introspection — what is in the corpus, and how one document was split
+const { chunkCount, pipeline } = await Policies.stats();  // counts + the config actually in effect
+const chunks = await Policies.chunks(docs[0].id);       // why a document does or doesn't match
+```
+
+`SearchHit`: `{ score, text, citation: { documentId, filename, pageNumber, chunkIndex, headingPath, boundingBox?, url } }`. `citation.url` is a stable on-domain link to the source document — drop it in an `<a href>`. `(documentId, chunkIndex)` is a chunk's stable identity — key an eval set on that, not on `text`.
+
+Also on each hit: `retrievalRank`/`retrievalScore` (position before reranking — compare with the final position to see what reranking did). Three opt-in search options for debugging and display: `explain: true` adds `explain.{dense,lexical,matchedVia}` so you can see which half of hybrid found a hit; `expand: 1` adds `neighbors.{before,after}` for surrounding context; `highlight: true` adds `matches` — `{start, end}` offsets of query terms in `text`, for rendering highlights. None of them changes the results or their order.
+
+`filter` fields (all AND together, and only narrow): `metadata` (per-key equals, or any-of via an array), `filename`, `documentIds`, `pages: {min?, max?}`, `contains` (all words, any order), `phrase` (exact adjacent sequence). Document metadata is set at add time: scalars only, ≤16 keys, keys `[a-zA-Z0-9_-]`. Re-adding the same bytes with different metadata updates the tags in place — no re-processing.
+
+Search is deterministic for a fixed corpus and configuration — same query, same order — so regression checks are meaningful. `search()` also returns `latencyMs`.
+
+Other methods: `stats()`, `documents()`, `chunks(documentId, {vectors?})`, `remove(documentId)`, `ensure(name?)` (rarely needed — `add` and `search` create-on-reference), and `DataSource.contentHash(bytes)` to check for an existing document before adding.
+
+Supported: pdf, docx, pptx, xlsx, odt, rtf, epub, images, txt, md, json, csv, tsv, log, html.
+
+Adding the same bytes twice is free — documents are content-addressed, so a re-add is a no-op when this source has already processed those exact bytes under its current configuration. Only reconfiguring the source makes a re-add do work again, and that is an explicit owner-triggered migration, never a side effect of a deploy.
+
+Everything in `SearchOptions` — `mode`, `filter`, `rerank`, `hybrid`, `maxPerDocument`, `highlight` — is free to change and takes effect on the next search. How documents are chunked and embedded is configured on the corpus itself with `mindstudio-prod datasources config` — not in code — and changing it on a populated source is rejected rather than silently rebuilding.
+
+**A data source is live and shared.** Unlike database tables there is no dev copy and no per-release isolation: adding or removing a document changes what the deployed app retrieves, immediately. Scenarios never reset a data source, and re-ingesting a large corpus costs real money.
