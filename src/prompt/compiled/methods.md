@@ -202,25 +202,23 @@ export async function createPurchaseOrder(input: {
 
 A method can return immediately while kicking off slow work (like `runTask()`) that continues in the background. Don't await the slow call — use `.then()` / `.catch()` to update the record when it completes, and return an early result to the caller. The frontend polls the record's status to track progress. Wrap background chains other than `runTask()` in `mindstudio.waitUntil(...)` so the platform keeps the sandbox alive for them and records an interruption if they're cut short — `runTask()` registers itself automatically.
 
-The example below shows the fire-and-forget shape, not a complete `runTask()` call. Load the `taskAgents` skill before writing one — configuring its tools, validating the output, and handling failures are all there, and none of them are visible here.
+The example below shows the fire-and-forget shape, not a complete `runTask()` call. Load the `taskAgents` skill before writing one — configuring its tools, the `outputSchema` output contract, and handling failures are all there, and none of them are visible here.
 
 ```typescript
 export async function enrichRestaurant(input: { id: string; name: string }) {
   await Restaurants.update(input.id, { status: 'enriching' });
 
   // Fire — don't await
-  mindstudio.runTask<RestaurantData>({
+  mindstudio.runTask({
     prompt: '...',
     input: { name: input.name },
     tools: ['searchGoogle', 'fetchUrl', 'generateImage'],
-    structuredOutputExample: { /* ... */ },
+    outputSchema: { type: 'object', properties: { /* ... */ }, required: [/* ... */] },
     model: 'claude-5-sonnet',
   }).then(async (result) => {
-    if (result.parsedSuccessfully) {
-      await Restaurants.update(input.id, { ...result.output, status: 'complete' });
-    } else {
-      await Restaurants.update(input.id, { status: 'failed' });
-    }
+    // outputSchema means result.output is validated and typed — a task that
+    // can't produce conforming output rejects into the .catch instead.
+    await Restaurants.update(input.id, { ...result.output, status: 'complete' });
   }).catch(async () => {
     await Restaurants.update(input.id, { status: 'failed' });
   });
