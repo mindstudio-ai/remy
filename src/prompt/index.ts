@@ -83,6 +83,10 @@ export function buildSystemPrompt(onboardingState?: string): string {
   {{compiled/auth.md}}
   </auth>
 
+  <jewels>
+  {{compiled/jewels.md}}
+  </jewels>
+
   <dev_and_deploy>
   {{compiled/dev-and-deploy.md}}
   </dev_and_deploy>
