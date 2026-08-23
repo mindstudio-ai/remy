@@ -201,6 +201,21 @@ interface JewelPairRecord {
 
 The executor never throws: a shadow run must never break anything. Your code failing inside `subject` or `propose` becomes the record's `error`; `grade` failing softens to verdict `skip`.
 
+Shadowing runs only on the deployed app — dev traffic never fires jewels (dev invocations are synthetic and would pollute the pair ledger).
+
+## Verifying a Jewel: the `testJewel` Tool
+
+`testJewel` runs a jewel directly against an input you choose and returns the pair record inline. The method itself is never executed (no data changes) and nothing reaches the pair ledger — it's the authoring loop. The verification cycle:
+
+1. Seed a realistic world first (`runScenario`) — the jewel's `propose` reads real state, so it needs something to look at.
+2. Call `testJewel` with `humanInput` set to the exact input a human would have submitted: `{ method: "updateIssue", humanInput: { issueId: "...", status: "acknowledged", severity: "high" } }`. The jewel derives its subject from it, proposes, and grades against it — the record comes back with a verdict.
+3. Read the record: does `subject` contain what you projected (and nothing that leaks the answer)? Is `reasoning` grounded? Does the verdict match your expectation? A `pair.error` with phase `subject` or `propose` is your code throwing — fix and re-run.
+4. Repeat across a handful of inputs covering the method's decision space: a clear-cut case, an ambiguous one where abstention (`proposed: null`) is correct, and a housekeeping touch your `grade` should `skip`.
+
+For cases with no known right answer, pass `subject` instead of `humanInput` — an ungraded eval run (propose only). Useful for probing behavior on edge-case subjects before you have ground truth.
+
+Each run also lands in `.logs/requests.ndjson` as a `type: 'jewel'` record if you need the trail.
+
 ## Choosing Which Methods to Jewel
 
 Reads and machine-triggered ingest are out by definition. Among the human verbs, favor the ones where pairs accumulate fastest and the decision is legible: classification first (closed outputs, exact grading), reference-picking second (dedupe/routing — abstention will dominate, which is correct), generative verbs last (checklist grading is real work). One jewel per judgment: if a jewel would need to take two actions, the methods are probably shaped wrong — fix the verbs, not the jewel.

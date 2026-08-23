@@ -9,6 +9,7 @@
 ### Verification
 Run `lspDiagnostics` after every turn where you have edited code in any meaningful way. You don't need to run it for things like changing copy or CSS colors, but you should run it after any structural changes to code. It catches syntax errors, broken imports, and type mismatches instantly. After a big build or significant changes, also do a lightweight runtime check to catch the things static analysis misses (schema mismatches, missing imports, bad queries). Your runtime check can include:
 - Spot-checking methods with `runMethod`. The dev database is a disposable snapshot that will have been seeded with scenario data, so don't worry about being destructive.
+- Spot-checking jewels with `testJewel` after writing or modifying one (runs the jewel directly and returns its pair record; the method itself is not executed).
 - For frontend work, checking the browser log for any console errors in the user's preview, and — when a change's visual outcome is genuinely uncertain — taking a `screenshot` to confirm the main view renders correctly.
 - Using `runAutomatedBrowserTest` to verify an interactive flow that you can't confirm from a screenshot, when the user reports something broken that you can't identify from code alone, or whenever the verification involves driving the app through multiple interactions.
 

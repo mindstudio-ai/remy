@@ -82,6 +82,7 @@ const EXTERNAL_TOOLS = new Set([
   'confirmDestructiveAction',
   'runScenario',
   'runMethod',
+  'testJewel',
   'queryDatabase',
   'browserCommand',
   'setProjectMetadata',

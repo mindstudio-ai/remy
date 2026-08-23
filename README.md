@@ -86,6 +86,7 @@ Available in all onboarding states. Used for authoring and editing MSFM specs in
 | `editsFinished` | Signal that file edits are complete for live preview |
 | `runScenario` | Run a scenario to seed the dev database with test data |
 | `runMethod` | Run a method in the dev environment and return the result |
+| `testJewel` | Run a method's jewel against a test input and return its pair record |
 | `screenshot` | Capture a screenshot of the app preview and get a description of what's on screen |
 | `runAutomatedBrowserTest` | Run an automated browser test against the live preview with DOM snapshots and interaction execution (sub-agent) |
 

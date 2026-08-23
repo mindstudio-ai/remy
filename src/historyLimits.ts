@@ -43,8 +43,8 @@ import type { Message, ContentBlock } from './api.js';
 // bytes, slice to a byte-exact head, append a marker telling the model to
 // narrow the call rather than refetch everything. Local tools already
 // self-cap well below this, so applying it uniformly is a no-op for them and
-// a hard ceiling for the external data tools (runMethod, queryDatabase,
-// browserCommand), which have no self-imposed cap.
+// a hard ceiling for the external data tools (runMethod, testJewel,
+// queryDatabase, browserCommand), which have no self-imposed cap.
 export const MAX_TOOL_RESULT_BYTES = 256 * 1024;
 
 export function capToolResult(

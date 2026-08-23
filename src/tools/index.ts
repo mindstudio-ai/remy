@@ -136,6 +136,7 @@ import { lspDiagnosticsTool } from './code/lspDiagnostics.js';
 import { restartProcessTool } from './code/restartProcess.js';
 import { runScenarioTool } from './code/runScenario.js';
 import { runMethodTool } from './code/runMethod.js';
+import { testJewelTool } from './code/testJewel.js';
 import { queryDatabaseTool } from './code/queryDatabase.js';
 import { screenshotTool } from './code/screenshot.js';
 import { browserAutomationTool } from '../subagents/browserAutomation/index.js';
@@ -195,6 +196,7 @@ const ALL_TOOLS: Tool[] = [
   // Appended rather than grouped: position is part of the cache prefix, so a
   // new tool goes at the end to leave every existing session's prefix intact.
   loadSkillTool,
+  testJewelTool,
 ];
 
 /**

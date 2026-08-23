@@ -10,7 +10,7 @@ A user types the name of a restaurant into your app, or uploads a photo of a sto
 
 `runTask()` makes this possible. It runs a multi-step, tool-use agent loop: give it a prompt, a set of tools, and a JSON Schema for the structured output you want (`outputSchema`). The platform runs the loop (calling the model, executing tool calls, feeding results back) until the model produces JSON conforming to your schema — validated every turn, with automatic repair when it doesn't. `result.output` is typed by inference from the schema: no generic argument, no manual validation. The model decides what to do next based on intermediate results — retrying searches with different terms, working around failed tools, batching independent calls in parallel.
 
-Tools are **SDK actions** (`searchGoogle`, `generateImage`, …) and **your own app's methods** (`{ appMethod: 'saveVendor' }`), in any combination. That second half is what makes a task agent part of your app rather than a detached research bot: it can read your tables to decide what to do next, and write results back itself instead of handing them to you to persist.
+Tools are **SDK actions** (`searchGoogle`, `generateImage`, …) and **your own app's methods** (`{ appMethod: 'save-vendor' }`), in any combination. That second half is what makes a task agent part of your app rather than a detached research bot: it can read your tables to decide what to do next, and write results back itself instead of handing them to you to persist.
 
 This is one of the most powerful pieces of the MindStudio SDK, and it can turn an app from amazing into truly magical. Use `askMindStudioSdk` to help construct the right agent for a task — including which model to give it.
 
