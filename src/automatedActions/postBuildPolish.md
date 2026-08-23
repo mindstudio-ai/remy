@@ -16,4 +16,4 @@ When everything is working and polished:
 1. Write the Build Overview. Author the full copy of everything this build actually produced — the data stores and what each holds, the backend operations, the interfaces, any access and role boundaries, background jobs, and seeded scenarios, including the parts the user can't see — in plain, calm, present-tense language, with real names and exact counts. Then call `writeBuildOverview` to render it. Do this now, before compacting, while the build is still fresh in context.
 2. Use `productVision` to mark the MVP roadmap item as done.
 3. Call `compactConversation` to summarize the build session and free up context for the next phase of work.
-4. Call `setProjectOnboardingState({ state: "buildComplete" })`. This triggers the reveal experience on the frontend, where the user sees their finished app and its Build Overview for the first time.
+4. Call `markBuildComplete`. The user lands on the Build Overview — their first look at the finished app — and the editor fully unlocks.

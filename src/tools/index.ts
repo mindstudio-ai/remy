@@ -113,7 +113,7 @@ import { writePlanTool } from './spec/writePlan.js';
 import { updatePlanStatusTool } from './spec/updatePlanStatus.js';
 
 // General tools
-import { setProjectOnboardingStateTool } from './common/setProjectOnboardingState.js';
+import { markBuildCompleteTool } from './common/markBuildComplete.js';
 import { promptUserTool } from './common/promptUser.js';
 import { confirmDestructiveActionTool } from './common/confirmDestructiveAction.js';
 import { askMindStudioSdkTool } from '../subagents/sdkConsultant/index.js';
@@ -152,7 +152,7 @@ import { buildOverviewTool } from './spec/writeBuildOverview.js';
  * sharing across users (tools are the first cache prefix segment). */
 const ALL_TOOLS: Tool[] = [
   // Common
-  setProjectOnboardingStateTool,
+  markBuildCompleteTool,
   promptUserTool,
   confirmDestructiveActionTool,
   askMindStudioSdkTool,
