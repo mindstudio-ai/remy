@@ -1,6 +1,6 @@
 ---
 name: Scenarios
-what: Seed scripts that reset the dev database to a specific state — the platform truncates all tables, runs an async function of plain `db.push()` calls, then impersonates a role, so the same scenario always produces the same state. They're how the user tests the app from each role's perspective and how a freshly built app makes its first impression already populated with data that fits its vibe. Declared in the manifest, written at `dist/methods/.scenarios/`.
+what: Seed scripts that reset the dev database to a specific state — the platform truncates all tables, runs an async function of plain `db.push()` calls, then assigns the scenario's roles to the dev test user, so the same scenario always produces the same state. They're how the user tests the app from each role's perspective (by signing in as the test account) and how a freshly built app makes its first impression already populated with data that fits its vibe. Declared in the manifest, written at `dist/methods/.scenarios/`.
 when: Before writing or editing a scenario — including the initial build, where scenarios are required. Covers file placement and imports, truncate semantics, what scenarios must not touch (file stores, data sources), and seeding realistic data and bespoke images.
 ---
 
@@ -42,7 +42,7 @@ In `mindstudio.json`:
 | `description` | What state this scenario creates |
 | `path` | Path to the TypeScript file |
 | `export` | Named export (the async function) |
-| `roles` | Roles to impersonate after seeding |
+| `roles` | Roles assigned to the dev test user after seeding (requires app auth) |
 
 ## Writing a Scenario
 
@@ -104,9 +104,11 @@ Shared setup code can go in `dist/methods/.scenarios/_helpers/`.
 When a scenario runs, the platform:
 1. **Truncates** all tables (deletes all rows, preserves schema - unless skipTruncate is true)
 2. **Executes** the seed function (your `db.push()` calls populate the clean database)
-3. **Impersonates** the roles from the scenario's `roles` field (the app renders from that user's perspective)
+3. **Assigns** the roles from the scenario's `roles` field to the dev test user — a real write to that user's row, so it requires app auth to be enabled
 
 This is deterministic — same scenario always produces the same state.
+
+Nobody gets signed in by a scenario. The preview shows the app's own sign-in screen, where the dev helper auto-fills the test account (`remy@mindstudio.ai`, code `123456`) — one tap and the user is in as the test user, seeing the app from the scenario's role's perspective. The roles persist on the test user until another scenario or the Roles column changes them.
 
 Scenarios are useful for seeding initial app state after build for testing, as well as to give the user a first impression of an app that is already filled with data and looks and feels usable. The user can choose to run further scenarios after initial build by clicking the Scenarios tab and selecting a scenario to run.
 

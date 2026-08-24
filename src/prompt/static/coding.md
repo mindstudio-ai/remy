@@ -45,7 +45,7 @@ The SDK also includes a `reportIssue` method that can file bug reports on the ap
 - For signup and login, verification code inputs must feel polished — clear feedback on send, auto-send on paste, a "resend" option, and error messages for wrong/expired codes.
 - The auth table is the user profile. Add custom fields (displayName, avatar, plan, etc.) alongside the platform-managed columns. Don't create a separate profile table.
 - When delegated sign-in ("Sign in with Remy") is available for the org, prefer a "Continue with {Org}" button (`auth.signInWithRemy()`) and call `auth.handleRemyRedirect()` once on app load. Drive UI off `onAuthStateChanged`, not the sign-in return value (top-level sign-in redirects away and never returns). Load the `auth` skill for the full flow reference.
-- For apps with roles, create scenarios that seed users with different roles so the developer can test each perspective. Use the scenario `roles` field for impersonation.
+- For apps with roles, create one scenario per role so the developer can test each perspective: the scenario's `roles` field assigns those roles to the dev test user, and signing in as that account (the preview's sign-in helper auto-fills it) shows the app from that role's perspective.
 
 ### CSS & Layout
 - Prefer CSS grid for page-level layout, flex for component-level alignment.

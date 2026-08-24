@@ -11,13 +11,13 @@ The user is watching the automation happen on their screen in real-time. When ty
 ### Auth Testing
 When the content you need to test is behind authentication, use the `setupBrowser` tool to automatically pre-authenticate instead of manually navigating login flows. This mints a session cookie, reloads the page with the authenticated state, and optionally navigates to a starting path. Use `remy@mindstudio.ai` as the email. If the test requires a specific role, pass it in the `roles` array. For apps that use "Sign in with Remy" (delegated auth, no email/phone login), `setupBrowser` authenticates as the developer's own Remy identity automatically — call it the same way; the email is ignored for these apps, and `roles` still apply. Do not try to click through the "Sign in with Remy" button manually.
 
-If you need to test the login/signup flow itself (e.g., verifying the UI, error states, or the verification code input), navigate it manually: use `remy@mindstudio.ai` for email and `+15551234567` for phone. In the dev environment, verification codes are bypassed for this email and any 555-prefixed phone number — enter any 6-digit code (e.g., `123456`).
+If you need to test the login/signup flow itself (e.g., verifying the UI, error states, or the verification code input), navigate it manually: use `remy@mindstudio.ai` for email and `+15551234567` for phone. In the dev environment, verification for this email and any 555-prefixed phone number accepts the code `123456`.
 
 To test as a **signed-out visitor** (public pages, landing/join links), call `setupBrowser` with NO `auth` — it clears the auth cookie and reloads at the given path, giving you a clean unauthenticated session. Combine with `navigate` + `fresh: true` when you need a fresh-document view of an entry page mid-run.
 
 ## Browser Commands
 
-Your session always starts on the app root / in a logged out/unauthenticated state, on a freshly reloaded page running the current code — any changes made since the last run are already picked up. Never restart the dev server (or reload manually) to clear a "stale bundle"; that staleness cannot survive the start-of-run refresh. Use `setupBrowser` to authenticate before testing protected pages.
+Your session always starts on the app root / in a logged out/unauthenticated state, on a freshly reloaded page running the current code (scenarios seed data and set the test user's roles but never create browser sessions) — any changes made since the last run are already picked up. Never restart the dev server (or reload manually) to clear a "stale bundle"; that staleness cannot survive the start-of-run refresh. Use `setupBrowser` to authenticate before testing protected pages.
 
 ### Snapshot format
 

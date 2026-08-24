@@ -126,4 +126,4 @@
 | `description` | `string` | No | What state this scenario creates |
 | `path` | `string` | Yes | Path to the TypeScript file |
 | `export` | `string` | Yes | Named export (the async function) |
-| `roles` | `string[]` | Yes | Roles to impersonate after seeding |
+| `roles` | `string[]` | Yes | Roles assigned to the dev test user after seeding |
