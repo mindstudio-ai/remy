@@ -225,20 +225,31 @@ The wiring itself is two manifest lines on the method's entry:
 
 `tuning` (optional) is the training recipe for the jewel's own model. Every knob has a
 platform default and most jewels never set any: `base` (which model to train — a slug
-from the platform's small menu; `qwen3.5-4b` is the default, `qwen3.5-9b` and
-`ministral-3-8b` are the larger options, and the default is the right choice unless a
+from the platform's small menu; `qwen3.5-4b` is the default, with `qwen3.5-9b` and
+`gpt-oss-20b` as larger alternatives, and the default is the right choice unless a
 report shows it falling short), `windowDays` (how many days of ledger history to train
 on; default all history), `epochs` (1-10, default 3), `rank` (LoRA rank, 4-64, default
 16), `learningRate` (default 5e-5). It requires `jewel`, and it rides the release:
 changing a knob is a commit + deploy before the next training run.
 
 Once a method has accumulated graded pairs, train from the prod CLI:
-`mindstudio-prod jewels train <methodId>` (see `--help`). The dataset report says
-whether the ledger is trainable (pairs without an attached `trace` don't count), and a
-run produces a downloadable LoRA adapter plus a held-out agreement report: how often
-the trained model matched your team's decisions on pairs it never saw. The trained
-model is an artifact and a report for now; serving it inside the app is a later
-platform phase, so set that expectation honestly when a user asks.
+`mindstudio-prod jewels train <methodId>` (see `--help`). It returns immediately with
+a run id and the dataset report; a run takes minutes to tens of minutes, so never use
+`--wait` (that flag is for humans at a terminal — it would block your whole loop).
+Start the run, tell the user it's training, keep working on other things, and check in
+with `mindstudio-prod jewels run <runId>` between tasks — the `progress` field shows
+the live phase and training percent, and `status` goes `complete` or `failed` with the
+full report. The dataset report says whether the ledger is trainable (pairs without an
+attached `trace` don't count), and a run produces a downloadable LoRA adapter plus a
+held-out agreement report: how often the trained model matched your team's decisions
+on pairs it never saw. The adapter and report land in the app's own file store
+(`models/` in the Files dashboard), so the user can download them there. Read
+`report.grading.agreement` — it is scored by the jewel's own grade function, the same
+grader as the pairs dashboard. The raw `agreement` field is a strict byte-level floor
+that undercounts whenever free-text fields differ; never quote it when `grading`
+exists (`mindstudio-prod jewels grade <runId>` re-grades if it is missing). The
+trained model is an artifact and a report for now; serving it inside the app is a
+later platform phase, so set that expectation honestly when a user asks.
 
 ## Arrival Triggers (`mindstudio.jewels.propose`)
 
