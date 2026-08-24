@@ -243,13 +243,19 @@ full report. The dataset report says whether the ledger is trainable (pairs with
 attached `trace` don't count), and a run produces a downloadable LoRA adapter plus a
 held-out agreement report: how often the trained model matched your team's decisions
 on pairs it never saw. The adapter and report land in the app's own file store
-(`models/` in the Files dashboard), so the user can download them there. Read
-`report.grading.agreement` — it is scored by the jewel's own grade function, the same
-grader as the pairs dashboard. The raw `agreement` field is a strict byte-level floor
-that undercounts whenever free-text fields differ; never quote it when `grading`
-exists (`mindstudio-prod jewels grade <runId>` re-grades if it is missing). The
-trained model is an artifact and a report for now; serving it inside the app is a
-later platform phase, so set that expectation honestly when a user asks.
+(`models/` in the Files dashboard), so the user can download them there. The
+agreement number is `report.grading.agreement` — scored by the jewel's own grade
+function, the same grader as the pairs dashboard; there is no other agreement field.
+A completed run without a `grading` block just hasn't been graded yet
+(`mindstudio-prod jewels grade <runId>` fills it). A completed run registers the
+app's tuned model as a real model id — `tuned/{appId}/{methodId}`, one stable id per
+method that retraining advances in place — and the latest complete run per method is
+automatically served on the platform's GPU pool, so that id works like any other
+model the moment training finishes. There is no special invoke tool: to sanity-check
+or demo a tuned model, make an ordinary generate-text call with that model id (the
+pool serves it with the exact template posture it was trained under). Promotion (the
+app actually switching a jewel onto its tuned model) is still a deliberate later
+step; do not wire a tuned model into app code unprompted.
 
 ## Arrival Triggers (`mindstudio.jewels.propose`)
 
