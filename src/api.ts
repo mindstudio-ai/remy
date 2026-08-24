@@ -463,13 +463,28 @@ export async function* streamChat(
 const MAX_RETRIES = 5;
 const INITIAL_BACKOFF_MS = 1000;
 
-function isRetryableError(error: string): boolean {
+// Machine-readable error codes the API relays from the provider (the SSE
+// error event's `code`). These are the provider's transient server-side
+// failures — retryable by definition. Notably they can arrive MID-stream
+// (after HTTP 200), where no HTTP-status heuristic applies.
+const RETRYABLE_ERROR_CODES = new Set([
+  'api_error', // Anthropic's 500-equivalent ("The server had an error…")
+  'overloaded_error', // Anthropic's 529-equivalent
+]);
+
+function isRetryableError(error: string, code?: string): boolean {
+  if (code && RETRYABLE_ERROR_CODES.has(code)) {
+    return true;
+  }
   return (
     /Network error/i.test(error) ||
     /HTTP 5\d\d/i.test(error) ||
     /Stream stalled/i.test(error) ||
     /overloaded/i.test(error) ||
     /terminated/i.test(error) ||
+    // The API's friendly mapping of a provider 500 — belt-and-suspenders for
+    // pods that don't send a machine-readable code.
+    /Internal API error/i.test(error) ||
     // Anthropic fetches url-source image blocks server-side on every call;
     // a transient failure anywhere in that chain (S3 signing edge, resize
     // proxy, their fetcher) surfaces as this message. The images themselves
@@ -502,7 +517,10 @@ export async function* streamChatWithRetry(
 
     for await (const event of streamChat(params)) {
       if (event.type === 'error') {
-        if (isRetryableError(event.error) && attempt < MAX_RETRIES - 1) {
+        if (
+          isRetryableError(event.error, event.code) &&
+          attempt < MAX_RETRIES - 1
+        ) {
           options?.onRetry?.(attempt, event.error);
           retryableFailure = true;
           break;
