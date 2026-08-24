@@ -9,12 +9,15 @@
  * building — and mirrored to the platform's private app-data bucket so the
  * dashboard can render a preview (it can't reach the sandbox disk).
  *
- * Filenames are slug+uniqid and never reused: references are immutable, and a
- * revision is a new wireframe. The mirror upload is non-fatal — a wireframe
- * whose preview can't render is still fully usable by the developer.
+ * The caller chooses the slug (= the filename stem), so the reference path is
+ * fully known to the agent before it writes any prose — nothing about the
+ * path has to be recalled from a tool result. Re-using a slug overwrites the
+ * file and its mirror in place: a revision keeps the same path, so references
+ * already written into specs stay current. The mirror upload is non-fatal — a
+ * wireframe whose preview can't render is still fully usable by the developer.
  */
 
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { ToolDefinition } from '../../../api.js';
 import type { ToolExecutionContext } from '../../../tools/index.js';
@@ -30,14 +33,19 @@ const UPLOAD_TIMEOUT_MS = 30_000;
 export const definition: ToolDefinition = {
   name: 'createWireframe',
   description:
-    'Create a wireframe from self-contained HTML+CSS. Returns a markdown reference line — include that exact line in your response wherever the wireframe belongs, with your notes in the surrounding prose. To revise a wireframe, create a new one (read the old file first if you are iterating on it).',
+    'Create (or revise) a wireframe from self-contained HTML+CSS. The wireframe is saved to src/.wireframes/{slug}.html — reference it in your response and in specs as ![name](src/.wireframes/{slug}.html), with your notes in the surrounding prose. Calling again with the same slug overwrites the wireframe in place, so a revision keeps its path and existing references stay current.',
   inputSchema: {
     type: 'object',
     properties: {
       name: {
         type: 'string',
         description:
-          'Short display name, e.g. "Feed Post Card". Becomes the caption and the filename slug.',
+          'Short display name, e.g. "Feed Post Card". Becomes the caption.',
+      },
+      slug: {
+        type: 'string',
+        description:
+          'Filename stem, lowercase kebab-case (e.g. "feed-post-card"). The wireframe lives at src/.wireframes/{slug}.html. Re-use a slug to revise that wireframe in place.',
       },
       description: {
         type: 'string',
@@ -50,21 +58,12 @@ export const definition: ToolDefinition = {
           'The complete HTML document (<html>…</html>), self-contained vanilla HTML/CSS/JS. No frontmatter — it is added for you.',
       },
     },
-    required: ['name', 'description', 'html'],
+    required: ['name', 'slug', 'description', 'html'],
   },
 };
 
-/** Lowercase-kebab a display name into a filename slug. */
-function slugify(name: string): string {
-  return (
-    name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .slice(0, 40)
-      .replace(/-+$/, '') || 'wireframe'
-  );
-}
+// Matches the platform mirror route's SLUG_RE — one grammar on both sides.
+const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,79}$/;
 
 /** Frontmatter values are single-line; collapse whatever whitespace arrives. */
 function singleLine(value: string): string {
@@ -78,11 +77,19 @@ function singleLine(value: string): string {
  */
 function validate(
   name: string,
+  slug: string,
   html: string,
 ): { error?: string; warnings: string[] } {
   const warnings: string[] = [];
   if (!name.trim()) {
     return { error: 'Error: name is required.', warnings };
+  }
+  if (!SLUG_RE.test(slug)) {
+    return {
+      error:
+        'Error: slug must be lowercase kebab-case ([a-z0-9-], starting with a letter or digit, ≤ 80 chars), e.g. "feed-post-card".',
+      warnings,
+    };
   }
   if (!html.trim()) {
     return { error: 'Error: html is required.', warnings };
@@ -157,15 +164,15 @@ export async function execute(
   }
 
   const name = String(input.name ?? '');
+  const slug = String(input.slug ?? '');
   const description = String(input.description ?? '');
   const html = String(input.html ?? '');
 
-  const { error, warnings } = validate(name, html);
+  const { error, warnings } = validate(name, slug, html);
   if (error) {
     return error;
   }
 
-  const slug = `${slugify(name)}-${Math.random().toString(36).slice(2, 8)}`;
   const relPath = `${WIREFRAMES_DIR}/${slug}.html`;
   const content = [
     '---',
@@ -177,6 +184,10 @@ export async function execute(
   ].join('\n');
 
   await mkdir(join(PROJECT_ROOT, WIREFRAMES_DIR), { recursive: true });
+  const existed = await stat(join(PROJECT_ROOT, relPath)).then(
+    () => true,
+    () => false,
+  );
   await writeFile(join(PROJECT_ROOT, relPath), content, 'utf8');
 
   onLog?.(`Wrote ${relPath}, mirroring for preview...`);
@@ -186,7 +197,7 @@ export async function execute(
   }
 
   const lines = [
-    `Created wireframe "${singleLine(name)}" at ${relPath}.`,
+    `${existed ? 'Revised' : 'Created'} wireframe "${singleLine(name)}" at ${relPath}.${existed ? ' Existing references to this path now show the new version.' : ''}`,
     `Reference it in your response and in specs with exactly: ![${singleLine(name)}](${relPath})`,
   ];
   if (!mirror.ok) {
