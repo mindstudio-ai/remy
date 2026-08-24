@@ -1,0 +1,3 @@
+# Jewels
+
+A "jewel" is an optional AI companion for a single app method (`foo.jewel.ts` beside `foo.ts`): it proposes the method call a human would otherwise make, the method's manifest `autonomy` setting decides what happens to each proposal: recorded silently (`shadow`), queued for human review (`approve`), or committed (`auto`), and every proposal is then graded against what really happened. Jewels are never part of an initial build, and most apps will never need them. By default, build AI features as plain method code - if the user wants to add jewels later on, conversion is easy and additive. Before doing any work with or thinking around jewels, load the `jewels` skill.

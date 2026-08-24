@@ -95,6 +95,11 @@ export interface HeadlessOptions {
 
 const EXTERNAL_TOOL_TIMEOUT_MS = 300_000; // 5 minutes
 
+// Methods and jewels can be task loops — match the sandbox worker's 30-min
+// HANDLER_TIMEOUT rather than cutting them off at the generic 5 minutes.
+const LONG_RUNNING_TOOLS = new Set(['runMethod', 'testJewel']);
+const LONG_RUNNING_TOOL_TIMEOUT_MS = 1_800_000; // 30 minutes
+
 // Tools that wait on user input — no timeout
 const USER_FACING_TOOLS = new Set([
   'promptUser',
@@ -652,14 +657,17 @@ export class HeadlessSession {
     }
 
     const shouldTimeout = !USER_FACING_TOOLS.has(name);
+    const timeoutMs = LONG_RUNNING_TOOLS.has(name)
+      ? LONG_RUNNING_TOOL_TIMEOUT_MS
+      : EXTERNAL_TOOL_TIMEOUT_MS;
     return new Promise<string>((resolve) => {
       const timeout = shouldTimeout
         ? setTimeout(() => {
             this.pendingTools.delete(id);
             resolve(
-              'Error: Tool timed out — no response from the app environment after 5 minutes.',
+              `Error: Tool timed out — no response from the app environment after ${Math.round(timeoutMs / 60_000)} minutes.`,
             );
-          }, EXTERNAL_TOOL_TIMEOUT_MS)
+          }, timeoutMs)
         : undefined;
 
       this.pendingTools.set(id, {

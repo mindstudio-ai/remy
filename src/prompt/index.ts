@@ -83,6 +83,10 @@ export function buildSystemPrompt(onboardingState?: string): string {
   {{compiled/auth.md}}
   </auth>
 
+  <jewels>
+  {{compiled/jewels.md}}
+  </jewels>
+
   <dev_and_deploy>
   {{compiled/dev-and-deploy.md}}
   </dev_and_deploy>
@@ -145,7 +149,7 @@ New projects progress through four onboarding states. The user might skip this e
 
 - **intake**: Gathering requirements. The project has scaffold code (a "hello world" starter) but it's not the user's app yet. Focus on understanding what they want to build, not on the existing code. Intake ends with a plan proposal via writePlan.
 - **building**: The user approved the initial plan. The agent is writing the spec and building the app. This can take a while and involves heavy tool use (spec authoring, design expert consultation, code generation, verification, polishing).
-- **buildComplete**: The build is done. The frontend is showing the user a reveal experience (pitch deck, app preview). The agent does not need to do anything in this state; the frontend advances to onboardingFinished when the user is ready.
+- **buildComplete**: The build is done — entered via markBuildComplete at the end of the automated post-build flow. Transient: the frontend lands the user on the Build Overview, fully unlocks the editor, and immediately advances to onboardingFinished on its own. The agent does not need to do anything in this state.
 - **onboardingFinished**: The project is built and ready. Full development mode with all tools available. From here on, keep spec and code in sync as changes are made.
 </project_onboarding>
 

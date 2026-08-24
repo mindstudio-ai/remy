@@ -113,7 +113,7 @@ import { writePlanTool } from './spec/writePlan.js';
 import { updatePlanStatusTool } from './spec/updatePlanStatus.js';
 
 // General tools
-import { setProjectOnboardingStateTool } from './common/setProjectOnboardingState.js';
+import { markBuildCompleteTool } from './common/markBuildComplete.js';
 import { promptUserTool } from './common/promptUser.js';
 import { confirmDestructiveActionTool } from './common/confirmDestructiveAction.js';
 import { askMindStudioSdkTool } from '../subagents/sdkConsultant/index.js';
@@ -136,6 +136,7 @@ import { lspDiagnosticsTool } from './code/lspDiagnostics.js';
 import { restartProcessTool } from './code/restartProcess.js';
 import { runScenarioTool } from './code/runScenario.js';
 import { runMethodTool } from './code/runMethod.js';
+import { testJewelTool } from './code/testJewel.js';
 import { queryDatabaseTool } from './code/queryDatabase.js';
 import { screenshotTool } from './code/screenshot.js';
 import { browserAutomationTool } from '../subagents/browserAutomation/index.js';
@@ -152,7 +153,7 @@ import { buildOverviewTool } from './spec/writeBuildOverview.js';
  * sharing across users (tools are the first cache prefix segment). */
 const ALL_TOOLS: Tool[] = [
   // Common
-  setProjectOnboardingStateTool,
+  markBuildCompleteTool,
   promptUserTool,
   confirmDestructiveActionTool,
   askMindStudioSdkTool,
@@ -195,6 +196,7 @@ const ALL_TOOLS: Tool[] = [
   // Appended rather than grouped: position is part of the cache prefix, so a
   // new tool goes at the end to leave every existing session's prefix intact.
   loadSkillTool,
+  testJewelTool,
 ];
 
 /**

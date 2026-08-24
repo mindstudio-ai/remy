@@ -77,11 +77,12 @@ function getToolCalls(
 // Tools where the result comes from outside (sandbox/user), not local execution.
 const EXTERNAL_TOOLS = new Set([
   'promptUser',
-  'setProjectOnboardingState',
+  'markBuildComplete',
   'presentPublishPlan',
   'confirmDestructiveAction',
   'runScenario',
   'runMethod',
+  'testJewel',
   'queryDatabase',
   'browserCommand',
   'setProjectMetadata',
@@ -277,7 +278,7 @@ export async function runTurn(params: {
   // Tool-call loop: keep going until the model stops requesting tools
   // Internal tools that are invisible to the user — exclude from status labels
   const STATUS_EXCLUDED_TOOLS = new Set([
-    'setProjectOnboardingState',
+    'markBuildComplete',
     'setProjectMetadata',
     'editsFinished',
   ]);

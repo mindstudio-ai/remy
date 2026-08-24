@@ -229,6 +229,10 @@ export async function enrichRestaurant(input: { id: string; name: string }) {
 
 This works because the execution environment persists between requests. The un-awaited promise continues after the method returns. DB, auth, and SDK all work normally in the background chain. For critical workflows, write a "pending" record before firing so incomplete tasks can be detected and retried.
 
+## Jewels
+
+A method can optionally have a jewel (`foo.jewel.ts`) — an AI companion that proposes the method's input, routed by the manifest's `autonomy` setting. See the jewels section of this prompt for when they apply; load the `jewels` skill before writing one.
+
 ## Shared Helpers
 
 Code shared between methods goes in `dist/methods/src/common/`. Helpers are not listed in the manifest — they're internal, imported by methods but not directly invocable.
