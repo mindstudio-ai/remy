@@ -54,7 +54,7 @@ In `mindstudio.json`:
 | `description` | What state this scenario creates |
 | `path` | Path to the TypeScript file |
 | `export` | Named export (the async function) |
-| `roles` | Roles to impersonate after seeding |
+| `roles` | Roles assigned to the dev test user after seeding (requires app auth) |
 
 ---
 
@@ -157,14 +157,14 @@ POST /_internal/v2/apps/{appId}/dev/manage/token
 
 The CLI gets a fresh callback token scoped to the dev release, then transpiles and executes the scenario file in a child process with `CALLBACK_TOKEN` set. The SDK's `db.push()` calls route through the token to the correct dev database.
 
-### 3. Impersonate
+### 3. Assign roles to the test user
 
 ```
-POST /_internal/v2/apps/{appId}/dev/manage/impersonate
-Body: { "roles": ["ap"] }
+POST /_internal/v2/apps/{appId}/dev/create-auth-session
+Body: { "email": "remy@mindstudio.ai", "roles": ["ap"] }
 ```
 
-Sets the role override from the scenario's `roles` field. The app now renders from the AP user's perspective.
+Assigns the scenario's `roles` to the dev test user — a real write to that user's row (requires app auth). Signing in as the test account now shows the app from the AP user's perspective.
 
 ---
 
@@ -185,8 +185,8 @@ Select Scenario
 After running:
 ```
 ✓ Scenario "AP: Overdue Invoices" applied
-  Reset database, seeded data, impersonating: ap
-  Refresh your browser to see the new state.
+  Reset database, seeded data, test user roles: ap
+  Sign in as the test account to see the new state.
 ```
 
 ### Headless Mode

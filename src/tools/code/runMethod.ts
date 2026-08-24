@@ -28,13 +28,13 @@ export const runMethodTool: Tool = {
         userId: {
           type: 'string',
           description:
-            'Optional. Run the method as a specific user. Pass "testUser" to auto-auth as the default test user (the sandbox handles user creation/lookup — no scenario setup needed); works for email-code, sms-code, and "Sign in with Remy" apps (for sign-in-with-remy apps it resolves to the developer\'s own delegated identity rather than the test user). Or pass a real user ID from scenario-seeded data for a specific user. Overrides session-level impersonation for this call only.',
+            'Optional. Run the method as a specific user. Pass "testUser" to auto-auth as the default test user (the sandbox handles user creation/lookup — no scenario setup needed); works for email-code, sms-code, and "Sign in with Remy" apps (for sign-in-with-remy apps it resolves to the developer\'s own delegated identity rather than the test user). Or pass a real user ID from scenario-seeded data for a specific user.',
         },
         roles: {
           type: 'array',
           items: { type: 'string' },
           description:
-            'Optional. Role names for this request (e.g. ["admin"]). Combine with `userId` to test a specific role, or use alone to test role-gated logic without a full identity. Overrides session-level impersonation for this call only.',
+            'Optional. Role names for this request (e.g. ["admin"]). For auth-enabled apps, roles without a userId run as the dev test user holding exactly these roles — a real user row, so `auth.userId` and `requireRole` behave like production. For apps without auth, roles attach to an anonymous call. Applies to this call only.',
         },
       },
       required: ['method'],

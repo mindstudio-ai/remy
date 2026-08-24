@@ -174,16 +174,16 @@ See [Scenarios](08_scenarios.md).
 
 ---
 
-## Impersonation
+## Test User Roles
 
-Test your app from different users' perspectives:
+Test your app from different users' perspectives by setting the dev test user's roles — a real write to that user's row via the platform:
 
 ```
-POST /dev/manage/impersonate
-Body: { "roles": ["admin"] }
+POST /_internal/v2/apps/{appId}/dev/create-auth-session
+Body: { "email": "remy@mindstudio.ai", "roles": ["admin"] }
 ```
 
-Subsequent method executions use the overridden roles. Refresh the browser to see the app from the new perspective. Clear with `{ "roles": [] }`.
+Sign in to the preview as the test account (the dev sign-in helper auto-fills it) to see the app from those roles' perspective. The roles persist on the user's row until changed; pass `"roles": []` to remove them all.
 
 ---
 

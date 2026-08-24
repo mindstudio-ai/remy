@@ -60,10 +60,13 @@ export async function runBrowserAutomation(
     // unavailable the sub-agent reports the run inconclusive when it first tries
     // a command, so don't fail the run on the reset.
     try {
+      // 25s > the sidecar's own 20s bound — each layer of the timeout ladder
+      // must be strictly slower than the one it wraps, so the tunnel's real
+      // error surfaces instead of an opaque abort here.
       await sidecarRequest(
         '/set-viewport',
         { mode: 'default' },
-        { timeout: 20000 },
+        { timeout: 25000 },
       );
     } catch {
       // Non-fatal — proceed with the run regardless.
@@ -84,13 +87,14 @@ export async function runBrowserAutomation(
       executeTool: async (name, _input, _toolCallId, onLog) => {
         if (name === 'setupBrowser') {
           try {
+            // 20s > the sidecar's own 15s bound (timeout ladder — see above).
             const result = await sidecarRequest(
               '/setup-browser',
               {
                 auth: _input.auth,
                 path: _input.path,
               },
-              { timeout: 15000 },
+              { timeout: 20000 },
             );
             return JSON.stringify(result);
           } catch (err: any) {

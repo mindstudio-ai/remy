@@ -358,23 +358,18 @@ Agent and voice interfaces additionally declare auth **in their config** — a r
 
 ---
 
-## Impersonation (Dev Mode)
+## Test User Roles (Dev Mode)
 
-During development, impersonate any role to test role-based behavior:
-
-```
-POST /dev/manage/impersonate
-Body: { "roles": ["ap"] }
-```
-
-This sets a role override on the dev session. Subsequent method executions use the overridden roles. Clear impersonation:
+During development, test role-based behavior by assigning roles to the dev test user (`remy@mindstudio.ai` — the account the preview's sign-in helper auto-fills). This is a real write to the user's row, so `auth.userId`, `requireRole`, and role lookups behave exactly as in production:
 
 ```
-POST /dev/manage/impersonate
-Body: { "roles": [] }
+POST /_internal/v2/apps/{appId}/dev/create-auth-session
+Body: { "email": "remy@mindstudio.ai", "roles": ["ap"] }
 ```
 
-Scenarios set impersonation automatically. Each scenario declares which roles to impersonate after seeding. See [Scenarios](08_scenarios.md).
+Sign in as the test account to see the app from that role's perspective. Roles persist on the row until changed; pass `"roles": []` to remove them all.
+
+Scenarios assign roles automatically: each scenario declares which roles the test user gets after seeding. See [Scenarios](08_scenarios.md).
 
 ---
 
@@ -420,4 +415,4 @@ Apps without `auth` in the manifest use anonymous guest sessions. No login, no u
    {isAdmin && <DeleteButton />}
    ```
 
-6. **Test in dev** via impersonation or scenarios
+6. **Test in dev** by signing in as the test user, with roles set via scenarios or the Roles column
