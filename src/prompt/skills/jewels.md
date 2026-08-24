@@ -224,10 +224,13 @@ The wiring itself is two manifest lines on the method's entry:
 ```
 
 `tuning` (optional) is the training recipe for the jewel's own model. Every knob has a
-platform default and most jewels never set any: `windowDays` (how many days of ledger
-history to train on; default all history), `epochs` (1-10, default 3), `rank` (LoRA
-rank, 4-64, default 16), `learningRate` (default 5e-5). It requires `jewel`, and it
-rides the release: changing a knob is a commit + deploy before the next training run.
+platform default and most jewels never set any: `base` (which model to train — a slug
+from the platform's small menu; `qwen3.5-4b` is the default, `qwen3.5-9b` and
+`ministral-3-8b` are the larger options, and the default is the right choice unless a
+report shows it falling short), `windowDays` (how many days of ledger history to train
+on; default all history), `epochs` (1-10, default 3), `rank` (LoRA rank, 4-64, default
+16), `learningRate` (default 5e-5). It requires `jewel`, and it rides the release:
+changing a knob is a commit + deploy before the next training run.
 
 Once a method has accumulated graded pairs, train from the prod CLI:
 `mindstudio-prod jewels train <methodId>` (see `--help`). The dataset report says
