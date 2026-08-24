@@ -11,7 +11,7 @@ V2Apps/
   index.ts           — orchestrator (imports + calls all sub-modules)
   apps.ts            — app CRUD, rebuild, file access
   methods.ts         — method invocation, db/query, webhooks
-  dashboard.ts       — dashboard, load-web, release detail
+  dashboard.ts       — dashboard, release detail
   devSession.ts      — dev session management (start, poll, result, sync, impersonate, token)
   sandbox.ts         — sandbox editor lifecycle (start, restart, reset, status, keepalive)
   roles.ts           — role CRUD, assignments
