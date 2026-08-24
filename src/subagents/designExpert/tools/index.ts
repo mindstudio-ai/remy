@@ -18,6 +18,7 @@ import * as editImages from './images/editImages.js';
 import * as renderImage from './images/renderImage.js';
 import * as polishCopy from './polishCopy.js';
 import * as loadSkill from './loadSkill.js';
+import * as createWireframe from './createWireframe.js';
 import {
   screenshotDefinition,
   executeScreenshot,
@@ -37,6 +38,8 @@ const tools = {
   renderImage,
   polishCopy,
   loadSkill,
+  // Appended last: tool order is part of the subagent's prompt-cache prefix.
+  createWireframe,
 } as const;
 
 export const DESIGN_EXPERT_TOOLS: ToolDefinition[] = [
