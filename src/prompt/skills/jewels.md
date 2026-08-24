@@ -1,187 +1,63 @@
 ---
 name: Jewels
-what: A shadow companion for an app method — `foo.jewel.ts` beside `foo.ts` — that learns the job from how people use the app. It proposes the method input a careful teammate would submit (or abstains), is graded against what the human actually did, and climbs an autonomy ladder (shadow → approve → auto) on agreement evidence. Arbitrary TypeScript, deterministic guardrails plus a task agent for judgment. This is how an app graduates from being used to doing the work, and it makes every day of ordinary use an investment.
-when: Before writing any `.jewel.ts` file, setting a method's `autonomy` in the manifest, or writing a custom `grade` — and whenever the user wants a verb to start running itself.
+what: An optional AI companion for a single app method, `foo.jewel.ts` beside `foo.ts`. It proposes the method call a human would otherwise make; the method's manifest `autonomy` decides what happens to each proposal (recorded silently, queued for review, or committed), and every proposal is graded against what really happened. Arbitrary TypeScript (typically deterministic guardrails plus task agents for judgment).
+when: Before writing any `.jewel.ts` file, setting a method's `autonomy` in the manifest, writing a custom `grade`, calling `mindstudio.jewels.*`, or discussing automating one of the app's judgment calls with the user.
 ---
 
 # Jewels (`defineJewel`)
 
-A teammate opens the error inbox on Monday morning and triages twenty issues: this one's critical, that one's known noise, these two are the same bug. Every one of those clicks is a demonstration. A jewel is the thing that watches — on every human invocation of the method it shadows, it independently works out what it would have done, and the (proposed, actual) pair lands in a ledger. When the numbers say it triages the queue the way the team does, the team promotes the verb: first to drafting for approval, then to acting on its own. Autonomy is earned one method at a time, with evidence.
+## What & When
 
-```typescript
-import { defineJewel } from '@mindstudio-ai/agent';
-```
+A jewel attaches to exactly one method and proposes the input a human user would otherwise submit. It is for **decisions**: method invocations someone would otherwise have to make. If the AI's output is content the app displays (a summary, an extraction, a chart caption), that's plain model code inside a method (`runTask` in the body), not a jewel. A jewel exists when there's an accountable disposition to record, review, or grade.
 
-## The Contract
+Five decision shapes cover the space. Any recurring human decision in any app is one of these:
 
-**The jewel proposes; the method applies.** A jewel's output type is the shadowed method's input type. It never writes anything itself — auth checks, validation, and invariants stay in the method, so the jewel walks through the same door as every human and every interface, and it cannot do anything the app didn't already allow.
+- **Choose one of N**: route a ticket, assign a lead, categorize an expense. Closed enum output.
+- **Set a value under policy**: price a job, size a discount, set a reorder quantity. Scalar judgment.
+- **Gate**: approve a refund, advance a candidate, accept a listing. Binary plus reasoning.
+- **Match / reference-pick**: flag a duplicate, pair a reviewer to a submission. Candidate-id enum; abstention dominates, which is correct.
+- **Draft outbound**: a reply, a quote, an offer. Generative, checklist-graded, and the natural home of approve mode.
 
-Three functions, one call. Declare `subject` before `propose` — the subject type is inferred from the projection's return and flows into `propose`'s parameter:
+Not a fit:
 
-- **`subject`** — a typed projection from the method's input to what identifies the work (`{ issueId }`). Never include the human's decision fields: the jewel exists to produce the decision, so handing it the answer would poison every pair.
-- **`propose`** — arbitrary TypeScript that returns `{ input: MethodInput | null, reasoning: string }`. `input: null` is abstention — a correct, graded outcome, not a failure. `reasoning` is written to the ledger and is most valuable on abstention.
-- **`grade`** (optional) — scores `{ proposed, actual }` and returns `{ verdict: 'agree' | 'disagree' | 'skip', notes? }`. Omit it for deep-equal on the method input. `skip` means "this pair isn't a graded moment."
+- **Reads** (`get-*`, `list-*`): no decision to learn.
+- **Machine-triggered ingest verbs** (webhook/cron/sync handlers): no human demonstration. Ingest *code* may still hand a decision moment to a judgment verb via `mindstudio.jewels.propose` (see Arrival Triggers).
+- **Deterministic mutations**: if the correct input is computable, compute it in the method. A jewel learns judgment, not arithmetic.
+- **AI-as-a-feature**: a method that needs a model as part of its own work just calls `runTask` in its body.
+- **Verbs that should stay human as policy**: declare `"autonomy": "manual"` in the manifest so the choice is recorded.
+
+One jewel per judgment. If a jewel would need to take two actions, the methods are shaped wrong; fix the verbs.
+
+Never include a jewel in an initial build, and don't bring them up while an app is young. Most users will never want one; a few will care a lot. The default posture:
+
+- **Build AI features plainly.** A drafting feature is a method that calls a model and returns text, with no jewel machinery anywhere. Converting it to a jewel later is additive (a `.jewel.ts` beside the method, an `autonomy` line in the manifest); nothing about the plain version is thrown away.
+- **Jewels enter when the user asks** about automating a judgment the app already handles, or picks an automation item off the roadmap. Once an app is solid and a judgment verb sees real use, a benefit-phrased automation item may belong on the roadmap; that is the only proactive channel.
+- **When the user engages, have the conversation first**: what it does in their terms, what the levels mean, what evidence looks like. Then start with exactly one verb.
+
+The examples in this reference are deliberately generic (`categorizeRecord`, `recordId`). Map the shapes onto this app's own judgments; the constructs are identical in every domain.
+
+## Method Shape Comes First
+
+A jewel is only as learnable as the verb it shadows. These four habits are also why converting a plain feature later is cheap:
+
+- **One judgment, one method.** The decision lives in one verb, never split across near-identical mutations. Keep the judgment verb free of housekeeping (read toggles and self-assignment live in a separate edit method) so the default grade tells the whole story.
+- **Subject and decision separable in the input.** The id of the thing being judged is the subject; the fields being set are the decision. A jewel only ever receives the subject.
+- **Event lines for decisions.** Status changes and reassignments append to an activity record; history that reads as decisions is the precedent a jewel cites.
+- **Judgment moments are states; verbs are transitions.** When several jeweled verbs are alternatives on the same subject (a new record gets categorized, merged, or archived, never two of those), don't add an orchestrator to encode the exclusivity. Make it structural: the alternatives compete for one explicit status field, each method's precondition consumes it (`status === 'new'`), and each jewel's matching guardrail (`if (status !== 'new') abstain`) is the same precondition expressed as abstention. The first committed transition wins, every other verb fails closed on its own check, and each jewel answers one clean question ("would my verb apply here?") with abstention doing the routing. If two verbs can't be separated by abstention discipline, that's the diagnostic for a missing union verb: introduce the method whose input carries the real decision (`{ action: 'categorize' | 'merge' | 'archive', ... }`) and jewel that instead.
+
+## The API
+
+**The jewel proposes; the method applies.** A jewel's output type is the shadowed method's input type. It never writes anything itself. Auth checks, validation, and invariants stay in the method, so the jewel walks through the same door as every human and every interface and cannot do anything the app didn't already allow.
+
+Three functions, one call. Declare `subject` before `propose`: the subject type is inferred from the projection's return and flows into `propose`'s parameter.
+
+- **`subject`**: a typed projection from the method's input to what identifies the work (`{ recordId }`). Never include the human's decision fields; the jewel exists to produce the decision, so handing it the answer would poison every pair.
+- **`propose`**: arbitrary TypeScript that returns `{ input: MethodInput | null, reasoning: string }`. `input: null` is abstention, a correct and graded outcome. `reasoning` is written to the ledger and is most valuable on abstention.
+- **`grade`** (optional): scores `{ proposed, actual }` and returns `{ verdict: 'agree' | 'disagree' | 'skip', notes? }`. Omit it for deep-equal on the method input. `skip` means "this pair isn't a graded moment."
 
 The jewel runs as its own platform-managed user with a normal session, so `auth.userId` is set, `requireUser()`-style helpers pass unchanged, and role checks in methods apply to it exactly as they do to humans.
 
-## When to Use
-
-- **The method is a recurring judgment call**: classify, prioritize, route, assign, dedupe, draft. High-frequency verbs with visible human decisions are the best first jewels — the pairs accumulate fast.
-- **The user wants automation they can trust**: shadow mode produces the "would have agreed 84% of the time" evidence before anything changes behavior.
-- **Whole-method autonomy**, not a feature inside a method — if the method itself should call a model as part of its normal work, that's just a `runTask()` in the method body, not a jewel.
-
-## When NOT to Use
-
-- **Reads** (`get-*`, `list-*`) — there is no decision to learn.
-- **Machine-triggered ingest** (webhooks, cron, sync) — no human demonstration to shadow.
-- **Deterministic mutations** — if the correct input is computable, compute it in the method. A jewel learns judgment, not arithmetic.
-- **Verbs that should stay human as policy** — declare `"autonomy": "manual"` in the manifest. That's a statement, not an omission.
-
-## Usage
-
-The classification jewel for an issue-triage method, showing the full shape — deterministic guardrails before any model call, context gathering through the app's own methods, a runtime-built enum so the agent can't invent values, fail-closed abstention, and a grade that only scores the fields the human actually decided:
-
-```typescript
-// dist/methods/src/updateIssue.jewel.ts
-import { defineJewel, mindstudio } from '@mindstudio-ai/agent';
-import { updateIssue } from './updateIssue';
-import { liveIssuesQuery, resolveIssue } from './common/issues';
-
-export default defineJewel(updateIssue, {
-  // Projection: what the human was looking at, never what they decided.
-  subject: ({ issueId }) => ({ issueId }),
-
-  propose: async ({ issueId }) => {
-    // Deterministic guardrails first — no model call for the easy outs.
-    const resolved = await resolveIssue(issueId);
-    if (!resolved) return { input: null, reasoning: 'Issue no longer exists.' };
-    if (resolved.issue.status !== 'new') {
-      return { input: null, reasoning: 'Already triaged; first classification is the only moment this jewel handles.' };
-    }
-
-    const live = await liveIssuesQuery();
-    const knownServices = [...new Set(live.map((i) => i.service).filter((s): s is string => !!s))];
-
-    try {
-      const task = await mindstudio.runTask({
-        prompt: TRIAGE_PROMPT, // plain-prose policy: how this team judges severity, when to ignore, when to abstain
-        input: { issue: shapeForModel(resolved.issue), knownServices },
-        tools: [
-          { appMethod: 'list-issues', description: 'Search for precedent: similar issues and how the team classified them.' },
-          { appMethod: 'get-issue', description: 'Full detail for one comparable issue.' },
-        ],
-        outputSchema: {
-          type: 'object',
-          properties: {
-            action: { enum: ['classify', 'ignore', 'abstain'] },
-            severity: { enum: ['critical', 'high', 'normal', 'low', null] },
-            service: { enum: [...knownServices, null] }, // runtime enum: it cannot invent a service
-            rationale: { type: 'string' },
-          },
-          required: ['action', 'severity', 'service', 'rationale'],
-        },
-        model: 'claude-5-sonnet', // ask askMindStudioSdk — don't copy this one blind
-        maxTurns: 8,
-      });
-
-      const d = task.output;
-      if (d.action === 'abstain') return { input: null, reasoning: d.rationale };
-      if (d.action === 'ignore') {
-        return { input: { issueId, status: 'ignored' as const }, reasoning: d.rationale };
-      }
-      if (!d.severity) return { input: null, reasoning: `Classified without a severity. ${d.rationale}` };
-      return {
-        input: { issueId, status: 'triaged' as const, severity: d.severity, service: d.service },
-        reasoning: d.rationale,
-      };
-    } catch (err) {
-      // Couldn't produce conforming output — abstain with the evidence. Fail closed.
-      return { input: null, reasoning: `Task agent failed: ${err instanceof Error ? err.message : String(err)}` };
-    }
-  },
-
-  // Grade only what the human decided; a read-toggle isn't a triage moment.
-  grade: ({ proposed, actual }) => {
-    const keys = Object.keys(actual) as (keyof typeof actual)[];
-    const decided = keys.filter((k) => (k === 'status' || k === 'severity' || k === 'service') && actual[k] !== undefined);
-    if (decided.length === 0) return { verdict: 'skip', notes: 'Housekeeping touch, not a classification.' };
-    if (!proposed) return { verdict: 'disagree', notes: 'Abstained where the human classified.' };
-    const misses = decided.filter((k) => proposed[k] !== actual[k]);
-    return misses.length === 0
-      ? { verdict: 'agree' }
-      : { verdict: 'disagree', notes: misses.map((k) => `${k}: proposed ${proposed[k]}, human ${actual[k]}`).join('; ') };
-  },
-});
-```
-
-## Writing `propose`
-
-- **Guardrails before judgment.** Handle the deterministic outs (gone, already handled, nothing to compare against) in plain code before any model call. Cheap, fast, and every guardrail is a documented abstention in the ledger.
-- **Context is plain imports plus tools.** Prefetch what every run needs (the row, its history, the inventory of valid values) into the task input; expose the app's own read methods as tools for what the agent should decide to look up (precedent, comparables). Tool calls are recorded with the pair, so the jewel's investigation is part of the training data.
-- **Use `runTask` with `outputSchema` for the judgment.** Runtime-built enums are the power move: a candidate-id enum means the agent structurally cannot reference a row that doesn't exist; a known-values enum means it cannot invent a category. Put `null` in the enum (or a type array) so abstention is a first-class output, not a formatting accident.
-- **Catch everything; abstain on failure.** A jewel that can't decide returns `{ input: null, reasoning }` with the evidence. It never throws to say "I don't know."
-- **Propose a subset when that's the honest scope.** A triage jewel that never sets `assigneeId` and never proposes `resolved` (it can't know a fix shipped) is expressing policy through its output shape. Scope is part of the design.
-- **Reasoning is audit-log prose.** Two or three plain sentences a teammate would find useful — name the evidence (the matching culprit, the precedent, the volume). No headers, no bullets, no emojis.
-
-## Grading
-
-Three modes, matched to the verb's shape:
-
-- **Default (omit `grade`)** — deep-equal on the method input. Right when the whole input is the decision.
-- **Field-scoped** — compare only the fields the human decided; return `skip` for housekeeping touches (the example above). Right for methods that mix judgment with maintenance.
-- **Checklist judge** — for generative verbs (drafts, notes), equality is meaningless; grade with a rubric of booleans, never a preference score. `grade` is arbitrary TS and may be async, so it can call a model:
-
-```typescript
-grade: async ({ proposed, actual }) => {
-  if (!proposed) return { verdict: 'disagree', notes: 'Abstained where the human wrote one.' };
-  try {
-    const rubric = await mindstudio.runTask({
-      prompt: 'Judge whether two notes about the same issue reflect the same understanding. Grade strictly on content, not style.',
-      input: { noteA: proposed.body, noteB: actual.body },
-      tools: [],
-      outputSchema: {
-        type: 'object',
-        properties: {
-          sameDiagnosis: { type: 'boolean', description: 'Both point at the same root cause, or neither names one.' },
-          noContradiction: { type: 'boolean', description: 'NOTE A asserts nothing NOTE B contradicts.' },
-        },
-        required: ['sameDiagnosis', 'noContradiction'],
-      },
-      model: 'claude-5-sonnet',
-      maxTurns: 2,
-    });
-    const c = rubric.output;
-    return c.sameDiagnosis && c.noContradiction
-      ? { verdict: 'agree' }
-      : { verdict: 'disagree', notes: `Failed: ${[!c.sameDiagnosis && 'sameDiagnosis', !c.noContradiction && 'noContradiction'].filter(Boolean).join(', ')}` };
-  } catch (err) {
-    return { verdict: 'skip', notes: `Judge failed: ${err instanceof Error ? err.message : String(err)}` };
-  }
-},
-```
-
-`actual` is always present in `grade` — grading only happens when a human acted. `proposed` is `null` when the jewel abstained; whether that's a disagreement is the grade's call (abstaining where the human also did nothing is agreement).
-
-## Manifest Wiring
-
-The method's manifest entry carries the autonomy level and the jewel pointer:
-
-```jsonc
-{
-  "id": "update-issue",
-  "name": "Update Issue",
-  "path": "dist/methods/src/updateIssue.ts",
-  "export": "updateIssue",
-  "autonomy": "shadow",
-  "jewel": { "path": "dist/methods/src/updateIssue.jewel.ts", "export": "default" }
-}
-```
-
-Four levels: `manual` (no jewel ever — a policy statement), `shadow` (runs silently on every human invocation, pairs recorded, nothing visible), `approve` (jewel drafts, a human accepts/edits/rejects — the edit is the richest training signal there is), `auto` (the jewel acts under its own identity). **Start every new jewel at `shadow`.** Raising the level is a reviewed manifest diff justified by agreement evidence, and effects follow the mode: spied in shadow, applied at acceptance in approve, real in auto.
-
-## Execution Model
-
-`defineJewel` returns a callable executor with the config attached (`kind`, `method`, `subject`, `propose`, `grade`). The platform invokes it like any method export, with exactly one of two param shapes: `{ humanInput }` (a shadow run — the subject is derived via the projection, and `humanInput` doubles as ground truth) or `{ subject }` (an eval run against a scenario world — no human action, so the record is ungraded). It resolves to a versioned pair record:
+`defineJewel` returns a callable executor with the config attached (`kind`, `method`, `subject`, `propose`, `grade`). The platform invokes it like any method export, with exactly one of two param shapes: `{ humanInput }` (a shadow run: the subject is derived via the projection, and `humanInput` doubles as ground truth) or `{ subject }` (an eval run: no human action, so the record is ungraded). It resolves to a versioned pair record:
 
 ```typescript
 interface JewelPairRecord {
@@ -201,21 +77,220 @@ interface JewelPairRecord {
 
 The executor never throws: a shadow run must never break anything. Your code failing inside `subject` or `propose` becomes the record's `error`; `grade` failing softens to verdict `skip`.
 
-Shadowing runs only on the deployed app — dev traffic never fires jewels (dev invocations are synthetic and would pollute the pair ledger).
+Shadowing runs only on the deployed app. Dev traffic never fires jewels; dev invocations are synthetic and would pollute the pair ledger.
+
+## Usage
+
+The skeleton: deterministic guardrails before any model call, context via the app's own methods, a runtime-built enum, and fail-closed abstention.
+
+```typescript
+// dist/methods/src/categorizeRecord.jewel.ts
+import { defineJewel, mindstudio } from '@mindstudio-ai/agent';
+import { categorizeRecord } from './categorizeRecord';
+import { getRecord, listCategories } from './common/records';
+
+export default defineJewel(categorizeRecord, {
+  // Projection: what the human was looking at, never what they decided.
+  subject: ({ recordId }) => ({ recordId }),
+
+  propose: async ({ recordId }) => {
+    // Deterministic outs first, as plain-code abstention; no model call needed.
+    const record = await getRecord(recordId);
+    if (!record || record.category) return { input: null, reasoning: 'Nothing to categorize.' };
+
+    const categories = (await listCategories()).map((c) => c.name);
+    try {
+      const task = await mindstudio.runTask({
+        prompt: CATEGORIZATION_POLICY, // operator-voice policy prose (see "Writing propose")
+        input: { record, categories },
+        tools: [{ appMethod: 'list-records', description: 'Find precedent: how comparable records were categorized.' }],
+        outputSchema: {
+          type: 'object',
+          properties: {
+            category: { enum: [...categories, null] }, // runtime enum: it cannot invent a category; null = abstain
+            rationale: { type: 'string' },
+          },
+          required: ['category', 'rationale'],
+        },
+        model: 'claude-5-sonnet', // ask askMindStudioSdk; don't copy this one blind
+        maxTurns: 6,
+      });
+      if (!task.output.category) return { input: null, reasoning: task.output.rationale };
+      return { input: { recordId, category: task.output.category }, reasoning: task.output.rationale };
+    } catch (err) {
+      // Couldn't produce conforming output; abstain with the evidence. Fail closed.
+      return { input: null, reasoning: `Task agent failed: ${err instanceof Error ? err.message : String(err)}` };
+    }
+  },
+  // No grade: the whole input is the decision, so default deep-equal is right.
+});
+```
+
+This is choose-one-of-N. The other shapes reuse the skeleton wholesale. What changes is the output schema (a number under policy, a boolean gate, a candidate-id enum, a drafted body) and the grading mode.
+
+## Writing `propose`
+
+To preserve signal integrity, the task prompt inside `propose` addresses the model as the responsible operator. It never mentions shadowing, jewels, mirrors, grading, or a human whose action it should match. Consulting precedent is fine; "look up how comparable records were categorized and follow the team's conventions" is what a real operator does.
+
+- **Keep propose effect-free.** In shadow runs the platform absorbs database reads/writes into a disposable mirror, and that is the ONLY thing it absorbs. Everything else a jewel's code does is real in every mode: an email sends, an HTTP POST posts, a file write persists. If a proposal's job seems to require causing an effect to decide, that's a design error. Gather evidence, propose the input, let the method act.
+- **Guardrails before judgment.** Handle the deterministic outs in plain code before any model call. Every guardrail is a documented abstention in the ledger.
+- **Context is plain imports plus tools.** Prefetch what every run needs (the row, its history, the inventory of valid values) into the task input; expose the app's own read methods as tools for what the agent should decide to look up (precedent, comparables). Tool calls are recorded with the pair.
+- **Use `runTask` with `outputSchema` for the judgment.** Build enums at runtime: a candidate-id enum means the agent structurally cannot reference a row that doesn't exist, and a known-values enum means it cannot invent a category. Put `null` in the enum so abstention is a first-class output rather than a formatting accident.
+- **Catch everything; abstain on failure.** A jewel that can't decide returns `{ input: null, reasoning }` with the evidence. It never throws to say "I don't know."
+- **Propose a subset when that's the honest scope.** A jewel that never sets `assigneeId` and never proposes `closed` (it can't know a fix shipped) is expressing policy through its output shape.
+- **Reasoning is audit-log prose.** Two or three plain sentences a teammate would find useful; name the evidence. No headers, bullets, or emojis.
+
+## Grading
+
+Three modes, matched to the verb's shape:
+
+- **Default (omit `grade`)**: deep-equal on the method input. Right when the whole input is the decision, the hallmark of a well-shaped transition verb.
+- **Field-scoped**: compare only the fields the human decided; return `skip` for housekeeping touches. For methods that must stay wide (judgment mixed with maintenance). A wide method that needs grade gymnastics is often a verb boundary that should be fixed instead:
+
+```typescript
+grade: ({ proposed, actual }) => {
+  const decided = (['status', 'priority', 'owner'] as const).filter((k) => actual[k] !== undefined);
+  if (decided.length === 0) return { verdict: 'skip', notes: 'Housekeeping touch, not a decision.' };
+  if (!proposed) return { verdict: 'disagree', notes: 'Abstained where the human decided.' };
+  const misses = decided.filter((k) => proposed[k] !== actual[k]);
+  return misses.length === 0
+    ? { verdict: 'agree' }
+    : { verdict: 'disagree', notes: misses.map((k) => `${k}: proposed ${proposed[k]}, human ${actual[k]}`).join('; ') };
+},
+```
+
+- **Checklist judge**: for generative verbs (drafts, notes), equality is meaningless; grade with a rubric of booleans, never a preference score. `grade` is arbitrary TS and may be async, so it can call a model:
+
+```typescript
+grade: async ({ proposed, actual }) => {
+  if (!proposed) return { verdict: 'disagree', notes: 'Abstained where the human wrote one.' };
+  try {
+    const rubric = await mindstudio.runTask({
+      prompt: 'Judge whether two drafts responding to the same item take the same action. Grade strictly on substance, not style.',
+      input: { draftA: proposed.body, draftB: actual.body },
+      tools: [],
+      outputSchema: {
+        type: 'object',
+        properties: {
+          sameResolution: { type: 'boolean', description: 'Both take the same substantive action (same resolution, same escalation, same answer), or neither does.' },
+          noContradiction: { type: 'boolean', description: 'DRAFT A asserts nothing DRAFT B contradicts.' },
+        },
+        required: ['sameResolution', 'noContradiction'],
+      },
+      model: 'claude-5-sonnet',
+      maxTurns: 2,
+    });
+    const c = rubric.output;
+    return c.sameResolution && c.noContradiction
+      ? { verdict: 'agree' }
+      : { verdict: 'disagree', notes: `Failed: ${[!c.sameResolution && 'sameResolution', !c.noContradiction && 'noContradiction'].filter(Boolean).join(', ')}` };
+  } catch (err) {
+    return { verdict: 'skip', notes: `Judge failed: ${err instanceof Error ? err.message : String(err)}` };
+  }
+},
+```
+
+`actual` is always present in `grade`; grading only happens when a human acted. `proposed` is `null` when the jewel abstained, and whether that's a disagreement is the grade's call (abstaining where the human also did nothing is agreement).
+
+## Autonomy
+
+Four levels: `manual` (no jewel ever; a policy statement), `shadow` (runs silently on every human invocation, pairs recorded, nothing visible), `approve` (jewel drafts, a human accepts, edits, or rejects; the edit is the richest training signal there is), `auto` (the jewel acts under its own identity).
+
+**Auto is the only level you earn with evidence. Shadow and approve are both safe starting points; pick by what the product is.** When the proposals themselves are the product (drafts for review), start at approve; it's often the permanent home. When the evidence is the product (an auto-bound verb), start at shadow. Raising to auto is a reviewed manifest diff justified by agreement numbers.
+
+**Choose approve by the verb's risk shape, not by default.** Reversible state-machine verbs (routing, classification; a mistake is a two-click correction) go shadow → auto with a `sampleRate` canary and skip approve, because a review queue on a high-agreement classifier adds work without adding safety. Approve belongs on irreversible or outward-facing verbs (send, publish, charge, refund): `sampleRate` is population-level risk control, and those verbs need per-instance gating, which is what approve is.
+
+`sampleRate` (optional, default 1) is the level's canary/cost dial: the fraction of eligible decision moments that receive the full autonomy treatment. At `shadow` it's a cost control: `0.25` shadows a quarter of invocations, and expected dashboard coverage drops to match. At higher levels the remainder shadow-records instead, so a ramp keeps measuring its control. Omit it unless the verb is hot enough that shadowing every invocation is a real cost.
+
+The wiring itself is two manifest lines on the method's entry:
+
+```jsonc
+{
+  "id": "categorize-record",
+  "name": "Categorize Record",
+  "path": "dist/methods/src/categorizeRecord.ts",
+  "export": "categorizeRecord",
+  "autonomy": "shadow",
+  "jewel": { "path": "dist/methods/src/categorizeRecord.jewel.ts", "export": "default" }
+}
+```
+
+## Arrival Triggers (`mindstudio.jewels.propose`)
+
+Invocation shadowing fires when a human acts. For decision moments the app detects itself (an ingest branch that lands a row in its pending state), hand the moment to the jewels from backend code:
+
+```typescript
+// In the ingest path, after a record lands in (or regresses back to) status 'new':
+mindstudio.waitUntil(proposeIntake(record.id));
+
+async function proposeIntake(recordId: string): Promise<void> {
+  // Priority is app code: dedupe dominates; a duplicate must never be categorized.
+  const dup = await mindstudio.jewels.propose(
+    'flag-duplicate', { sourceId: recordId }, { idempotencyKey: recordId });
+  if (dup.outcome !== 'committed') {
+    await mindstudio.jewels.propose(
+      'categorize-record', { recordId }, { idempotencyKey: recordId });
+  }
+}
+```
+
+The platform routes each proposal by the method's autonomy: `recorded` (shadow: the proposal waits in a ledger and is graded later against whatever the human eventually does, within the method's `attributionWindow`; if a human then invokes the method, their action grades the waiting proposal instead of firing a second run), `queued` (approve), `committed` (auto: the method ran; check it to short-circuit lower-priority verbs), `abstained`, `disabled` (no jewel or manual; returned, never thrown), `skipped`, `failed`, `pending`.
+
+Rules that matter:
+
+- **Always wrap the chain in `mindstudio.waitUntil(...)`**: each propose blocks for the jewel's run, and ingest must return immediately.
+- **Share one `idempotencyKey` across the moment's verbs** (usually the row's id). It has Stripe semantics (a replayed key returns the original outcome, so webhook retries are invisible), and the shared key is what lets a human action on one verb grade the sibling proposals cross-verb.
+- **The subject you pass must equal what the jewel's projection produces** from the method input (field-pick projections guarantee this); it's the join key between the arrival proposal and the human's later action.
+- **Order alternatives by priority and short-circuit on `committed`.** Exclusivity is enforced by the methods' state preconditions, not by this chain; ordering only saves wasted runs.
+- Propose only at real decision-moment births. Over-proposing costs a cheap guardrail abstention, but a moment that isn't row-backed (no pending state to consume) usually means the schema is missing a state.
+
+## Native Approval Flows (`jewels.queue`)
+
+For `approve`-mode methods, the review inbox belongs in the app, next to the work. Three pieces:
+
+```typescript
+// 1. Backend list method, gated with the APP'S reviewer role.
+export async function listPendingDrafts() {
+  auth.requireRole('reviewer');
+  return mindstudio.jewels.queue.list({ methodId: 'send-message' });
+}
+
+// 2. Frontend inbox UI renders items: subject, proposed input, reasoning.
+
+// 3. Backend resolve method: approve applies, dismiss records.
+export async function reviewDraft(input: {
+  itemId: string;
+  action: 'approve' | 'dismiss';
+  edited?: Record<string, unknown>;
+}) {
+  auth.requireRole('reviewer');
+  return mindstudio.jewels.queue.resolve(input.itemId, {
+    action: input.action,
+    ...(input.edited ? { input: input.edited } : {}),
+  });
+}
+```
+
+What makes this safe with no extra machinery:
+
+- **Approving applies the target method as the signed-in reviewer**: the effect belongs to the human who clicked, and the target method's own auth checks are the real gate on who may approve. Gate the wrapping list/resolve methods with the app's reviewer role as well.
+- **Let reviewers edit before approving**: pass the edited input. The platform captures proposed/edited/final with the pair; an accept/reject-only review UI leaves the most valuable training signal on the table.
+- **Dismissal is not consumption**: the decision moment stays open for other verbs (a dismissed draft doesn't block a later merge). Unresolved items expire at the method's `attributionWindow`, so there's no infinite backlog.
+- `propose` returns `queueItemId` on `queued`, so the app can badge its UI or notify its own way the moment a draft lands.
+
+Before the app has its own review UI (or when the user asks you to act), the same queue is reachable from `mindstudio-prod jewels queue` / `jewels resolve`; approving there applies the method as the user through the identical machinery.
 
 ## Verifying a Jewel: the `testJewel` Tool
 
-`testJewel` runs a jewel directly against an input you choose and returns the pair record inline. The method itself is never executed (no data changes) and nothing reaches the pair ledger — it's the authoring loop. The verification cycle:
+`testJewel` runs a jewel directly against an input you choose and returns the pair record inline. The method itself is never executed (no data changes) and nothing reaches the pair ledger; it's the authoring loop. The verification cycle:
 
-1. Seed a realistic world first (`runScenario`) — the jewel's `propose` reads real state, so it needs something to look at.
-2. Call `testJewel` with `humanInput` set to the exact input a human would have submitted: `{ method: "updateIssue", humanInput: { issueId: "...", status: "acknowledged", severity: "high" } }`. The jewel derives its subject from it, proposes, and grades against it — the record comes back with a verdict.
-3. Read the record: does `subject` contain what you projected (and nothing that leaks the answer)? Is `reasoning` grounded? Does the verdict match your expectation? A `pair.error` with phase `subject` or `propose` is your code throwing — fix and re-run.
+1. Seed a realistic world first (`runScenario`): the jewel's `propose` reads real state, so it needs something to look at.
+2. Call `testJewel` with `humanInput` set to the exact input a human would have submitted: `{ method: "categorizeRecord", humanInput: { recordId: "...", category: "..." } }`. The jewel derives its subject from it, proposes, and grades against it, and the record comes back with a verdict.
+3. Read the record: does `subject` contain what you projected (and nothing that leaks the answer)? Is `reasoning` grounded? Does the verdict match your expectation? A `pair.error` with phase `subject` or `propose` is your code throwing; fix and re-run.
 4. Repeat across a handful of inputs covering the method's decision space: a clear-cut case, an ambiguous one where abstention (`proposed: null`) is correct, and a housekeeping touch your `grade` should `skip`.
 
-For cases with no known right answer, pass `subject` instead of `humanInput` — an ungraded eval run (propose only). Useful for probing behavior on edge-case subjects before you have ground truth.
+For cases with no known right answer, pass `subject` instead of `humanInput` for an ungraded eval run (propose only). Useful for probing behavior on edge-case subjects before you have ground truth.
 
 Each run also lands in `.logs/requests.ndjson` as a `type: 'jewel'` record if you need the trail.
 
-## Choosing Which Methods to Jewel
-
-Reads and machine-triggered ingest are out by definition. Among the human verbs, favor the ones where pairs accumulate fastest and the decision is legible: classification first (closed outputs, exact grading), reference-picking second (dedupe/routing — abstention will dominate, which is correct), generative verbs last (checklist grading is real work). One jewel per judgment: if a jewel would need to take two actions, the methods are probably shaped wrong — fix the verbs, not the jewel.
+Once deployed, the prod-side view lives in `mindstudio-prod jewels` (run `--help` for commands): agreement stats, pair records, the approval queue, and `jewels dryrun`, the prod twin of `testJewel`. It runs the LIVE jewel against a real subject inside a disposable database mirror and records nothing.
