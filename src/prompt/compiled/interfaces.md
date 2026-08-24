@@ -93,21 +93,13 @@ The project uses `"jsx": "react-jsx"` (automatic JSX transform) — do not `impo
 
 On deploy, the platform runs `npm install && npm run build` in the web directory and hosts the output on CDN.
 
-Two serving conventions every web interface must follow:
-
-1. **Assets via `MS_ASSET_BASE_URL`.** The platform build sets this env var to a release-addressed CDN origin. Point the bundler's public path at it so asset URLs work on any host or mount path:
+Two serving conventions: set the bundler's public path from `MS_ASSET_BASE_URL` (platform-set at build, unset locally), and take the router basename from `platform.basePath` — don't hardcode root-absolute URLs in app code.
 
 ```ts
 // vite.config.ts
-export default defineConfig({
-  base: process.env.MS_ASSET_BASE_URL || '/',
-  // ...
-});
-```
+base: process.env.MS_ASSET_BASE_URL || '/',
 
-2. **Router basename from `platform.basePath`.** The platform injects the path prefix the page is served under ('' on the app's own hosts, the mount path when another app mounts this one). The SDK prefixes its own calls automatically; app code must feed it to the router and avoid hardcoded root-absolute URLs (`<img src="/logo.png">`, raw `location.assign('/about')`):
-
-```ts
+// router
 createBrowserRouter(routes, { basename: platform.basePath || '/' });
 ```
 
@@ -157,18 +149,7 @@ await prerender.invalidate(['/u/abc']); // omit arg to purge all
 
 ### Mounting other apps
 
-A web interface can serve other apps from the same workspace under path prefixes of its own hosts (the multi-zone pattern — e.g. a marketing site serving a self-contained demo app at `/demos/vector-search` instead of linking to its subdomain):
-
-```json
-{ "web": { "mounts": [{ "path": "/demos/vector-search", "app": "vector-search-demo" }] } }
-```
-
-- `path`: non-root mount prefix; mounts must be disjoint (none may prefix another).
-- `app`: the target's `custom_subdomain` or appId — a v2 app in the same workspace, validated at build.
-
-Under the mount everything is the child's, served first-class (its live bundle, session, backend, auth, telemetry, frame policy). The child needs no mount-specific config and keeps working at its own subdomain; deploys stay independent. Mount-safety = the two serving conventions above (`MS_ASSET_BASE_URL` assets + `platform.basePath` basename, no hardcoded root-absolute URLs); the parent's build log warns when a target's build isn't mount-safe.
-
-Caveats: prerendering for mounted paths is declared in the PARENT's `prerender.paths`; the auth cookie is per-host, so don't mount an auth-enabled app on a parent that also uses auth; a mount whose target has no live web build falls through to the parent's SPA.
+Rare: `mounts` serves another same-workspace app under a path prefix of this app's hosts — `{ "web": { "mounts": [{ "path": "/docs", "app": "docs-site" }] } }` (`app` = the target's `custom_subdomain` or appId). The child is served first-class (its own bundle, session, backend) and needs no mount-specific config; the two serving conventions above are what make an app mountable.
 
 ## API Interface
 

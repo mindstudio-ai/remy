@@ -1,6 +1,6 @@
 ---
 name: Files, Storage & CDN
-what: Per-app blob storage the database doesn't model — user uploads, generated documents, marketing images. Stores are private by default (reads authed by the app session, or short-lived signed share links) or deliberately public — public files are CDN-served on the app's own domain and images resize on the fly via query params (width, height, crop, format, dpr), so the frontend requests the size it displays instead of CSS-scaling originals. User uploads go client-direct: the backend mints a token and the browser uploads straight to storage, bytes never pass through a method. SDK actions that produce files (generateImage, generatePdf, …) can write straight into a store, and the CLI uploads build-time assets (heroes, logos, OG images) so binaries never land in git. One store is shared across dev and prod on purpose.
+what: Per-app blob storage the database doesn't model — user uploads, generated documents, marketing images. Stores are private by default (reads authed by the app session, or short-lived signed share links) or deliberately public — public files are CDN-served on the app's own domain with caching set per put via `cacheControl`, and images resize on the fly via query params (width, height, crop, format, dpr), so the frontend requests the size it displays instead of CSS-scaling originals. User uploads go client-direct: the backend mints a token and the browser uploads straight to storage, bytes never pass through a method. SDK actions that produce files (generateImage, generatePdf, …) can write straight into a store, and the CLI uploads build-time assets (heroes, logos, OG images) so binaries never land in git. One store is shared across dev and prod on purpose.
 when: Before defining a file store or writing any upload, download, share-link, or image-serving code — user uploads, generated documents, marketing assets, config blobs, anything durable the app stores outside the database.
 ---
 
@@ -45,7 +45,7 @@ const { files, cursor } = await Uploads.list({ prefix: 'reports/', limit: 100 })
 await Uploads.delete(key);
 ```
 
-- `put(content, { key?, contentType?, filename?, contentAddressed? })` → `StoredFile` (`{ key, url, size?, contentType?, updatedAt?, shareUrl() }`). Omit `key` → UUID; `contentAddressed: true` → a `<sha256>.<ext>` key (immutable/idempotent, for baked-in public assets).
+- `put(content, { key?, contentType?, filename?, contentAddressed?, cacheControl? })` → `StoredFile` (`{ key, url, size?, contentType?, updatedAt?, shareUrl() }`). Omit `key` → UUID; `contentAddressed: true` → a `<sha256>.<ext>` key (immutable/idempotent, for baked-in public assets). `cacheControl` sets a public object's CDN caching — defaults: auto-minted keys (UUID / content-addressed, never reused) → immutable cache-forever; named keys → `public, max-age=300`.
 - **`file.url`** is a plain relative string — don't await it. To display a user *their own* file, hand them `file.url`; don't `get()` the bytes and stream them yourself.
 - **`await file.shareUrl({ expiresIn })`** → an absolute signed link that works with **no session** (email / cross-site embed). Private stores only; default 24h.
 
@@ -85,7 +85,11 @@ Public files are world-readable, served on the app's own domain, and **images re
 
 Combine freely: `…/hero.jpg?w=200&h=200&fit=crop&fm=avif`.
 
-Lightweight-config pattern: a public store + a stable `key` is a file the frontend can `fetch` with no DB hit and the backend can overwrite (`Config.put(json, { key: 'config/latest.json' })`).
+### How public caching works
+
+A public `file.url` resolves through a short-lived redirect (cached ~5 min, stable target) to the CDN object, which is cached per its own `Cache-Control` — set at put time via `cacheControl`. Auto-minted keys (UUID / content-addressed / CLI uploads) are never reused, so they default to `public, max-age=31536000, immutable`; named (overwritable) keys default to `public, max-age=300`, so an overwrite is publicly visible within ~5 minutes. Tune per put: `'public, max-age=60'` for near-live data, `'no-store'` to revalidate every read, `immutable` for a named key you promise never to overwrite. Private files never edge-cache (reads are short-lived signed URLs).
+
+Lightweight-config pattern: a public store + a stable `key` is a file the frontend can `fetch` with no DB hit and the backend can overwrite (`Config.put(json, { key: 'config/latest.json' })`). Overwrites propagate within ~5 minutes by default — pass `cacheControl` if the app needs tighter freshness.
 
 ## Build-time / marketing assets
 

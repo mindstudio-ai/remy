@@ -116,7 +116,13 @@ export default defineJewel(categorizeRecord, {
         maxTurns: 6,
       });
       if (!task.output.category) return { input: null, reasoning: task.output.rationale };
-      return { input: { recordId, category: task.output.category }, reasoning: task.output.rationale };
+      return {
+        input: { recordId, category: task.output.category },
+        reasoning: task.output.rationale,
+        // Preserves the model transcript with the pair: the training row,
+        // and at auto the audit trail.
+        trace: task.traceId,
+      };
     } catch (err) {
       // Couldn't produce conforming output; abstain with the evidence. Fail closed.
       return { input: null, reasoning: `Task agent failed: ${err instanceof Error ? err.message : String(err)}` };
@@ -137,6 +143,7 @@ To preserve signal integrity, the task prompt inside `propose` addresses the mod
 - **Context is plain imports plus tools.** Prefetch what every run needs (the row, its history, the inventory of valid values) into the task input; expose the app's own read methods as tools for what the agent should decide to look up (precedent, comparables). Tool calls are recorded with the pair.
 - **Use `runTask` with `outputSchema` for the judgment.** Build enums at runtime: a candidate-id enum means the agent structurally cannot reference a row that doesn't exist, and a known-values enum means it cannot invent a category. Put `null` in the enum so abstention is a first-class output rather than a formatting accident.
 - **Catch everything; abstain on failure.** A jewel that can't decide returns `{ input: null, reasoning }` with the evidence. It never throws to say "I don't know."
+- **Attach the deciding task's trace.** `trace: task.traceId` on the success return preserves the full model transcript with the pair; use an array when the story has chapters (`trace: [first.traceId, escalation.traceId]`). Helper and formatting calls stay unattached; the attachment is the label for which run WAS the decision. A pair without a trace still grades, but it is thin as evidence and as training data.
 - **Propose a subset when that's the honest scope.** A jewel that never sets `assigneeId` and never proposes `closed` (it can't know a fix shipped) is expressing policy through its output shape.
 - **Reasoning is audit-log prose.** Two or three plain sentences a teammate would find useful; name the evidence. No headers, bullets, or emojis.
 
@@ -182,8 +189,8 @@ grade: async ({ proposed, actual }) => {
     });
     const c = rubric.output;
     return c.sameResolution && c.noContradiction
-      ? { verdict: 'agree' }
-      : { verdict: 'disagree', notes: `Failed: ${[!c.sameResolution && 'sameResolution', !c.noContradiction && 'noContradiction'].filter(Boolean).join(', ')}` };
+      ? { verdict: 'agree', trace: rubric.traceId }
+      : { verdict: 'disagree', notes: `Failed: ${[!c.sameResolution && 'sameResolution', !c.noContradiction && 'noContradiction'].filter(Boolean).join(', ')}`, trace: rubric.traceId };
   } catch (err) {
     return { verdict: 'skip', notes: `Judge failed: ${err instanceof Error ? err.message : String(err)}` };
   }
