@@ -42,6 +42,7 @@ All fields are nested under the `"web"` key.
 | `devCommand` | `string` | `"npm run dev"` | Command to start the dev server |
 | `defaultPreviewMode` | `"desktop"` \| `"mobile"` | `"desktop"` | Default preview viewport in the editor. Set to `"mobile"` for mobile-first apps. |
 | `prerender` | `object` | — | Opt into prerendering the listed routes for crawlers/unfurlers. See "Prerendering for crawlers" below. |
+| `mounts` | `array` | — | Serve other apps from your workspace under path prefixes of this app's hosts. See "Mounting other apps" below. |
 
 ### Frontend SDK
 
@@ -89,7 +90,29 @@ auth.logout()                       // clears session
 
 ### Deployment
 
-On `git push`, the platform runs `npm install && npm run build` in the web directory and hosts the output on CDN. Zero configuration in your code. The platform injects connection details automatically.
+On `git push`, the platform runs `npm install && npm run build` in the web directory and hosts the output on CDN. The platform injects connection details automatically.
+
+The build runs with **`MS_ASSET_BASE_URL`** set — a release-addressed CDN origin for the build's static assets. Point your bundler's public-path option at it so asset URLs are absolute and serve identically on the app's own subdomain, a custom domain, or a mount path on another app:
+
+```ts
+// vite.config.ts
+export default defineConfig({
+  base: process.env.MS_ASSET_BASE_URL || '/',
+  // ...
+});
+```
+
+(Webpack: `output.publicPath`; other bundlers have an equivalent.) Locally the variable is unset and the app builds/serves at `/` exactly as before.
+
+### Serving context: `platform.basePath`
+
+The platform injects the path prefix the current page is served under: `''` on the app's own hosts, or the mount path (e.g. `"/demos/vector-databases"`) when another app mounts this one. The SDK already prefixes all of its own platform calls with it — the one thing app code must do is use it as the router basename:
+
+```ts
+createBrowserRouter(routes, { basename: platform.basePath || '/' });
+```
+
+Avoid hardcoded root-absolute URLs in app code (`<img src="/logo.png">`, `navigate('/about')` outside the router) — they break under a mount. Imported assets and router-relative navigation are always safe.
 
 ### Prerendering for crawlers
 
@@ -122,6 +145,32 @@ await prerender.invalidate(['/u/abc']); // omit the argument to purge every snap
 ```
 
 While developing, the `mindstudio-prod prerender` CLI verifies and manages snapshots (run `mindstudio-prod prerender --help`) — a build-time tool only; a deployed app keeps things fresh via `prerender.invalidate`, not the CLI.
+
+### Mounting other apps
+
+A web interface can serve **other apps from the same workspace under path prefixes of its own hosts** — the multi-zone pattern. A marketing site at `example.com` can serve a self-contained demo app (its own backend, database, and deploys) at `example.com/demos/vector-search` instead of linking out to the demo's subdomain:
+
+```json
+{
+  "web": {
+    "mounts": [
+      { "path": "/demos/vector-search", "app": "vector-search-demo" }
+    ]
+  }
+}
+```
+
+- `path` — the mount prefix on this app's hosts. Non-root, and mounts must be disjoint (no mount may prefix another).
+- `app` — the target app's `custom_subdomain` or appId. Must be a v2 app in the same workspace; validated at build.
+
+Under the mount, everything is the child's, served first-class: its live web bundle, its session (so its backend methods, auth, agent chat, uploads, and telemetry all run against the child app), its frame policy. The child needs no mount-specific configuration — it keeps working at its own subdomain unchanged, and the same app can be mounted at different paths by different parents. Deploys are independent: pushing the child updates it everywhere it's mounted.
+
+**Mount-safety.** A mountable child must follow the standard conventions above: assets via `MS_ASSET_BASE_URL`, router basename from `platform.basePath`, no hardcoded root-absolute URLs. The parent's build log warns when a mount target's current build isn't mount-safe.
+
+Notes:
+- **Prerendering under a mount is the parent's.** List the mount paths in the *parent's* `prerender.paths` (e.g. `/demos/**`) to serve crawler snapshots for mounted pages; the child's own prerender config applies only to its own hosts.
+- **One signed-in state per host.** The auth cookie is per-host, so a parent and a mounted child that both use login on the same host will sign each other out. Mount auth-enabled apps only when the parent doesn't use auth (or vice versa).
+- A mount whose target has no live web build yet falls through to the parent's SPA until the child deploys one.
 
 ---
 
