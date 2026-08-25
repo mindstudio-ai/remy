@@ -38,7 +38,7 @@ export const screenshotDefinition: ToolDefinition = {
       prompt: {
         type: 'string',
         description:
-          "Optional question about the screenshot. If omitted, returns a general description of what's visible.",
+          "Optional specific questions about the screenshot, answered alongside the general description of what's visible. If omitted, returns just the general description.",
       },
       imageUrl: {
         type: 'string',
@@ -109,16 +109,32 @@ export async function executeScreenshot(
 
       const result = await runBrowserAutomation(task, context, {
         capture: fullPage ? 'fullPage' : 'viewport',
+        analysisPrompt: input.prompt as string | undefined,
       });
       // No screenshot came back — return the sub-agent's prose so the model
       // still sees its report.
       if (!result.screenshot) {
         return result.text;
       }
+      const { url, styleMap, analysis } = result.screenshot;
+      // The capture was already analyzed inside the sub-agent — inventory plus
+      // the caller's questions, via `analysisPrompt` — so reuse that instead of
+      // analyzing the same image a second time. Emit the frontend's
+      // replace-snapshot so the image and analysis render immediately.
+      if (analysis) {
+        onLog?.(JSON.stringify({ url, analysis }));
+        return JSON.stringify({
+          url,
+          analysis,
+          ...(styleMap ? { styleMap } : {}),
+        });
+      }
+      // The auto-analysis is best-effort (its batch result may fail to
+      // parse) — fall back to analyzing here.
       return await streamScreenshotAnalysis({
-        image: result.screenshot.url,
+        image: url,
         prompt: input.prompt as string | undefined,
-        styleMap: result.screenshot.styleMap,
+        styleMap,
         onLog,
         model,
         apiConfig: context?.apiConfig,
