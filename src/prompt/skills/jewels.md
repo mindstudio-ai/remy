@@ -229,7 +229,7 @@ from the platform's small menu; `qwen3.5-4b` is the default, with `qwen3.5-9b` a
 `gpt-oss-20b` as larger alternatives, and the default is the right choice unless a
 report shows it falling short), `windowDays` (how many days of ledger history to train
 on; default all history), `epochs` (1-10, default 3), `rank` (LoRA rank, 4-64, default
-16), `learningRate` (default 5e-5). It requires `jewel`, and it rides the release:
+16), `learningRate` (default 1e-4). It requires `jewel`, and it rides the release:
 changing a knob is a commit + deploy before the next training run.
 
 Once a method has accumulated graded pairs, train from the prod CLI:
@@ -238,14 +238,20 @@ a run id and the dataset report; a run takes minutes to tens of minutes, so neve
 `--wait` (that flag is for humans at a terminal — it would block your whole loop).
 Start the run, tell the user it's training, keep working on other things, and check in
 with `mindstudio-prod jewels run <runId>` between tasks — the `progress` field shows
-the live phase and training percent, and `status` goes `complete` or `failed` with the
+the live phase and training percent, the run's `log` narrates the whole story as
+timestamped status events (queued, GPU acquired, training, grading — loss points are
+compacted to a count in CLI output), and `status` goes `complete` or `failed` with the
 full report. The dataset report says whether the ledger is trainable (pairs without an
 attached `trace` don't count), and a run produces a downloadable LoRA adapter plus a
 held-out agreement report: how often the trained model matched your team's decisions
 on pairs it never saw. The adapter and report land in the app's own file store
 (`models/` in the Files dashboard), so the user can download them there. The
-agreement number is `report.grading.agreement` — scored by the jewel's own grade
-function, the same grader as the pairs dashboard; there is no other agreement field.
+agreement number is `report.selected.agreement` when present, else
+`report.grading.agreement` — scored by the jewel's own grade function, the same grader
+as the pairs dashboard. A run trains multiple checkpoint candidates (per-epoch
+snapshots, plus a DPO pass over the team's corrections when enough have accumulated)
+and the platform promotes whichever scores highest on that grader — `report.selected`
+names the serving checkpoint; this is automatic, never something you configure.
 A completed run without a `grading` block just hasn't been graded yet
 (`mindstudio-prod jewels grade <runId>` fills it). A completed run registers the
 app's tuned model as a real model id — `tuned/{appId}/{methodId}`, one stable id per
@@ -253,9 +259,19 @@ method that retraining advances in place — and the latest complete run per met
 automatically served on the platform's GPU pool, so that id works like any other
 model the moment training finishes. There is no special invoke tool: to sanity-check
 or demo a tuned model, make an ordinary generate-text call with that model id (the
-pool serves it with the exact template posture it was trained under). Promotion (the
-app actually switching a jewel onto its tuned model) is still a deliberate later
-step; do not wire a tuned model into app code unprompted.
+pool serves it with the exact template posture it was trained under). **Promotion**
+(switching a jewel onto its own tuned model) is a one-line change: swap the `model`
+id inside the jewel's existing `runTask` call to the tuned line — the git commit is
+the promotion record, and reverting it is the rollback. Tool-using jewels promote
+too: the tuned model was trained on the jewel's full transcripts, tool calls
+included, and the training report's `toolEval` block shows how faithfully it makes
+the teacher's tool decisions (qwen bases only — gpt-oss can't drive tools yet, and
+the platform rejects that combination with a clear error). One hard rule: never
+restructure the propose path to a generate-text call to do it — that silently loses
+`outputSchema` validation AND the task `traceId`, so the jewel's new pairs stop
+being trainable and the learning loop dies. `runTask` with the tuned id keeps both.
+Promotion is still a deliberate step; do not wire a tuned model into app code
+unprompted.
 
 ## Arrival Triggers (`mindstudio.jewels.propose`)
 
