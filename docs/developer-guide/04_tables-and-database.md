@@ -150,6 +150,50 @@ const all = await Vendors.every(v => v.status !== 'rejected');
 const empty = await Vendors.isEmpty();
 ```
 
+### Aggregation
+
+`count()`, `sum()`, `avg()`, `countDistinct()`, and `aggregate()` compile to SQL aggregates (`COUNT`/`TOTAL`/`AVG`/`GROUP BY`) — no rows are fetched, so they stay cheap at any table size. Use them for every summary over a table that can grow; never page a whole table into memory to compute totals.
+
+```typescript
+// Scalar aggregates — take accessors, like sortBy/min/max
+const revenue = await Orders.filter(o => o.status === 'paid').sum(o => o.amountCents);
+const avgScore = await Answers.avg(a => a.score);            // number | null (null on empty set)
+const respondents = await Answers.countDistinct(a => a.responseId);
+
+// Grouped aggregation — string column names, one plain object per group
+const top = await Answers
+  .filter((a, $) => a.surveyId === $.surveyId, { surveyId }) // bindings: lifts closure var so filter compiles to SQL
+  .aggregate({
+    by: ['questionId', 'dimension'],
+    select: {
+      n: { count: true },
+      total: { sum: 'score' },
+      avgScore: { avg: 'score' },
+      respondents: { countDistinct: 'responseId' },
+    },
+    orderBy: 'total', desc: true, limit: 20,
+  });
+// Array<{ questionId: string; dimension: string; n: number;
+//         total: number; avgScore: number | null; respondents: number }>
+```
+
+Select terms: `{ count: true }`, `{ sum: 'col' }`, `{ avg: 'col' }`, `{ min: 'col' }`, `{ max: 'col' }`, `{ countDistinct: 'col' }`. Omit `by` for several aggregates over the whole filtered set in one statement (returns a single object). Empty-set semantics: `count`/`countDistinct` → 0, `sum` → 0, `avg`/`min`/`max` → null; NULL values are skipped, matching SQL.
+
+`groupBy()` (a `Map` of full rows per group) fetches everything — reach for it only when you need the rows themselves, not a summary. `min(fn)`/`max(fn)` return the full row with the extreme value; the `{ min: 'col' }`/`{ max: 'col' }` select terms return just the value.
+
+### Raw SQL Escape Hatch
+
+`db.sql()` runs read-only raw SQL against the app's own managed database — for joins, subqueries, and window functions the typed API can't express:
+
+```typescript
+const rows = await db.sql<{ questionId: string; n: number }>(
+  'SELECT questionId, COUNT(*) AS n FROM answers WHERE surveyId = ? GROUP BY questionId',
+  [surveyId],
+);
+```
+
+Read-only: the statement must start with `SELECT` or `WITH`; writes throw — use Table methods for writes. Positional `?` bind params. Lazy and batchable via `db.batch()`. Multi-database apps pass `{ database: 'name' }` as the third argument. This is the last resort — prefer the typed API (including `aggregate()`) whenever it can express the query; raw rows come back close to how SQLite stores them and may not exactly match the typed API's representations.
+
 ### Updating Records
 
 ```typescript
@@ -243,7 +287,7 @@ Write methods throw `MindStudioError` with specific codes:
 
 ### Batch Queries
 
-`db.batch()` combines multiple operations into a single HTTP round-trip. Almost all read methods return batchable `Query` objects — including `get()`, `findOne()`, `count()`, `some()`, `min()`, `max()`, and `groupBy()`. The exceptions are `every()` and `isEmpty()`, which return Promises directly and cannot be batched. All write mutations are also batchable.
+`db.batch()` combines multiple operations into a single HTTP round-trip. Almost all read methods return batchable `Query` objects — including `get()`, `findOne()`, `count()`, `sum()`, `avg()`, `countDistinct()`, `aggregate()`, `some()`, `min()`, `max()`, and `groupBy()` — and `db.sql()` results batch too. The exceptions are `every()` and `isEmpty()`, which return Promises directly and cannot be batched. All write mutations are also batchable.
 
 ```typescript
 const [vendor, orders, pendingCount] = await db.batch(
