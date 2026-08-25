@@ -599,6 +599,10 @@ export function clearSession(state: AgentState): void {
     log.warn('Session archive on clear failed', { error: err.message });
   }
   state.messages = [];
+  // Model picks persist in the session file being deleted below — clearing
+  // the session resets them too, or the in-memory picks would silently
+  // diverge from disk (applied until the process restarts, then gone).
+  state.models = undefined;
   try {
     if (fs.existsSync(SESSION_FILE)) {
       fs.unlinkSync(SESSION_FILE);
