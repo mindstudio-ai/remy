@@ -9,12 +9,16 @@
  * building — and mirrored to the platform's private app-data bucket so the
  * dashboard can render a preview (it can't reach the sandbox disk).
  *
- * The caller chooses the slug (= the filename stem), so the reference path is
- * fully known to the agent before it writes any prose — nothing about the
- * path has to be recalled from a tool result. Re-using a slug overwrites the
- * file and its mirror in place: a revision keeps the same path, so references
- * already written into specs stay current. The mirror upload is non-fatal — a
- * wireframe whose preview can't render is still fully usable by the developer.
+ * The caller chooses the slug (= the filename stem), and re-using a slug
+ * overwrites the file and its mirror in place: a revision keeps the same path,
+ * so references already written into specs stay current. The workflow is
+ * call-first, like generateImages: the result hands back the exact markdown
+ * reference line to paste, so a reference in prose is always a receipt for a
+ * file that exists — never a promise to create one later. (A knowable path
+ * invites writing references without calling; a 45K-token consultation once
+ * shipped three such references and zero files.) The mirror upload is
+ * non-fatal — a wireframe whose preview can't render is still fully usable by
+ * the developer.
  */
 
 import { mkdir, stat, writeFile } from 'node:fs/promises';
@@ -33,7 +37,7 @@ const UPLOAD_TIMEOUT_MS = 30_000;
 export const definition: ToolDefinition = {
   name: 'createWireframe',
   description:
-    'Create (or revise) a wireframe from self-contained HTML+CSS. The wireframe is saved to src/.wireframes/{slug}.html — reference it in your response and in specs as ![name](src/.wireframes/{slug}.html), with your notes in the surrounding prose. Calling again with the same slug overwrites the wireframe in place, so a revision keeps its path and existing references stay current.',
+    'Create (or revise) a wireframe from self-contained HTML+CSS. Call this while working to generate a sharable wireframe asset: the result returns the exact markdown reference line to paste into your response and into specs (like generateImages returns the image URL). Calling again with the same slug overwrites the wireframe in place, so a revision keeps its path and existing references stay current.',
   inputSchema: {
     type: 'object',
     properties: {
