@@ -35,7 +35,7 @@ const CAPTURE_COMMANDS = new Set(['screenshotViewport', 'screenshotFullPage']);
  */
 export interface BrowserAutomationResult {
   text: string;
-  screenshot?: { url: string; styleMap?: string };
+  screenshot?: { url: string; styleMap?: string; analysis?: string };
 }
 
 /**
@@ -46,11 +46,16 @@ export interface BrowserAutomationResult {
  * (the screenshot tool) wants surfaced — viewport or full-page. The
  * sub-agent may take either kind along the way; this picks the one the
  * caller asked for, falling back to whichever was actually captured.
+ *
+ * `opts.analysisPrompt` carries the caller's questions into each capture's
+ * auto-analysis, so the one analysis serves both the sub-agent (inventory)
+ * and the caller (answers) — the caller reuses it via `screenshot.analysis`
+ * instead of analyzing the same image a second time.
  */
 export async function runBrowserAutomation(
   task: string,
   context: ToolExecutionContext,
-  opts?: { capture?: 'viewport' | 'fullPage' },
+  opts?: { capture?: 'viewport' | 'fullPage'; analysisPrompt?: string },
 ): Promise<BrowserAutomationResult> {
   const release = await acquireBrowserLock();
   try {
@@ -76,8 +81,8 @@ export async function runBrowserAutomation(
     // tool), which the runner can't stash as an artifact. Harvest the last one of
     // each kind here so they can be surfaced below.
     let lastCapture: {
-      viewport?: { url: string; styleMap?: string };
-      fullPage?: { url: string; styleMap?: string };
+      viewport?: { url: string; styleMap?: string; analysis?: string };
+      fullPage?: { url: string; styleMap?: string; analysis?: string };
     } = {};
     const result = await runSubAgent({
       system: getBrowserAutomationPrompt(),
@@ -161,6 +166,7 @@ export async function runBrowserAutomation(
                   imageUrl: s.result.url,
                   prompt: buildScreenshotAnalysisPrompt({
                     styleMap: s.result.styleMap,
+                    additionalQuestions: opts?.analysisPrompt,
                   }),
                   visionModelOverride: visionOverride,
                 },
@@ -177,8 +183,25 @@ export async function runBrowserAutomation(
                   if (i >= analyses.length) {
                     return;
                   }
-                  step.result.analysis =
+                  const analysis =
                     analyses[i]?.output?.analysis || analyses[i]?.output || '';
+                  step.result.analysis = analysis;
+                  // Attach to the harvested capture too (matched by URL, since
+                  // `lastCapture` is last-write-wins per kind) so the caller can
+                  // reuse this analysis instead of running its own.
+                  const kind =
+                    step.command === 'screenshotFullPage'
+                      ? 'fullPage'
+                      : 'viewport';
+                  const harvested = lastCapture[kind];
+                  if (
+                    harvested &&
+                    typeof analysis === 'string' &&
+                    analysis &&
+                    harvested.url === step.result.url
+                  ) {
+                    harvested.analysis = analysis;
+                  }
                 });
               } catch {
                 log.debug('Failed to parse batch analysis result', {
@@ -207,9 +230,7 @@ export async function runBrowserAutomation(
         : (lastCapture.fullPage ?? lastCapture.viewport);
     return {
       text: result.text,
-      ...(preferred?.url
-        ? { screenshot: { url: preferred.url, styleMap: preferred.styleMap } }
-        : {}),
+      ...(preferred?.url ? { screenshot: preferred } : {}),
     };
   } finally {
     release();

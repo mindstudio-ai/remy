@@ -30,7 +30,7 @@ One jewel per judgment. If a jewel would need to take two actions, the methods a
 
 Never include a jewel in an initial build, and don't bring them up while an app is young. Most users will never want one; a few will care a lot. The default posture:
 
-- **Build AI features plainly.** A drafting feature is a method that calls a model and returns text, with no jewel machinery anywhere. Converting it to a jewel later is additive (a `.jewel.ts` beside the method, an `autonomy` line in the manifest); nothing about the plain version is thrown away.
+- **Build AI features plainly.** A drafting feature is a method that calls a model and returns text, with no jewel machinery anywhere. Converting it later is cheap. At shadow it's purely additive (a `.jewel.ts` beside the method, an `autonomy` line in the manifest). At approve, the jewel takes over as the sole producer: it proposes what the plain feature used to write, surfaced in the same place the human already saw it, and the plain generation is retired — one generator, always. A jewel graded against human edits of some other AI's draft is measuring model against model.
 - **Jewels enter when the user asks** about automating a judgment the app already handles, or picks an automation item off the roadmap. Once an app is solid and a judgment verb sees real use, a benefit-phrased automation item may belong on the roadmap; that is the only proactive channel.
 - **When the user engages, have the conversation first**: what it does in their terms, what the levels mean, what evidence looks like. Then start with exactly one verb.
 
@@ -77,7 +77,7 @@ interface JewelPairRecord {
 
 The executor never throws: a shadow run must never break anything. Your code failing inside `subject` or `propose` becomes the record's `error`; `grade` failing softens to verdict `skip`.
 
-Shadowing runs only on the deployed app. Dev traffic never fires jewels; dev invocations are synthetic and would pollute the pair ledger.
+Shadowing runs only on the deployed app — dev invocations are synthetic and would pollute the pair ledger. The arrival flow is different: `jewels.propose` on approve/auto methods runs for real in dev sessions (the jewel executes from local source, queue items are scoped to the dev session, auto commits apply against the dev database) so the app's hot path is testable end-to-end, but none of it is recorded — no pairs, no grading, no training data.
 
 ## Usage
 
@@ -203,7 +203,7 @@ grade: async ({ proposed, actual }) => {
 
 Four levels: `manual` (no jewel ever; a policy statement), `shadow` (runs silently on every human invocation, pairs recorded, nothing visible), `approve` (jewel drafts, a human accepts, edits, or rejects; the edit is the richest training signal there is), `auto` (the jewel acts under its own identity).
 
-**Auto is the only level you earn with evidence. Shadow and approve are both safe starting points; pick by what the product is.** When the proposals themselves are the product (drafts for review), start at approve; it's often the permanent home. When the evidence is the product (an auto-bound verb), start at shadow. Raising to auto is a reviewed manifest diff justified by agreement numbers.
+**Auto is the only level you earn with evidence. Shadow and approve are both safe starting points; pick by what the product is.** When the proposals themselves are the product (drafts for review), start at approve; it's often the permanent home. When the evidence is the product (an auto-bound verb), start at shadow. The levels differ in what exists, not in presentation: at approve the human sees and edits the proposal before it takes effect; at shadow nothing ever surfaces. Raising to auto is a reviewed manifest diff justified by agreement numbers.
 
 **Choose approve by the verb's risk shape, not by default.** Reversible state-machine verbs (routing, classification; a mistake is a two-click correction) go shadow → auto with a `sampleRate` canary and skip approve, because a review queue on a high-agreement classifier adds work without adding safety. Approve belongs on irreversible or outward-facing verbs (send, publish, charge, refund): `sampleRate` is population-level risk control, and those verbs need per-instance gating, which is what approve is.
 
@@ -304,7 +304,7 @@ Rules that matter:
 
 ## Native Approval Flows (`jewels.queue`)
 
-For `approve`-mode methods, the review inbox belongs in the app, next to the work. Three pieces:
+For `approve`-mode methods, the queue is data, not a screen: proposals surface wherever the human already makes this decision. When the app has an editor for the decision, the pending proposal pre-fills it and the human's normal confirm action resolves it; a dedicated inbox is only for decisions with no existing surface. Three pieces:
 
 ```typescript
 // 1. Backend list method, gated with the APP'S reviewer role.
@@ -313,7 +313,7 @@ export async function listPendingDrafts() {
   return mindstudio.jewels.queue.list({ methodId: 'send-message' });
 }
 
-// 2. Frontend inbox UI renders items: subject, proposed input, reasoning.
+// 2. Frontend surfaces items where the decision already lives (pre-fill the existing editor); render subject, proposed input, reasoning.
 
 // 3. Backend resolve method: approve applies, dismiss records.
 export async function reviewDraft(input: {

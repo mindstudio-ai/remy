@@ -120,6 +120,8 @@ analytics.track('vendor_submitted', { vendorType: 'restaurant' });
 analytics.track('checkout_completed', { itemCount: 3, total: 47.99 });
 ```
 
+- **Apps can also READ their own analytics from backend methods** — the agent SDK's `analytics` namespace (lifetime per-page metrics, live visitor count, traffic sources, event stats), so an admin view can show real traffic next to the app's own data. Consult `askMindStudioSdk` for the query API when building one.
+
 Analytics is **cookie-banner-free by design**: per-app scoping, IP discarded after geo lookup, country-level only, query strings server-scrubbed except for a UTM whitelist (`utm_*`, `ref`, `source`, `gclid`, `fbclid`, `msclkid`), no fingerprinting, no third-party scripts. If a user asks about GDPR cookie consent for analytics, you can explain why it is not needed.
 
 Disabling telemetry is a per-app dashboard setting (platform toggle, not code). Point users there if they ask.

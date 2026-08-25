@@ -30,9 +30,17 @@ const ANALYSIS_RESPONSE_FORMAT = `Respond only with your analysis as Markdown an
  */
 export function buildScreenshotAnalysisPrompt(opts?: {
   prompt?: string;
+  /** Specific questions to answer in addition to the base prompt's inventory.
+   * Lets one analysis serve two readers — the sub-agent that needs the full
+   * inventory and a caller with targeted questions. */
+  additionalQuestions?: string;
   styleMap?: string;
 }): string {
   let p = opts?.prompt || SCREENSHOT_ANALYSIS_PROMPT;
+
+  if (opts?.additionalQuestions) {
+    p += `\n\nAfter the analysis above, also answer the following specific questions about the screenshot:\n\n${opts.additionalQuestions}`;
+  }
 
   if (opts?.styleMap) {
     p += `\n\nThe following styleMap describes the computed layout state at the moment of capture. Use it to verify typography, spacing, overflow, and element dimensions — it is more accurate than visual estimation from the image.\n\n<style_map>\n${opts.styleMap}\n</style_map>`;
