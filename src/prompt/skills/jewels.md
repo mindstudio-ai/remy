@@ -77,7 +77,7 @@ interface JewelPairRecord {
 
 The executor never throws: a shadow run must never break anything. Your code failing inside `subject` or `propose` becomes the record's `error`; `grade` failing softens to verdict `skip`.
 
-Shadowing runs only on the deployed app. Dev traffic never fires jewels; dev invocations are synthetic and would pollute the pair ledger.
+Shadowing runs only on the deployed app — dev invocations are synthetic and would pollute the pair ledger. The arrival flow is different: `jewels.propose` on approve/auto methods runs for real in dev sessions (the jewel executes from local source, queue items are scoped to the dev session, auto commits apply against the dev database) so the app's hot path is testable end-to-end, but none of it is recorded — no pairs, no grading, no training data.
 
 ## Usage
 
