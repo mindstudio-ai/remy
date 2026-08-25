@@ -1,6 +1,6 @@
 /** Search file contents. Uses ripgrep if available, falls back to grep. */
 
-import { exec } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import type { Tool } from '../index.js';
 
 const DEFAULT_MAX = 50;
@@ -91,23 +91,20 @@ export const grepTool: Tool = {
       1,
       Math.floor(Number(input.maxResults) || DEFAULT_MAX),
     );
-    const globFlag = input.glob ? ` --glob '${input.glob}'` : '';
-    const escaped = input.pattern.replace(/'/g, "'\\''");
 
     const mode: OutputMode =
       input.outputMode === 'count' || input.outputMode === 'filesWithMatches'
         ? input.outputMode
         : 'content';
-    const ci = input.caseInsensitive ? ' -i' : '';
 
     // Context flags apply to content mode only. `context` (-C) wins over the
-    // before/after pair. All values are clamped ints, so safe to interpolate.
-    let ctx = '';
+    // before/after pair.
+    const ctx: string[] = [];
     if (mode === 'content') {
       if (input.context != null) {
         const c = clampContext(input.context);
         if (c > 0) {
-          ctx = ` -C ${c}`;
+          ctx.push('-C', String(c));
         }
       } else {
         const b =
@@ -115,48 +112,93 @@ export const grepTool: Tool = {
         const a =
           input.contextAfter != null ? clampContext(input.contextAfter) : 0;
         if (b > 0) {
-          ctx += ` -B ${b}`;
+          ctx.push('-B', String(b));
         }
         if (a > 0) {
-          ctx += ` -A ${a}`;
+          ctx.push('-A', String(a));
         }
       }
     }
 
     // Build the mode-specific flag core for each engine.
-    let rgFlags: string;
-    let grepFlags: string;
+    const ci = input.caseInsensitive ? ['-i'] : [];
+    let rgFlags: string[];
+    let grepFlags: string[];
     if (mode === 'count') {
-      rgFlags = `--count${ci}`;
-      grepFlags = `-rc${ci}`;
+      rgFlags = ['--count', ...ci];
+      grepFlags = ['-rc', ...ci];
     } else if (mode === 'filesWithMatches') {
-      rgFlags = `-l${ci}`;
-      grepFlags = `-rl${ci}`;
+      rgFlags = ['-l', ...ci];
+      grepFlags = ['-rl', ...ci];
     } else {
-      rgFlags = `-n --no-heading${ci}${ctx} --max-count=${max}`;
-      grepFlags = `-rn${ci}${ctx} --max-count=${max}`;
+      rgFlags = ['-n', '--no-heading', ...ci, ...ctx, `--max-count=${max}`];
+      grepFlags = ['-rn', ...ci, ...ctx, `--max-count=${max}`];
     }
 
-    // Try ripgrep first, fall back to grep.
-    const rgCmd = `rg ${rgFlags}${globFlag} '${escaped}' ${searchPath}`;
-    const grepCmd = `grep ${grepFlags} '${escaped}' ${searchPath} --include='*.ts' --include='*.tsx' --include='*.js' --include='*.json' --include='*.md'`;
+    // Args are passed as an array (no shell), so paths with spaces or quotes
+    // can't split or inject. The `--` keeps a pattern or path that starts with
+    // `-` from being parsed as a flag. This tool once built a shell string with
+    // the path unquoted: a Windows-style upload dir ("app - Copy") shell-split
+    // into a bare `-`, which means read-stdin — and with stdin an open pipe
+    // and no timeout, rg blocked forever and wedged the whole agent.
+    const rgArgs = [
+      ...rgFlags,
+      ...(input.glob ? ['--glob', input.glob] : []),
+      '--',
+      input.pattern,
+      searchPath,
+    ];
+    const grepArgs = [
+      ...grepFlags,
+      '--exclude-dir=node_modules',
+      '--exclude-dir=.git',
+      '--include=*.ts',
+      '--include=*.tsx',
+      '--include=*.js',
+      '--include=*.json',
+      '--include=*.md',
+      '--',
+      input.pattern,
+      searchPath,
+    ];
 
-    return new Promise<string>((resolve) => {
-      exec(rgCmd, { maxBuffer: 512 * 1024 }, (err, stdout) => {
-        if (stdout?.trim()) {
-          resolve(formatResults(stdout, max, mode));
-          return;
-        }
-
-        // Fallback to grep
-        exec(grepCmd, { maxBuffer: 512 * 1024 }, (_err, grepStdout) => {
-          if (grepStdout?.trim()) {
-            resolve(formatResults(grepStdout, max, mode));
-          } else {
-            resolve('No matches found.');
-          }
-        });
+    // Bounded run: hard timeout, and stdin closed immediately so a literal
+    // `-` path gets instant EOF instead of blocking on a pipe that never ends.
+    const run = (
+      cmd: string,
+      cmdArgs: string[],
+    ): Promise<{ stdout: string; timedOut: boolean }> =>
+      new Promise((resolve) => {
+        const child = execFile(
+          cmd,
+          cmdArgs,
+          { maxBuffer: 512 * 1024, timeout: 30_000 },
+          (err, stdout) => {
+            resolve({
+              stdout: stdout ?? '',
+              timedOut: err?.killed === true,
+            });
+          },
+        );
+        child.stdin?.end();
       });
-    });
+
+    // Try ripgrep first, fall back to grep.
+    const rg = await run('rg', rgArgs);
+    if (rg.stdout.trim()) {
+      return formatResults(rg.stdout, max, mode);
+    }
+    if (rg.timedOut) {
+      return `Error: search timed out after 30s in ${searchPath} — narrow the path or pattern.`;
+    }
+
+    const grep = await run('grep', grepArgs);
+    if (grep.stdout.trim()) {
+      return formatResults(grep.stdout, max, mode);
+    }
+    if (grep.timedOut) {
+      return `Error: search timed out after 30s in ${searchPath} — narrow the path or pattern.`;
+    }
+    return 'No matches found.';
   },
 };
