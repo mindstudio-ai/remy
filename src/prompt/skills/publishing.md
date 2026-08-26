@@ -8,6 +8,8 @@ when: The user wants to ship — the Publish automated action fired, or they ask
 
 Publishing deploys the app to `main`, which triggers a production build. It is the user's decision to ship — it happens when they press Publish in the editor (which arrives as an automated action) or ask you directly in chat. The steps are the same either way, and they run in order: the changelog is the consent moment, so nothing is committed or pushed until it's approved.
 
+If the user wants to see the work before it goes live, push a feature branch instead: that builds a preview at its own URL (`previewUrl` in the `releases wait` result) against a copy of the data, and publishing later is the same flow from `main`.
+
 ## 1. Present the changelog
 
 Read what's changed since the last push — the diffs and commits — and turn it into a user-friendly changelog with `presentPublishPlan`: a plain-language summary of what's new ("added vendor approval workflow", "fixed invoice totals", "updated the dashboard layout"). Reference specific code or file paths only when it helps clarity. This is what the user sees, full-screen, before anything deploys.
