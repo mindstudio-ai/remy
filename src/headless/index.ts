@@ -40,6 +40,7 @@ import {
   setCompactionListener,
   getInflightCompaction,
   cancelInflightCompaction,
+  CompactionCancelledError,
   formatSummariesResult,
 } from '../compaction/trigger.js';
 import { triggerBrandExtraction } from '../brandExtraction/trigger.js';
@@ -1255,12 +1256,31 @@ export class HeadlessSession {
     parsed: StdinCommand,
     requestId: string | undefined,
   ): Promise<void> {
+    // Idle, but something is already waiting — messages held by a cancel, or
+    // restored from disk after a restart. Fold this send in with them instead
+    // of running it alone and leaving them to fire as their own turn afterwards
+    // (the shape that reads as the agent answering a message you'd given up
+    // on). Typing again is the explicit action that releases a hold, and the
+    // mailbox batch reconciles all of it in one turn.
+    //
+    // Automated actions are excluded: pressing Publish is not "resend what I
+    // typed earlier", and it mustn't be delayed behind a stale message. Those
+    // run now, and the drain that follows skips whatever is still held.
+    const foldIn =
+      !this.running &&
+      !getInflightCompaction() &&
+      this.queue.length > 0 &&
+      !isAutomatedMessage((parsed.text as string) ?? '');
+    if (foldIn) {
+      this.queue.releaseHeld();
+    }
+
     // If a turn OR a compaction is in flight, queue the user message instead
     // of rejecting. Compaction counts as busy on purpose: running the turn
     // immediately would bill it at full uncompacted context (the pre-turn
     // gate in executeTurn would make it wait anyway), and queueing renders it
     // in the frontend's Queued Messages card with its normal affordances.
-    if (this.running || getInflightCompaction()) {
+    if (this.running || getInflightCompaction() || foldIn) {
       // Mirror the requestId onto the stored command so it's used when drained.
       const command: StdinCommand = { ...parsed };
       if (requestId && command.requestId === undefined) {
@@ -1272,48 +1292,12 @@ export class HeadlessSession {
         enqueuedAt: Date.now(),
       });
       // The push fires `queue_changed`; the message's eventual `completed`
-      // (when it drains and runs) is its terminal. If the compaction finished
-      // between the check above and the push, the listener's kickDrain
-      // already ran against an empty queue — re-kick so this item isn't
-      // stranded until the next wake.
+      // (when it drains and runs) is its terminal. Kick the drain when nothing
+      // is running: that covers the fold-in above, and the race where the
+      // compaction finished between the check and the push (the listener's own
+      // kickDrain already ran against an empty queue).
       if (!this.running && !getInflightCompaction()) {
         this.kickDrain();
-      }
-      return;
-    }
-
-    // Idle, but something is already waiting — messages held by a cancel or
-    // restored from disk after a restart. Fold this send in behind them and
-    // drain, rather than running it now and leaving them to fire as their own
-    // turn afterwards (the shape that reads as the agent answering a message
-    // you'd given up on). Typing again is the explicit action that releases a
-    // hold, and the mailbox batch reconciles all of it in one turn.
-    //
-    // Automated actions are excluded: pressing Publish is not "resend what I
-    // typed earlier", and it must not be delayed behind a stale message. They
-    // run now and leave held items held (the drain below stops at them).
-    if (
-      this.queue.length > 0 &&
-      !isAutomatedMessage((parsed.text as string) ?? '')
-    ) {
-      this.queue.releaseHeld();
-      const command: StdinCommand = { ...parsed };
-      if (requestId && command.requestId === undefined) {
-        command.requestId = requestId;
-      }
-      this.queue.push({
-        command,
-        source: 'user',
-        enqueuedAt: Date.now(),
-      });
-      this.running = true;
-      try {
-        await this.drainQueueLoop();
-      } finally {
-        this.currentAbort?.abort();
-        this.currentAbort = null;
-        this.currentRequestId = undefined;
-        this.running = false;
       }
       return;
     }
@@ -1351,8 +1335,9 @@ export class HeadlessSession {
   }
 
   /**
-   * Drain the queue in strict FIFO order. Caller must hold `running = true`.
-   * User messages arriving during the drain will be enqueued behind current items.
+   * Drain the queue in FIFO order over its deliverable items. Caller must hold
+   * `running = true`. User messages arriving during the drain will be enqueued
+   * behind current items.
    *
    * The queue serves two purposes with opposite delivery semantics:
    * - Sequencer: chain steps and sentinel-bearing user items are pipeline
@@ -1362,18 +1347,19 @@ export class HeadlessSession {
    *   merged turn, so the model reconciles all of it at once instead of
    *   burning a full turn per item (and possibly executing instructions a
    *   later queued message already amended).
+   *
+   * Held items are not in the delivery sequence at all: the drain starts at the
+   * first deliverable item and never merges across a held one. It skips rather
+   * than stops because a held message sits at the head of the array — stopping
+   * there would strand the chain steps and background results behind it.
    */
   private async drainQueueLoop(): Promise<void> {
-    while (this.queue.length > 0) {
-      const head = this.queue.peek()!;
-
-      // A held head stops the drain: it's waiting on the user, not on the
-      // agent. Stop rather than skip, so FIFO holds — chain steps are
-      // pre-enqueued as a block ahead of any user message (see runSingleTurn),
-      // so a held item can never strand a pipeline behind it.
-      if (head.held) {
+    for (;;) {
+      const at = this.queue.firstDeliverableIndex();
+      if (at === -1) {
         return;
       }
+      const head = this.queue.peekAt(at)!;
 
       // Queued /compact (clicked mid-turn): run it as its own drain step.
       // This is a safe boundary — no turn is mid-flight — so the compaction
@@ -1386,7 +1372,7 @@ export class HeadlessSession {
       // reported by the lifecycle listener (compaction_complete {error}) and
       // must not stall the rest of the queue.
       if (head.command.action === 'compact') {
-        this.queue.shift();
+        this.queue.takeAt(at);
         await triggerCompaction(this.state, this.config, {
           blocking: true,
           requestId: head.command.requestId as string | undefined,
@@ -1398,7 +1384,7 @@ export class HeadlessSession {
       }
 
       if (head.source === 'chain') {
-        const item = this.queue.shift()!;
+        const item = this.queue.takeAt(at)!;
         const rid =
           (item.command.requestId as string | undefined) ??
           `chain-${Date.now()}`;
@@ -1407,7 +1393,7 @@ export class HeadlessSession {
       }
 
       if (this.isDrainBarrier(head)) {
-        const item = this.queue.shift()!;
+        const item = this.queue.takeAt(at)!;
         const rid =
           (item.command.requestId as string | undefined) ??
           `user-${Date.now()}`;
@@ -1415,13 +1401,14 @@ export class HeadlessSession {
         continue;
       }
 
-      // Mailbox batch: contiguous user+background items, stopping at a chain
-      // step, a sentinel barrier, or a conflicting onboardingState (it selects
-      // the turn's toolset, so items from different phases can't share one).
+      // Mailbox batch: contiguous user+background items, stopping at a held
+      // item, a chain step, a sentinel barrier, or a conflicting
+      // onboardingState (it selects the turn's toolset, so items from
+      // different phases can't share one).
       let n = 1;
       let batchOb = head.command.onboardingState as string | undefined;
       for (; ; n++) {
-        const it = this.queue.peekAt(n);
+        const it = this.queue.peekAt(at + n);
         if (
           !it ||
           it.held ||
@@ -1438,7 +1425,7 @@ export class HeadlessSession {
           batchOb = ob;
         }
       }
-      const batch = this.queue.shiftMany(n); // one queue_changed for the batch
+      const batch = this.queue.takeRange(at, n); // one queue_changed for the batch
       await this.runMergedTurn(batch);
     }
   }
@@ -1449,7 +1436,7 @@ export class HeadlessSession {
    * and by kickDrain (background-completion-initiated).
    */
   private async resumeQueue(): Promise<void> {
-    if (this.running || !this.queue.hasUnheld()) {
+    if (this.running || !this.queue.hasDeliverable()) {
       return;
     }
     this.running = true;
@@ -1472,7 +1459,7 @@ export class HeadlessSession {
    * racing any currently-synchronous path.
    */
   private kickDrain(): void {
-    if (this.running || !this.queue.hasUnheld()) {
+    if (this.running || !this.queue.hasDeliverable()) {
       return;
     }
     // Schedule to avoid re-entrancy with the caller's synchronous path
@@ -1858,7 +1845,14 @@ export class HeadlessSession {
         }
         this.emit('completed', { success: true }, requestId);
       } catch (err: any) {
-        const error = err.message || 'Compaction failed';
+        // A cancel terminates as 'cancelled', the string the frontend already
+        // routes to its cancelled path. Reporting the message as an error would
+        // put a red failure block in the transcript for something the user
+        // asked for — the synthesized tool row already says it was cancelled.
+        const error =
+          err instanceof CompactionCancelledError
+            ? 'cancelled'
+            : err.message || 'Compaction failed';
         this.emit('completed', { success: false, error }, requestId);
       }
       return;
@@ -1885,7 +1879,7 @@ export class HeadlessSession {
       // Remy's own persisted pipelines after a restart, not to deliver a user
       // message the person hasn't asked for again. Sending or promoting is what
       // releases a hold.
-      if (!this.queue.hasUnheld()) {
+      if (!this.queue.hasDeliverable()) {
         this.emit('completed', { success: true }, requestId);
         return;
       }

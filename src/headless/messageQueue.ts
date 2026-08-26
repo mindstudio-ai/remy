@@ -68,34 +68,37 @@ export class MessageQueue {
     this.onChange?.();
   }
 
-  shift(): QueuedMessage | undefined {
-    const item = this.items.shift();
+  /**
+   * Index of the first deliverable item, or -1 when there is none.
+   *
+   * Held items are out of the delivery sequence, so the drain skips past them
+   * rather than stopping at them: a message the user parked sits at the head
+   * of the array, and stopping there would strand Remy's own chain steps and
+   * background results queued behind it.
+   */
+  firstDeliverableIndex(): number {
+    return this.items.findIndex((item) => !item.held);
+  }
+
+  /** Remove and return the item at `i`; fires onChange. */
+  takeAt(i: number): QueuedMessage | undefined {
+    const [item] = this.items.splice(i, 1);
     if (item) {
       this.onChange?.();
     }
     return item;
   }
 
-  /** Remove and return the first `n` items; fires onChange once. */
-  shiftMany(n: number): QueuedMessage[] {
-    if (n <= 0) {
+  /** Remove and return `count` items starting at `start`; fires onChange once. */
+  takeRange(start: number, count: number): QueuedMessage[] {
+    if (count <= 0) {
       return [];
     }
-    const items = this.items.splice(0, n);
+    const items = this.items.splice(start, count);
     if (items.length > 0) {
       this.onChange?.();
     }
     return items;
-  }
-
-  /** Remove and return all queued items. */
-  drain(): QueuedMessage[] {
-    if (this.items.length === 0) {
-      return [];
-    }
-    const all = this.items.splice(0);
-    this.onChange?.();
-    return all;
   }
 
   /**
@@ -159,7 +162,7 @@ export class MessageQueue {
   }
 
   /** Whether anything in the queue will drain on its own (i.e. isn't held). */
-  hasUnheld(): boolean {
+  hasDeliverable(): boolean {
     return this.items.some((item) => !item.held);
   }
 
@@ -211,11 +214,6 @@ export class MessageQueue {
   /** Copy of current queue contents (for surfacing on events). */
   snapshot(): QueuedMessage[] {
     return [...this.items];
-  }
-
-  /** Return the next item without removing it. */
-  peek(): QueuedMessage | undefined {
-    return this.items[0];
   }
 
   /** Return the item at index `i` without removing it. */
