@@ -39,6 +39,7 @@ import {
   applyPendingSummaries,
   setCompactionListener,
   getInflightCompaction,
+  cancelInflightCompaction,
   formatSummariesResult,
 } from '../compaction/trigger.js';
 import { triggerBrandExtraction } from '../brandExtraction/trigger.js';
@@ -74,7 +75,11 @@ import {
   type PassiveResult,
 } from './stats.js';
 import { getToolByName } from '../tools/index.js';
-import { MessageQueue, type QueuedMessage } from './messageQueue.js';
+import {
+  MessageQueue,
+  holdRestoredUserItems,
+  type QueuedMessage,
+} from './messageQueue.js';
 import { resolveAction, getActionChain } from '../automatedActions/resolve.js';
 import {
   sentinel,
@@ -238,7 +243,16 @@ export class HeadlessSession {
     // Rehydrate the queue from disk — persisted on every change. Every
     // mutation also emits `queue_changed`, the single source of truth for
     // queue state (snapshot always included, even when empty).
-    this.queue = new MessageQueue(loadQueue(), () => {
+    //
+    // Restored USER messages come back `held`: the process died mid-flight, so
+    // the person is looking at a reloaded editor, and a message they typed
+    // minutes ago must not fire on its own at the end of whatever turn they
+    // start next. It stays visible in the queue card, to send or discard. The
+    // marking happens before the queue is constructed so it lands in the first
+    // persistStats below without emitting a queue_changed nobody is listening
+    // for yet. Remy's own chain/background items are left alone — surviving a
+    // restart is exactly why they're persisted.
+    this.queue = new MessageQueue(holdRestoredUserItems(loadQueue()), () => {
       this.persistStats();
       this.emit('queue_changed', { queuedMessages: this.queue.snapshot() });
     });
@@ -329,7 +343,10 @@ export class HeadlessSession {
           });
         }
       } else {
-        const data = event.error ? { error: event.error } : {};
+        const data = {
+          ...(event.error && { error: event.error }),
+          ...(event.cancelled && { cancelled: true }),
+        };
         this.emit('compaction_complete', data, event.requestId);
 
         // Complete the synthesized block directly: set result/isError on the
@@ -341,10 +358,14 @@ export class HeadlessSession {
         if (this.syntheticCompactionId) {
           const id = this.syntheticCompactionId;
           this.syntheticCompactionId = null;
-          const result = event.error
-            ? `Error: ${event.error}`
-            : formatSummariesResult(event.summaries ?? []);
-          const isError = !!event.error;
+          // A cancel is an outcome, not a failure — say so, and don't mark the
+          // block as an error the user has to worry about.
+          const result = event.cancelled
+            ? 'Compaction cancelled — no checkpoint was created.'
+            : event.error
+              ? `Error: ${event.error}`
+              : formatSummariesResult(event.summaries ?? []);
+          const isError = !!event.error && !event.cancelled;
           for (let i = this.state.messages.length - 1; i >= 0; i--) {
             const msg = this.state.messages[i];
             if (msg.role !== 'assistant' || !Array.isArray(msg.content)) {
@@ -1261,6 +1282,35 @@ export class HeadlessSession {
       return;
     }
 
+    // Idle, but something is already waiting — messages held by a cancel or
+    // restored from disk after a restart. Fold this send in behind them and
+    // drain, rather than running it now and leaving them to fire as their own
+    // turn afterwards (the shape that reads as the agent answering a message
+    // you'd given up on). Sending is the explicit action that releases a hold,
+    // and the mailbox batch reconciles all of it in one turn.
+    if (this.queue.length > 0) {
+      this.queue.releaseHeld();
+      const command: StdinCommand = { ...parsed };
+      if (requestId && command.requestId === undefined) {
+        command.requestId = requestId;
+      }
+      this.queue.push({
+        command,
+        source: 'user',
+        enqueuedAt: Date.now(),
+      });
+      this.running = true;
+      try {
+        await this.drainQueueLoop();
+      } finally {
+        this.currentAbort?.abort();
+        this.currentAbort = null;
+        this.currentRequestId = undefined;
+        this.running = false;
+      }
+      return;
+    }
+
     this.running = true;
     try {
       // Run the initial command
@@ -1310,6 +1360,14 @@ export class HeadlessSession {
     while (this.queue.length > 0) {
       const head = this.queue.peek()!;
 
+      // A held head stops the drain: it's waiting on the user, not on the
+      // agent. Stop rather than skip, so FIFO holds — chain steps are
+      // pre-enqueued as a block ahead of any user message (see runSingleTurn),
+      // so a held item can never strand a pipeline behind it.
+      if (head.held) {
+        return;
+      }
+
       // Queued /compact (clicked mid-turn): run it as its own drain step.
       // This is a safe boundary — no turn is mid-flight — so the compaction
       // gets its synthesized tool row, and everything queued behind it runs
@@ -1357,7 +1415,12 @@ export class HeadlessSession {
       let batchOb = head.command.onboardingState as string | undefined;
       for (; ; n++) {
         const it = this.queue.peekAt(n);
-        if (!it || it.source === 'chain' || this.isDrainBarrier(it)) {
+        if (
+          !it ||
+          it.held ||
+          it.source === 'chain' ||
+          this.isDrainBarrier(it)
+        ) {
           break;
         }
         const ob = it.command.onboardingState as string | undefined;
@@ -1379,7 +1442,7 @@ export class HeadlessSession {
    * and by kickDrain (background-completion-initiated).
    */
   private async resumeQueue(): Promise<void> {
-    if (this.running || this.queue.length === 0) {
+    if (this.running || !this.queue.hasUnheld()) {
       return;
     }
     this.running = true;
@@ -1402,7 +1465,7 @@ export class HeadlessSession {
    * racing any currently-synchronous path.
    */
   private kickDrain(): void {
-    if (this.running || this.queue.length === 0) {
+    if (this.running || !this.queue.hasUnheld()) {
       return;
     }
     // Schedule to avoid re-entrancy with the caller's synchronous path
@@ -1444,28 +1507,46 @@ export class HeadlessSession {
   }
 
   /**
-   * Cancel the running turn and flush the follow-ups that belonged to it
-   * (`chain`/`background`), while preserving `source: 'user'` items — those are
-   * independent user intent, not tied to the aborted run. The preserved user
-   * messages run next: `executeTurn` swallows the abort, so `handleMessage`
-   * falls through to `drainQueueLoop` with `running` still held. Returns the
-   * flushed items (for the cancel command's resume/discard UX).
+   * Stop everything the user can see running: the turn, an in-flight
+   * compaction, and any external tool waiting on a result. Flushes the
+   * follow-ups that belonged to the turn (`chain`/`background`) and HOLDS the
+   * `source: 'user'` items — those are independent user intent, so they're
+   * kept, but they no longer run on their own.
    *
-   * Messages already absorbed into the in-flight merged turn are NOT
-   * preserved — they were delivered into the turn that's being cancelled and
-   * each gets a `{cancelled, absorbed:true}` terminal. Only items still
-   * sitting in the queue survive.
+   * Holding is the difference between Stop working and Stop looking broken.
+   * These items used to drain immediately: `executeTurn` swallows the abort,
+   * so `handleMessage` fell through to `drainQueueLoop` with `running` still
+   * held and the next turn began in the same tick — the spinner never stopped,
+   * and every additional press hit a turn that had just started. They now wait
+   * in the queue card until the user sends again or promotes one.
+   *
+   * A compaction is cancelled here too, unconditionally. It gates every queued
+   * message and outlives the turn that started it, so leaving it running means
+   * Stop can't reach idle. The cost is the summary work in flight; the forced
+   * gate re-compacts on the next turn if the context is still too big.
+   *
+   * Messages already absorbed into the in-flight merged turn are NOT held —
+   * they were delivered into the turn that's being cancelled and each gets a
+   * `{cancelled, absorbed:true}` terminal. Only items still sitting in the
+   * queue survive.
    */
-  private handleCancel(): QueuedMessage[] {
+  private handleCancel(): {
+    flushed: QueuedMessage[];
+    held: QueuedMessage[];
+    cancelledCompaction: boolean;
+  } {
     if (this.currentAbort) {
       this.currentAbort.abort();
     }
+    const cancelledCompaction = cancelInflightCompaction();
     for (const [id, pending] of this.pendingTools) {
       clearTimeout(pending.timeout);
       pending.resolve(USER_CANCELLED_RESULT);
       this.pendingTools.delete(id);
     }
-    return this.queue.removeWhere((item) => item.source !== 'user');
+    const flushed = this.queue.removeWhere((item) => item.source !== 'user');
+    const held = this.queue.holdWhere((item) => item.source === 'user');
+    return { flushed, held, cancelledCompaction };
   }
 
   /**
@@ -1610,16 +1691,20 @@ export class HeadlessSession {
     }
 
     if (action === 'cancel') {
-      const cancelled = this.handleCancel();
+      const { flushed, held, cancelledCompaction } = this.handleCancel();
       // The in-flight message's completed(success:false, error:"cancelled")
       // is handled by onEvent when turn_cancelled fires. The cancel's own
-      // completed reports the flushed chain/background follow-ups (not the
-      // preserved user messages, which run next) so the sandbox can offer resume.
+      // completed reports the flushed chain/background follow-ups so the
+      // sandbox can offer resume, plus what this cancel actually stopped —
+      // a cancel with no turn running (the compaction case) otherwise acks
+      // success having, as far as the client can tell, done nothing.
       this.emit(
         'completed',
         {
           success: true,
-          ...(cancelled.length > 0 && { cancelledMessages: cancelled }),
+          ...(flushed.length > 0 && { cancelledMessages: flushed }),
+          ...(held.length > 0 && { heldMessages: held }),
+          ...(cancelledCompaction && { cancelledCompaction: true }),
         },
         requestId,
       );
@@ -1672,7 +1757,17 @@ export class HeadlessSession {
         );
         return;
       }
-      this.queue.setDelivery(id, delivery);
+      if (delivery === 'asap') {
+        // Promotion is an explicit "run this now": it releases any hold, moves
+        // the item to the head, and kicks the drain when nothing is running.
+        // Without that last part, promoting the message a cancel left behind
+        // would silently do nothing — ASAP is otherwise a mid-turn injection,
+        // and there is no turn to inject into.
+        this.queue.promoteToFront(id);
+        this.kickDrain();
+      } else {
+        this.queue.setDelivery(id, delivery);
+      }
       this.emit('completed', { success: true }, requestId);
       return;
     }
@@ -1779,7 +1874,11 @@ export class HeadlessSession {
         );
         return;
       }
-      if (this.queue.length === 0) {
+      // Held items deliberately don't count: `resume` exists to continue
+      // Remy's own persisted pipelines after a restart, not to deliver a user
+      // message the person hasn't asked for again. Sending or promoting is what
+      // releases a hold.
+      if (!this.queue.hasUnheld()) {
         this.emit('completed', { success: true }, requestId);
         return;
       }

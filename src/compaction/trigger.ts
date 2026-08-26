@@ -23,6 +23,18 @@ import type { ApiConfig } from '../config.js';
 
 const log = createLogger('compaction:trigger');
 
+/**
+ * Rejection reason when the user cancelled the compaction. A distinct type so
+ * callers can say "cancelled" instead of reporting an error for something the
+ * user asked for — the awaiting gate treats it like any other rejection.
+ */
+export class CompactionCancelledError extends Error {
+  constructor() {
+    super('Compaction cancelled — no checkpoint was created.');
+    this.name = 'CompactionCancelledError';
+  }
+}
+
 /** One generated summary, surfaced on the `complete` lifecycle event and as
  * the trigger promise's resolution — the UI-facing shape of a checkpoint. */
 export interface CompactionSummary {
@@ -44,6 +56,10 @@ let pending: CompactionResult | null = null;
  * summarize); the pending-already-waiting no-op path resolves null. */
 let inflightCompaction: Promise<CompactionSummary[] | null> | null = null;
 
+/** Aborts the in-flight compaction's summary calls. Lives and dies with
+ * `inflightCompaction`. */
+let inflightAbort: AbortController | null = null;
+
 /**
  * The in-flight compaction promise, or null when none is running. Used by the
  * headless layer's pre-turn gate (turns wait for it and then apply the
@@ -53,6 +69,26 @@ export function getInflightCompaction(): Promise<
   CompactionSummary[] | null
 > | null {
   return inflightCompaction;
+}
+
+/**
+ * Cancel the in-flight compaction, if any. Returns whether there was one.
+ *
+ * A compaction holds back every queued user message (handleMessage counts it
+ * as busy) and outlives the turn that started it, so the user's Stop has to
+ * reach it — otherwise Stop is a guaranteed no-op for as long as the summaries
+ * take, and the only escape is killing the process. The abort makes the summary
+ * calls come back empty, which lands on `compactConversation`'s
+ * history-left-intact path: no checkpoint, and the forced gate stays armed
+ * (only a clean success zeroes `lastContextSize`).
+ */
+export function cancelInflightCompaction(): boolean {
+  if (!inflightCompaction || !inflightAbort) {
+    return false;
+  }
+  log.info('Cancelling in-flight compaction');
+  inflightAbort.abort();
+  return true;
 }
 
 /** Extract the UI-facing summaries from a compaction result's checkpoints. */
@@ -165,6 +201,10 @@ export type CompactionLifecycleEvent =
       type: 'complete';
       error?: string;
       requestId?: string;
+      /** The user cancelled it (always alongside `error`). Distinguishes "you
+       * stopped this" from "this failed", which matters for what the tool row
+       * says and for not treating a cancel as an incident. */
+      cancelled?: boolean;
       /** Generated summaries — present on success when anything was
        * summarized; consumed by the frontend's checkpoint card. */
       summaries?: CompactionSummary[];
@@ -236,10 +276,14 @@ export function triggerCompaction(
   const { blocking = false, requestId, model, origin, toolCallId } = opts;
   listener?.({ type: 'started', blocking, requestId, origin, toolCallId });
 
+  const abort = new AbortController();
+  inflightAbort = abort;
+
   inflightCompaction = compactConversation(
     state.messages,
     apiConfig,
     resolveModel('conversationSummarizer', state.models, model),
+    abort.signal,
   )
     .then((result) => {
       pending = result;
@@ -253,13 +297,26 @@ export function triggerCompaction(
       return summaries;
     })
     .catch((err: any) => {
-      const message = err.message || 'Compaction failed';
-      listener?.({ type: 'complete', error: message, requestId });
-      log.error('Compaction failed', { error: message });
-      throw err;
+      const cancelled = abort.signal.aborted;
+      const message = cancelled
+        ? 'Compaction cancelled'
+        : err.message || 'Compaction failed';
+      listener?.({
+        type: 'complete',
+        error: message,
+        ...(cancelled && { cancelled: true }),
+        requestId,
+      });
+      if (cancelled) {
+        log.info('Compaction cancelled');
+      } else {
+        log.error('Compaction failed', { error: message });
+      }
+      throw cancelled ? new CompactionCancelledError() : err;
     })
     .finally(() => {
       inflightCompaction = null;
+      inflightAbort = null;
     });
 
   return inflightCompaction;

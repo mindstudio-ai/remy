@@ -379,12 +379,25 @@ export async function* streamChat(
       const errorMessage = isStall
         ? 'Stream stalled — no data received for 5 minutes'
         : `Network error: stream interrupted — ${err?.message ?? 'unknown'}`;
-      log.error(isStall ? 'Stream stalled' : 'Stream interrupted', {
-        requestId,
-        ...(subAgentId && { subAgentId }),
-        durationMs: Date.now() - startTime,
-        error: errorMessage,
-      });
+      // A deliberate cancel is not a failure. It reads identically to a dropped
+      // stream otherwise, which makes an intentional Stop look like an incident
+      // in the logs (and in a debug bundle) — the caller's own signal is the
+      // only thing that can tell them apart.
+      const wasAborted = !isStall && !!signal?.aborted;
+      const logAt = wasAborted ? log.warn : log.error;
+      logAt(
+        wasAborted
+          ? 'Request aborted mid-stream'
+          : isStall
+            ? 'Stream stalled'
+            : 'Stream interrupted',
+        {
+          requestId,
+          ...(subAgentId && { subAgentId }),
+          durationMs: Date.now() - startTime,
+          error: errorMessage,
+        },
+      );
       yield { type: 'error' as const, error: errorMessage };
       return;
     }

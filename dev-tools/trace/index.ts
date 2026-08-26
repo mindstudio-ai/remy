@@ -56,7 +56,13 @@ type LogSource = (typeof LOG_SOURCES)[number];
 const args = process.argv.slice(2);
 const outFlag = args.indexOf('-o');
 const outPath = outFlag >= 0 ? args[outFlag + 1] : undefined;
-const bundleDir = args.find((a, i) => a !== '-o' && i !== outFlag + 1);
+// The `-o` value is skipped by position — but only when `-o` is actually
+// present. Unguarded, `outFlag + 1` is 0 without it and the bundle dir (the
+// sole argument, at index 0) was skipped as if it were the output path,
+// so the tool printed usage for correct input.
+const bundleDir = args.find(
+  (a, i) => a !== '-o' && !(outFlag >= 0 && i === outFlag + 1),
+);
 if (!bundleDir || !fs.existsSync(bundleDir)) {
   console.error('Usage: node dev-tools/trace/index.ts <bundle-dir> [-o out.json]');
   process.exit(1);
