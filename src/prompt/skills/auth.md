@@ -1,6 +1,6 @@
 ---
 name: Auth & User Accounts
-what: Apps manage their own users — opt-in via manifest config over a developer-owned user table, with the platform handling verification codes, cookie sessions, and role sync. Covers email/SMS code login (the platform sends real 6-digit codes; the developer builds the UI), per-user API keys that resolve to full RBAC over Bearer auth, org-delegated "Sign in with Remy" for internal apps (redirect/popup handshake, platform-managed identity), the full frontend SDK (auth state and onAuthStateChanged, flows, email/phone changes, phone and email helpers, error codes), backend enforcement (requireRole/hasRole/userId, the system role), auth-screen design rules, and the dev test bypasses.
+what: Apps manage their own users — opt-in via manifest config over a developer-owned user table, with the platform handling verification codes, cookie sessions, and role sync. Covers email/SMS code login (the platform sends real 6-digit codes; the developer builds the UI), per-user API keys that resolve to full RBAC over Bearer auth, org-delegated "Sign in with Remy" for internal apps (redirect/popup handshake, platform-managed identity), the platform signup-restriction settings (domain/email allowlist, disposable-email blocking, fixed-code test accounts for app-store review — all platform settings via `mindstudio-prod settings`, never app code), the full frontend SDK (auth state and onAuthStateChanged, flows, email/phone changes, phone and email helpers, error codes), backend enforcement (requireRole/hasRole/userId, the system role), auth-screen design rules, and the dev test bypasses.
 when: Before writing ANY auth code — the manifest `auth` config, the user table, login/signup UI, frontend `auth.*` calls, API keys, delegated sign-in — and before testing or debugging auth flows.
 ---
 
@@ -48,6 +48,35 @@ Remy apps can have and manage their own users. Auth is opt-in: configure it in t
   - `roles` — optional. Maps to a JSON array column for role assignments.
   - `apiKey` — optional. Required if `api-key` is in methods. Platform stores masked value (`sk_...xxxx`) for display; one key per user.
 - **`roles`** — declares valid roles for the app. Same as before: `id`, `name`, optional `description`.
+
+## Restricting Who Can Sign Up (Platform Settings)
+
+When the user wants to limit who can register — "only allow sign-ins from our domain", "block throwaway emails", "give the app-store reviewer a working login" — these are **platform settings, enforced at code-send time before any email goes out, not app code**. An app-level equivalent (a client-side email check, a backend gate) is both redundant and weaker: the platform sends the verification code, so app code can't actually stop a signup. Manage them with the `mindstudio-prod settings` CLI (run `mindstudio-prod settings --help` for the full surface).
+
+**Signup allowlist ("only @acme.com emails"):**
+
+```bash
+mindstudio-prod settings allowlist add '*@acme.com'   # whole domain
+mindstudio-prod settings allowlist add 'cfo@other.com' # one address
+mindstudio-prod settings allowlist enable              # start enforcing
+```
+
+- Entries are explicit globs: `*@domain.com` (any address at that exact domain — no subdomains; add `*@sub.domain.com` separately) or `user@domain.com` (one address).
+- Enforcement needs both the enable toggle AND a non-empty list — an enabled-but-empty list allows everyone, never a lockout.
+- **Email-code only.** It does not apply to `sms-code`, `api-key`, or delegated "Sign in with Remy". If the user wants domain restriction on an SMS-auth app, say so plainly and suggest email-code — do not build an app-level imitation.
+- Blocked signups fail at `auth.sendEmailCode` with error code `email_not_allowed` — handle it in the login UI with a clear "this app is restricted" message.
+- The dev test login (`remy@mindstudio.ai`) bypasses the allowlist in dev sessions, so you can still smoke-test auth in the preview after enabling it. Don't add it to the allowlist.
+
+**Disposable-email blocking:** on by default — email-code signups from known burner domains are rejected at code-send with error code `disposable_email_blocked`. Per-app opt-out: `mindstudio-prod settings set blockDisposableEmails false`.
+
+**Test accounts (fixed-code login):** the mechanism for handing app-store reviewers working credentials for a wrapped app — never hand-roll a fake-auth backdoor for this. A listed email or E.164 phone signs in with a pre-set 6-digit code instead of a delivered one, bypassing the disposable and allowlist gates. Works in production; max 5; disable after review.
+
+```bash
+mindstudio-prod settings test-accounts add reviewer@example.com 246810
+mindstudio-prod settings test-accounts enable
+# after review:
+mindstudio-prod settings test-accounts disable
+```
 
 ## Auth Table
 
@@ -211,6 +240,8 @@ All auth methods throw on failure with a `code` property:
 | Code | HTTP | Meaning |
 |------|------|---------|
 | `rate_limited` | 429 | Too many requests |
+| `email_not_allowed` | 400 | Signup allowlist is enforced and this email doesn't match — show a clear "this app is restricted" message |
+| `disposable_email_blocked` | 400 | Disposable/burner email domain rejected at code send — ask for a personal or work email |
 | `invalid_code` | 400 | Wrong verification code |
 | `verification_expired` | 400 | Code has expired |
 | `max_attempts_exceeded` | 400 | Too many failed attempts |
@@ -428,10 +459,10 @@ Auth works the same in dev/preview as in production — real verification codes 
 - **Email:** `remy@mindstudio.ai` — verification code is always `123456`
 - **Phone:** any `555` number (e.g. `+15551234567`) — verification code is always `123456`
 
-All other emails and phone numbers receive real codes. There is no dev-mode bypass, no fake code, and no way to skip verification. When testing auth flows in the preview, use one of the test bypasses above or a real email/phone.
+All other emails and phone numbers receive real codes. There is no dev-mode bypass, no fake code, and no way to skip verification. When testing auth flows in the preview, use one of the test bypasses above or a real email/phone. (These dev bypasses work in dev sessions only and exist for you — they're distinct from *test accounts*, the platform setting for giving external reviewers a fixed-code login that works in production; see *Restricting Who Can Sign Up*.)
 
 This test account is the dev's standing identity: the preview's sign-in helper auto-fills it, the editor's Roles column edits its roles, and a scenario's `roles` field assigns roles to it after seeding. The `runMethod` tool's `userId: "testUser"` shortcut resolves to this same dev-bypass identity (as does `roles` without a `userId`). The platform find-or-creates a real users-table row for it on first call and caches the row's UUID for the rest of the dev session. **`auth.userId` inside the method is that UUID — not the literal string `"testUser"`.** The user row already exists, so don't try to insert it. If you need the UUID to seed app-specific rows that reference it (profiles, preferences, foreign keys), read it from any method response or query the users table directly: `SELECT id FROM users WHERE email = 'remy@mindstudio.ai'` (or `phone = '+15555555555'` for SMS-auth apps).
 
-For **"Sign in with Remy"** apps (`auth.methods` is `["remy"]`, with no `email-code`/`sms-code`), `testUser` — and `setupBrowser` — resolve to **the developer's own delegated Remy identity**, not the `remy@mindstudio.ai` code-bypass user. `auth.userId` is still that user's real UUID, but the `remy@mindstudio.ai` email lookup above does not apply — read the UUID from a method response instead.
+For **"Sign in with Remy"** apps (`auth.methods` is `["remy"]`, with no `email-code`/`sms-code`), `testUser` — and `setupBrowser`, and the editor's Roles column — resolve to **the developer's own delegated Remy identity**, not the `remy@mindstudio.ai` code-bypass user. `auth.userId` is still that user's real UUID, but the `remy@mindstudio.ai` email lookup above does not apply — read the UUID from a method response instead.
 
 Browser automation tools (screenshots, automated browser tests) handle their own auth sessions. Scenarios seed database data but do not create browser auth sessions.
