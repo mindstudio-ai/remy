@@ -1286,9 +1286,16 @@ export class HeadlessSession {
     // restored from disk after a restart. Fold this send in behind them and
     // drain, rather than running it now and leaving them to fire as their own
     // turn afterwards (the shape that reads as the agent answering a message
-    // you'd given up on). Sending is the explicit action that releases a hold,
-    // and the mailbox batch reconciles all of it in one turn.
-    if (this.queue.length > 0) {
+    // you'd given up on). Typing again is the explicit action that releases a
+    // hold, and the mailbox batch reconciles all of it in one turn.
+    //
+    // Automated actions are excluded: pressing Publish is not "resend what I
+    // typed earlier", and it must not be delayed behind a stale message. They
+    // run now and leave held items held (the drain below stops at them).
+    if (
+      this.queue.length > 0 &&
+      !isAutomatedMessage((parsed.text as string) ?? '')
+    ) {
       this.queue.releaseHeld();
       const command: StdinCommand = { ...parsed };
       if (requestId && command.requestId === undefined) {
