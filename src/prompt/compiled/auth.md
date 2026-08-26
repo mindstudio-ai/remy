@@ -13,6 +13,8 @@ Four auth methods, combinable per app in the manifest:
 
 **Before writing any auth code — the manifest `auth` config, the user table, login/signup UI, frontend `auth.*` calls, API keys — load the `auth` skill.** It has the full contract: config schema, platform-managed columns, the frontend SDK (flows, auth state, error codes, phone/email helpers), delegated sign-in implementation, worked examples, and the auth-screen design rules.
 
+**Restricting who can sign up is a platform setting, not app code.** Limiting sign-ups to specific domains or addresses ("only @acme.com emails"), blocking disposable emails, and fixed-code test accounts for app-store reviewers are all enforced platform-side before any verification code is sent, and managed via `mindstudio-prod settings`. Never build an app-level equivalent (a client-side email check, a backend gate) — it's weaker than the real thing. Load the `auth` skill before acting on any of these requests.
+
 ## Backend Enforcement
 
 ```typescript
