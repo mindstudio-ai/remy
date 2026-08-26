@@ -14,11 +14,16 @@
  * so references already written into specs stay current. The workflow is
  * call-first, like generateImages: the result hands back the exact markdown
  * reference line to paste, so a reference in prose is always a receipt for a
- * file that exists — never a promise to create one later. (A knowable path
- * invites writing references without calling; a 45K-token consultation once
- * shipped three such references and zero files.) The mirror upload is
- * non-fatal — a wireframe whose preview can't render is still fully usable by
- * the developer.
+ * file that exists — never a promise to create one later. The reference
+ * format and path pattern deliberately appear NOWHERE the design agent can
+ * read — not in this description, not in the prompts — so this result is the
+ * only place a valid-looking reference can come from. (A knowable format
+ * invites writing references without calling: a 45K-token consultation once
+ * shipped three such references and zero files, and prompts that spelled out
+ * `![name](src/.wireframes/{slug}.html)` produced four fabricated receipts in
+ * one run. Image generation never has this problem precisely because image
+ * URLs are unguessable.) The mirror upload is non-fatal — a wireframe whose
+ * preview can't render is still fully usable by the developer.
  */
 
 import { mkdir, stat, writeFile } from 'node:fs/promises';
@@ -37,7 +42,7 @@ const UPLOAD_TIMEOUT_MS = 30_000;
 export const definition: ToolDefinition = {
   name: 'createWireframe',
   description:
-    'Create (or revise) a wireframe from self-contained HTML+CSS. Call this while working to generate a sharable wireframe asset: the result returns the exact markdown reference line to paste into your response and into specs (like generateImages returns the image URL). Calling again with the same slug overwrites the wireframe in place, so a revision keeps its path and existing references stay current.',
+    'Generate a wireframe from self-contained HTML+CSS you author and write it to disk as a design artifact. This is how a wireframe comes to exist — the way generateImages is how an image comes to exist — and the developer builds from the file it creates. The result also hands back the reference line that embeds the wireframe in your response and in specs; paste it wherever the wireframe belongs and it renders as a live preview. Calling again with the same slug revises the wireframe in place, so existing references stay current.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -49,7 +54,7 @@ export const definition: ToolDefinition = {
       slug: {
         type: 'string',
         description:
-          'Filename stem, lowercase kebab-case (e.g. "feed-post-card"). The wireframe lives at src/.wireframes/{slug}.html. Re-use a slug to revise that wireframe in place.',
+          'Filename stem, lowercase kebab-case (e.g. "feed-post-card"). Re-use a slug to revise that wireframe in place.',
       },
       description: {
         type: 'string',
