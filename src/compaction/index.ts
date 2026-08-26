@@ -71,11 +71,18 @@ export interface CompactionResult {
  * Throws if the conversation had content to summarize and no usable summary
  * came back. The caller reports that and leaves the history alone — losing
  * the conversation is the failure worth avoiding, not skipping a compaction.
+ *
+ * `signal` aborts the summary calls. A compaction gates every queued user
+ * message (see the headless layer), so it has to be interruptible: without
+ * this, pressing Stop while one runs did nothing and the only escape was
+ * killing the process. An aborted summary yields no usable text, which lands
+ * on the same "left the history alone" path as any other failure.
  */
 export async function compactConversation(
   messages: Message[],
   apiConfig: ApiConfig,
   model: string,
+  signal?: AbortSignal,
 ): Promise<CompactionResult> {
   const endIndex = findSafeInsertionPoint(messages);
   const boundary = endIndex > 0 ? messages[endIndex - 1] : null;
@@ -99,6 +106,7 @@ export async function compactConversation(
         CONVERSATION_SUMMARY_PROMPT,
         conversationMessages,
         model,
+        { signal },
       ).then((text) => {
         if (text) {
           summaries.push({ name: 'conversation', text });
@@ -125,6 +133,7 @@ export async function compactConversation(
           SUBAGENT_SUMMARY_PROMPT,
           subagentMessages,
           model,
+          { signal },
         ).then((text) => {
           if (text) {
             summaries.push({ name, text });
@@ -141,8 +150,12 @@ export async function compactConversation(
   await Promise.all(tasks);
 
   if (conversationFailed) {
+    // An abort lands here too — every summary call returns null once the
+    // signal fires — so name the real cause rather than blaming the model.
     throw new Error(
-      'Could not summarize the conversation — the model did not return a usable summary. History left intact.',
+      signal?.aborted
+        ? 'Compaction cancelled. History left intact.'
+        : 'Could not summarize the conversation — the model did not return a usable summary. History left intact.',
     );
   }
 
@@ -537,7 +550,11 @@ async function generateSummary(
   compactionPrompt: string,
   messagesToSummarize: Message[],
   model: string,
-  opts: { forceChunk?: boolean; allowRetry?: boolean } = {},
+  opts: {
+    forceChunk?: boolean;
+    allowRetry?: boolean;
+    signal?: AbortSignal;
+  } = {},
 ): Promise<string | null> {
   const serialized = serializeForSummary(messagesToSummarize);
   if (!serialized.trim()) {
@@ -570,7 +587,10 @@ async function generateSummary(
           // A split driven by size gets its children a retry of their own. A
           // split that IS the retry does not, or a model that will not
           // summarize at any size fans out call after call before giving up.
-          { allowRetry: opts.forceChunk ? false : allowRetry },
+          {
+            allowRetry: opts.forceChunk ? false : allowRetry,
+            ...(opts.signal && { signal: opts.signal }),
+          },
         ),
       ),
     );
@@ -600,6 +620,7 @@ async function generateSummary(
     compactionPrompt,
     serialized,
     model,
+    opts.signal,
   );
   if (summaryText === null) {
     return null;
@@ -637,6 +658,7 @@ async function runSummaryCall(
   compactionPrompt: string,
   serialized: string,
   model: string,
+  signal?: AbortSignal,
 ): Promise<string | null> {
   // The instruction is repeated after the conversation. A single copy above
   // it sits tens of thousands of tokens from where generation starts, and
@@ -659,6 +681,7 @@ async function runSummaryCall(
     // re-read (parallel siblings can't read each other's in-flight writes
     // either) — a cache write here is pure waste.
     cachePolicy: 'oneshot',
+    ...(signal && { signal }),
   })) {
     if (event.type === 'text') {
       summaryText += event.text;
@@ -683,7 +706,14 @@ async function runSummaryCall(
   }
 
   if (!summaryText.trim()) {
-    log.warn('Empty summary generated', { name });
+    // On abort streamChatWithRetry returns without yielding an error event
+    // (it checks the signal before retrying), so an empty summary is the
+    // normal shape of a cancel — don't report it as a model failure.
+    if (signal?.aborted) {
+      log.info('Summary cancelled', { name });
+    } else {
+      log.warn('Empty summary generated', { name });
+    }
     return null;
   }
   return summaryText.trim();

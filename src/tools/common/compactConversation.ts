@@ -4,6 +4,7 @@ import type { Tool } from '../index.js';
 import {
   triggerCompaction,
   formatSummariesResult,
+  CompactionCancelledError,
 } from '../../compaction/trigger.js';
 
 export const compactConversationTool: Tool = {
@@ -57,7 +58,11 @@ export const compactConversationTool: Tool = {
         onBackgroundComplete?.(
           toolCallId,
           'compactConversation',
-          `Error: ${err.message || 'Compaction failed'}`,
+          // A cancel is the user's own doing — report it as an outcome, not as
+          // an error the block renders as a failure.
+          err instanceof CompactionCancelledError
+            ? err.message
+            : `Error: ${err.message || 'Compaction failed'}`,
         );
       })
       .finally(() => {
