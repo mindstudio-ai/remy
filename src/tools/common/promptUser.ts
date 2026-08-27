@@ -1,10 +1,11 @@
 /**
  * Prompt the user with structured questions.
  *
- * Renders as an inline form in the chat. The sandbox intercepts this at
- * tool_start and renders the questions as UI (buttons, checkboxes, text
- * fields). The tool blocks until the user submits answers, then the
- * sandbox sends the responses back as the tool result.
+ * The sandbox intercepts this at tool_start and renders the questions as UI
+ * (buttons, checkboxes, text fields): `inline` renders in the chat itself,
+ * `form` as an overlay filling the editor area. The tool blocks until the
+ * user submits answers, then the sandbox sends the responses back as the
+ * tool result.
  *
  * Use for any structured input: intake questions, spec review gates,
  * choosing between approaches, confirming before destructive actions.
@@ -16,7 +17,7 @@ export const promptUserTool: Tool = {
   definition: {
     name: 'promptUser',
     description:
-      'Ask the user structured questions. Choose type first: "form" for structured intake (5+ questions, takes over screen), "inline" for quick clarifications or confirmations. Blocks until the user responds. Result contains `_dismissed: true` if the user dismisses without answering.',
+      'Ask the user structured questions. Choose type first: "form" for structured intake (5+ questions, opens as a full form in the editor area), "inline" for quick clarifications or confirmations. Blocks until the user responds. Result contains `_dismissed: true` if the user dismisses without answering.',
     inputSchema: {
       type: 'object',
       properties: {
