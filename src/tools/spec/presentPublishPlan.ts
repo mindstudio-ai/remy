@@ -2,9 +2,10 @@
  * Present a publish changelog to the user for approval.
  *
  * External tool — the sandbox intercepts this at tool_start and renders
- * a full-screen markdown view of the changelog. The content streams in
- * via tool_input_delta. The user approves or dismisses, and the sandbox
- * sends back the result.
+ * a markdown view of the changelog as an overlay filling the editor area
+ * (full-screen only on mobile, where there is no side-by-side). The content
+ * streams in via tool_input_delta. The user approves or dismisses, and the
+ * sandbox sends back the result.
  *
  * Available on every turn (the tool list is cache-stable), because a publish
  * can start from chat ("ship it") as well as the Publish button. The release
@@ -21,7 +22,7 @@ export const presentPublishPlanTool: Tool = {
   definition: {
     name: 'presentPublishPlan',
     description:
-      'Present a publish changelog to the user for approval — the consent gate of the release flow, used when the user has asked to publish (the Publish button or an explicit chat request; the `publishing` skill covers the full sequence). Write a clear markdown summary of what changed since the last deploy. The user will see this in a full-screen view and can approve or dismiss. Call this BEFORE committing or pushing.',
+      'Present a publish changelog to the user for approval — the consent gate of the release flow, used when the user has asked to publish (the Publish button or an explicit chat request; the `publishing` skill covers the full sequence). Write a clear markdown summary of what changed since the last deploy. The user reviews this in the editor area and can approve or dismiss. Call this BEFORE committing or pushing.',
     inputSchema: {
       type: 'object',
       properties: {

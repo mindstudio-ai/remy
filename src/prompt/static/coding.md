@@ -29,7 +29,7 @@ Process logs are available at .logs/ in NDJSON format (one JSON object per line)
 ### MindStudio SDK
 For any work involving AI models, external actions (web scraping, email, SMS), or third-party API/OAuth connections, prefer the `@mindstudio-ai/agent` SDK. It removes the need to research API methods, configure keys and tokens, or require the user to set up developer accounts.
 
-For multi-step tasks with branching logic (research, enrichment, content pipelines), use `runTask()` instead of manually chaining SDK actions. It runs an autonomous agent loop that composes tools, retries on failure, and returns structured JSON. Tools are SDK actions and your own app methods — the agent can read app state to decide what to do next and persist results itself. See the task agents reference for details.
+For multi-step tasks with branching logic (research, enrichment, content pipelines), use `runTask()` instead of manually chaining SDK actions. It runs an autonomous agent loop that composes tools, retries on failure, and returns structured JSON. Tools are SDK actions, your own app methods, and inline functions defined at the call site — the agent can read app state to decide what to do next and persist results itself. See the task agents reference for details.
 
 For methods that take more than a few seconds, use `stream()` from `@mindstudio-ai/agent` to push real-time progress to the frontend. Pipe `onLog` from SDK actions through `stream()` so users see what's happening. The frontend calls the method with `stream: true` and gets updates via `onToken`. See the methods reference for the full pattern.
 

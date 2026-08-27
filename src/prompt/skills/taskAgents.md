@@ -1,6 +1,6 @@
 ---
 name: Task Agents
-what: A full autonomous agent loop callable from any method. Give it a prompt, a set of tools, and a JSON Schema for the output shape; the platform runs the model until it produces validated output matching that schema — searching, scraping, generating images, retrying approaches that failed, and calling your app's own methods to read and write data as it goes. Tools can be any of the 1000+ SDK actions and your own methods in any combination, which is what makes it part of the app rather than a detached research bot. This is the difference between a feature that saves what the user typed and one that researches, enriches, and creates on their behalf, and it is one of the most powerful things the platform can do. Consider it whenever a feature would be dramatically more compelling if the app could do real work autonomously.
+what: A full autonomous agent loop callable from any method. Give it a prompt, a set of tools, and a JSON Schema for the output shape; the platform runs the model until it produces validated output matching that schema — searching, scraping, generating images, retrying approaches that failed, and calling your app's own methods to read and write data as it goes. Tools can be any of the 1000+ SDK actions, your own methods, and inline functions defined at the call site, in any combination, which is what makes it part of the app rather than a detached research bot. This is the difference between a feature that saves what the user typed and one that researches, enriches, and creates on their behalf, and it is one of the most powerful things the platform can do. Consider it whenever a feature would be dramatically more compelling if the app could do real work autonomously.
 when: Before writing any `mindstudio.runTask()` call — background enrichment, research-and-generate, anything where the model decides its own next step.
 ---
 
@@ -10,7 +10,7 @@ A user types the name of a restaurant into your app, or uploads a photo of a sto
 
 `runTask()` makes this possible. It runs a multi-step, tool-use agent loop: give it a prompt, a set of tools, and a JSON Schema for the structured output you want (`outputSchema`). The platform runs the loop (calling the model, executing tool calls, feeding results back) until the model produces JSON conforming to your schema — validated every turn, with automatic repair when it doesn't. `result.output` is typed by inference from the schema: no generic argument, no manual validation. The model decides what to do next based on intermediate results — retrying searches with different terms, working around failed tools, batching independent calls in parallel.
 
-Tools are **SDK actions** (`searchGoogle`, `generateImage`, …) and **your own app's methods** (`{ appMethod: 'save-vendor' }`), in any combination. That second half is what makes a task agent part of your app rather than a detached research bot: it can read your tables to decide what to do next, and write results back itself instead of handing them to you to persist.
+Tools are **SDK actions** (`searchGoogle`, `generateImage`, …), **your own app's methods** (`{ appMethod: 'save-vendor' }`), and **inline functions** (`{ name, description, inputSchema, execute }` — a function defined right in the calling method), in any combination. The latter two are what make a task agent part of your app rather than a detached research bot: it can read your tables to decide what to do next, and write results back itself instead of handing them to you to persist.
 
 This is one of the most powerful pieces of the MindStudio SDK, and it can turn an app from amazing into truly magical. Use `askMindStudioSdk` to help construct the right agent for a task — including which model to give it.
 
@@ -129,6 +129,14 @@ tools: [
   // One of your app's own methods — note `appMethod`, not `method`
   { appMethod: 'listVendorsMissingContacts', description: 'Vendors with no email on file. Call this first to decide what needs researching.' },
   { appMethod: 'updateVendor', description: 'Write researched contact details back. One call per vendor.' },
+
+  // An inline function — runs right here in your process
+  {
+    name: 'checkDomainReputation',
+    description: 'Look up a domain in our internal blocklist. Call before trusting a scraped site.',
+    inputSchema: { type: 'object', properties: { domain: { type: 'string' } }, required: ['domain'] },
+    execute: async (input) => BlockedDomains.find(String(input.domain)),
+  },
 ]
 ```
 
@@ -151,6 +159,25 @@ Keep them short and task-specific. Say when to reach for it and when not to, sin
 - Method calls run in parallel with everything else in the turn, so don't expose two methods that would conflict if called simultaneously.
 - Cost from inside a method (its own model calls) doesn't appear in the task's `usage.totalBillingCost`. It's billed and attributed to that method, just not rolled into the task total.
 
+### Inline function tools
+
+`{ name, description, inputSchema, execute }` defines a tool right in the calling method — the function executes in your process when the model calls it. Use it for task-private glue that doesn't deserve to be an app method: a lookup against your tables framed exactly for this task, a computation, a check against data the task closed over. If the capability should exist in the app in its own right (invocable, authorized, visible in the manifest), make it a method and expose it with `appMethod` instead.
+
+```typescript
+{
+  name: 'checkExisting',
+  description: 'Look up whether we already track this vendor. Call before researching one.',
+  inputSchema: { type: 'object', properties: { name: { type: 'string' } }, required: ['name'] },
+  execute: async (input) => Vendors.findByName(String(input.name)),
+}
+```
+
+- The `description` is required — it is everything the model knows about the tool. `inputSchema` is optional; omitted means the tool takes no arguments.
+- A thrown error is fed back to the model as `{ error: message }` tool output to work around — it never fails the task. Throw informative errors, same as app methods.
+- No `defaults` — the function is your code; close over whatever it needs.
+- Names share the flat tool namespace: 1–64 chars of letters, digits, `_`, `-`, and no collisions with SDK action names.
+- Calling `runTask()` from inside a function tool is not blocked the way it is from a method tool — the depth cap doesn't apply, so unbounded recursion (and its cost) is yours to prevent. Nest deliberately or not at all.
+
 ## Voice & Tone in Prompts
 
 When a task agent produces user-facing text, the prompt must state the voice and tone it should write in. Specify the desired voice explicitly, and rule out emojis, em dashes, and other "ai-isms" — the output goes straight to the user, so nothing downstream will catch them.
@@ -161,7 +188,7 @@ When a task agent produces user-facing text, the prompt must state the voice and
 |-------|----------|---------|-------------|
 | `prompt` | Yes | — | System prompt defining the agent's behavior |
 | `input` | Yes | — | Structured input (passed as user message) |
-| `tools` | Yes | — | SDK action names and/or `{ appMethod, description }` entries, each with optional `defaults` |
+| `tools` | Yes | — | SDK action names, `{ appMethod, description }` entries (each with optional `defaults`), and/or inline `{ name, description, inputSchema, execute }` function tools |
 | `outputSchema` | One of these two | — | Plain JSON Schema for the output (`type`/`properties`/`required`/`enum`/`items`; nullable via type arrays, never `nullable: true`; no `oneOf`/`$ref`). Validated every turn with automatic repair; `result.output` typed from the schema. Use this |
 | `structuredOutputExample` | One of these two | — | Legacy: object or JSON string showing expected output shape, unvalidated. Use realistic example values, not placeholders like `'string'`, and always check `parsedSuccessfully` |
 | `model` | Yes | — | Model ID (must support tool use). Ask `askMindStudioSdk` for the right one — MindStudio's ids don't match vendor ids, so a plausible-looking guess is usually wrong |
