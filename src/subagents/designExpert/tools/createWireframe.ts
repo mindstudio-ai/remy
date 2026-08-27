@@ -22,8 +22,14 @@
  * shipped three such references and zero files, and prompts that spelled out
  * `![name](src/.wireframes/{slug}.html)` produced four fabricated receipts in
  * one run. Image generation never has this problem precisely because image
- * URLs are unguessable.) The mirror upload is non-fatal — a wireframe whose
- * preview can't render is still fully usable by the developer.
+ * URLs are unguessable.) Known leak in that defense: consultations resume the
+ * designer's prior transcript (getSubAgentHistory), so earlier results — and
+ * with them the reference format — sit in context on every follow-up. A
+ * revision consult once shipped two stale references plus one fabricated one
+ * and zero tool calls that way; the receipt discipline in ui-patterns.md
+ * ("every reference is a receipt from this response's work") is what guards
+ * it now. The mirror upload is non-fatal — a wireframe whose preview can't
+ * render is still fully usable by the developer.
  */
 
 import { mkdir, stat, writeFile } from 'node:fs/promises';
@@ -42,7 +48,7 @@ const UPLOAD_TIMEOUT_MS = 30_000;
 export const definition: ToolDefinition = {
   name: 'createWireframe',
   description:
-    'Generate a wireframe from self-contained HTML+CSS you author and write it to disk as a design artifact. This is how a wireframe comes to exist — the way generateImages is how an image comes to exist — and the developer builds from the file it creates. The result also hands back the reference line that embeds the wireframe in your response and in specs; paste it wherever the wireframe belongs and it renders as a live preview. Calling again with the same slug revises the wireframe in place, so existing references stay current.',
+    'Generate a wireframe from self-contained HTML+CSS you author and write it to disk as a design artifact. This is how a wireframe comes to exist — the way generateImages is how an image comes to exist — and the developer builds from the file it creates. The result also hands back the reference line that embeds the wireframe in your response and in specs; paste it wherever the wireframe belongs and it renders as a live preview. Calling again with the same slug revises the wireframe in place, so existing references stay current — a revision is a call to this tool, never a prose description of changes to an earlier wireframe.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -64,7 +70,7 @@ export const definition: ToolDefinition = {
       html: {
         type: 'string',
         description:
-          'The complete HTML document (<html>…</html>), self-contained vanilla HTML/CSS/JS. No frontmatter — it is added for you.',
+          'The complete HTML document (<html>…</html>), self-contained vanilla HTML/CSS/JS. Transparent body — the preview supplies the backdrop; style the component container instead. No frontmatter — it is added for you.',
       },
     },
     required: ['name', 'slug', 'description', 'html'],
