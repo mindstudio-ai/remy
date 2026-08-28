@@ -210,9 +210,14 @@ export function runCli(
       const out = stdout.trim();
 
       if (timedOut) {
+        // The timeout is the headline; stderr is supporting detail (e.g. the
+        // ask agent's progress trail), not a substitute for saying it.
+        const detail = stderr.trim();
         finish({
           ok: false,
-          output: stderr.trim() || 'Process timed out',
+          output:
+            `Process timed out after ${Math.round(timeout / 1000)}s` +
+            (detail ? `. Output before timeout:\n${detail}` : ''),
           logs,
           timedOut: true,
           truncated,
