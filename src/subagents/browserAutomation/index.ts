@@ -92,14 +92,14 @@ export async function runBrowserAutomation(
       executeTool: async (name, _input, _toolCallId, onLog) => {
         if (name === 'setupBrowser') {
           try {
-            // 20s > the sidecar's own 15s bound (timeout ladder — see above).
+            // 30s > the sidecar's own 25s bound (timeout ladder — see above).
             const result = await sidecarRequest(
               '/setup-browser',
               {
                 auth: _input.auth,
                 path: _input.path,
               },
-              { timeout: 20000 },
+              { timeout: 30000 },
             );
             return JSON.stringify(result);
           } catch (err: any) {
