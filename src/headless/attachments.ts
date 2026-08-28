@@ -176,14 +176,23 @@ export function buildUploadHeader(
       : e.isImage
         ? null
         : 'no extracted text — raw file only';
+  // This system's `unzip` (Amazon Linux, Red Hat charset patchset) decodes
+  // entry names through a DOS codepage and corrupts any non-ASCII filename —
+  // even in spec-correct UTF-8-flagged zips, and worse in the unflagged ones
+  // macOS Finder produces. Steer the agent to a safe extractor up front.
+  const zipNote = entries.some((e) =>
+    e.localPath.toLowerCase().endsWith('.zip'),
+  )
+    ? '\n[Note: extract .zip files with `unzip -O UTF-8 <file> -d <dir>` (or `python3 -m zipfile -e <file> <dir>`) — plain `unzip` on this system mangles non-ASCII filenames]'
+    : '';
   if (entries.length === 1) {
     const e = entries[0];
     const extra = detail(e);
-    return `[Uploaded file: ${e.localPath}${extra ? ` — ${extra}` : ''}]`;
+    return `[Uploaded file: ${e.localPath}${extra ? ` — ${extra}` : ''}]${zipNote}`;
   }
   const lines = entries.map((e) => {
     const extra = detail(e);
     return `- ${e.localPath}${extra ? `\n  ${extra}` : ''}`;
   });
-  return `[Uploaded files]\n${lines.join('\n')}`;
+  return `[Uploaded files]\n${lines.join('\n')}${zipNote}`;
 }
