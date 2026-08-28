@@ -98,7 +98,19 @@ Need an image on the site (hero, logo, OG image)? **Never commit binaries to the
 ```bash
 mindstudio-prod files put --public ./hero.jpg   # → { url, key } — content-addressed, immutable
 ```
-Write that URL into your JSX/HTML. Also: `files list`, `files rm --store … --key …` (`--help` for flags).
+Write that URL into your JSX/HTML. The full CLI surface: `put` (any size up to 5 GiB — bytes go directly to storage), `get` (download an object to disk), `sign` (mint a link), `stat` (metadata / existence), `ls` (objects in a store), `list` (store summary), `rm` (`--help` for flags).
+
+## Moving large or private files off the sandbox
+
+The sandbox is ephemeral; when a user needs a file out of it (an export, an archive, a handoff), the channel is a **private store + a signed link** — private, expiring, and revocable:
+
+```bash
+mindstudio-prod files put --private --store handoff ./export.tar.gz          # → { key }
+mindstudio-prod files sign --private --store handoff --key <key> --ttl 86400 # → { url, expiresAt }
+mindstudio-prod files rm --store handoff --key <key> --private               # revoke when confirmed received
+```
+
+**Never use the account media CDN (`mindstudio upload`) for sensitive material — those URLs are public and permanent, with no delete.** That includes probing: don't test an upload channel with the real payload; use throwaway bytes.
 
 ## Generated assets
 
