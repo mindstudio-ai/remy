@@ -50,11 +50,11 @@ Search is deterministic for a fixed corpus and configuration, so eval sets and r
 ## Loading documents — normally at build time, from the CLI
 
 ```bash
-mindstudio-prod datasources add --source policies --wait docs/*.pdf
-mindstudio-prod datasources add --source policies --metadata department=legal,year=2026 contract.pdf
-mindstudio-prod datasources search --source policies "what are the payment terms?"   # sanity-check
-mindstudio-prod datasources search --source policies --filter department=legal --mode lexical "ERR-7741X"
-mindstudio-prod datasources delete --source policies   # whole source; --source is required, never defaulted
+remy-admin datasources add --source policies --wait docs/*.pdf
+remy-admin datasources add --source policies --metadata department=legal,year=2026 contract.pdf
+remy-admin datasources search --source policies "what are the payment terms?"   # sanity-check
+remy-admin datasources search --source policies --filter department=legal --mode lexical "ERR-7741X"
+remy-admin datasources delete --source policies   # whole source; --source is required, never defaulted
 ```
 
 `--wait` blocks until processing finishes and exits non-zero on failure. Also `datasources list`, `status` (per-document state + ingest errors), `rm --document <id>`. `--help` for flags.
@@ -91,16 +91,16 @@ Images inside documents are described by a vision model and the description subs
 `rerank` and `hybrid` default on and are usually right — reranking is the biggest quality lever, and hybrid is what finds part numbers, error codes and proper nouns a semantic model never learned. Both are also per-query (`search(q, { rerank: false })`) for a latency-sensitive path.
 
 ```bash
-mindstudio-prod datasources config --source policies              # show
-mindstudio-prod datasources config --source policies --top-k 8    # free, immediate
+remy-admin datasources config --source policies              # show
+remy-admin datasources config --source policies --top-k 8    # free, immediate
 ```
 
 **A rebuild-class change on a populated corpus is rejected** — you're told what it would invalidate and what it costs. To make it, build a new version alongside the live one:
 
 ```bash
-mindstudio-prod datasources revectorize --source policies --max-chars 900 --wait
-mindstudio-prod datasources search --source policies --candidate "payment terms"   # compare
-mindstudio-prod datasources promote --source policies                              # go live
+remy-admin datasources revectorize --source policies --max-chars 900 --wait
+remy-admin datasources search --source policies --candidate "payment terms"   # compare
+remy-admin datasources promote --source policies                              # go live
 ```
 
 Search serves the current version throughout, so nothing degrades while the new one builds. `datasources drop` discards an unwanted candidate.

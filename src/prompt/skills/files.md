@@ -96,7 +96,7 @@ Lightweight-config pattern: a public store + a stable `key` is a file the fronte
 Need an image on the site (hero, logo, OG image)? **Never commit binaries to the repo** — it bloats git. Upload once and embed the returned URL:
 
 ```bash
-mindstudio-prod files put --public ./hero.jpg   # → { url, key } — content-addressed, immutable
+remy-admin files put --public ./hero.jpg   # → { url, key } — content-addressed, immutable
 ```
 Write that URL into your JSX/HTML. The full CLI surface: `put` (any size up to 5 GiB — bytes go directly to storage), `get` (download an object to disk), `sign` (mint a link), `stat` (metadata / existence), `ls` (objects in a store), `list` (store summary), `rm` (`--help` for flags).
 
@@ -105,9 +105,9 @@ Write that URL into your JSX/HTML. The full CLI surface: `put` (any size up to 5
 The sandbox is ephemeral; when a user needs a file out of it (an export, an archive, a handoff), the channel is a **private store + a signed link** — private, expiring, and revocable:
 
 ```bash
-mindstudio-prod files put --private --store handoff ./export.tar.gz          # → { key }
-mindstudio-prod files sign --private --store handoff --key <key> --ttl 86400 # → { url, expiresAt }
-mindstudio-prod files rm --store handoff --key <key> --private               # revoke when confirmed received
+remy-admin files put --private --store handoff ./export.tar.gz          # → { key }
+remy-admin files sign --private --store handoff --key <key> --ttl 86400 # → { url, expiresAt }
+remy-admin files rm --store handoff --key <key> --private               # revoke when confirmed received
 ```
 
 **Never use the account media CDN (`mindstudio upload`) for sensitive material — those URLs are public and permanent, with no delete.** That includes probing: don't test an upload channel with the real payload; use throwaway bytes.

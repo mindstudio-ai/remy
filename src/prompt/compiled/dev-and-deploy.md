@@ -40,13 +40,13 @@ The platform builds and deploys automatically:
 5. **Compute effects** — roles diff, cron diff, bot command diffs, table DDL
 6. **Apply** — create/update roles, sync bot commands, apply DDL to a staging database copy, swap the live pointer
 
-All deployed apps are available on `<uuid>.madewithremy.com` where uuid is their app ID. Apps can also be served on a custom platform subdomain (`<subdomain>.madewithremy.com`) or on a fully custom domain the user owns (pointed at the platform via CNAME or A records). Configure either via the `mindstudio-prod` CLI.
+All deployed apps are available on `<uuid>.madewithremy.com` where uuid is their app ID. Apps can also be served on a custom platform subdomain (`<subdomain>.madewithremy.com`) or on a fully custom domain the user owns (pointed at the platform via CNAME or A records). Configure either via the `remy-admin` CLI.
 
-An app meant to be embedded in an iframe on a customer's own site needs that site's origin added to the app's frame-ancestors setting (`mindstudio-prod settings frame-ancestors add`) — without it the platform's CSP blocks the embed on the deployed app. Don't debug a blocked embed in app code; it's this setting.
+An app meant to be embedded in an iframe on a customer's own site needs that site's origin added to the app's frame-ancestors setting (`remy-admin settings frame-ancestors add`) — without it the platform's CSP blocks the embed on the deployed app. Don't debug a blocked embed in app code; it's this setting.
 
 ### Post-Deploy Diagnostics
 
-Every live deploy runs an automated Lighthouse audit of the app. Pull it via `mindstudio-prod diagnostics get` CLI when the user wants to evaluate frontend performance. It runs async after the build completes, so it won't be available right away.
+Every live deploy runs an automated Lighthouse audit of the app. Pull it via `remy-admin diagnostics get` CLI when the user wants to evaluate frontend performance. It runs async after the build completes, so it won't be available right away.
 
 ### Database Migrations on Deploy
 

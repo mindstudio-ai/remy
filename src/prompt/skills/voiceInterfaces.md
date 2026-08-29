@@ -27,7 +27,7 @@ Beyond the mechanics, the persona itself should be *of the ear*: pacing, warmth,
 
 ### The shape of `system.md`
 
-Structure the compiled prompt as short **labeled sections** — Role & Objective, Personality & Tone, Rules, and (when the app has a real call flow) Conversation Flow — with bullets over paragraphs; realtime models find and follow sectioned rules far more reliably than prose. Scope rules precisely; blanket `always`/`never` makes the agent rigid and unable to handle reasonable exceptions. And start minimal: state the role, the boundaries, and the voice mechanics above, then add rules only for behaviors that actually misfire in test calls (the transcripts in the call log are the feedback loop — `mindstudio-prod voice sessions get` reads a call verbatim) rather than front-loading a policy manual.
+Structure the compiled prompt as short **labeled sections** — Role & Objective, Personality & Tone, Rules, and (when the app has a real call flow) Conversation Flow — with bullets over paragraphs; realtime models find and follow sectioned rules far more reliably than prose. Scope rules precisely; blanket `always`/`never` makes the agent rigid and unable to handle reasonable exceptions. And start minimal: state the role, the boundaries, and the voice mechanics above, then add rules only for behaviors that actually misfire in test calls (the transcripts in the call log are the feedback loop — `remy-admin voice sessions get` reads a call verbatim) rather than front-loading a policy manual.
 
 ### The latency classes
 
@@ -211,7 +211,7 @@ export async function callMeAboutMyOrder(input: { phone: string }) {
 
 - **The method is the authorization gate.** The voice interface's `auth` block does not apply to calls the backend places deliberately — gate the *method* with `auth.requireRole(...)` exactly as you would any sensitive action.
 - **`assumeIdentity: true`** runs the call as the user who invoked the method: the agent knows who it's talking to (Current User block) and every tool call carries their roles — regardless of which number was dialed (the user types any number into a field; identity comes from their session, not the phone). Omitted/false → anonymous call; role-gated tools decline. System/cron invocations have no human identity and always run anonymously. Anonymous outbound calls (deployed) get the same in-call verification flow as inbound — the callee proves possession of the number that was dialed, or verifies by email — so an anonymous call can still upgrade to a known user mid-conversation.
-- **Production needs a dedicated phone number.** The app owner attaches one ($1/month) via the dashboard or `mindstudio-prod voice numbers` (see "The voice CLI" below) — it becomes the caller ID for every call, in dev sessions too, so users always see the same number. Without one, deployed calls throw `phone_out_requires_dedicated_number`, and dev sessions fall back to a shared platform test number that varies per call (tighter limits apply on the shared pool).
+- **Production needs a dedicated phone number.** The app owner attaches one ($1/month) via the dashboard or `remy-admin voice numbers` (see "The voice CLI" below) — it becomes the caller ID for every call, in dev sessions too, so users always see the same number. Without one, deployed calls throw `phone_out_requires_dedicated_number`, and dev sessions fall back to a shared platform test number that varies per call (tighter limits apply on the shared pool).
 - **Outcome is on the call record**, not the return value: `voice.call` returns as soon as dialing starts (`{ sessionId, status: 'dialing', from, to }`); answered/busy/no-answer land on the session in the app's call log (`voice.listSessions()` / the dashboard).
 - **Limits**: the app's concurrent-session policy, a daily outbound-call cap, a per-call duration ceiling, and one active call per callee number (`voice_callee_busy`).
 - **Compliance**: automated calls require prior consent. Call your own users who opted in to calls from this app, honor reasonable calling hours, never dial purchased or cold lists — design the consent moment into the product (a "call me" button IS consent; a scraped list is not).
@@ -242,14 +242,14 @@ A caller whose number exactly matches an app user's phone starts the call alread
 
 ## The voice CLI
 
-The `mindstudio-prod voice` family covers numbers, the call log, and voice policy:
+The `remy-admin voice` family covers numbers, the call log, and voice policy:
 
 ```bash
-mindstudio-prod voice numbers search --area-code 310   # available numbers to offer the user
-mindstudio-prod voice numbers buy +13105551234         # buy + attach ($1/month — see below)
-mindstudio-prod voice numbers release +13105551234     # permanent; no refund, ~15-day quarantine
-mindstudio-prod voice sessions list --limit 10         # call log: web / phone-out / phone-in
-mindstudio-prod voice sessions get <sessionId>         # full transcript + cost breakdown
+remy-admin voice numbers search --area-code 310   # available numbers to offer the user
+remy-admin voice numbers buy +13105551234         # buy + attach ($1/month — see below)
+remy-admin voice numbers release +13105551234     # permanent; no refund, ~15-day quarantine
+remy-admin voice sessions list --limit 10         # call log: web / phone-out / phone-in
+remy-admin voice sessions get <sessionId>         # full transcript + cost breakdown
 ```
 
 Also `voice numbers list`, `voice numbers set-name` (outbound caller-ID display name; 12-72h carrier propagation), `voice settings get`/`set` (concurrency, per-visitor, max duration — `set` merges: only the settings you pass change). `--help` for flags.

@@ -37,7 +37,7 @@ Each secret has a dev value and a prod value. The same code (`process.env.STRIPE
 
 ## Management
 
-Secrets are managed through the app's dashboard or the `mindstudio-prod secrets` CLI.
+Secrets are managed through the app's dashboard or the `remy-admin secrets` CLI.
 
 ## What NOT to Store
 

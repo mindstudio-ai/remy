@@ -8,7 +8,7 @@ when: Before writing an email-handler method, adding an `email` interface, or pr
 
 Inbound email triggers. Each app has **one** email-handler method; the platform routes all inbound mail destined for the app — across any of its address tiers — to that method.
 
-The addresses themselves are configured at the project level by the user through the Remy platform. Your job is the `interface.json` and the method that handles the mail, not domain registration or MX records.
+The addresses themselves are configured at the project level. Your job in the app code is the `interface.json` and the method that handles the mail; custom domains (both directions) are provisioned outside the repo, via the `remy-admin email` CLI (see "Custom domains" below).
 
 ## Address tiers
 
@@ -17,12 +17,30 @@ Three tiers, all delivered to the same handler method. The new tiers are catchal
 | Tier | Address | How it's set up |
 |---|---|---|
 | Platform subdomain (default) | `*@<custom_subdomain>.madewithremy.com` | Automatic the moment the app has a `custom_subdomain` set. Every address on that subdomain delivers to the handler. |
-| Custom domain | `*@<their-domain>` | The user adds a domain in the dashboard's email-domains settings and points one MX record at `mx.msagent.ai`. Not something the agent provisions. |
+| Custom domain | `*@<their-domain>` | Registered via `remy-admin email inbound-domains add <domain>`; the user points one MX record at the platform (the command returns it). See "Custom domains" below. |
 | Legacy `mindstudio-hooks.com` | `<name>@mindstudio-hooks.com` | Existing apps only — frozen for new apps. Don't recommend it; treat as read-only history. |
 
 Because the new tiers are catchall, `to` carries an arbitrary localpart. Methods that need to branch on it should read `input.to` (e.g. `if (input.to.startsWith('support@')) ...`). This is what makes per-purpose addresses free: you don't register `support@` anywhere, you just check for it.
 
-A verified custom domain (and the app's `madewithremy.com` subdomain) also **sends** outbound mail, not just receives — `sendEmail` picks the app's own-brand sender automatically, configured in the dashboard's **Email** settings.
+A verified custom domain (and the app's `madewithremy.com` subdomain) also **sends** outbound mail, not just receives — `sendEmail` picks the app's own-brand sender automatically once a sending domain is verified.
+
+## Custom domains (agent-provisioned, via CLI)
+
+Both directions are set up with `remy-admin email`, and both follow the same loop: **add → hand the user the DNS records → verify → check status**. The user's only job is creating records at their DNS host.
+
+```bash
+# Sending (governs the From address; SES identity + DKIM):
+remy-admin email domains add mail.acme.com     # → dnsInstructions: 3 DKIM CNAMEs (required) + recommended SPF TXT
+remy-admin email domains verify mail.acme.com  # re-check now; uiStatus: pending | verified | action_needed
+remy-admin email domains list                  # all sending domains + effectiveSender (what the app sends as today)
+
+# Receiving (mail to *@their-domain reaches the email handler; one MX record):
+remy-admin email inbound-domains check acme.com  # returns the MX record before registering anything
+remy-admin email inbound-domains add acme.com
+remy-admin email inbound-domains verify acme.com
+```
+
+Give the user the exact records from the command output — never paraphrase DNS values. Verification is asynchronous after the records resolve (sending can take minutes; `action_needed` means check `verificationErrors` — sending verification expires unstarted after ~72h, fix and `verify` again).
 
 ## Config (`interface.json`)
 

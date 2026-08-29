@@ -147,7 +147,7 @@ import { prerender } from '@mindstudio-ai/agent';
 await prerender.invalidate(['/u/abc']); // omit arg to purge all
 ```
 
-`mindstudio-prod prerender` can help you verify/manage snapshots during development.
+`remy-admin prerender` can help you verify/manage snapshots during development.
 
 ### Mounting other apps
 

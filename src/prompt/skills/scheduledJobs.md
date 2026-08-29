@@ -44,3 +44,14 @@ Declare it in `mindstudio.json`:
 Methods invoked through this interface run with `auth.roles: ['system']` — the platform is calling, not a user session, so there's no user to impersonate. Use `auth.requireRole('system')` to gate methods that should only be reachable on a schedule. The auth reference in your system prompt covers the system role in full.
 
 A scheduled job that needs to act on user data acts as the system, not as any user, so it reaches everything. Scope what it touches in the method itself rather than relying on role checks to narrow it.
+
+## Operating jobs in production
+
+The `remy-admin cron` group covers the live app's schedule without opening the dashboard:
+
+```bash
+remy-admin cron list              # every job: schedule, status (active|paused|blocked), next run, recent runs
+remy-admin cron run <methodId>    # trigger a run now (202 { requestId }; doesn't affect the schedule)
+```
+
+A run's id is its request-log id — debug a failing job with `remy-admin requests get <runId>`. Jobs that fail repeatedly become `blocked` (see `statusReason`) and stay stopped until fixed and redeployed.
