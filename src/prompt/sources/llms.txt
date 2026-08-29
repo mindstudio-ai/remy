@@ -1893,6 +1893,6 @@ Supported: pdf, docx, pptx, xlsx, odt, rtf, epub, images, txt, md, json, csv, ts
 
 Adding the same bytes twice is free — documents are content-addressed, so a re-add is a no-op when this source has already processed those exact bytes under its current configuration. Only reconfiguring the source makes a re-add do work again, and that is an explicit owner-triggered migration, never a side effect of a deploy.
 
-Everything in `SearchOptions` — `mode`, `filter`, `rerank`, `hybrid`, `maxPerDocument`, `highlight` — is free to change and takes effect on the next search. How documents are chunked and embedded is configured on the corpus itself with `mindstudio-prod datasources config` — not in code — and changing it on a populated source is rejected rather than silently rebuilding.
+Everything in `SearchOptions` — `mode`, `filter`, `rerank`, `hybrid`, `maxPerDocument`, `highlight` — is free to change and takes effect on the next search. How documents are chunked and embedded is configured on the corpus itself with `remy-admin datasources config` — not in code — and changing it on a populated source is rejected rather than silently rebuilding.
 
 **A data source is live and shared.** Unlike database tables there is no dev copy and no per-release isolation: adding or removing a document changes what the deployed app retrieves, immediately. Scenarios never reset a data source, and re-ingesting a large corpus costs real money.

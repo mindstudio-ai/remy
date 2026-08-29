@@ -233,11 +233,11 @@ on; default all history), `epochs` (1-10, default 3), `rank` (LoRA rank, 4-64, d
 changing a knob is a commit + deploy before the next training run.
 
 Once a method has accumulated graded pairs, train from the prod CLI:
-`mindstudio-prod jewels train <methodId>` (see `--help`). It returns immediately with
+`remy-admin jewels train <methodId>` (see `--help`). It returns immediately with
 a run id and the dataset report; a run takes minutes to tens of minutes, so never use
 `--wait` (that flag is for humans at a terminal — it would block your whole loop).
 Start the run, tell the user it's training, keep working on other things, and check in
-with `mindstudio-prod jewels run <runId>` between tasks — the `progress` field shows
+with `remy-admin jewels run <runId>` between tasks — the `progress` field shows
 the live phase and training percent, the run's `log` narrates the whole story as
 timestamped status events (queued, GPU acquired, training, grading — loss points are
 compacted to a count in CLI output), and `status` goes `complete` or `failed` with the
@@ -253,7 +253,7 @@ snapshots, plus a DPO pass over the team's corrections when enough have accumula
 and the platform promotes whichever scores highest on that grader — `report.selected`
 names the serving checkpoint; this is automatic, never something you configure.
 A completed run without a `grading` block just hasn't been graded yet
-(`mindstudio-prod jewels grade <runId>` fills it). A completed run registers the
+(`remy-admin jewels grade <runId>` fills it). A completed run registers the
 app's tuned model as a real model id — `tuned/{appId}/{methodId}`, one stable id per
 method that retraining advances in place — and the latest complete run per method is
 automatically served on the platform's GPU pool, so that id works like any other
@@ -336,7 +336,7 @@ What makes this safe with no extra machinery:
 - **Dismissal is not consumption**: the decision moment stays open for other verbs (a dismissed draft doesn't block a later merge). Unresolved items expire at the method's `attributionWindow`, so there's no infinite backlog.
 - `propose` returns `queueItemId` on `queued`, so the app can badge its UI or notify its own way the moment a draft lands.
 
-Before the app has its own review UI (or when the user asks you to act), the same queue is reachable from `mindstudio-prod jewels queue` / `jewels resolve`; approving there applies the method as the user through the identical machinery.
+Before the app has its own review UI (or when the user asks you to act), the same queue is reachable from `remy-admin jewels queue` / `jewels resolve`; approving there applies the method as the user through the identical machinery.
 
 ## Verifying a Jewel: the `testJewel` Tool
 
@@ -351,4 +351,4 @@ For cases with no known right answer, pass `subject` instead of `humanInput` for
 
 Each run also lands in `.logs/requests.ndjson` as a `type: 'jewel'` record if you need the trail.
 
-Once deployed, the prod-side view lives in `mindstudio-prod jewels` (run `--help` for commands): agreement stats, pair records, the approval queue, and `jewels dryrun`, the prod twin of `testJewel`. It runs the LIVE jewel against a real subject inside a disposable database mirror and records nothing.
+Once deployed, the prod-side view lives in `remy-admin jewels` (run `--help` for commands): agreement stats, pair records, the approval queue, and `jewels dryrun`, the prod twin of `testJewel`. It runs the LIVE jewel against a real subject inside a disposable database mirror and records nothing.

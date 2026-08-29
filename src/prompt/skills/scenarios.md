@@ -119,7 +119,7 @@ Scenarios are useful for seeding initial app state after build for testing, as w
 Don't try to seed documents into a data source from a scenario, and don't write `clear()`-style reset helpers for one. Load a test corpus once from the CLI instead:
 
 ```bash
-mindstudio-prod datasources add --source policies --wait fixtures/*.pdf
+remy-admin datasources add --source policies --wait fixtures/*.pdf
 ```
 
 Re-running it is free (documents are content-addressed), so it's safe to keep in a setup script beside your scenarios.
