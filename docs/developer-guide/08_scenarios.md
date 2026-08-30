@@ -152,7 +152,7 @@ Deletes all rows from all tables, preserves schema and IDs. Gives the seed funct
 
 ```
 POST /_internal/v2/apps/{appId}/dev/manage/token
-→ { "authorizationToken": "InternalCallbackAuthorization@@..." }
+→ { "authorizationToken": "~~internal_identity_token~~..." }
 ```
 
 The CLI gets a fresh callback token scoped to the dev release, then transpiles and executes the scenario file in a child process with `CALLBACK_TOKEN` set. The SDK's `db.push()` calls route through the token to the correct dev database.

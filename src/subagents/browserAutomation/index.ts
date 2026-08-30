@@ -7,7 +7,10 @@
  */
 
 import type { Tool, ToolExecutionContext } from '../../tools/index.js';
-import { executeTool as executeRegistryTool } from '../../tools/index.js';
+import {
+  executeTool as executeRegistryTool,
+  deriveContext,
+} from '../../tools/index.js';
 import { runSubAgent } from '../runner.js';
 import { BROWSER_TOOLS, BROWSER_EXTERNAL_TOOLS } from './tools.js';
 import { COMMON_READ_TOOL_NAMES } from '../common/tools.js';
@@ -89,7 +92,7 @@ export async function runBrowserAutomation(
       task,
       tools: BROWSER_TOOLS,
       externalTools: BROWSER_EXTERNAL_TOOLS,
-      executeTool: async (name, _input, _toolCallId, onLog) => {
+      executeTool: async (name, _input, toolCallId, onLog) => {
         if (name === 'setupBrowser') {
           try {
             // 30s > the sidecar's own 25s bound (timeout ladder — see above).
@@ -113,7 +116,11 @@ export async function runBrowserAutomation(
           COMMON_READ_TOOL_NAMES.has(name) ||
           name === readSpecTool.definition.name
         ) {
-          return executeRegistryTool(name, _input, context);
+          return executeRegistryTool(
+            name,
+            _input,
+            toolCallId ? deriveContext(context, toolCallId, onLog) : context,
+          );
         }
         return `Error: unknown local tool "${name}"`;
       },

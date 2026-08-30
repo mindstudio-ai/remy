@@ -38,7 +38,8 @@ These are things we already know about and have decided to accept:
 - Preferences:
   - use [wouter](https://github.com/molefrog/wouter) for React routing instead of reaching for react-router
   - uploading user files should always happen via `platform.uploadFile()` from `@mindstudio-ai/interface` — not custom S3 code, not FormData to a method endpoint
-  - for static prerendering of Vite + React sites, roll your own with a post-build `renderToString` script — do not use `vite-prerender-plugin` (it bundles the prerender script as a client chunk, adding ~800KB to the user-facing bundle with no way to prevent it)
+  - for build-time prerendering of purely static sites (marketing pages with no dynamic content — distinct from the platform's crawler prerendering, below), roll your own with a post-build `renderToString` script — do not use `vite-prerender-plugin` (it bundles the prerender script as a client chunk, adding ~800KB to the user-facing bundle with no way to prevent it)
+  - **Prerendering for crawlers/unfurlers is a platform feature — don't design around it.** For SEO / link-unfurl / AI-crawler visibility on a non-static SPA, the platform already handles it: routes opt in via `web.json` (`{ "web": { "prerender": { "paths": ["/blog/*"] } } }`), the SPA signals readiness by setting `data-prerender-ready` on the html element, deploys invalidate the snapshot cache automatically, and content that changes outside deploys is invalidated at runtime with `await prerender.invalidate([...])` from `@mindstudio-ai/agent` (called from the mutating method). It serves cached headless snapshots of the live SPA to bots — it is NOT build-time rendering. Do not recommend post-build render scripts, rebuild-on-content-change, or third-party prerender services for this. The developer's main context carries the full interfaces reference with exact semantics — tell them to consult it rather than improvising.
 
 ### Common pitfalls (always flag these)
 

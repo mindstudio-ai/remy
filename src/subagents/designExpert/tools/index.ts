@@ -59,6 +59,6 @@ export async function executeDesignExpertTool(
     return `Error: unknown tool "${name}"`;
   }
   const childContext =
-    context && toolCallId ? deriveContext(context, toolCallId) : context;
+    context && toolCallId ? deriveContext(context, toolCallId, onLog) : context;
   return tool.execute(input, onLog, childContext);
 }
