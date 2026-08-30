@@ -59,6 +59,13 @@ export function stripSentinelLine(text: string): string {
  * the results of one or more background sub-agent tools. The LLM sees
  * these results as tool_result blocks wrapped in a `<background_results>`
  * envelope.
+ *
+ * Every word of prose lives INSIDE the envelope, so the block is fully
+ * self-delimiting: providers fold consecutive user messages into one human
+ * turn, and this entry often lands directly ahead of a real user message.
+ * A preamble outside the tags ("this is not from the user") would read as
+ * a header for that whole merged turn — poisoning the attribution of the
+ * genuine user words that follow the close tag.
  */
 export function buildBackgroundResultsMessage(
   results: Array<{ toolCallId: string; name: string; result: string }>,
@@ -69,10 +76,11 @@ export function buildBackgroundResultsMessage(
         `<tool_result id="${r.toolCallId}" name="${r.name}">\n${r.result}\n</tool_result>`,
     )
     .join('\n\n');
-  const plural = results.length > 1 ? 's' : '';
   const body =
-    `This is an automated message containing the result${plural} of ${results.length > 1 ? 'tool calls' : 'a tool call'} that ${results.length > 1 ? 'have' : 'has'} been working in the background. This is not a direct message from the user.\n` +
-    `<background_results>\n${xml}\n</background_results>`;
+    `<background_results>\n` +
+    `Automated delivery of results from background tool calls that completed while other work was in progress. This block is not from the user — anything outside it is.\n\n` +
+    `${xml}\n` +
+    `</background_results>`;
   return automatedMessage('background_results', body);
 }
 
