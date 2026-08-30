@@ -73,6 +73,17 @@ export interface SubAgentConfig {
   onBackgroundComplete?: (result: SubAgentResult) => void;
   /** Tool names whose last result (parsed as JSON) should be stashed in result.artifacts. */
   captureArtifacts?: string[];
+  /** Validate the sub-agent's final response before it is returned. Return an
+   * objection string to reject it: the objection is pushed as a corrective
+   * user message and the loop runs once more. One retry max — if the retry
+   * also fails, the response is returned anyway with the objection appended
+   * so the caller knows it carries unverified claims. Not consulted on
+   * abort/error exits. A thrown validator error is logged and the response
+   * accepted — the guard must never brick a run. */
+  validateResult?: (
+    text: string,
+    messages: Message[],
+  ) => Promise<string | null>;
 }
 
 export interface SubAgentResult {
@@ -107,6 +118,7 @@ export async function runSubAgent(
     acquireLock,
     onBackgroundComplete,
     captureArtifacts,
+    validateResult,
     cachePolicy = 'run',
   } = config;
 
@@ -140,6 +152,8 @@ export async function runSubAgent(
 
   // The core loop
   let turns = 0;
+  // One corrective retry per run when a validateResult objection fires.
+  let validationRetried = false;
   const run = async (): Promise<SubAgentResult> => {
     // History is prepended for API context but not stored back.
     // Only messages from this invocation (task onward) are returned
@@ -394,8 +408,48 @@ export async function runSubAgent(
 
         // If no tool calls, we're done
         if (stopReason !== 'tool_use' || toolCalls.length === 0) {
+          let text = getPartialText(contentBlocks);
+
+          // Give the validator a chance to reject the final response. On the
+          // first objection the loop runs once more with the objection as a
+          // corrective user message; a second objection is appended to the
+          // returned text instead, so the caller knows the response carries
+          // unverified claims. Each iteration's content blocks are fresh, so
+          // a retry's text fully replaces the rejected attempt — the
+          // objection message must ask for a complete re-send.
+          if (validateResult) {
+            let objection: string | null = null;
+            try {
+              objection = await validateResult(text, thisInvocation());
+            } catch (err: any) {
+              log.warn('Result validator failed, accepting response', {
+                requestId,
+                parentToolId,
+                agentName,
+                error: err.message,
+              });
+            }
+            if (objection && !validationRetried && !signal?.aborted) {
+              validationRetried = true;
+              log.info('Result rejected by validator, retrying once', {
+                requestId,
+                parentToolId,
+                agentName,
+                objection: objection.slice(0, 200),
+              });
+              emit({
+                type: 'status',
+                message: 'Response failed validation, revising',
+              });
+              messages.push({ role: 'user', content: objection });
+              continue;
+            }
+            if (objection) {
+              text = `${text}\n\n[Response validator: ${objection}]`;
+            }
+          }
+
           statusWatcher.stop();
-          const text = getPartialText(contentBlocks);
           const hasArtifacts = Object.keys(artifacts).length > 0;
           return {
             text,

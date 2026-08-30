@@ -15,6 +15,7 @@ import { runSubAgent, type SubAgentResult } from '../runner.js';
 import { DESIGN_EXPERT_TOOLS, executeDesignExpertTool } from './tools/index.js';
 import { COMMON_READ_TOOL_NAMES } from '../common/tools.js';
 import { getDesignExpertPrompt } from './prompt.js';
+import { validateWireframeRefs } from './validateWireframeRefs.js';
 import { getSubAgentHistory } from '../common/history.js';
 import { resolveModel } from '../../models/surfaces.js';
 import { writeFileTool } from '../../tools/code/writeFile.js';
@@ -96,6 +97,10 @@ async function runDesignExpert(
     onEvent: context.onEvent,
     resolveExternalTool: context.resolveExternalTool,
     toolRegistry: context.toolRegistry,
+    // Receipt guard: every wireframe reference in the final response must
+    // resolve to a file on disk (see validateWireframeRefs.ts). Covers the
+    // advisor tool, render mode, and both render callers.
+    validateResult: (text) => validateWireframeRefs(text),
     background: opts.background,
     onBackgroundComplete: opts.background
       ? (bgResult) => {

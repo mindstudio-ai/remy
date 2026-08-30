@@ -26,10 +26,14 @@
  * designer's prior transcript (getSubAgentHistory), so earlier results — and
  * with them the reference format — sit in context on every follow-up. A
  * revision consult once shipped two stale references plus one fabricated one
- * and zero tool calls that way; the receipt discipline in ui-patterns.md
- * ("every reference is a receipt from this response's work") is what guards
- * it now. The mirror upload is non-fatal — a wireframe whose preview can't
- * render is still fully usable by the developer.
+ * and zero tool calls that way, and a ~225K-token resumed consult later
+ * shipped three fabricated references despite the receipt discipline in
+ * ui-patterns.md ("every reference is a receipt from this response's work").
+ * The mechanical backstop is validateWireframeRefs.ts, run via the sub-agent
+ * runner's validateResult hook: every referenced path must exist on disk, or
+ * the designer gets one corrective retry. The mirror upload is non-fatal — a
+ * wireframe whose preview can't render is still fully usable by the
+ * developer.
  */
 
 import { mkdir, stat, writeFile } from 'node:fs/promises';
