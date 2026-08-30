@@ -107,22 +107,25 @@ export const specSyncTool: Tool = {
       task,
       tools,
       externalTools: new Set<string>(),
-      executeTool: (name, toolInput, toolCallId, _onLog, sams) => {
+      executeTool: (name, toolInput, toolCallId, onLog, sams) => {
+        const childCtx = toolCallId
+          ? {
+              ...deriveContext(context, toolCallId, onLog),
+              subAgentMessages: sams,
+            }
+          : { ...context, subAgentMessages: sams };
         // Overview render runs foreground within this already-detached run —
         // never nested-background (see renderBuildOverview) — against a child
         // context so the expert's events and transcript attach to the inner
         // writeBuildOverview call.
         if (name === 'writeBuildOverview') {
-          const childCtx = toolCallId
-            ? { ...deriveContext(context, toolCallId), subAgentMessages: sams }
-            : { ...context, subAgentMessages: sams };
           return renderBuildOverview(
             String(toolInput.content ?? '').trim(),
             childCtx,
             { background: false },
           );
         }
-        return executeTool(name, toolInput, context);
+        return executeTool(name, toolInput, childCtx);
       },
       apiConfig: context.apiConfig,
       model: resolveModel('specSync', context.models, context.model),

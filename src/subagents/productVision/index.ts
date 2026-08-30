@@ -63,9 +63,12 @@ export const productVisionTool: Tool = {
       cachePolicy: 'conversation',
       tools: VISION_TOOLS,
       externalTools: new Set<string>(),
-      executeTool: (name, input, toolCallId, _onLog, sams) => {
+      executeTool: (name, input, toolCallId, onLog, sams) => {
         const childCtx = toolCallId
-          ? { ...deriveContext(context, toolCallId), subAgentMessages: sams }
+          ? {
+              ...deriveContext(context, toolCallId, onLog),
+              subAgentMessages: sams,
+            }
           : { ...context, subAgentMessages: sams };
         if (COMMON_READ_TOOL_NAMES.has(name)) {
           return mainExecuteTool(name, input, childCtx);

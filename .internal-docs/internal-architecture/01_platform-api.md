@@ -46,7 +46,7 @@ The token is embedded in the iframe URL via `__ms_token=` and used by the fronte
 
 Used by: method invocation from web interfaces.
 
-### Hook Authorization Tokens (`InternalCallbackAuthorization@@...`)
+### Hook Authorization Tokens (`~~internal_identity_token~~...`)
 
 Per-execution tokens generated when a method is dispatched. Stored in Redis with 30-minute TTL. Encode the full execution context:
 

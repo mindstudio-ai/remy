@@ -347,9 +347,9 @@ const RECENT_NARRATIVE_MAX_CHARS = 20_000;
  * Genuine user turns only: tool results carry a `toolCallId`, internal machinery
  * is `hidden`, and automated-action prompts carry a sentinel. Those last ones
  * matter to exclude — `background_results` arrives as a user message holding a
- * multi-kilobyte tool result and says so in its own body ("This is not a direct
- * message from the user"). Quoting it under `[user]:` would both misattribute it
- * and spend most of the budget below on it.
+ * multi-kilobyte tool result and says so in its own body ("This block is not
+ * from the user"). Quoting it under `[user]:` would both misattribute it and
+ * spend most of the budget below on it.
  *
  * A voice message arrives with empty `content` and its words on the attachment,
  * so read the transcript when the body is empty — otherwise the quoted

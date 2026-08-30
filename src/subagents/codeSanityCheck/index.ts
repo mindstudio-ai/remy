@@ -10,7 +10,7 @@ import type { Tool, ToolExecutionContext } from '../../tools/index.js';
 import { readAsset } from '../../assets.js';
 import { runSubAgent } from '../runner.js';
 import { loadSpecIndex, loadPlatformBrief } from '../common/context.js';
-import { executeTool } from '../../tools/index.js';
+import { executeTool, deriveContext } from '../../tools/index.js';
 import { SANITY_CHECK_TOOLS } from './tools.js';
 import { resolveModel } from '../../models/surfaces.js';
 
@@ -52,7 +52,15 @@ export const codeSanityCheckTool: Tool = {
       task: input.task,
       tools: SANITY_CHECK_TOOLS,
       externalTools: new Set<string>(),
-      executeTool: (name, toolInput) => executeTool(name, toolInput, context),
+      executeTool: (name, toolInput, toolCallId, onLog, sams) => {
+        const childCtx = toolCallId
+          ? {
+              ...deriveContext(context, toolCallId, onLog),
+              subAgentMessages: sams,
+            }
+          : context;
+        return executeTool(name, toolInput, childCtx);
+      },
       apiConfig: context.apiConfig,
       model: resolveModel('codeSanityCheck', context.models, context.model),
       subAgentId: 'codeSanityCheck',

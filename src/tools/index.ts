@@ -52,8 +52,14 @@ export interface ToolExecutionContext {
 export function deriveContext(
   parent: ToolExecutionContext,
   toolCallId: string,
+  onLog?: (line: string) => void,
 ): ToolExecutionContext {
-  return { ...parent, toolCallId };
+  // `onLog` is always overridden, never inherited: the parent's onLog is
+  // bound to the parent tool's id (agent.ts emits tool_input_delta with it),
+  // so a child tool streaming through it would render its live output inside
+  // the parent's Result view. Pass the runner-provided child-scoped onLog, or
+  // nothing — inheriting is always wrong.
+  return { ...parent, toolCallId, onLog };
 }
 
 export interface Tool {
