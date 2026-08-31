@@ -1,4 +1,4 @@
-# Task Agents (`mindstudio.runTask`)
+# Task Agents
 
 A full autonomous agent loop, callable from any method. Give it a prompt, a set of tools, and a JSON Schema for the output you want; the platform runs the model until it produces validated output matching that schema — searching, scraping, generating images, retrying approaches that failed, and calling the app's own methods to read and write data as it goes.
 

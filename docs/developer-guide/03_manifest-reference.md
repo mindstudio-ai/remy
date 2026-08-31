@@ -1,4 +1,4 @@
-# Manifest Reference (`mindstudio.json`)
+# Manifest Reference
 
 The manifest declares everything the platform needs to know about your app: methods, tables, roles, interfaces, scenarios. It's read on every `git push` to determine what to compile and deploy.
 

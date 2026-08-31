@@ -1,4 +1,4 @@
-# Secrets & Environment Variables
+# Secrets & Environment
 
 Apps can store encrypted secrets (API keys, database URLs, tokens) that get injected into method execution as `process.env` variables. Each secret has separate dev and prod values: dev during local development and in the editor sandbox, prod in deployed releases.
 
