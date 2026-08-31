@@ -45,6 +45,8 @@ All fields are nested under the `"web"` key.
 | `defaultPreviewMode` | `"desktop"` \| `"mobile"` | `"desktop"` | Default preview viewport in the editor. Set to `"mobile"` for mobile-first apps. |
 | `prerender` | `object` | — | Opt into prerendering the listed routes/patterns for crawlers/unfurlers. See "Prerendering" below. |
 | `mounts` | `array` | — | Serve other same-workspace apps under path prefixes of this app's hosts. See "Mounting other apps" below. |
+| `redirects` | `array` | — | Path-level redirects. See "Redirects" below. |
+| `trailingSlash` | `"strip"` \| `"append"` | — | Enforce a canonical trailing-slash form with a 308. Off by default. |
 
 ### Frontend SDK
 
@@ -136,7 +138,7 @@ Opt in per route in `web.json`:
 { "web": { "prerender": { "paths": ["/u/*", "/blog/*"] } } }
 ```
 
-`prerender` is an object with a single field, `paths`: an array of route globs (`*` = one segment, `**` = any). Only listed routes prerender.
+`prerender` is an object with a single field, `paths`: an array of route globs (`*` = one segment, `**` = any). Only listed routes prerender, and only routes — a path with a file extension (`/robots.txt`, `/sitemap.xml`) never prerenders, even under `/**`.
 
 The opt-in alone is not enough. For every route in `prerender.paths`, the SPA must set `document.documentElement.setAttribute('data-prerender-ready', 'true')` once the head is written and the route has resolved — this is required, not optional. The renderer waits for this marker, so a prerendered route that never sets it times out. Set it even on routes that render synchronously, as soon as they're ready.
 
@@ -149,9 +151,28 @@ await prerender.invalidate(['/u/abc']); // omit arg to purge all
 
 `remy-admin prerender` can help you verify/manage snapshots during development.
 
+### Redirects
+
+Declare moved URLs in `web.json` — never ship a component that redirects client-side, since that resolves after JS loads and crawlers won't follow it:
+
+```json
+{ "web": { "trailingSlash": "strip", "redirects": [
+  { "source": "/old-blog/*slug", "destination": "/blog/*slug", "permanent": true },
+  { "source": "/launch", "destination": "https://example.com/launch", "statusCode": 302 }
+] } }
+```
+
+`source` is a `/`-prefixed pattern; `destination` is a path or absolute http(s) URL. `permanent` (true → 308, false → 307) is required unless you set an explicit `statusCode` of 301/302/307/308; you can't set both. First match wins, and the request's query carries over unless the destination has its own.
+
+**Pattern syntax is path-to-regexp v8, NOT the Next.js dialect** — the one thing to get right here. One segment is `:name`; a multi-segment wildcard is `*name` (Next's `:name*`); optional segments use braces (`/users{/:id}`); inline regex (`:id(\\d+)`) is unsupported. The v6/Next forms fail the build with the correct syntax in the error.
+
+`trailingSlash` picks the canonical form (`"strip"`: `/about/` → `/about`; `"append"`: the reverse, skipping the root and paths with file extensions). Off by default. Write `source` patterns without trailing slashes either way — normalization and matching resolve in one hop. Sources under `/_/` are rejected, as are self-referential and two-rule loops. A redirecting path is never prerendered, so don't list one in `prerender.paths`.
+
 ### Mounting other apps
 
-Rare: `mounts` serves another same-workspace app under a path prefix of this app's hosts — `{ "web": { "mounts": [{ "path": "/docs", "app": "docs-site" }] } }` (`app` = the target's `custom_subdomain` or appId). The child is served first-class (its own bundle, session, backend) and needs no mount-specific config; the two serving conventions above are what make an app mountable.
+Rare: `mounts` serves another same-workspace app under a path prefix of this app's hosts — `{ "web": { "mounts": [{ "path": "/docs", "app": "docs-site" }] } }` (`app` = the target's `custom_subdomain` or appId). The child is served first-class (its own bundle, session, backend, prerendering) and needs no mount-specific config; the two serving conventions above are what make an app mountable.
+
+Under a mount the child's own `web.json` governs its SEO and routing: its `prerender.paths` gates its mounted pages, its `prerender.invalidate` purges them, its `redirects`/`trailingSlash` apply within the prefix (written against its own paths, with the prefix added back to relative destinations), and its `sitemap.xml` is served with URLs rewritten to the mount and advertised in the parent's `robots.txt`. The child's `robots.txt` *rules* don't carry over (the build log lists them prefixed for the parent to adopt), and canonicals must be written from the page's own location — a hardcoded absolute canonical points crawlers back at the child's host and undoes the mount.
 
 ## API Interface
 
