@@ -43,6 +43,8 @@ All fields are nested under the `"web"` key.
 | `defaultPreviewMode` | `"desktop"` \| `"mobile"` | `"desktop"` | Default preview viewport in the editor. Set to `"mobile"` for mobile-first apps. |
 | `prerender` | `object` | — | Opt into prerendering the listed routes for crawlers/unfurlers. See "Prerendering for crawlers" below. |
 | `mounts` | `array` | — | Serve other apps from your workspace under path prefixes of this app's hosts. See "Mounting other apps" below. |
+| `redirects` | `array` | — | Path-level redirects. See "Redirects and trailing slashes" below. |
+| `trailingSlash` | `"strip"` \| `"append"` | — | Enforce a canonical trailing-slash form with a 308. Off by default. |
 
 ### Frontend SDK
 
@@ -128,7 +130,7 @@ Web apps are client-rendered SPAs, and link unfurlers (iMessage, Slack, WhatsApp
 }
 ```
 
-`prerender` takes a single field, `paths` — an array of route globs (`*` = one path segment, `**` = any). Only listed routes are ever prerendered.
+`prerender` takes a single field, `paths` — an array of route globs (`*` = one path segment, `**` = any). Only listed routes are ever prerendered, and only routes: a path with a file extension (`/robots.txt`, `/sitemap.xml`) is never prerendered even under `/**`.
 
 **The opt-in alone isn't enough: the SPA has to produce a real page for the snapshot to capture.** For each prerendered route, at runtime:
 
@@ -144,7 +146,39 @@ import { prerender } from '@mindstudio-ai/agent';
 await prerender.invalidate(['/u/abc']); // omit the argument to purge every snapshot for the app
 ```
 
-While developing, the `mindstudio-prod prerender` CLI verifies and manages snapshots (run `mindstudio-prod prerender --help`). It's a build-time tool only: a deployed app keeps its snapshots fresh via `prerender.invalidate`, not the CLI.
+While developing, the `remy-admin prerender` CLI verifies and manages snapshots (run `remy-admin prerender --help`). It's a build-time tool only: a deployed app keeps its snapshots fresh via `prerender.invalidate`, not the CLI.
+
+### Redirects and trailing slashes
+
+When a URL moves, declare it in `web.json` rather than shipping a client-side component that bounces the user — a redirect resolves at the edge of the request, before any JavaScript loads, so crawlers and link unfurlers follow it correctly:
+
+```json
+{
+  "web": {
+    "trailingSlash": "strip",
+    "redirects": [
+      { "source": "/old-blog/*slug", "destination": "/blog/*slug", "permanent": true },
+      { "source": "/pricing-2024", "destination": "/pricing", "permanent": true },
+      { "source": "/launch", "destination": "https://example.com/launch", "statusCode": 302 }
+    ]
+  }
+}
+```
+
+- `source` — the incoming path pattern, `/`-prefixed. `:name` matches one path segment; `*name` matches one or more.
+- `destination` — a path on this app, or an absolute `http(s)` URL. Any `:name` / `*name` it uses must be captured by the `source`.
+- `permanent` — `true` sends a 308, `false` a 307. These preserve the request method, unlike 301/302 which browsers may silently turn into a GET. Required unless you set `statusCode`.
+- `statusCode` — an explicit `301`, `302`, `307` or `308`, for tooling that insists on the legacy codes. Mutually exclusive with `permanent`.
+
+Rules are checked in order and the first match wins. The request's query string is carried over to the destination unless the destination specifies its own.
+
+**Pattern syntax is path-to-regexp v8, not the Next.js dialect.** If you've written `next.config.js`, the difference will bite you once: Next documents `:slug*` for a multi-segment wildcard and supports inline regex like `:id(\\d+)`. Here the wildcard is `*slug` and inline regex isn't supported. Both legacy forms are rejected at build time with the correct syntax in the error, so you'll find out at deploy rather than in production. Optional segments use braces: `/users{/:id}`.
+
+**`trailingSlash`** declares which form is canonical: `"strip"` sends `/about/` → `/about`, `"append"` does the reverse (skipping the root and any path with a file extension). It's off by default, so both forms serve normally unless you opt in. Normalization and redirect matching resolve together, so `/old-blog/x/` → `/blog/x` is a single hop, and you write your `source` patterns without trailing slashes regardless of the setting.
+
+A redirecting path is never prerendered or served — the redirect wins — so don't list one in `prerender.paths`.
+
+Redirects can't be declared under `/_/`, which is the platform's own namespace (method calls, file reads, auth). Self-referential rules and two-rule loops fail the build.
 
 ### Mounting other apps
 
@@ -163,14 +197,24 @@ A web interface can serve **other apps from the same workspace under path prefix
 - `path` — the mount prefix on this app's hosts. Non-root, and mounts must be disjoint (no mount may prefix another).
 - `app` — the target app's `custom_subdomain` or appId. Must be a v2 app in the same workspace; validated at build.
 
-Under the mount, everything is the child's: its live web bundle, its session (so its backend methods, auth, agent chat, uploads, and telemetry all run against the child app), its frame policy. The child needs no mount-specific configuration. It keeps working at its own subdomain unchanged, and the same app can be mounted at different paths by different parents. Deploys are independent: pushing the child updates it everywhere it's mounted.
+Under the mount, everything is the child's: its live web bundle, its session (so its backend methods, auth, agent chat, uploads, and telemetry all run against the child app), its frame policy, its prerendering. The child needs no mount-specific configuration — its own `web.json` is what applies. It keeps working at its own subdomain unchanged, and the same app can be mounted at different paths by different parents. Deploys are independent: pushing the child updates it everywhere it's mounted.
 
 **Mount-safety.** A mountable child must follow the standard conventions above: assets via `MS_ASSET_BASE_URL`, router basename from `platform.basePath`, no hardcoded root-absolute URLs. The parent's build log warns when a mount target's current build isn't mount-safe.
 
+**Prerendering is the child's.** The child's own `prerender.paths` gates its mounted pages, so a child that declares `/blog/*` gets crawler snapshots at `example.com/demos/vector-search/blog/x` with no parent configuration. Snapshots are keyed to the child's release: a child deploy refreshes them, and `prerender.invalidate(['/blog/x'])` from the child purges its mounted copies along with its own. The parent's `prerender.paths` covers only the parent's own routes.
+
+**SEO.** Mounted pages are advertised on the parent's domain automatically:
+
+- The child's `sitemap.xml` is served under the mount with every URL rewritten to the mounted location, so it advertises `example.com/demos/vector-search/...` rather than the child's own host. Asset URLs (`<image:loc>`, `<video:content_loc>`) are left alone.
+- The parent's `robots.txt` gains a `Sitemap:` line per mount whose child ships a sitemap — including when the parent has no `robots.txt` of its own.
+- The child's `robots.txt` **rules** do not carry over. robots.txt is only ever read from a host root, and its paths are written against the child's own routes, so the parent's build log lists them in mount-prefixed form for you to adopt deliberately in the parent's own `robots.txt`.
+- Write per-route canonicals from the page's own location, not a hardcoded absolute URL. A canonical pointing at the child's own host tells crawlers to consolidate there and undoes the mount; the parent's build log warns when a target's `index.html` hardcodes one.
+
 Notes:
-- **Prerendering under a mount is the parent's.** List the mount paths in the *parent's* `prerender.paths` (e.g. `/demos/**`) to serve crawler snapshots for mounted pages; the child's own prerender config applies only to its own hosts.
 - **One signed-in state per host.** The auth cookie is per-host, so a parent and a mounted child that both use login on the same host will sign each other out. Mount auth-enabled apps only when the parent doesn't use auth (or vice versa).
 - A mount whose target has no live web build yet falls through to the parent's SPA until the child deploys one.
+- Mounts are single-level: a mounted child's own `mounts` are not served under the parent.
+- **Redirects and `trailingSlash` follow the same rule as prerendering**: within the mount prefix, the child's config applies, written against the child's own paths (`/old`, not `/demos/vector-search/old`), and the mount prefix is added back to relative destinations. A parent can't redirect inside a prefix it has handed to a child.
 
 ---
 

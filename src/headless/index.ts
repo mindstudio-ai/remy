@@ -171,6 +171,23 @@ export class HeadlessSession {
   private currentOnboardingState: string | undefined;
 
   /**
+   * The in-flight turn's command, when that turn is part of a build pipeline
+   * (its action declares a `next`, or it is itself a chain step). Captured so a
+   * cancel can put the interrupted step back on the queue held, instead of
+   * leaving the pipeline to resume at the step *after* the one that was
+   * stopped — which would run finalize/polish over half-built code.
+   *
+   * Null for every other turn shape, which is what scopes the whole
+   * paused-pipeline affordance to chains: stopping a one-off automated action
+   * (approvePlan, publish, sync) leaves nothing behind.
+   */
+  private currentChainStep: { text: string; onboardingState: string } | null =
+    null;
+
+  /** Monotonic suffix for synthesized chain requestIds — see nextChainRequestId. */
+  private chainRequestSeq = 0;
+
+  /**
    * Unified message queue. Holds pending work to deliver after the current
    * turn completes: chained automated actions, background sub-agent results,
    * and user messages sent while a turn is running. Strict FIFO. Persisted
@@ -916,6 +933,17 @@ export class HeadlessSession {
   }
 
   /**
+   * Stable id for a queued chain step, so the frontend can address one (to
+   * discard a paused pipeline) rather than waiting for drainQueueLoop to
+   * synthesize an id at dequeue. Deliberately not an `ac-` id — the frontend
+   * keys "system turn" off that prefix — and deliberately not a bare
+   * Date.now(), which collides for steps enqueued in the same millisecond.
+   */
+  private nextChainRequestId(): string {
+    return `chain-${Date.now()}-${++this.chainRequestSeq}`;
+  }
+
+  /**
    * Run one turn for a single command (without acquiring the `running` lock).
    * Owns the per-command machinery: @@automated:: action resolution, plan-file
    * and buildModel side effects, and chain expansion — which is why
@@ -971,11 +999,25 @@ export class HeadlessSession {
     this.currentOnboardingState = onboardingState;
     const system = buildSystemPrompt(onboardingState);
 
-    // Pre-enqueue the whole chain at the head so the full pipeline is visible
-    // up front and user messages queue behind it. Only the head expands the
-    // chain; continuation steps (fromChain) skip this to avoid double-enqueueing
-    // — and double-running — steps the head already laid down. onboardingState
-    // is snapshotted onto each queued command so it travels with the chain.
+    // Is this turn part of a build pipeline? True for the chain head (its action
+    // declares a `next`) and for every continuation step. Recorded so a cancel
+    // can re-queue this exact step — see currentChainStep. Assigned on every
+    // turn, null included, so a plain turn can't inherit a stale value. The
+    // *raw* text, so a step's params (buildFromRoadmap's {"path":…}) survive.
+    this.currentChainStep =
+      resolved && (resolved.next != null || fromChain)
+        ? { text: rawText, onboardingState }
+        : null;
+
+    // Pre-enqueue the whole chain so the full pipeline is visible up front and
+    // later user messages queue behind it. Only the head expands the chain;
+    // continuation steps (fromChain) skip this to avoid double-enqueueing — and
+    // double-running — steps the head already laid down. onboardingState is
+    // snapshotted onto each queued command so it travels with the chain.
+    //
+    // Each step gets a requestId at push time rather than at dequeue: a paused
+    // pipeline is addressable in the queue card, so discarding one needs a
+    // stable id to target. The drain's own `chain-…` fallback then never fires.
     if (resolved?.next && !fromChain) {
       for (const step of getActionChain(resolved.next)) {
         this.queue.push({
@@ -983,6 +1025,7 @@ export class HeadlessSession {
             action: 'message',
             text: sentinel(step),
             onboardingState,
+            requestId: this.nextChainRequestId(),
           } as StdinCommand,
           source: 'chain',
           enqueuedAt: Date.now(),
@@ -990,23 +1033,29 @@ export class HeadlessSession {
       }
     }
 
-    await this.executeTurn({
-      entries: [
-        {
-          text: userMessage,
-          attachments,
-          attachmentHeader,
-          hidden: isHidden || undefined,
-          requestId,
-          queued: queued || undefined,
-        },
-      ],
-      requestId,
-      absorbedRids: [],
-      onboardingState,
-      system,
-      buildModel,
-    });
+    try {
+      await this.executeTurn({
+        entries: [
+          {
+            text: userMessage,
+            attachments,
+            attachmentHeader,
+            hidden: isHidden || undefined,
+            requestId,
+            queued: queued || undefined,
+          },
+        ],
+        requestId,
+        absorbedRids: [],
+        onboardingState,
+        system,
+        buildModel,
+      });
+    } finally {
+      // Only meaningful while this turn is in flight. A cancel has already read
+      // it (and cleared it) synchronously from inside the abort.
+      this.currentChainStep = null;
+    }
   }
 
   /**
@@ -1020,6 +1069,10 @@ export class HeadlessSession {
    * with no side effects).
    */
   private async runMergedTurn(batch: QueuedMessage[]): Promise<void> {
+    // A merged turn is never a pipeline step — chain items are a hard batching
+    // barrier both ways, so they never land in a batch. Clear the marker so a
+    // cancel here can't re-queue a step from an earlier turn.
+    this.currentChainStep = null;
     const primaryRid =
       (batch[0].command.requestId as string | undefined) ??
       (batch.every((b) => b.source === 'background')
@@ -1222,12 +1275,13 @@ export class HeadlessSession {
         requestId,
         error: err.message,
       });
-      // Leave the queue intact — transient errors like network termination
-      // shouldn't silently throw away the rest of the pipeline; the sandbox
-      // can offer a resume action. Items already absorbed into THIS turn were
-      // delivered, not re-queued — their outcome is reported per-requestId by
-      // the absorbed completeds below. Explicit user cancel is what drains
-      // the queue.
+      // Leave the queue intact and DELIVERABLE — transient errors like network
+      // termination shouldn't silently throw away the rest of the pipeline, and
+      // the remaining steps drain on their own from here (the frontend's error
+      // card offers `continue` for the step that died). A cancel is the path
+      // that pauses the pipeline instead; see handleCancel. Items already
+      // absorbed into THIS turn were delivered, not re-queued — their outcome is
+      // reported per-requestId by the absorbed completeds below.
     }
 
     // Terminal events for the other messages absorbed into this turn: merged
@@ -1271,9 +1325,6 @@ export class HeadlessSession {
       !getInflightCompaction() &&
       this.queue.length > 0 &&
       !isAutomatedMessage((parsed.text as string) ?? '');
-    if (foldIn) {
-      this.queue.releaseHeld();
-    }
 
     // If a turn OR a compaction is in flight, queue the user message instead
     // of rejecting. Compaction counts as busy on purpose: running the turn
@@ -1291,6 +1342,16 @@ export class HeadlessSession {
         source: 'user',
         enqueuedAt: Date.now(),
       });
+      if (foldIn) {
+        // Release AFTER the push, so "behind" is measured against a queue that
+        // already contains this message. Held user messages stay where they are
+        // and still merge with it into one batch; a paused build pipeline is
+        // released to the tail, so the person's message runs first and the build
+        // picks up after it. Releasing before the push left a chain step at the
+        // head, and firstDeliverableIndex would have run the build in front of
+        // the message that released it.
+        this.queue.releaseHeldDeferring((item) => item.source === 'chain');
+      }
       // The push fires `queue_changed`; the message's eventual `completed`
       // (when it drains and runs) is its terminal. Kick the drain when nothing
       // is running: that covers the fold-in above, and the race where the
@@ -1505,9 +1566,9 @@ export class HeadlessSession {
   /**
    * Stop everything the user can see running: the turn, an in-flight
    * compaction, and any external tool waiting on a result. Flushes the
-   * follow-ups that belonged to the turn (`chain`/`background`) and HOLDS the
-   * `source: 'user'` items — those are independent user intent, so they're
-   * kept, but they no longer run on their own.
+   * `background` follow-ups that belonged to the turn, and HOLDS everything
+   * still queued — the `source: 'user'` items, which are independent user
+   * intent, plus the `source: 'chain'` steps of a build pipeline.
    *
    * Holding is the difference between Stop working and Stop looking broken.
    * These items used to drain immediately: `executeTurn` swallows the abort,
@@ -1515,6 +1576,13 @@ export class HeadlessSession {
    * held and the next turn began in the same tick — the spinner never stopped,
    * and every additional press hit a turn that had just started. They now wait
    * in the queue card until the user sends again or promotes one.
+   *
+   * The chain steps used to be flushed with the background items, which threw
+   * away the rest of the build — including the step that finalizes it and
+   * unlocks the editor. They are now paused instead, and the interrupted step
+   * goes back at the head, so a Stop is a pause and the next send resumes the
+   * pipeline where it stopped. Holding only the remainder would resume one step
+   * PAST the interruption, polishing and finalizing half-built code.
    *
    * A compaction is cancelled here too, unconditionally. It gates every queued
    * message and outlives the turn that started it, so leaving it running means
@@ -1529,6 +1597,7 @@ export class HeadlessSession {
   private handleCancel(): {
     flushed: QueuedMessage[];
     held: QueuedMessage[];
+    pausedPipeline: boolean;
     cancelledCompaction: boolean;
   } {
     if (this.currentAbort) {
@@ -1540,22 +1609,66 @@ export class HeadlessSession {
       pending.resolve(USER_CANCELLED_RESULT);
       this.pendingTools.delete(id);
     }
-    const flushed = this.queue.removeWhere((item) => item.source !== 'user');
-    const held = this.queue.holdWhere((item) => item.source === 'user');
-    return { flushed, held, cancelledCompaction };
+
+    // Background results were context for the turn being killed — they go.
+    const flushed = this.queue.removeWhere(
+      (item) => item.source === 'background',
+    );
+
+    // Put the interrupted step back at the head. It re-enters as
+    // `source: 'chain'`, so drainQueueLoop runs it with fromChain=true and it
+    // does NOT re-expand the chain — the remainder is already queued right
+    // behind it. Null for every non-chain turn shape, which is what keeps a
+    // stopped one-off action (approvePlan, publish, sync) from leaving anything
+    // behind at all.
+    const step = this.currentChainStep;
+    if (step) {
+      this.queue.unshift({
+        command: {
+          action: 'message',
+          text: step.text,
+          onboardingState: step.onboardingState,
+          // Fresh id: the original command's terminal has already gone out as
+          // cancelled, and one command gets exactly one `completed`.
+          requestId: this.nextChainRequestId(),
+        } as StdinCommand,
+        source: 'chain',
+        enqueuedAt: Date.now(),
+        held: true,
+      });
+      this.currentChainStep = null;
+    }
+
+    // Everything left now waits on the user: their own messages, as before,
+    // plus the pipeline this Stop paused.
+    const held = this.queue.holdWhere(
+      (item) => item.source === 'user' || item.source === 'chain',
+    );
+    return {
+      flushed,
+      held,
+      pausedPipeline: held.some((item) => item.source === 'chain'),
+      cancelledCompaction,
+    };
   }
 
   /**
-   * Remove pending queued messages — all user messages, or one by id.
-   * Only `source: 'user'` items are removable; chained and background
-   * messages are part of a system chain and are never cancellable. Does
-   * not affect the in-flight turn (use `cancel` for that).
+   * Remove pending queued messages: all user messages (no id), or a single item
+   * by id. Does not affect the in-flight turn (use `cancel` for that).
+   *
+   * Held chain items — a paused pipeline — are removable only by explicit id.
+   * The id-less form is the queue card's "Clear" and the pre-destroy quiesce,
+   * neither of which should get to decide the pipeline's fate. A DELIVERABLE
+   * chain item is never removable: that's live pipeline work. (The step
+   * actually running isn't in the queue at all — drainQueueLoop takes it out
+   * before running it.)
    */
   private handleCancelQueued(id?: string): QueuedMessage[] {
-    return this.queue.removeWhere(
-      (item) =>
-        item.source === 'user' &&
-        (id === undefined || item.command.requestId === id),
+    return this.queue.removeWhere((item) =>
+      id === undefined
+        ? item.source === 'user'
+        : item.command.requestId === id &&
+          (item.source === 'user' || (item.source === 'chain' && !!item.held)),
     );
   }
 
@@ -1687,19 +1800,22 @@ export class HeadlessSession {
     }
 
     if (action === 'cancel') {
-      const { flushed, held, cancelledCompaction } = this.handleCancel();
+      const { flushed, held, pausedPipeline, cancelledCompaction } =
+        this.handleCancel();
       // The in-flight message's completed(success:false, error:"cancelled")
       // is handled by onEvent when turn_cancelled fires. The cancel's own
-      // completed reports the flushed chain/background follow-ups so the
-      // sandbox can offer resume, plus what this cancel actually stopped —
-      // a cancel with no turn running (the compaction case) otherwise acks
-      // success having, as far as the client can tell, done nothing.
+      // completed reports what this cancel actually did — a cancel with no turn
+      // running (the compaction case) otherwise acks success having, as far as
+      // the client can tell, done nothing. `pausedPipeline` is the one field
+      // read rather than logged: the sandbox keeps the project in `building`
+      // when a build was paused, since it's still resumable.
       this.emit(
         'completed',
         {
           success: true,
           ...(flushed.length > 0 && { cancelledMessages: flushed }),
           ...(held.length > 0 && { heldMessages: held }),
+          ...(pausedPipeline && { pausedPipeline: true }),
           ...(cancelledCompaction && { cancelledCompaction: true }),
         },
         requestId,
@@ -1709,7 +1825,7 @@ export class HeadlessSession {
 
     if (action === 'cancelQueued') {
       // Cancel pending queued messages without touching the in-flight turn.
-      // Only user messages are cancellable; chain/background are protected.
+      // User messages, or one held chain step by id (see handleCancelQueued).
       const id = parsed.id as string | undefined;
       const removed = this.handleCancelQueued(id);
       this.emit(

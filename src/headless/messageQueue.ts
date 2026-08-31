@@ -31,14 +31,16 @@ export interface QueuedMessage {
   /**
    * Waiting on the user, not on the agent: delivered only by an explicit
    * action (a new send, a promote, an explicit resume), never by the automatic
-   * post-turn drain. Set on the user messages that survive a cancel, and on
-   * user messages restored from disk after a restart.
+   * post-turn drain. Set on the user messages that survive a cancel, on user
+   * messages restored from disk after a restart, and on the `chain` steps of a
+   * build pipeline the user stopped (which is how a paused pipeline is
+   * represented — see handleCancel).
    *
-   * Both cases used to auto-run: a cancel drained the queue into a fresh turn
-   * milliseconds later (so Stop never appeared to work), and a restored
-   * message fired at the end of whatever unrelated turn came next (a "ghost
-   * turn" the user had given up on). Held items also don't count as agent
-   * activity — see the sandbox's derived busy.
+   * The first two cases used to auto-run: a cancel drained the queue into a
+   * fresh turn milliseconds later (so Stop never appeared to work), and a
+   * restored message fired at the end of whatever unrelated turn came next (a
+   * "ghost turn" the user had given up on). Held items also don't count as
+   * agent activity — see the sandbox's derived busy.
    */
   held?: boolean;
 }
@@ -47,6 +49,10 @@ export interface QueuedMessage {
  * Mark the user messages in a disk-restored queue `held`, leaving Remy's own
  * chain/background items alone. Applied to `loadQueue()`'s result before the
  * queue is constructed, so the hold is in place before anything can drain.
+ *
+ * Chain items are left as persisted, which is what carries a paused pipeline
+ * across a restart: a live pipeline's steps come back deliverable and resume,
+ * while ones paused by a Stop come back still `held`.
  */
 export function holdRestoredUserItems(items: QueuedMessage[]): QueuedMessage[] {
   return items.map((item) =>
@@ -65,6 +71,16 @@ export class MessageQueue {
 
   push(item: QueuedMessage): void {
     this.items.push(item);
+    this.onChange?.();
+  }
+
+  /**
+   * Add an item at the head. Used to put an interrupted chain step back in
+   * front of the rest of its pipeline on cancel; `promoteToFront` can't serve
+   * that case, since it addresses an item already in the queue by requestId.
+   */
+  unshift(item: QueuedMessage): void {
+    this.items.unshift(item);
     this.onChange?.();
   }
 
@@ -141,26 +157,6 @@ export class MessageQueue {
     return held;
   }
 
-  /**
-   * Release held items so the normal drain picks them up again — all of them,
-   * or one by command requestId. Fires onChange only if something changed.
-   * Returns the released items.
-   */
-  releaseHeld(id?: string): QueuedMessage[] {
-    const released: QueuedMessage[] = [];
-    for (const item of this.items) {
-      if (!item.held || (id !== undefined && item.command.requestId !== id)) {
-        continue;
-      }
-      delete item.held;
-      released.push(item);
-    }
-    if (released.length > 0) {
-      this.onChange?.();
-    }
-    return released;
-  }
-
   /** Whether anything in the queue will drain on its own (i.e. isn't held). */
   hasDeliverable(): boolean {
     return this.items.some((item) => !item.held);
@@ -209,6 +205,41 @@ export class MessageQueue {
     this.items.unshift(item);
     this.onChange?.();
     return item;
+  }
+
+  /**
+   * Fold-in release: un-hold everything, then move items matching `defer` to
+   * the tail, relative order preserved. One onChange for the whole
+   * rearrangement, so no observer ever sees it half-applied.
+   *
+   * Callers push the new user message FIRST and call this second — "behind" is
+   * defined by the array at the moment this runs. Held user messages stay put
+   * so they still merge with that message into one mailbox batch; a paused
+   * pipeline goes to the back, so the person's words run before the build
+   * continues. `defer` is applied to every item, not just the newly-released
+   * ones, so a chain step that was already deliverable defers too.
+   */
+  releaseHeldDeferring(
+    defer: (item: QueuedMessage) => boolean,
+  ): QueuedMessage[] {
+    const released: QueuedMessage[] = [];
+    for (const item of this.items) {
+      if (!item.held) {
+        continue;
+      }
+      delete item.held;
+      released.push(item);
+    }
+    const back = this.items.filter(defer);
+    const front = this.items.filter((item) => !defer(item));
+    const reordered = back.length > 0 && front.length > 0;
+    if (reordered) {
+      this.items = [...front, ...back];
+    }
+    if (released.length > 0 || reordered) {
+      this.onChange?.();
+    }
+    return released;
   }
 
   /** Copy of current queue contents (for surfacing on events). */
