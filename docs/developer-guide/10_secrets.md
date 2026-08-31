@@ -1,6 +1,6 @@
 # Secrets & Environment Variables
 
-Apps can store encrypted secrets (API keys, database URLs, tokens) that get injected into method execution as `process.env` variables. Secrets have separate dev and prod values — dev values are used during local development and in the editor sandbox, prod values are used in deployed releases.
+Apps can store encrypted secrets (API keys, database URLs, tokens) that get injected into method execution as `process.env` variables. Each secret has separate dev and prod values: dev during local development and in the editor sandbox, prod in deployed releases.
 
 ---
 
@@ -131,4 +131,4 @@ mindstudio-prod secrets delete STRIPE_SECRET_KEY
 - **Keys for platform-provided integrations** (SMS, email, web search, image generation, text-to-speech, transcription) — these are available through the SDK's built-in actions and handle auth automatically
 - **Remy platform credentials** — handled automatically
 - **Non-sensitive values** — use method input parameters or database tables instead
-- **Large values** (certificates, key files) — secrets are designed for short string values
+- **Large values** (certificates, key files) — secrets hold short string values

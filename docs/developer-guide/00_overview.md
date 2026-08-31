@@ -1,6 +1,6 @@
 # Remy Apps: Developer Guide
 
-> **Note on audience.** This guide documents the platform's primitives — the spec format, the manifest, tables, methods, roles, interfaces. It's written for developers who want to build directly on the platform, or for anyone reading the code Remy generates and wanting to understand how the pieces fit together. **It is not a description of how end-users of Remy interact with the product.** A Remy user describes what they want in plain language (voice, text, or pasted documents), and the agent generates everything described in this guide on their behalf. The user doesn't write MSFM, define tables, or author methods by hand — the agent does, after a conversation that turns intent into a spec. Read this guide if you want to know *what gets generated*; read the [diligence material](../README.md#diligence--investor-facing-material) and [landing page](../diligence/landing-page.md) for *how the user experiences it*.
+> **Note on audience.** This guide documents the platform's primitives: the spec format, the manifest, tables, methods, roles, interfaces. It's for developers building directly on the platform, and for anyone reading the code Remy generates who wants to understand how the pieces fit together. **It is not a description of how end-users of Remy interact with the product.** A Remy user describes what they want in plain language (voice, text, or pasted documents), and the agent generates everything in this guide on their behalf. The user doesn't write MSFM, define tables, or author methods by hand; the agent does that, after a conversation that turns intent into a spec. Read this guide to know *what gets generated*; read the [diligence material](../README.md#diligence--investor-facing-material) and [landing page](../diligence/landing-page.md) for *how the user experiences it*.
 
 ## What is a Remy App?
 
@@ -10,9 +10,9 @@ An app has three layers:
 
 **A spec.** A natural language document describing what the app does. Written in MSFM (MindStudio-Flavored Markdown), it captures the domain, the rules, the workflows. This is the source of truth. An AI agent reads the spec and generates the code, or you write the code directly. Either way, the spec is the application; the code is a derivation.
 
-**A backend contract.** Methods, tables, and roles. Methods are TypeScript functions that implement the logic. Tables define the data model. Roles define who can do what. This lives in `dist/`. In the same way `.js` is a compiled derivation of `.ts`, the backend code is a compiled derivation of the spec.
+**A backend contract.** Methods, tables, and roles. Methods are TypeScript functions that implement the logic. Tables define the data model. Roles define who can do what. This lives in `dist/`, and it's a compiled derivation of the spec the way `.js` is a compiled derivation of `.ts`.
 
-**Interfaces.** Ways for users to interact with the contract. A web app, a REST API, a cron job, a webhook, an email trigger, an MCP tool server. The same methods power all of them. Interfaces can be as complex and polished as you want, but they're always safe, because the backend contract is where anything real happens. The interface can't break business logic or corrupt data.
+**Interfaces.** Ways for users to interact with the contract. A web app, a REST API, a cron job, a webhook, an email trigger, an MCP tool server. The same methods power all of them. Interfaces can be as complex and polished as you want and still be safe: anything real happens in the backend contract, so an interface can't break business logic or corrupt data.
 
 ```
 my-app/
@@ -35,11 +35,9 @@ my-app/
 
 ## What the Platform Provides
 
-You write the logic. The platform handles the rest.
-
 ### Managed Databases
 
-SQL databases with typed schemas defined as TypeScript interfaces. No connection strings, no migrations to run manually. Push a schema change and the platform diffs it, clones the database, applies DDL, and promotes atomically. In development, reset to live data or truncate to empty tables with a single command.
+SQL databases with typed schemas defined as TypeScript interfaces. No connection strings, no migrations to run manually. Push a schema change and the platform diffs it, clones the database, applies DDL, and promotes atomically. A dev session gets its own copy, which you can reset back to live data or truncate to empty tables. See [Development & Deployment](16_development-and-deployment.md).
 
 ### Built-in Auth
 
@@ -64,11 +62,36 @@ Your methods don't know or care which interface invoked them.
 
 ### Sandboxed Execution
 
-Methods run in isolated sandboxes with npm packages pre-installed. No servers to manage. The SDK (`@mindstudio-ai/agent`) provides `db` and `auth` namespaces that just work, plus access to 200+ AI models, 1000+ integrations, and platform actions like file uploads and web scraping.
+Methods run in isolated sandboxes with npm packages pre-installed. No servers to manage. The SDK (`@mindstudio-ai/agent`) provides `db` and `auth` namespaces, plus access to 200+ AI models, 1000+ integrations, and platform actions like file uploads and web scraping. See [SDK Actions](11_sdk-actions.md).
 
 ### Git-Native Deployment
 
 Push to the default branch → the platform builds, deploys, and goes live. Push to a feature branch → preview deployment. Every release is a snapshot with full build log and commit info. Rollback is a git revert.
+
+---
+
+## Platform Limits
+
+Two things the platform cannot do. Say so early when a requirement heads this way:
+
+- **Native mobile apps** (iOS/Android). Mobile-responsive web apps are fine.
+- **Real-time multiplayer with persistent connections.** There is no WebSocket support. Turn-based or async multiplayer works well.
+
+---
+
+## Minimum Viable App
+
+The smallest thing the platform will build and run:
+
+```
+my-app/
+  mindstudio.json
+  dist/methods/
+    src/hello.ts
+    package.json
+```
+
+The method is reachable via API key. Everything else (tables, interfaces, auth, roles) is additive from there.
 
 ---
 
@@ -93,7 +116,7 @@ export async function approveVendor(input: { vendorId: string }) {
 }
 ```
 
-See [Tables & Database](04_tables-and-database.md), [Files & Storage](11_files-and-storage.md), and [Methods](05_methods.md) for the full API.
+See [Tables & Database](04_tables-and-database.md), [Files & Storage](08_files-and-storage.md), and [Methods](05_methods.md) for the full API.
 
 ### Frontend: `@mindstudio-ai/interface`
 
@@ -115,23 +138,11 @@ See [Interfaces](07_interfaces.md) for setup and configuration.
 
 ## The Development Workflow
 
-### With the local CLI
+Development happens in the hosted sandbox editor: file tree, Monaco editor, live preview, terminal, and an AI coding agent. The sandbox is a persistent working environment, snapshotted automatically so work is never lost.
 
-```bash
-npm install -g @mindstudio-ai/local-model-tunnel
-cd my-app
-mindstudio-local --port 5173
-```
+A dev session runs against its own database, a snapshot of live taken at session start, so nothing you do while building touches production data. Edit a method, save, and the next invocation picks up the change with no restart; edit a React component and the preview updates instantly.
 
-The CLI connects to the platform, polls for method requests, and executes them locally. Your frontend gets live preview with hot reload. Edit code, save, see changes immediately.
-
-### With the hosted editor
-
-Open the sandbox editor in your browser: file tree, Monaco editor, live preview, terminal, and an AI coding agent, all in one place. The sandbox is your persistent working environment, snapshotted automatically so you never lose work.
-
-### Either way
-
-Both use the same execution pipeline, the same database, the same SDK. Code that works locally works in the sandbox works in production.
+The sandbox and production share one execution pipeline, one database engine, and one SDK. Code that works in the sandbox works in production. See [Development & Deployment](16_development-and-deployment.md).
 
 ---
 
@@ -143,12 +154,17 @@ Both use the same execution pipeline, the same database, the same SDK. Code that
 | Learn the spec format | [Spec & MSFM](02_spec-and-msfm.md) |
 | See every manifest field | [Manifest Reference](03_manifest-reference.md) |
 | Work with the database | [Tables & Database](04_tables-and-database.md) |
-| Store or serve files | [Files & Storage](11_files-and-storage.md) |
 | Write backend logic | [Methods](05_methods.md) |
-| Set up access control | [Roles & Auth](06_roles-and-auth.md) |
+| Set up access control | [Auth & Roles](06_roles-and-auth.md) |
 | Connect an interface | [Interfaces](07_interfaces.md) |
-| Create test data | [Scenarios](08_scenarios.md) |
-| Set up local dev | [Local Development](09_local-development.md) |
-| Deploy your app | [Deployment](10_deployment.md) |
+| Store or serve files | [Files & Storage](08_files-and-storage.md) |
+| Search over documents | [Data Sources](09_data-sources.md) |
+| Store a third-party credential | [Secrets](10_secrets.md) |
+| Use AI models and integrations | [SDK Actions](11_sdk-actions.md) |
+| Have the app work autonomously | [Task Agents](12_task-agents.md) |
+| Automate a recurring judgment call | [Jewels](13_jewels.md) |
+| Measure traffic and custom events | [Analytics](14_analytics.md) |
+| Create test data | [Scenarios](15_scenarios.md) |
+| Build and deploy | [Development & Deployment](16_development-and-deployment.md) |
 
 For the source code behind the platform, see [`/src/`](../../src) at the repo root.

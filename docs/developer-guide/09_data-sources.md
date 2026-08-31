@@ -20,7 +20,7 @@ The platform owns parsing, chunking, embedding, indexing and tenant isolation. Y
 - **Scenarios never reset a data source.** A scenario truncates DB tables to seed test *rows*; a corpus is durable and left alone. Don't write `clear()`-style reset helpers, and don't expect a clean slate per run.
 - **Re-adding the same bytes is free.** Documents are content-addressed, so re-running your ingest over an unchanged corpus transfers nothing and embeds nothing. Ingest scripts are safe to re-run.
 - **Ingest is asynchronous.** `add()` returns as soon as the document is queued; parsing and embedding run in the background and take a while. Poll `documents()` for status, or use `--wait` from the CLI.
-- **Reprocessing costs real money.** Every document has to be parsed and embedded. Changing how a corpus is built is therefore an explicit, deliberate action — never something that happens as a side effect (see *Tuning*, below).
+- **Reprocessing costs real money.** Every document has to be parsed and embedded. Changing how a corpus is built is therefore deliberate, never a side effect (see *Tuning*, below).
 - **There are limits.** 25 data sources per app, 5,000 documents per source, 10,000 chunks per document, and 300 searches per minute. They sit well clear of normal use, and if you have a real reason to exceed one, get in touch — they're not a plan tier. The one worth designing around is the source limit: because naming a source creates it, a name computed per user or per request will run through it. Use one source and a metadata filter instead: tag documents at add time (`metadata: { userId }`) and scope searches with `filter: { metadata: { userId } }` (see *Filtering*, below).
 
 ## Defining a Data Source
@@ -39,7 +39,7 @@ Names are lowercase `[a-z0-9_-]`, ≤ 64 chars. The source is created on first u
 
 ## Loading Documents — Usually at Build Time
 
-**The normal way a corpus gets loaded is you, during the build, from the CLI** — not through app code. Upload the files into the project, then:
+**Normally you load a corpus yourself, during the build, from the CLI** — not through app code. Upload the files into the project, then:
 
 ```bash
 mindstudio-prod datasources add --source policies --wait docs/*.pdf
@@ -63,7 +63,7 @@ Scenarios seed database tables and deliberately don't touch data sources (durabl
 mindstudio-prod datasources add --source policies --wait fixtures/*.pdf
 ```
 
-Re-running it is free — content-addressing means an unchanged corpus transfers nothing and embeds nothing — so it's safe to run on every setup rather than guarding it.
+Re-running it is free (content-addressing means an unchanged corpus transfers nothing and embeds nothing), so it's safe to run on every setup rather than guarding it.
 
 ### When the app loads documents instead
 
@@ -99,7 +99,7 @@ Options: `topK` (default 5, max 50), `scoreThreshold`, `filter`, `mode`, `maxPer
 
 Each hit also carries `retrievalRank` and `retrievalScore` — where retrieval put it *before* reranking. Comparing that with its final position is how you see what reranking actually did.
 
-**Score semantics.** `score`'s scale depends on how the search ran: cosine similarity in `semantic` mode, a rank-fusion reciprocal in `hybrid` (small numbers that are not similarities), keyword-overlap weight in `lexical` — and when reranking ran, it's the reranker's 0–1 relevance instead, with the retrieval value preserved as `retrievalScore`. With reranking on (the default), `score` is the one scale stable across modes, so put quality cutoffs there. `scoreThreshold` is different: it floors the retrieval branch *before* fusion and reranking — a per-embedding-model cosine floor, not a relevance cutoff — so leave it unset unless you've measured it on your corpus.
+**Score semantics.** `score`'s scale depends on how the search ran: cosine similarity in `semantic` mode, a rank-fusion reciprocal in `hybrid` (small numbers that are not similarities), keyword-overlap weight in `lexical`. When reranking ran, `score` is the reranker's 0–1 relevance instead, and the retrieval value is preserved as `retrievalScore`. With reranking on (the default), `score` is the one scale stable across modes, so put quality cutoffs there. `scoreThreshold` is different: it floors the retrieval branch *before* fusion and reranking (a per-embedding-model cosine floor, not a relevance cutoff), so leave it unset unless you've measured it on your corpus.
 
 Alongside `results` the call returns `latencyMs` and `mode` — what the search **actually did**: `{ search, hybrid, reranked, pipelineVersion }`. Check it when a result surprises you: an omitted `mode` option falls back to the corpus's own configuration, and `reranked` is false when reranking was skipped or failed open. It's how you tell a deliberate lexical search from one whose option never arrived.
 
@@ -140,7 +140,7 @@ Search is **deterministic**: the same query against the same corpus, with the sa
 
 Two things legitimately move results, both yours: adding or removing documents, and changing the corpus configuration.
 
-Key those checks on `(documentId, chunkIndex)`, not on the chunk text. That pair is a chunk's stable identity for as long as the corpus keeps its current configuration — a rebuild-class change moves the chunk boundaries and therefore renumbers them, which is inherent rather than a wobble.
+Key those checks on `(documentId, chunkIndex)`, not on the chunk text. That pair is a chunk's stable identity for as long as the corpus keeps its current configuration. A rebuild-class change moves the chunk boundaries and therefore renumbers them, which is expected rather than a sign of nondeterminism.
 
 ### Debugging retrieval
 
@@ -170,7 +170,7 @@ For agentic flows, hand search to the model as a tool rather than retrieving onc
 
 ## Tuning
 
-There is no chunking or retrieval setup that suits every dataset, so these are yours to change. What matters is that settings come in two kinds, and the difference is what a change costs.
+There is no chunking or retrieval setup that suits every dataset, so these are yours to change. Settings come in two kinds, and the difference is what a change costs.
 
 | Kind | Settings | Cost to change |
 |---|---|---|
@@ -190,7 +190,7 @@ await Policies.search(query, { rerank: false });   // e.g. a latency-sensitive p
 
 **Images inside documents are described by a vision model and the description is substituted into the searchable text** (`--describe-images`, on by default). Without it a chart or diagram contributes nothing to search at all — it isn't ranked lower, it's absent. A document with no images costs nothing, which is why this is on rather than opt-in.
 
-Both `rerank` and `hybrid` default **on** and are usually right. `rerank` re-scores candidates with a model that reads the query and passage together — the single biggest quality lever. `hybrid` combines meaning-based search with exact keyword matching, which is what finds part numbers, error codes and proper nouns that a semantic model never learned.
+Both `rerank` and `hybrid` default **on** and are usually right. `rerank` re-scores candidates with a model that reads the query and passage together — the biggest single gain in result quality. `hybrid` combines meaning-based search with exact keyword matching, which is what finds part numbers, error codes and proper nouns that a semantic model never learned.
 
 ### Changing how documents are processed
 
@@ -217,6 +217,6 @@ Re-processing reuses the stored parse of each document, so changing chunking nev
 **Don't use one when:**
 
 - **The data is structured.** Products, orders, users, events — that's `db`. Filtering and sorting on fields is what a database is for; retrieval is worse at it in every respect.
-- **You just need to store files.** If nobody is searching the *contents*, use `files`. A data source is a search index that happens to hold documents, not a place to keep them.
+- **You only need to store files.** If nobody is searching the *contents*, use `files`. A data source is a search index that happens to hold documents, not a place to keep them.
 - **Exact matching is the requirement.** "Find the invoice numbered INV-4021" is a lookup. Retrieval ranks by similarity and can rank the wrong thing first.
 - **The corpus is tiny and fixed.** A handful of short documents that fit in a prompt don't need an index — just include them.

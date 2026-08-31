@@ -4,11 +4,11 @@
 
 Scenarios are seed scripts that put the dev database into a specific state. Instead of manually creating data through the app every time you want to test something, you run a scenario and get a repeatable starting point.
 
-A scenario is just an async function that uses the same `db.push()` calls as methods. If you can write a method, you can write a scenario.
+A scenario is an async function that uses the same `db.push()` calls as methods. If you can write a method, you can write a scenario.
 
 ## What Scenarios Don't Touch
 
-**Scenarios seed database tables. Nothing else.** Specifically, they do **not** touch file stores or data sources, and that's deliberate rather than an omission — both are durable, shared across dev and prod, and have no per-release copy to reset. There is nothing for a scenario to truncate.
+**Scenarios seed database tables. Nothing else.** They do **not** touch file stores or data sources, and that's deliberate: both are durable, shared across dev and prod, and have no per-release copy to reset. There is nothing for a scenario to truncate.
 
 So don't reach for a scenario to put documents into a data source, and don't write `clear()`-style reset helpers for one. To get a test corpus in place, add it once from the CLI:
 
@@ -16,7 +16,7 @@ So don't reach for a scenario to put documents into a data source, and don't wri
 mindstudio-prod datasources add --source policies --wait fixtures/*.pdf
 ```
 
-Re-running that is free — documents are content-addressed, so an unchanged corpus transfers nothing and embeds nothing — which is what makes it safe to keep in a setup script alongside your scenarios.
+Re-running that is free: documents are content-addressed, so an unchanged corpus transfers nothing and embeds nothing. That's what makes it safe to keep in a setup script alongside your scenarios.
 
 ---
 
@@ -146,7 +146,7 @@ POST /_internal/v2/apps/{appId}/dev/manage/reset
 Body: { "mode": "truncate" }
 ```
 
-Deletes all rows from all tables, preserves schema and IDs. Gives the seed function a clean canvas.
+Deletes all rows from all tables, preserving schema and IDs, so the seed function starts from empty.
 
 ### 2. Execute the Seed
 
@@ -164,7 +164,7 @@ POST /_internal/v2/apps/{appId}/dev/create-auth-session
 Body: { "email": "remy@mindstudio.ai", "roles": ["ap"] }
 ```
 
-Assigns the scenario's `roles` to the dev test user — a real write to that user's row (requires app auth). Signing in as the test account now shows the app from the AP user's perspective.
+Assigns the scenario's `roles` to the dev test user, a real write to that user's row (requires app auth). Signing in as the test account now shows the app from the AP user's perspective.
 
 ---
 
@@ -206,8 +206,7 @@ The C&C server (in the sandbox) triggers scenarios via control messages to the t
 
 ## Why Scenarios Matter
 
-- **Living documentation.** Each scenario is an executable description of an app state. "What does the AP dashboard look like with overdue invoices?" Run the scenario and see.
-- **Deterministic.** Same scenario always produces the same state. No accumulated test data, no "it worked on my machine."
-- **Composable.** Scenarios can import shared helpers for common setup patterns.
+- **Living documentation.** Each scenario is an executable description of an app state. "What does the AP dashboard look like with overdue invoices?" Run it and see.
+- **Deterministic.** The same scenario always produces the same state: no accumulated test data, no "it worked on my machine."
 - **Demo-ready.** Scenarios double as demo data for stakeholders.
-- **Visual regression.** Screenshot each scenario, diff against previous. Catch UI regressions across roles and data states.
+- **Visual regression.** Screenshot each scenario and diff against the previous run to catch UI regressions across roles and data states.

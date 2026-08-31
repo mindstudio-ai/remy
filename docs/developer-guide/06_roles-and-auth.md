@@ -1,8 +1,8 @@
 # Auth & Roles
 
-Remy apps can have and manage their own users. Auth is opt-in: configure it in the manifest, define a user table, and build your own login UI. The platform handles verification codes (email/SMS), cookie-based sessions, and role enforcement.
+Remy apps can have their own users. Auth is opt-in: configure it in the manifest, define a user table, and build your own login UI. The platform handles verification codes (email/SMS), cookie-based sessions, and role enforcement.
 
-Apps without auth config use anonymous guest sessions. Auth is optional — only add it when the app needs to identify users or restrict access.
+Apps without auth config use anonymous guest sessions. Add auth only when the app needs to identify users or restrict access.
 
 ---
 
@@ -76,7 +76,7 @@ export const Users = db.defineTable<{
 
 - **`email` / `phone`** — read-only from code. Writing via `push()`, `update()`, or `upsert()` throws a `MindStudioError` ("Cannot write to email — this column is managed by auth. Use the auth API to change a user's email/phone."). The platform syncs these on auth events.
 - **`roles`** — read/write from both code and the dashboard. `Users.update(userId, { roles: ['admin'] })` works and the platform syncs the change automatically. Dashboard role changes sync back to the table.
-- All other columns are fully the developer's domain. Read, write, query as normal.
+- All other columns belong to the developer. Read, write, query as normal.
 
 ---
 
@@ -142,7 +142,7 @@ const user = await auth.verifySmsCode(verificationId, '123456');
 
 ### Sign in with Remy (delegated)
 
-If the app is owned by an organization that has delegated sign-in enabled, add `"remy"` to `auth.methods` and offer a **"Continue with {Org}"** button. The platform resolves who the user is (like "Sign in with Google") and whether they're allowed; the app just starts the flow and reads the result. When the organization *requires* delegated sign-in, `remy` is the only permitted human method (email/SMS are blocked at the platform edge for its apps).
+If the app is owned by an organization that has delegated sign-in enabled, add `"remy"` to `auth.methods` and offer a **"Continue with {Org}"** button. The platform resolves who the user is (like "Sign in with Google") and whether they're allowed; the app starts the flow and reads the result. When the organization *requires* delegated sign-in, `remy` is the only permitted human method (email/SMS are blocked at the platform edge for its apps).
 
 ```typescript
 // "Continue with {Org}" button — must be triggered by a user gesture (click).
@@ -155,7 +155,7 @@ useEffect(() => { auth.handleRemyRedirect(); }, []);
 useEffect(() => auth.onAuthStateChanged(setUser), []);
 ```
 
-- `auth.signInWithRemy(options?)` → `Promise<AppUser | null>`. Top-level apps redirect to the platform and back — the page navigates away, so the promise never settles; drive UI off `onAuthStateChanged`, not the return value. Apps embedded in a cross-origin iframe (the dev IDE preview) use a popup and the promise resolves. Options: `redirectUri` (default current URL), `state` (CSRF, auto-generated), `mode: 'auto' | 'popup' | 'redirect'` (default `'auto'`).
+- `auth.signInWithRemy(options?)` → `Promise<AppUser | null>`. Top-level apps redirect to the platform and back. The page navigates away, so the promise never settles: drive UI off `onAuthStateChanged`, not the return value. Apps embedded in a cross-origin iframe (the dev IDE preview) use a popup and the promise resolves. Options: `redirectUri` (default current URL), `state` (CSRF, auto-generated), `mode: 'auto' | 'popup' | 'redirect'` (default `'auto'`).
 - `auth.handleRemyRedirect()` → `Promise<AppUser | null>`. Call once on load; handles both the button return and the dashboard-launch entry, updates the session in-place (fires `onAuthStateChanged`), and cleans the URL.
 - Delegated users have `provider: 'remy'`; their roles and email are platform-managed — enforce with `requireRole`/`hasRole`, but don't assign roles from app code.
 
@@ -342,7 +342,7 @@ export async function promoteToAdmin(input: { userId: string }) {
 
 ## Roles
 
-Roles are a platform-managed concept stored on the developer's user table.
+Roles are platform-managed and stored on the developer's user table.
 
 - **Declared in manifest** — `roles` array with `id` and `name`
 - **Stored as array** — the mapped `roles` column holds `["vendor", "admin"]`
@@ -354,13 +354,20 @@ Roles are a platform-managed concept stored on the developer's user table.
 
 ## Interface-Level Auth (Agent + Voice)
 
-Agent and voice interfaces additionally declare auth **in their config** — a required `auth` key, `{ "requireUser": boolean, "requireRole"?: string[] }` — because those sessions spend money without necessarily calling a backend method, so the platform gates the lobby itself before any model or media spend. `requireRole` uses the same manifest role ids with OR semantics and requires `requireUser: true`. Denials reach the frontend SDK as `MindStudioInterfaceError` codes `auth_required` (401) and `role_required` (403). Dev preview is exempt; older compiled apps without the block fall back to the manifest's `auth.enabled`. See [Interfaces](07_interfaces.md) for the full contract. Method-level `auth.requireRole(...)` checks still apply to every tool call inside the session.
+Agent and voice interfaces declare auth **in their config** as well: a required `auth` key, `{ "requireUser": boolean, "requireRole"?: string[] }`. One of those sessions can spend money without ever calling a backend method, so the platform checks access before any model or media spend.
+
+- `requireRole` uses the same manifest role ids with OR semantics, and requires `requireUser: true`.
+- Denials reach the frontend SDK as `MindStudioInterfaceError` codes `auth_required` (401) and `role_required` (403).
+- Dev preview is exempt. Older compiled apps without the block fall back to the manifest's `auth.enabled`.
+- Method-level `auth.requireRole(...)` checks still apply to every tool call inside the session.
+
+See [Interfaces](07_interfaces.md) for the full contract.
 
 ---
 
 ## Test User Roles (Dev Mode)
 
-During development, test role-based behavior by assigning roles to the dev test user (`remy@mindstudio.ai` — the account the preview's sign-in helper auto-fills). This is a real write to the user's row, so `auth.userId`, `requireRole`, and role lookups behave exactly as in production:
+During development, test role-based behavior by assigning roles to the dev test user (`remy@mindstudio.ai`, the account the preview's sign-in helper auto-fills). This is a real write to the user's row, so `auth.userId`, `requireRole`, and role lookups behave exactly as in production:
 
 ```
 POST /_internal/v2/apps/{appId}/dev/create-auth-session
@@ -369,7 +376,7 @@ Body: { "email": "remy@mindstudio.ai", "roles": ["ap"] }
 
 Sign in as the test account to see the app from that role's perspective. Roles persist on the row until changed; pass `"roles": []` to remove them all.
 
-Scenarios assign roles automatically: each scenario declares which roles the test user gets after seeding. See [Scenarios](08_scenarios.md).
+Scenarios assign roles automatically: each scenario declares which roles the test user gets after seeding. See [Scenarios](15_scenarios.md).
 
 ---
 

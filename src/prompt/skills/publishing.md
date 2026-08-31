@@ -18,6 +18,7 @@ If dismissed, acknowledge and do nothing — no commit, no push.
 
 ## 2. Ship (on approval)
 
+- On a meaningful release, glance at dependencies before committing — `npm outdated` in the methods package and in each interface's web directory. The first-party packages (`@mindstudio-ai/agent`, `@mindstudio-ai/interface`, `@madewithremy/admin`) are ours and versioned additively: a bump brings new capabilities and bug fixes, not a migration. Bring those current without asking, typecheck, and mention it in plain language when you report the deploy; if a bump does need a small code change, just make it. Third-party packages are the user's time to spend, so flag anything meaningfully behind and let them decide. Skip all of this on a hotfix — a quick fix going out doesn't need a dependency pass.
 - Stage and commit any uncommitted changes with a clean, descriptive commit message. If the committed work resolves any open issues (`remy-admin issues`), reference them in the commit message with a closing keyword — `fixes #42`, `closes #7` — so the deploy closes them automatically once it goes live.
 - Push to main.
 - Use `remy-admin releases wait` to poll the build until it completes. Let the user know it's deploying, then report back when it's live.

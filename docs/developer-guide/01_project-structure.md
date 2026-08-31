@@ -2,13 +2,13 @@
 
 ## The `src/` and `dist/` Model
 
-Every app has two directories, and the distinction matters:
+Every app has two directories:
 
-**`src/`** is the authored source. Natural language specs, brand guidelines, reference materials. Written by humans or AI. No code. This is the application: the intent, the domain knowledge, the rules.
+**`src/`** is the authored source. Natural language specs, brand guidelines, reference materials, written by humans or AI. No code. This is the application: the intent, the domain knowledge, the rules.
 
 **`dist/`** is the compiled output. TypeScript methods, React frontends, JSON configs. Generated from `src/` by an AI agent (or written directly). This is what the platform builds and runs.
 
-The naming is intentional: `src/` is source, `dist/` is distribution. Just as TypeScript compiles to JavaScript, specs compile to code. You can edit `dist/` directly (that's fine, it's real code) but `src/` is the reset point. Regenerate `dist/` from `src/` at any time.
+The naming is intentional: `src/` is source, `dist/` is distribution. Just as TypeScript compiles to JavaScript, specs compile to code. You can edit `dist/` directly (that's fine, it's real code), but `src/` is the reset point. Regenerate `dist/` from `src/` at any time.
 
 ---
 
@@ -26,7 +26,7 @@ my-app/
       package.json
 ```
 
-One manifest, one method, one package.json. No tables, no interfaces, no roles, no specs. The method is accessible via API key. That's it.
+One manifest, one method, one package.json. No tables, no interfaces, no roles, no specs. The method is accessible via API key.
 
 ### `mindstudio.json`
 
@@ -130,9 +130,9 @@ my-app/
 
 ### `app.md`: The Main Spec
 
-The main spec file, written in MSFM (see [Spec & MSFM](02_spec-and-msfm.md)). Describes the data model, business rules, workflows, and access control. The AI agent reads this to understand what the app does and generates the backend code in `dist/methods/`.
+Written in MSFM (see [Spec & MSFM](02_spec-and-msfm.md)). Describes the data model, business rules, workflows, and access control. The AI agent reads this to understand what the app does and generates the backend code in `dist/methods/`.
 
-`app.md` is the entry point by convention, but there are no strict rules about how this directory is structured. It's up to the developer and the compiler how to organize and interpret its contents.
+`app.md` is the entry point by convention, but this directory has no required structure. The developer and the compiler decide how to organize and interpret its contents.
 
 ### `references/`: Source Material
 
@@ -150,7 +150,7 @@ The agent reads these when generating any interface (web, bot responses, API err
 
 ### Interface Specs
 
-`src/interfaces/web.md`, `src/interfaces/cron.md`, etc. Specs for each interface type. Describe what the UI should look like, how the cron jobs should behave, what the API conventions are. The agent reads these to generate the corresponding `dist/interfaces/` output.
+One spec per interface type: `src/interfaces/web.md`, `src/interfaces/cron.md`, and so on. Describe what the UI should look like, how the cron jobs should behave, what the API conventions are. The agent reads these to generate the corresponding `dist/interfaces/` output.
 
 ---
 
@@ -166,7 +166,7 @@ The core of the app: the methods and data model.
 
 **`src/common/*.ts`**: shared helpers imported by methods. Not methods themselves; they're not listed in the manifest and can't be invoked directly.
 
-**`.scenarios/*.ts`**: seed scripts for testing. Populate the dev database with specific states. See [Scenarios](08_scenarios.md).
+**`.scenarios/*.ts`**: seed scripts for testing. Populate the dev database with specific states. See [Scenarios](15_scenarios.md).
 
 **`package.json`**: declares npm dependencies for the backend.
 
@@ -200,4 +200,4 @@ Put it in the repo root for project-wide conventions: structure overview, naming
 | **Interface configs** | `dist/interfaces/*.json` | Bot registrations, cron jobs |
 | **Scenarios** | `dist/methods/.scenarios/*.ts` | (dev only, not deployed) |
 
-You author everything in the repo. On `git push`, the platform reads the manifest, compiles methods, builds interfaces, diffs schemas, and deploys. See [Deployment](10_deployment.md) for the full pipeline.
+You author everything in the repo. On `git push`, the platform reads the manifest, compiles methods, builds interfaces, diffs schemas, and deploys. See [Deployment](16_development-and-deployment.md) for the full pipeline.

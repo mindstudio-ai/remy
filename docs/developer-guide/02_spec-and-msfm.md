@@ -2,19 +2,19 @@
 
 ## The Spec is the Application
 
-The spec is the most important file in your project. It's the natural language document that describes what the app does: the data model, the business rules, the workflows, the edge cases. It lives in `src/app.md`.
+The spec is a natural language document describing what the app does: the data model, the business rules, the workflows, the edge cases. It lives in `src/app.md`, and it's the most important file in the project.
 
 The AI agent reads the spec and generates the backend code in `dist/`. A spec with good annotations compiles the same way every time. When you want to change the app's behavior, update the spec and the agent regenerates the code.
 
-You can also write code directly in `dist/` without a spec. That works too. But the spec is what makes the project maintainable over time. Code shows *what* the app does; the spec captures *why*.
+You can also write code directly in `dist/` without a spec. But the spec is what makes the project maintainable over time. Code shows *what* the app does; the spec captures *why*.
 
 ---
 
 ## MSFM (MindStudio-Flavored Markdown)
 
-Specs are written in MSFM, which extends standard Markdown with two primitives: **block annotations** and **inline annotations**. These let you attach precision to prose so the AI compiler produces consistent results.
+Specs are written in MSFM, which extends standard Markdown with two primitives: **block annotations** and **inline annotations**. They let you pin down what a sentence means so the AI compiler produces consistent results.
 
-MSFM is a strict superset of Markdown. It works in any Markdown viewer; annotations render as code blocks and bracketed text. Nothing breaks.
+MSFM is a strict superset of Markdown. It works in any Markdown viewer; annotations render as code blocks and bracketed text.
 
 ### Design Principles
 
@@ -44,7 +44,7 @@ These are sequential. Each stage must complete before the next is notified. If a
 ~~~
 ```
 
-The annotation clarifies an ambiguity in the prose. "Three areas" names four things. Without the annotation, the agent might generate four separate stages. With it, the agent knows it's three.
+The annotation clarifies an ambiguity in the prose: "three areas" names four things. Without it, the agent might generate four separate stages.
 
 **Rules:**
 - Starts and ends with `~~~` on its own line
@@ -99,7 +99,7 @@ Default behavior when no terms are specified: due on receipt.
 
 The `{#payment-terms}` inline reference points to the `~~~#payment-terms` block. Keep the block co-located, right after the paragraph containing the pointer.
 
-A single block annotation can be referenced by multiple pointers. Useful for concepts like "amounts are in USD cents" that apply in several places.
+Multiple pointers can reference the same block annotation. Useful for concepts like "amounts are in USD cents" that apply in several places.
 
 ---
 
@@ -107,7 +107,7 @@ A single block annotation can be referenced by multiple pointers. Useful for con
 
 ### Annotate ambiguity, not the obvious
 
-If a statement has only one reasonable interpretation, leave it alone. Annotations resolve genuine ambiguity, places where two engineers might implement different things.
+If a statement has only one reasonable interpretation, leave it alone. Annotations resolve genuine ambiguity: places where two engineers might implement different things.
 
 ### Pin down edge cases
 
@@ -139,7 +139,7 @@ version: 1
 ---
 ```
 
-The body is freeform Markdown: headings, prose, tables, lists, whatever makes sense for the domain. There's no required structure or mandated heading hierarchy.
+The body is freeform Markdown: headings, prose, tables, lists, whatever makes sense for the domain. There's no required structure or heading hierarchy.
 
 A typical pattern:
 
@@ -179,9 +179,9 @@ When the agent reads a spec:
 1. **Understands the domain.** The prose gives it the big picture: what the app does, who uses it, how it works.
 2. **Reads annotations for precision.** Annotations resolve the ambiguities that would otherwise produce inconsistent code.
 3. **Generates the contract.** Methods, tables, and roles in `dist/` that implement the spec.
-4. **Maintains consistency.** When modifying code, the agent checks against the spec to ensure changes are semantically correct, not just syntactically valid.
+4. **Maintains consistency.** When modifying code, the agent checks against the spec so changes stay semantically correct, not just syntactically valid.
 
-The spec is also what makes the project onboardable. A new developer (or a different AI agent) can read `src/app.md` and understand the entire application without reading any code.
+The spec is also how someone new gets up to speed. A new developer (or a different AI agent) can read `src/app.md` and understand the entire application without reading any code.
 
 ---
 
@@ -195,13 +195,13 @@ The spec is also what makes the project onboardable. A new developer (or a diffe
 | Tagged block (`~~~#id`) | Fenced code block with `#id` visible |
 | Everything else | Standard Markdown |
 
-Specs are fully readable in GitHub, VS Code, or any Markdown previewer.
+Specs are readable in GitHub, VS Code, or any Markdown previewer.
 
 ---
 
 ## Structured Blocks
 
-Spec files can also contain fenced code blocks with special language tags that define structured data. These are standard markdown code fences, not MSFM-specific syntax. The Remy editor renders them as rich interactive UI; in a plain markdown viewer they appear as readable YAML.
+Spec files can also contain fenced code blocks with special language tags that define structured data. These are standard markdown code fences, not MSFM-specific syntax. The Remy editor renders them as interactive UI; in a plain markdown viewer they appear as readable YAML.
 
 **Typography** (`` ```typography ``): Declares fonts with source URLs and named type styles (size, weight, letter-spacing, line-height, description).
 

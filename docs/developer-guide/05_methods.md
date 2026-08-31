@@ -2,9 +2,9 @@
 
 ## What is a Method?
 
-A method is a named async function that runs on the platform. It's the universal unit of backend logic. Every interface (web, API, cron, webhook) is just a different way to invoke a method.
+A method is a named async function that runs on the platform. It's the universal unit of backend logic: every interface (web, API, cron, webhook) is a different way to invoke a method.
 
-Methods run in isolated sandboxes. No servers to manage, no runtimes to configure. Write the function, declare it in the manifest, push to git.
+Methods run in isolated sandboxes, so there are no servers to manage and no runtimes to configure. Write the function, declare it in the manifest, push to git.
 
 ---
 
@@ -126,7 +126,7 @@ See [Roles & Auth](06_roles-and-auth.md).
 
 ### Platform Capabilities
 
-The SDK provides access to 200+ AI models and 1,000+ actions (email, SMS, web scraping, file uploads, image/video generation, third-party integrations, and more). Use the `mindstudio` singleton — credentials come from the execution environment automatically:
+The SDK provides access to 200+ AI models and 1,000+ actions (email, SMS, web scraping, file uploads, image/video generation, third-party integrations, and more). Use the `mindstudio` singleton; credentials come from the execution environment automatically:
 
 ```typescript
 import { mindstudio } from '@mindstudio-ai/agent';
@@ -181,7 +181,7 @@ No separate API keys needed. The platform routes to the correct provider (OpenAI
 
 ## Error Handling
 
-Throw errors with messages that make sense to end users. These may surface in the UI:
+Throw errors with messages that make sense to end users. The message may surface in the UI:
 
 ```typescript
 export async function approveVendor(input: { vendorId: string }) {
@@ -326,4 +326,4 @@ const result = await api.generateReport(
 );
 ```
 
-The platform handles the SSE transport. Streaming is managed by the SDK and platform, not by your method code.
+The SDK and platform handle the SSE transport. Your method code doesn't manage streaming.

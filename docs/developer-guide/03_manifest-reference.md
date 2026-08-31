@@ -88,6 +88,27 @@ The app's UUID, assigned when created on the platform. Found in the git remote U
 
 Display name. Shown in the editor, workspace listings, and session context.
 
+### `auth`
+
+| | |
+|---|---|
+| Type | `object` |
+| Required | No (omit for an app with no user accounts) |
+
+Opts the app into managed user accounts. Without it, the app uses anonymous guest sessions: no login, no user identity, no roles.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `enabled` | `boolean` | Yes | `true` to enable auth |
+| `methods` | `string[]` | Yes | Auth methods: `"email-code"`, `"sms-code"`, `"api-key"`, `"remy"` (platform-delegated sign-in, org-owned apps). At least one required. |
+| `table.name` | `string` | Yes | Name of the `defineTable` table holding user records |
+| `table.columns.email` | `string` | If `email-code` | Column name for email (platform-managed, read-only from code) |
+| `table.columns.phone` | `string` | If `sms-code` | Column name for phone (platform-managed, read-only from code) |
+| `table.columns.roles` | `string` | No | Column name for the roles array (bidirectional sync) |
+| `table.columns.apiKey` | `string` | If `api-key` | Column name for API key (platform-managed, stores masked value) |
+
+The user table is a normal app table that you own and can extend with your own columns. See [Auth & Roles](06_roles-and-auth.md) for the full configuration and the frontend/backend APIs.
+
 ### `roles`
 
 | | |
@@ -103,7 +124,7 @@ Defines the app's roles for access control. Each role:
 | `name` | `string` | No | Display name |
 | `description` | `string` | No | What this role can do (shown in editor, useful context for the agent) |
 
-Roles are synced to the platform on deploy. Users are assigned to roles in the editor. See [Roles & Auth](06_roles-and-auth.md).
+The platform syncs roles on deploy. Assign users to roles in the editor. See [Auth & Roles](06_roles-and-auth.md).
 
 ### `tables`
 
@@ -126,7 +147,7 @@ The platform parses the TypeScript to extract the schema. See [Tables & Database
 
 | | |
 |---|---|
-| Type | `Array<{ id, name?, path, export }>` |
+| Type | `Array<{ id, name?, description?, path, export, ... }>` |
 | Required | Yes (at least one) |
 
 Declares backend methods. Each entry:
@@ -135,10 +156,23 @@ Declares backend methods. Each entry:
 |-------|------|----------|-------------|
 | `id` | `string` | Yes | Kebab-case identifier (used in API URLs and frontend method map) |
 | `name` | `string` | No | Display name |
+| `description` | `string` | No | What the method does. Used as the fallback tool description when the method is exposed to an agent. |
 | `path` | `string` | Yes | Path to the TypeScript file |
 | `export` | `string` | Yes | Named export (the async function) |
 
 See [Methods](05_methods.md).
+
+#### Jewel fields
+
+Only relevant when a method has an AI companion attached. Most methods set none of them. See [Jewels](13_jewels.md).
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `autonomy` | `string` | No | What happens to each proposal: `"manual"`, `"shadow"`, `"approve"`, or `"auto"`. `"manual"` records a policy of no automation. |
+| `jewel` | `{ path, export }` | No | The jewel implementation file and its export |
+| `sampleRate` | `number` | No | Fraction of eligible decision moments that get the full autonomy treatment. Default 1; validated `0 < rate <= 1` at compile. Requires `autonomy`. |
+| `attributionWindow` | `number` | No | How long, in seconds, a proposal raised by `jewels.propose` waits for a human to act on the method so it has something to be graded against. It closes as `expired` if nobody does. Default 604800 (7 days), capped at 90 days. Requires `autonomy`. |
+| `tuning` | `object` | No | Training recipe for the jewel's own model (`base`, `windowDays`, `epochs`, `rank`, `learningRate`). Every knob optional, with platform defaults. Requires `jewel`. |
 
 ### `interfaces`
 
@@ -176,4 +210,4 @@ Declares seed scripts for testing. Each entry:
 | `export` | `string` | Yes | Named export (the async function) |
 | `roles` | `string[]` | Yes | Roles assigned to the dev test user after seeding |
 
-See [Scenarios](08_scenarios.md).
+See [Scenarios](15_scenarios.md).

@@ -117,7 +117,7 @@ The conflict key must match a declared `unique` constraint on the table. Throws 
 
 ### Reading Records
 
-All read methods return lazy `Query` objects — nothing executes until `await`. Every read method (including `get()`, `findOne()`, `count()`, etc.) is batchable via `db.batch()`.
+Read methods return lazy `Query` objects — nothing executes until `await`. Almost all of them are batchable via `db.batch()`, including `get()`, `findOne()`, and `count()`; `every()` and `isEmpty()` are the exceptions.
 
 ```typescript
 // By ID
@@ -152,7 +152,7 @@ const empty = await Vendors.isEmpty();
 
 ### Aggregation
 
-`count()`, `sum()`, `avg()`, `countDistinct()`, and `aggregate()` compile to SQL aggregates (`COUNT`/`TOTAL`/`AVG`/`GROUP BY`) — no rows are fetched, so they stay cheap at any table size. Use them for every summary over a table that can grow; never page a whole table into memory to compute totals.
+`count()`, `sum()`, `avg()`, `countDistinct()`, and `aggregate()` compile to SQL aggregates (`COUNT`/`TOTAL`/`AVG`/`GROUP BY`). No rows are fetched, so they stay cheap at any table size. Use them for any summary over a table that can grow, rather than paging rows into memory to compute totals.
 
 ```typescript
 // Scalar aggregates — take accessors, like sortBy/min/max
@@ -177,9 +177,9 @@ const top = await Answers
 //         total: number; avgScore: number | null; respondents: number }>
 ```
 
-Select terms: `{ count: true }`, `{ sum: 'col' }`, `{ avg: 'col' }`, `{ min: 'col' }`, `{ max: 'col' }`, `{ countDistinct: 'col' }`. Omit `by` for several aggregates over the whole filtered set in one statement (returns a single object). Empty-set semantics: `count`/`countDistinct` → 0, `sum` → 0, `avg`/`min`/`max` → null; NULL values are skipped, matching SQL.
+Select terms: `{ count: true }`, `{ sum: 'col' }`, `{ avg: 'col' }`, `{ min: 'col' }`, `{ max: 'col' }`, `{ countDistinct: 'col' }`. Omit `by` to run the aggregates over the whole filtered set in one statement (returns a single object). Empty-set semantics: `count`/`countDistinct` → 0, `sum` → 0, `avg`/`min`/`max` → null; NULL values are skipped, matching SQL.
 
-`groupBy()` (a `Map` of full rows per group) fetches everything — reach for it only when you need the rows themselves, not a summary. `min(fn)`/`max(fn)` return the full row with the extreme value; the `{ min: 'col' }`/`{ max: 'col' }` select terms return just the value.
+`groupBy()` returns a `Map` of full rows per group, so it fetches everything — use it only when you need the rows themselves, not a summary. `min(fn)`/`max(fn)` return the full row with the extreme value; the `{ min: 'col' }`/`{ max: 'col' }` select terms return just the value.
 
 ### Raw SQL Escape Hatch
 
@@ -192,7 +192,7 @@ const rows = await db.sql<{ questionId: string; n: number }>(
 );
 ```
 
-Read-only: the statement must start with `SELECT` or `WITH`; writes throw — use Table methods for writes. Positional `?` bind params. Lazy and batchable via `db.batch()`. Multi-database apps pass `{ database: 'name' }` as the third argument. This is the last resort — prefer the typed API (including `aggregate()`) whenever it can express the query; raw rows come back close to how SQLite stores them and may not exactly match the typed API's representations.
+Read-only: the statement must start with `SELECT` or `WITH`, and writes throw, so use Table methods for those. Positional `?` bind params. Lazy and batchable via `db.batch()`. Multi-database apps pass `{ database: 'name' }` as the third argument. Treat it as a last resort: prefer the typed API (including `aggregate()`) whenever it can express the query, since raw rows come back close to how SQLite stores them and may not exactly match the typed API's representations.
 
 ### Updating Records
 
@@ -219,7 +219,7 @@ const cleared = await Vendors.clear();
 
 ### Filter Predicates
 
-Predicates are arrow functions that compile to SQL WHERE clauses. They look like normal JavaScript but run as SQL:
+Predicates look like normal JavaScript arrow functions, but they compile to SQL WHERE clauses:
 
 ```typescript
 // Comparisons
@@ -287,7 +287,10 @@ Write methods throw `MindStudioError` with specific codes:
 
 ### Batch Queries
 
-`db.batch()` combines multiple operations into a single HTTP round-trip. Almost all read methods return batchable `Query` objects — including `get()`, `findOne()`, `count()`, `sum()`, `avg()`, `countDistinct()`, `aggregate()`, `some()`, `min()`, `max()`, and `groupBy()` — and `db.sql()` results batch too. The exceptions are `every()` and `isEmpty()`, which return Promises directly and cannot be batched. All write mutations are also batchable.
+`db.batch()` combines multiple operations into a single HTTP round-trip.
+
+- **Batchable** — all write mutations, `db.sql()` results, and almost every read method: `get()`, `findOne()`, `count()`, `sum()`, `avg()`, `countDistinct()`, `aggregate()`, `some()`, `min()`, `max()`, and `groupBy()`.
+- **Not batchable** — `every()` and `isEmpty()`, which return Promises directly.
 
 ```typescript
 const [vendor, orders, pendingCount] = await db.batch(
@@ -348,33 +351,33 @@ Both operations preserve IDs, so the frontend and SDK can continue using existin
 
 ## User Type Handling
 
-Columns of type `User` (the branded type from the SDK) store values with a `@@user@@` prefix in SQLite. The SDK handles this transparently. Your code works with clean UUID strings. You never see the prefix.
+Columns of type `User` (the branded type from the SDK) store values with a `@@user@@` prefix in SQLite. The SDK handles this transparently: your code works with clean UUID strings and never sees the prefix.
 
 ---
 
 ## Architecture and Scaling
 
-Each app gets its own SQLite database. The database is loaded into memory during active use; S3 is the durability and sync layer, not the query path. Reads come from the in-memory working set; writes go to memory and persist to S3. The working set is hot during active use and goes cold on inactivity. This is the same architectural pattern Cloudflare uses for D1, Fly.io uses for LiteFS, Notion uses for per-workspace storage, and Tailscale uses for its control plane — per-tenant SQLite backed by durable object storage.
+Each app gets its own SQLite database, loaded into memory during active use. S3 is the durability and sync layer, not the query path: reads come from the in-memory working set, and writes go to memory and persist to S3. The working set goes cold on inactivity. This is the same architectural pattern Cloudflare uses for D1, Fly.io uses for LiteFS, Notion uses for per-workspace storage, and Tailscale uses for its control plane — per-tenant SQLite backed by durable object storage.
 
 ### Modern SQLite is a production-grade RDBMS
 
-If your mental model of SQLite is "small embedded library suitable only for prototypes," update it. Modern SQLite is a serious database engine:
+If your mental model of SQLite is "small embedded library suitable only for prototypes," it's out of date:
 
-- **WAL mode (enabled by default in Remy) gives concurrent multi-reader / single-writer behavior** that handles the workload shape most business applications produce. The single-writer aspect is far less of a bottleneck than it sounds, because SQLite's write path is fast — for typical Remy apps (workflow systems, internal tools, dashboards, customer-facing apps), write throughput is bounded by user actions, not by the engine.
+- **WAL mode (enabled by default in Remy) gives concurrent multi-reader / single-writer behavior** that fits how most business applications read and write. Single-writer matters less than it sounds, because SQLite's write path is fast: for typical Remy apps (workflow systems, internal tools, dashboards, customer-facing apps), write throughput is bounded by user actions, not by the engine.
 - **Per-tenant databases routinely run at 1GB+** without operational stress. The SQLite engine supports databases up to 281 TB; the practical ceiling is operational (backup, migration, residency), not engine-side.
-- **It's a full RDBMS.** ACID transactions, a query planner, indexes (including covering and partial indexes), full-text search, JSON1 support, common table expressions, window functions, all of it. The "just a file" framing is a category error — Postgres is also files on a disk, as is every other database. What matters is the engine, and SQLite's engine has been hardened for decades.
-- **A serious ecosystem is investing in cloud-scale SQLite.** Turso has raised meaningful capital specifically to bulletproof SQLite for multi-tenant cloud deployment. Cloudflare runs D1 on SQLite across their global edge network. Fly.io runs LiteFS for replicated SQLite in production. The "is SQLite production-ready?" question was settled around 2020-2022; the question now is which deployment pattern fits which workload. Similarly, enterprises have adjusted to this in their procurement as well. We have seen first-hand that this is not a blocker to enterprise workloads in the modern day.
+- **It's a full RDBMS.** ACID transactions, a query planner, indexes (including covering and partial indexes), full-text search, JSON1 support, common table expressions, window functions, all of it. The "just a file" framing is a category error: Postgres is also files on a disk, as is every other database. What matters is the engine, and SQLite's has been hardened for decades.
+- **A serious ecosystem is investing in cloud-scale SQLite.** Turso has raised meaningful capital specifically to harden SQLite for multi-tenant cloud deployment. Cloudflare runs D1 on SQLite across their global edge network. Fly.io runs LiteFS for replicated SQLite in production. The "is SQLite production-ready?" question was settled around 2020-2022; the open question now is which deployment pattern fits which workload. Enterprise procurement has adjusted too, and we've seen first-hand that it isn't a blocker for enterprise workloads.
 
 ### Practical consequences of per-tenant SQLite + S3 durability
 
-- **Per-app isolation is automatic.** Each app's data lives in its own file. There's no shared schema, no cross-tenant query surface, no row-level security to misconfigure.
+- **Per-app isolation is automatic.** Each app's data lives in its own file: no shared schema, no cross-tenant queries, no row-level security to misconfigure.
 - **Scaling is horizontal.** More apps means more SQLite files, not one larger central database.
 - **Backups, residency, and migration are file-level.** Each app's `.db` file is a single, portable artifact. Exporting is a download. Region-specific storage gives region-specific residency.
-- **The schema sync layer is the agent's compiler step.** When you change a table interface, the platform diffs against the live schema and generates DDL automatically. There are no migration files to write by hand. (See "Migrations" above.)
-- **The database is a portable artifact.** Any SQLite client can read it. Migrating off the platform is a download and a re-pointing of your data-access layer; it's not a months-long data extraction project.
+- **Schema sync replaces migration files.** When you change a table interface, the platform diffs against the live schema and generates DDL automatically. There are no migration files to write by hand. (See "Migrations" above.)
+- **The database is portable.** Any SQLite client can read it. Migrating off the platform means downloading the file and re-pointing your data-access layer, not running a months-long extraction project.
 
 ### When the managed SQLite path isn't the right fit
 
-For workloads that legitimately need a different engine — extreme data volumes, complex cross-table transactions on hundreds-of-GB datasets, dedicated database tier, specific cloud-residency mandates outside what the managed path supports — there's nothing structural stopping you from connecting an external database. Remy-generated app code is standard TypeScript and can call any database client a Node.js app can call.
+Some workloads legitimately need a different engine: extreme data volumes, complex cross-table transactions on hundreds-of-GB datasets, a dedicated database tier, cloud-residency mandates the managed path doesn't support. Nothing structural stops you from connecting an external database. Remy-generated app code is standard TypeScript and can call any database client a Node.js app can call.
 
-The managed SQLite-on-S3 path covers most business-application workloads cleanly. The escape hatch exists for the genuinely unusual cases, not because SQLite-on-S3 is itself a bottleneck.
+The managed SQLite-on-S3 path covers most business-application workloads cleanly. The escape hatch is there for the unusual cases, not because SQLite-on-S3 is itself a bottleneck.

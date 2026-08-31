@@ -86,13 +86,16 @@ For developers writing apps that run on Remy. The three-layer model (spec → co
 | [`04_tables-and-database.md`](./developer-guide/04_tables-and-database.md) | `defineTable<T>()`, typed schemas, the query layer. |
 | [`05_methods.md`](./developer-guide/05_methods.md) | Methods as the universal unit of backend logic. Every interface invokes methods. |
 | [`06_roles-and-auth.md`](./developer-guide/06_roles-and-auth.md) | Opt-in auth: email/SMS verification codes, cookie sessions, role enforcement. |
-| [`07_interfaces.md`](./developer-guide/07_interfaces.md) | The interface modalities: web, REST API, cron, email, MCP, agent, voice. All powered by the same methods. |
-| [`08_scenarios.md`](./developer-guide/08_scenarios.md) | Seed scripts that put the dev database into a specific repeatable state. |
-| [`09_local-development.md`](./developer-guide/09_local-development.md) | Local dev workflow with the CLI. |
-| [`09_secrets.md`](./developer-guide/09_secrets.md) | Encrypted secrets injected as `process.env`, with separate dev and prod values. |
-| [`10_deployment.md`](./developer-guide/10_deployment.md) | `git push` → build → deploy. The full deployment pipeline. |
-| [`11_files-and-storage.md`](./developer-guide/11_files-and-storage.md) | `files.defineStore()`: per-app blob storage for uploads, generated documents and assets. Private by default, served on the app's own domain. |
-| [`12_data-sources.md`](./developer-guide/12_data-sources.md) | `dataSources.defineDataSource()`: search over unstructured documents, with citations. When to use one — and when a database query is the right tool instead. |
+| [`07_interfaces.md`](./developer-guide/07_interfaces.md) | The interface modalities: web, REST API, cron, webhook, email, MCP, agent, voice. All powered by the same methods. |
+| [`08_files-and-storage.md`](./developer-guide/08_files-and-storage.md) | `files.defineStore()`: per-app blob storage for uploads, generated documents and assets. Private by default, served on the app's own domain, CDN caching set per put. |
+| [`09_data-sources.md`](./developer-guide/09_data-sources.md) | `dataSources.defineDataSource()`: search over unstructured documents, with citations. When to use one — and when a database query is the right tool instead. |
+| [`10_secrets.md`](./developer-guide/10_secrets.md) | Encrypted secrets injected as `process.env`, with separate dev and prod values. |
+| [`11_sdk-actions.md`](./developer-guide/11_sdk-actions.md) | 200+ AI models and 1,000+ actions through one SDK: generation, analysis, search, media, 850+ OAuth connectors. |
+| [`12_task-agents.md`](./developer-guide/12_task-agents.md) | `mindstudio.runTask()`: an autonomous agent loop callable from any method, with the app's own methods as tools. |
+| [`13_jewels.md`](./developer-guide/13_jewels.md) | `defineJewel()`: an AI companion for a single method that proposes the call a human would make, graded against what really happened, with its own trainable model. |
+| [`14_analytics.md`](./developer-guide/14_analytics.md) | Automatic pageview and error tracking, custom events, and querying the app's own traffic from a backend method. Cookie-banner-free by design. |
+| [`15_scenarios.md`](./developer-guide/15_scenarios.md) | Seed scripts that put the dev database into a specific repeatable state. |
+| [`16_development-and-deployment.md`](./developer-guide/16_development-and-deployment.md) | The sandbox dev loop and the `git push` → build → deploy pipeline. |
 
 ### `brand-positioning/` — external positioning
 
