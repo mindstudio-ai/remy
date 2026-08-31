@@ -99,6 +99,8 @@ Options: `topK` (default 5, max 50), `scoreThreshold`, `filter`, `mode`, `maxPer
 
 Each hit also carries `retrievalRank` and `retrievalScore` — where retrieval put it *before* reranking. Comparing that with its final position is how you see what reranking actually did.
 
+**Score semantics.** `score`'s scale depends on how the search ran: cosine similarity in `semantic` mode, a rank-fusion reciprocal in `hybrid` (small numbers that are not similarities), keyword-overlap weight in `lexical` — and when reranking ran, it's the reranker's 0–1 relevance instead, with the retrieval value preserved as `retrievalScore`. With reranking on (the default), `score` is the one scale stable across modes, so put quality cutoffs there. `scoreThreshold` is different: it floors the retrieval branch *before* fusion and reranking — a per-embedding-model cosine floor, not a relevance cutoff — so leave it unset unless you've measured it on your corpus.
+
 Alongside `results` the call returns `latencyMs` and `mode` — what the search **actually did**: `{ search, hybrid, reranked, pipelineVersion }`. Check it when a result surprises you: an omitted `mode` option falls back to the corpus's own configuration, and `reranked` is false when reranking was skipped or failed open. It's how you tell a deliberate lexical search from one whose option never arrived.
 
 ### Filtering
@@ -108,7 +110,7 @@ Alongside `results` the call returns `latencyMs` and `mode` — what the search 
 ```typescript
 await Policies.search('termination clause', {
   filter: {
-    metadata: { department: 'legal', year: [2025, 2026] },  // scalar = equals; array = any-of
+    metadata: { department: 'legal', signedAt: { gte: 20250101 } },  // scalar = equals; array = any-of; {gte,lte} = numeric range
     pages: { max: 10 },
     phrase: 'notice period',           // exact adjacent word sequence
   },
@@ -116,7 +118,7 @@ await Policies.search('termination clause', {
 });
 ```
 
-Fields: `metadata`, `filename` (one or several), `documentIds`, `pages: { min?, max? }`, `contains` (all these words, any order), `phrase` (exact sequence). Filters scope *retrieval* — per-user partitions, categories, a required identifier. They are not a substitute for a `db` query: if the whole question is expressible as a filter, it belongs in the database.
+Fields: `metadata`, `filename` (one or several), `documentIds`, `pages: { min?, max? }`, `contains` (all these words, any order), `phrase` (exact sequence). Metadata ranges are numeric only — to filter by date, store dates as sortable integers at add time (`20250315`-style YYYYMMDD, or epoch seconds) and range on those. Filters scope *retrieval* — per-user partitions, categories, a date window, a required identifier. They are not a substitute for a `db` query: if the whole question is expressible as a filter, it belongs in the database.
 
 ### Modes
 
@@ -173,7 +175,7 @@ There is no chunking or retrieval setup that suits every dataset, so these are y
 | Kind | Settings | Cost to change |
 |---|---|---|
 | **Free** — how results are ranked | `--rerank`, `--rerank-model`, `--hybrid`, `--top-k` | none; effective on the next search |
-| **Rebuild** — how documents become vectors | `--max-chars`, `--min-chars`, `--drop-blocks`, `--contextual`, `--describe-images`, `--embedding-model`, `--extraction-model` | every document must be reprocessed |
+| **Rebuild** — how documents become vectors | `--max-chars`, `--min-chars`, `--drop-blocks`, `--contextual`, `--contextual-model`, `--describe-images`, `--embedding-model`, `--extraction-model` | every document must be reprocessed |
 
 ```bash
 mindstudio-prod datasources config --source policies                 # show current settings
