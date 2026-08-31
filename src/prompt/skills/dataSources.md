@@ -31,13 +31,13 @@ const { results } = await Policies.search('what are the payment terms?', { topK:
 const context = results.map((r) => r.text).join('\n\n');
 ```
 
-Hits are `{ score, text, citation }` with `citation: { documentId, filename, pageNumber, chunkIndex, headingPath, boundingBox?, url }`, plus `retrievalRank`/`retrievalScore` — the position before reranking, so you can show what reranking did.
+Hits are `{ score, text, citation }` with `citation: { documentId, filename, pageNumber, chunkIndex, headingPath, boundingBox?, url }`, plus `retrievalRank`/`retrievalScore` — the position before reranking, so you can show what reranking did. With reranking on (the default) `score` is the reranker's 0–1 relevance and the right place for quality cutoffs; without it the scale varies by mode (cosine / rank-fusion / keyword overlap). `scoreThreshold` floors the retrieval branch before fusion and reranking — leave it unset unless measured on the corpus.
 
 **Always render the citation.** `citation.url` is a stable on-domain link — put it in an `<a href>` beside the answer. Retrieval is approximate; a user who can click through can judge for themselves. An answer with no citation is an assertion.
 
 Created on first use, so searching a source the build hasn't populated returns no results rather than throwing. `search` options: `topK` (default 5, max 50), `scoreThreshold`, `filter`, `mode`, `maxPerDocument`, `highlight`, `rerank`, `hybrid`.
 
-**Filtering** narrows a search before ranking, and every condition only narrows: `filter: { metadata: { department: 'legal', year: [2025, 2026] }, filename, documentIds, pages: { min?, max? }, contains: 'all these words', phrase: 'exact adjacent sequence' }`. Metadata is tagged at add time (scalars only, ≤16 keys); re-adding the same bytes with different metadata updates the tags in place, free. Filters are the right tool for scoping retrieval (per-user, per-category); they are NOT a substitute for a `db` query over structured data.
+**Filtering** narrows a search before ranking, and every condition only narrows: `filter: { metadata: { department: 'legal', year: [2025, 2026], signedAt: { gte: 20250101 } }, filename, documentIds, pages: { min?, max? }, contains: 'all these words', phrase: 'exact adjacent sequence' }`. Metadata matches per key: scalar = equals, array = any-of, `{ gte?, lte? }` = numeric range — ranges are numeric only, so store dates as sortable integers at add time (YYYYMMDD or epoch seconds) to range on them. Metadata is tagged at add time (scalars only, ≤16 keys); re-adding the same bytes with different metadata updates the tags in place, free. Filters are the right tool for scoping retrieval (per-user, per-category, a date window); they are NOT a substitute for a `db` query over structured data.
 
 **Modes**: `mode: 'hybrid'` (default) fuses semantic and keyword retrieval; `'semantic'` is the embedding alone; `'lexical'` is keyword-only with **no query embedding** — cheapest and fastest, right when the query is an identifier (an error code, a SKU, a name) rather than a meaning. `maxPerDocument: 2` stops one document monopolizing the results when the answer should draw on several. `highlight: true` adds `matches` (`{start, end}` offsets into `text`) for rendering highlighted excerpts.
 
@@ -84,7 +84,7 @@ Retrieve → join passages as context → have a model answer *from that context
 | Kind | Settings | Cost |
 |---|---|---|
 | **Free** (ranking) | `--rerank`, `--rerank-model`, `--hybrid`, `--top-k` | none, next search |
-| **Rebuild** (how docs become vectors) | `--max-chars`, `--min-chars`, `--drop-blocks`, `--contextual`, `--describe-images`, `--embedding-model`, `--extraction-model` | every document reprocessed |
+| **Rebuild** (how docs become vectors) | `--max-chars`, `--min-chars`, `--drop-blocks`, `--contextual`, `--contextual-model`, `--describe-images`, `--embedding-model`, `--extraction-model` | every document reprocessed |
 
 Images inside documents are described by a vision model and the description substituted into the searchable text (`--describe-images`, on by default) — without it a chart contributes nothing to search at all. Documents with no images cost nothing.
 
