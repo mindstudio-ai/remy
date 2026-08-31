@@ -701,7 +701,7 @@ dist/interfaces/agent/
 | `maxTokens` | Max response tokens |
 | `systemPrompt` | Relative path to the compiled system prompt markdown file |
 | `auth` | **Required.** Who may open the lobby: `{ "requireUser": boolean, "requireRole"?: string[] }`. See Auth below. |
-| `tools` | Array of tool entries. `method` references a method `id` from `mindstudio.json`. `description` is a relative path to a markdown file with rich tool docs. |
+| `tools` | Array of tool entries. `method` references a method `id` from `mindstudio.json`. `description` is a relative path to a markdown file with rich tool docs. A browser-side tool sets `target: "client"` with `name` + `inputSchema` instead of `method` — see Client tools below. |
 | `webInterfacePath` | Optional. If the app has a web interface with a chat page, this path tells the IDE where to show the agent preview. |
 
 ### Auth
@@ -709,6 +709,34 @@ dist/interfaces/agent/
 **Every agent config declares an `auth` block.** Agent chat spends the owner's money on every message without necessarily touching a backend method, so the platform gates the lobby itself, at thread creation and at message send. `requireUser: true` limits chat to authenticated app users; `requireRole` (optional, requires `requireUser: true`) additionally demands at least one of the listed manifest role ids (OR semantics, matching the backend `auth.requireRole(...)`). Unknown role ids fail the build. Denials surface to the frontend SDK as `MindStudioInterfaceError` with code `auth_required` (401) or `role_required` (403). Dev preview is exempt. Older compiled apps without the block fall back to the manifest's `auth.enabled`.
 
 Once inside, agent chat runs as the **authenticated user**, not as a system role — tool calls carry that user's roles, so method-level `auth.requireRole` checks behave exactly as they would from the web frontend. Anonymous visitors (when allowed) are scoped by a per-browser visitor identity: their threads are private to their browser, and gated methods still reject.
+
+### Client tools
+
+Most tools are methods — the agent calls the backend. A tool whose effect lives in the user's browser (open a sheet, pick a file, confirm an action) declares `target: "client"` instead, with a `name` and an inline `inputSchema` in place of a `method`:
+
+```json
+{
+  "target": "client",
+  "name": "pickFile",
+  "description": "tools/pickFile.md",
+  "inputSchema": { "type": "object", "properties": { "prompt": { "type": "string" } } }
+}
+```
+
+The name must not collide with a method id, and the schema is authored by hand — there's no method contract to derive it from. The frontend registers a handler, and **its return value is the tool result**:
+
+```ts
+chat.registerClientTool('pickFile', async ({ prompt }) => {
+  const file = await openFilePicker(prompt);
+  return file ? { path: file.path } : { cancelled: true };
+});
+```
+
+The agent holds its turn while the handler runs, for up to 15 minutes. That bound is deliberately generous: a handler can resolve from a dialog's Save button, so "propose an action, wait for a human to approve it, then report" is a client tool rather than something you build a queue and a status table for.
+
+Every path answers, so the agent is never left hanging: the return value, `{ error: <message> }` if the handler throws, `result_too_large` past ~32KB serialized, `unhandled_client_tool` immediately when no handler is registered for the name, and `client_timeout` / `client_disconnected` when the window passes or the page goes away. The error shapes are the ones a failed method call already produces, so the agent reasons about them the same way.
+
+Client tools never touch the backend, which also means they carry none of a method's guarantees — no roles check, no audit row, no billing. Anything that must be true regardless of what the page does belongs in a method.
 
 ### Manifest
 
@@ -847,6 +875,16 @@ session.on('error', (err) => { });
 
 session.mute(); session.unmute(); session.isMuted;
 session.sendText('123 Main Street');  // inject text into the live conversation (addresses, codes)
+
+// Client tools (voice.md `target: "client"`) — the browser-side sibling of the
+// agent interface's, with the same return-value-is-the-result contract. Bounded
+// at 30s here rather than minutes: silence on a live call reads as a dropped
+// one, and long work belongs in a `background` backend tool instead.
+session.registerClientTool('showVerification', async (args) => {
+  openVerifySheet(args);
+  return { opened: true };
+});
+
 session.end();
 ```
 

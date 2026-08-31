@@ -112,16 +112,28 @@ await chat.deleteThread(thread.id);
 await chat.claimThread(thread.id);
 ```
 
-**Client tools** — a tool whose effect happens in the browser (open a sheet, navigate, highlight) is declared with `target: "client"` and a `name` + inline `inputSchema` instead of a `method` (names must not collide with method ids; the schema is authored — there's no method contract to derive it from). The agent's invocation arrives as the `client_tool_call` stream event / the `onClientToolCall` callback on `sendMessage`; run the action there. Fire-and-forget on this surface: the agent is told the action was displayed and keeps going — the user's next message closes the loop.
+**Client tools** — a tool whose effect happens in the browser (open a sheet, pick a file, confirm an action) is declared with `target: "client"` and a `name` + inline `inputSchema` instead of a `method` (names must not collide with method ids; the schema is authored — there's no method contract to derive it from). Register a handler and its **return value becomes the tool result**, so the agent learns what happened rather than assuming it did:
 
 ```js
-await chat.sendMessage(thread.id, text, {
-  onText: (delta) => append(delta),
-  onClientToolCall: (name, input) => {
-    if (name === 'showVerification') openVerifySheet(input);
-  },
+chat.registerClientTool('pickFile', async ({ prompt }) => {
+  const file = await openFilePicker(prompt);
+  return file ? { path: file.path } : { cancelled: true };
 });
+
+// Holding the turn on a person: the handler resolves when they decide.
+chat.registerClientTool(
+  'confirmDeploy',
+  ({ summary }) =>
+    new Promise((resolve) => {
+      showApprovalDialog(summary, {
+        onApprove: (note) => resolve({ approved: true, note }),
+        onReject: (reason) => resolve({ approved: false, reason }),
+      });
+    }),
+);
 ```
+
+The agent waits while the handler runs, up to 15 minutes — which is what makes confirm-before-acting a client tool rather than something you build a queue for. The SDK always answers, so the agent is never stuck: the return value, `{ error }` if the handler threw, `result_too_large` past ~32KB serialized, and `unhandled_client_tool` immediately when nothing is registered for that name; the platform supplies `client_timeout` if the window passes and `client_disconnected` if the page closes. Handlers live for the client's lifetime rather than one message. `onClientToolCall` on `sendMessage` behaves the same way for a one-off — whatever it returns is the result — and is consulted only when no handler is registered.
 
 **Sending messages (streaming):**
 
