@@ -14,7 +14,7 @@ Guidance for designing conversational AI agents and their frontends. An agent in
 
 A good system prompt establishes who the agent is — personality, tone, judgment style, the kind of person they sound like. It doesn't enumerate every possible interaction or restate what tools already describe.
 
-Short and opinionated beats long and comprehensive. "Sounds like a sharp, organized friend — brief by default" gives the model more to work with than a page of behavioral rules. Define constraints through character, not checklists. Let the model's judgment work.
+Short and opinionated beats long and comprehensive. "Sounds like a sharp, organized friend — brief by default" gives the model more to work with than a page of behavioral rules. Define constraints through character, not checklists. Let the model's judgment work. Start minimal and add rules only for behaviors that actually misfire once the user has tested it — the thread log is the feedback loop, and `remy-admin agent threads get` reads a conversation verbatim (see "The agent CLI" below).
 
 Three things every compiled system prompt should carry, on top of the character:
 
@@ -213,7 +213,7 @@ When the user sends a message, add it to the conversation immediately — don't 
 
 ### Tool calls
 
-Show tool activity in the chat as a compact, inline status that appears when `onToolCallStart` fires and resolves when `onToolCallResult` arrives. Never show raw JSON, tool IDs, or internal details — just a human-readable description of what's happening.
+Show tool activity in the chat as a compact, inline status that appears when `onToolCallStart` fires and resolves when `onToolCallResult` arrives. Never show raw JSON, tool IDs, or internal details — just a human-readable description of what's happening. Tool calls should be interleaved into the conversation so they flow naturally as part of the agent's response.
 
 ### Input area
 
@@ -235,6 +235,21 @@ The chat UI uses the app's design system — colors, typography, voice from `@br
 
 - Avoid designs that look like dated messaging apps from 2015
 - Avoid robotic empty states ("Hello! I'm your AI assistant. How can I help you today?")
+
+## The agent CLI
+
+The `remy-admin agent` family is the conversation log — every thread the deployed agent has had, and each one's full transcript:
+
+```bash
+remy-admin agent threads list --limit 10   # newest activity first
+remy-admin agent threads get <threadId>    # full transcript: messages + tool calls
+```
+
+Transcripts are how you iterate on an agent: after the user tests it, read `agent threads get` for what was actually said and which tools ran with which arguments — a tool the agent never reached for, one it called with the wrong shape, a reply that ignored the result — and fix the system prompt and tool descriptions from that evidence rather than guesses.
+
+In the list, `toolErrorCount` and `hasTurnError` point at the conversations worth opening (a failed tool call; a turn that broke on a model error, rate limit, or credits instead of replying). `devSession` is true for your own test conversations through the dev tunnel, so you can tell them from real traffic.
+
+In a transcript, each message keeps the stored conversation's own shape: `user` for a person's message and also for a tool result (which carries `toolCallId`), `assistant` for the agent (carrying `toolCalls` when it asked for tools). Every method tool call also carries a `requestId` — `remy-admin requests get <requestId>` opens that call's input, output, `console.log` output and error, which is how you get from "the agent said something wrong" to the method that gave it bad data. Client tools run in the browser, so they have no requestId.
 
 ---
 

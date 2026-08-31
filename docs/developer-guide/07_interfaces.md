@@ -738,6 +738,10 @@ Every path answers, so the agent is never left hanging: the return value, `{ err
 
 Client tools never touch the backend, which also means they carry none of a method's guarantees — no roles check, no audit row, no billing. Anything that must be true regardless of what the page does belongs in a method.
 
+### Conversation log
+
+Every thread the deployed agent has had is readable by the workspace — `remy-admin agent threads list` for the log, `agent threads get <threadId>` for one conversation's full transcript, messages and tool calls included. It's the sibling of the voice call log, and it's the feedback loop for the spec: read what the agent actually said and which tools it actually called, then fix the prompt from that rather than from guesses. Each method tool call in a transcript carries the `requestId` of its request-log row, so a bad answer traces back to the method call that produced it.
+
 ### Manifest
 
 ```json

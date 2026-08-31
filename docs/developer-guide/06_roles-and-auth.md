@@ -241,6 +241,23 @@ Array of role IDs assigned to the current user.
 
 Returns an array of user IDs with the specified role. Useful for "notify all admins."
 
+### The `system` role
+
+When the platform invokes a method on the app's own behalf — a cron tick, an inbound webhook, an inbound email — the execution runs as a platform-minted system identity with `auth.roles: ['system']`. Gate a method on it to make the method reachable *only* that way:
+
+```typescript
+export async function rebuildIndex(input: {}) {
+  auth.requireRole('system');
+  // Only cron, webhooks, and inbound email reach this
+}
+```
+
+`system` is not a row in the auth table and is not declared in `manifest.roles`. It's a synthetic identity the platform supplies, so **it does not require auth**: a cron-only app with no login, no user table, and no `auth` block can still gate a method this way, and `auth.userId` inside that method is the platform's system user ID.
+
+Web frontend calls, API interface calls, and agent or voice chat all run as the authenticated user and never receive the system role — unless a real user has been explicitly assigned it, which is how you let a human trigger a system-gated method from the UI.
+
+**Exercising one in dev:** invoke the method with the `system` role rather than editing the gate. The dev runner supplies the same system identity a real platform trigger would, so the gate is exercised rather than bypassed, and it works whether or not the app has auth configured. Other roles need a user to hold them, so they require an `auth` block; without one the request is rejected with that reason.
+
 ---
 
 ## Login Page Example
@@ -383,6 +400,8 @@ Scenarios assign roles automatically: each scenario declares which roles the tes
 ## Apps Without Auth
 
 Apps without `auth` in the manifest use anonymous guest sessions. No login, no user identity, no roles. This is the default and works fine for single-user apps, internal tools, and simple utilities. (Agent/voice interfaces on such apps declare `"auth": { "requireUser": false }` explicitly — anonymous callers are scoped by a per-browser visitor identity.)
+
+One gate still works here: [`requireRole('system')`](#the-system-role). It needs no user table, so a method that should only ever run on a schedule or from a webhook can be protected even in an app that has no users at all.
 
 ---
 
