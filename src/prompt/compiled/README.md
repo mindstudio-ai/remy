@@ -58,7 +58,7 @@ No YAML frontmatter. No meta-commentary. Just the reference content the agent ne
 
 ### Fragments vs. skills
 
-Not every fragment is resident. Docs for capabilities most apps never use live in `src/prompt/skills/` instead, and the agent loads one with the `loadSkill` tool when it needs it. Only a name and a trigger line stay in the prompt (see `src/prompt/skills/catalog.ts`).
+Not every fragment is resident. Docs for capabilities most apps never use live in `src/prompt/skills/` instead, and the agent loads one with the `loadSkill` tool when it needs it. Only a name and a trigger line stay in the prompt (see `src/prompt/skills/_catalog.ts`).
 
 **What decides it is the kind of content, not the size.** Two categories behave completely differently in a resident prompt:
 
@@ -67,7 +67,7 @@ Not every fragment is resident. Docs for capabilities most apps never use live i
 
 A skill is a good trade whenever it swaps detail for a proposition, whatever the byte count. `scheduledJobs` is the case to reason from: its body is smaller than its own catalog entry, so it *costs* tokens to defer — and it's still right to defer, because a cron config schema in front of the agent during a checkout build is noise either way.
 
-The one thing size does govern is **entry count**. Twenty catalog entries would recreate the problem in miniature: a list to scan instead of a schema to skim. Prefer folding new material into an existing skill over adding a ninth.
+The one thing size does govern is **entry count**. A long catalog recreates the problem in miniature: a list to scan instead of a schema to skim. The catalog currently holds 15 entries, which is already past the point where adding one is free — prefer folding new material into an existing skill over adding another.
 
 **A skill can be a section of a source doc, not just a whole one.** Originally one source doc produced one fragment. `docs/developer-guide/07_interfaces.md` now fans out into a resident fragment plus seven skills, and its sections map 1:1 onto them (Web / API / Cron / Webhook / Email / MCP / Agent / Voice / manifest), so a recompile has a clear target per skill. When you split a doc this way, watch for anything defined once and used by several sections — a URL template, a shared auth rule, a manifest snippet. Those need copying into each skill, because a skill arrives alone.
 
@@ -83,6 +83,31 @@ A skill is authored the same way, with two differences:
 Self-containment matters more for a skill than for a fragment. It arrives alone, mid-task, with no guarantee the agent has read anything else. Where a skill needs another one, name it (`` load the `agentInterfaces` skill ``) rather than referring to "the X doc".
 
 If you move a doc into `skills/`, sweep the resident fragments for what it left behind. A mention that stays should *point* ("load the `taskAgents` skill before writing one"), never *demonstrate* — a copyable example in a resident fragment is an invitation to skip the load, and the result is confidently wrong code rather than an error.
+
+### Source → artifact map
+
+Which source doc feeds which artifact. Recompiling an artifact means re-reading the doc in this row.
+
+| Source doc (`docs/developer-guide/`) | Resident fragment | Skills |
+|---|---|---|
+| `00_overview` + `01_project-structure` | `platform.md` | — |
+| `02_spec-and-msfm` | `msfm.md` | — |
+| `03_manifest-reference` | `manifest.md` | — |
+| `04_tables-and-database` | `tables.md` | — |
+| `05_methods` | `methods.md` | — |
+| `06_roles-and-auth` | `auth.md` | `auth` |
+| `07_interfaces` | `interfaces.md` | `restApi`, `scheduledJobs`, `webhooks`, `inboundEmail`, `mcpInterfaces`, `agentInterfaces`, `voiceInterfaces` |
+| `08_files-and-storage` | — | `files` |
+| `09_data-sources` | — | `dataSources` |
+| `10_secrets` | — | `secrets` |
+| `11_sdk-actions` | `sdk-actions.md` | — |
+| `12_task-agents` | — | `taskAgents` |
+| `13_jewels` | `jewels.md` (pointer only) | `jewels` |
+| `14_analytics` | folded into `interfaces.md` (web section) | — |
+| `15_scenarios` | — | `scenarios` |
+| `16_development-and-deployment` | `dev-and-deploy.md` | — |
+
+**Two artifacts are intentionally source-less.** `design.md` and the `publishing` skill describe Remy's own behavior — a frontend quality bar and a release workflow — rather than platform primitives a developer building directly on the platform would need. They are maintained here, not in the developer guide. Don't read their absence from the table above as a gap to fill.
 
 ---
 

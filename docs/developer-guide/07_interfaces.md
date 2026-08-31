@@ -1,6 +1,6 @@
 # Interfaces
 
-Interfaces are how users interact with your app. The same methods power all of them. A web frontend, a REST API, and a cron job can all invoke the same backend logic. Interfaces can be as complex and polished as you want, but they're always safe, because the backend is where anything real happens. They're projections of the backend contract into different modalities.
+Interfaces are how users interact with your app, and the same methods power all of them: a web frontend, a REST API, and a cron job can all invoke the same backend logic. Interfaces can be as complex and polished as you want, but they're always safe, because the backend is where anything real happens.
 
 ---
 
@@ -92,7 +92,7 @@ auth.logout()                       // clears session
 
 On `git push`, the platform runs `npm install && npm run build` in the web directory and hosts the output on CDN. The platform injects connection details automatically.
 
-The build runs with **`MS_ASSET_BASE_URL`** set — a release-addressed CDN origin for the build's static assets. Point your bundler's public-path option at it so asset URLs are absolute and serve identically on the app's own subdomain, a custom domain, or a mount path on another app:
+The build runs with **`MS_ASSET_BASE_URL`** set to a release-addressed CDN origin for the build's static assets. Point your bundler's public-path option at it so asset URLs are absolute and serve identically on the app's own subdomain, a custom domain, or a mount path on another app:
 
 ```ts
 // vite.config.ts
@@ -102,23 +102,23 @@ export default defineConfig({
 });
 ```
 
-(Webpack: `output.publicPath`; other bundlers have an equivalent.) Locally the variable is unset and the app builds/serves at `/` exactly as before.
+(Webpack: `output.publicPath`; other bundlers have an equivalent.) Locally the variable is unset, so the app builds and serves at `/`.
 
 ### Serving context: `platform.basePath`
 
-The platform injects the path prefix the current page is served under: `''` on the app's own hosts, or the mount path (e.g. `"/demos/vector-databases"`) when another app mounts this one. The SDK already prefixes all of its own platform calls with it — the one thing app code must do is use it as the router basename:
+The platform injects the path prefix the current page is served under: `''` on the app's own hosts, or the mount path (e.g. `"/demos/vector-databases"`) when another app mounts this one. The SDK already prefixes its own platform calls with it. App code only needs to use it as the router basename:
 
 ```ts
 createBrowserRouter(routes, { basename: platform.basePath || '/' });
 ```
 
-Avoid hardcoded root-absolute URLs in app code (`<img src="/logo.png">`, `navigate('/about')` outside the router) — they break under a mount. Imported assets and router-relative navigation are always safe.
+Hardcoded root-absolute URLs in app code break under a mount (`<img src="/logo.png">`, `navigate('/about')` outside the router). Imported assets and router-relative navigation are always safe.
 
 ### Prerendering for crawlers
 
-Web apps are client-rendered SPAs, so link unfurlers (iMessage, Slack, WhatsApp) and AI/search crawlers (GPTBot, ClaudeBot, Bingbot, Googlebot) — which don't run JavaScript — see only the empty `index.html` shell: no per-page title, description, or Open Graph image. Prerendering fixes this. For opted-in routes, when a bot requests the page the platform serves a cached headless-browser snapshot of the fully-rendered page; real users always get the normal live SPA.
+Web apps are client-rendered SPAs, and link unfurlers (iMessage, Slack, WhatsApp) and AI/search crawlers (GPTBot, ClaudeBot, Bingbot, Googlebot) don't run JavaScript, so they see only the empty `index.html` shell: no per-page title, description, or Open Graph image. Prerendering fixes this. For opted-in routes, when a bot requests the page the platform serves a cached headless-browser snapshot of the fully-rendered page; real users always get the normal live SPA.
 
-**Opt in** in `web.json` by listing the route globs worth prerendering (shareable/indexable pages — not private or app-like screens):
+**Opt in** in `web.json` by listing the route globs worth prerendering (shareable/indexable pages, not private or app-like screens):
 
 ```json
 {
@@ -130,11 +130,11 @@ Web apps are client-rendered SPAs, so link unfurlers (iMessage, Slack, WhatsApp)
 
 `prerender` takes a single field, `paths` — an array of route globs (`*` = one path segment, `**` = any). Only listed routes are ever prerendered.
 
-**The opt-in alone isn't enough — the SPA has to produce a real page for the snapshot to capture.** For each prerendered route, at runtime:
+**The opt-in alone isn't enough: the SPA has to produce a real page for the snapshot to capture.** For each prerendered route, at runtime:
 
 1. **Set the per-route `<head>`** once the route's data resolves — `<title>`, `<meta name="description">`, and Open Graph / Twitter tags (`og:title`, `og:description`, `og:image`, `twitter:card`, …). Use react-helmet or write to `document` directly. The snapshot captures whatever is in the DOM, so a page that never sets these ends up with a generic card.
 2. **Redirect declaratively, never imperatively.** If the route redirects (e.g. a short link), render `<meta http-equiv="refresh" content="0; url=TARGET">` (and/or a visible link) — do **not** call `location.replace(target)`. A DOM snapshot can't capture an imperative navigation; a declarative redirect lets a crawler read your card while a human still bounces to the target.
-3. **Signal readiness — required.** Once the head is written and the route's data has resolved, set `document.documentElement.setAttribute('data-prerender-ready', 'true')`. The renderer **waits for this marker** before it snapshots, so it captures the resolved page rather than a loading state. **This is mandatory for every route you list in `prerender.paths`** — a prerendered route that never sets the marker times out and produces **no snapshot at all**, so crawlers keep getting the empty shell. Set it on every prerendered route, including ones that render synchronously (set it as soon as they're ready).
+3. **Signal readiness — required.** Once the head is written and the route's data has resolved, set `document.documentElement.setAttribute('data-prerender-ready', 'true')`. The renderer **waits for this marker** before it snapshots, so it captures the resolved page rather than a loading state. It is **mandatory on every route listed in `prerender.paths`**, including ones that render synchronously (set it as soon as they're ready): a route that never sets the marker times out and produces **no snapshot at all**, so crawlers keep getting the empty shell.
 
 **Keep snapshots fresh.** A deploy re-renders everything automatically. When content behind a prerendered page changes at runtime (a short link retargeted, a post edited), invalidate its snapshot from the mutating backend method:
 
@@ -144,11 +144,11 @@ import { prerender } from '@mindstudio-ai/agent';
 await prerender.invalidate(['/u/abc']); // omit the argument to purge every snapshot for the app
 ```
 
-While developing, the `mindstudio-prod prerender` CLI verifies and manages snapshots (run `mindstudio-prod prerender --help`) — a build-time tool only; a deployed app keeps things fresh via `prerender.invalidate`, not the CLI.
+While developing, the `mindstudio-prod prerender` CLI verifies and manages snapshots (run `mindstudio-prod prerender --help`). It's a build-time tool only: a deployed app keeps its snapshots fresh via `prerender.invalidate`, not the CLI.
 
 ### Mounting other apps
 
-A web interface can serve **other apps from the same workspace under path prefixes of its own hosts** — the multi-zone pattern. A marketing site at `example.com` can serve a self-contained demo app (its own backend, database, and deploys) at `example.com/demos/vector-search` instead of linking out to the demo's subdomain:
+A web interface can serve **other apps from the same workspace under path prefixes of its own hosts** (the multi-zone pattern). A marketing site at `example.com` can serve a self-contained demo app (its own backend, database, and deploys) at `example.com/demos/vector-search` instead of linking out to the demo's subdomain:
 
 ```json
 {
@@ -163,7 +163,7 @@ A web interface can serve **other apps from the same workspace under path prefix
 - `path` — the mount prefix on this app's hosts. Non-root, and mounts must be disjoint (no mount may prefix another).
 - `app` — the target app's `custom_subdomain` or appId. Must be a v2 app in the same workspace; validated at build.
 
-Under the mount, everything is the child's, served first-class: its live web bundle, its session (so its backend methods, auth, agent chat, uploads, and telemetry all run against the child app), its frame policy. The child needs no mount-specific configuration — it keeps working at its own subdomain unchanged, and the same app can be mounted at different paths by different parents. Deploys are independent: pushing the child updates it everywhere it's mounted.
+Under the mount, everything is the child's: its live web bundle, its session (so its backend methods, auth, agent chat, uploads, and telemetry all run against the child app), its frame policy. The child needs no mount-specific configuration. It keeps working at its own subdomain unchanged, and the same app can be mounted at different paths by different parents. Deploys are independent: pushing the child updates it everywhere it's mounted.
 
 **Mount-safety.** A mountable child must follow the standard conventions above: assets via `MS_ASSET_BASE_URL`, router basename from `platform.basePath`, no hardcoded root-absolute URLs. The parent's build log warns when a mount target's current build isn't mount-safe.
 
@@ -176,9 +176,9 @@ Notes:
 
 ## API Interface
 
-Exposes selected methods as REST endpoints with clean URLs and HTTP methods — for external consumers (other services, mobile apps, integrations). This is separate from the web frontend's internal RPC (`@mindstudio-ai/interface` calls `/_/methods` directly). The API interface lives at `/_/api/`.
+Exposes selected methods as REST endpoints with clean URLs and HTTP methods, for external consumers (other services, mobile apps, integrations). The API interface lives at `/_/api/`, separate from the web frontend's internal RPC (`@mindstudio-ai/interface` calls `/_/methods` directly).
 
-Use it for anything external: a Stripe webhook endpoint, sync endpoints for another service, a public REST API, a batch export tool. Not every method needs an API route — expose only what external consumers need.
+Use it for anything external: a Stripe webhook endpoint, sync endpoints for another service, a public REST API, a batch export tool. Not every method needs an API route; expose only what external consumers need.
 
 ### Spec: `src/interfaces/api.md`
 
@@ -336,7 +336,7 @@ Standard cron expression format. Jobs are synced to the platform on deploy.
 
 ## Webhook
 
-Inbound HTTP endpoints that invoke a method directly and synchronously — the caller waits for the method to finish and gets its output back. Use for receiving webhooks from external services (Stripe, GitHub, Shopify, Slack, Twilio). Direct inbound webhooks with signature verification work natively; don't build confirmation-token or polling workarounds.
+Inbound HTTP endpoints that invoke a method directly and synchronously: the caller waits for the method to finish and gets its output back. Use them to receive webhooks from external services (Stripe, GitHub, Shopify, Slack, Twilio). Direct inbound webhooks with signature verification work natively; don't build confirmation-token or polling workarounds.
 
 ### Config (`interface.json`)
 
@@ -388,11 +388,11 @@ Whatever the method returns as output is sent back as JSON to the caller; if it 
 
 ## Email
 
-Inbound email triggers. Each app has one email-handler method; the platform routes all inbound mail destined for the app — across any of its address tiers — to that method.
+Inbound email triggers. Each app has one email-handler method, and the platform routes all inbound mail for the app to it, across every address tier.
 
 ### Address tiers
 
-Apps can receive mail at three different kinds of addresses, all delivered to the same handler:
+Apps can receive mail at three kinds of addresses, all delivered to the same handler:
 
 | Tier | Address | Setup |
 |---|---|---|
@@ -402,7 +402,7 @@ Apps can receive mail at three different kinds of addresses, all delivered to th
 
 The new tiers are catchall, so `to` carries an arbitrary localpart. If your method needs to branch on it, read `input.to` (e.g. `if (input.to.startsWith('support@')) ...`).
 
-A verified custom domain (and your app's `madewithremy.com` subdomain) also **sends** outbound mail, not just receives — `sendEmail` picks your app's own-brand sender automatically, configured in the dashboard's **Email** settings.
+A verified custom domain (and your app's `madewithremy.com` subdomain) also **sends** outbound mail. `sendEmail` picks your app's own-brand sender automatically, configured in the dashboard's **Email** settings.
 
 ### Config (`interface.json`)
 
@@ -445,9 +445,9 @@ Max inbound size is 25 MB total. Oversized messages are rejected by the platform
 
 ## MCP (Model Context Protocol)
 
-Expose the app to *external* AI agents — Claude Desktop, Cursor, anything that speaks MCP. Unlike the agent interface (which *is* an agent, with its own LLM and chat UI), MCP has no model of its own; it's the app projected as an MCP server for an outside AI to drive. It supports the full MCP surface: **tools** (methods the agent calls), **resources** (read-only data the agent reads into context), **prompts** (reusable templates), and server **instructions** (toolset-level guidance shown to the calling agent).
+Expose the app to *external* AI agents — Claude Desktop, Cursor, anything that speaks MCP. Unlike the agent interface (which *is* an agent, with its own LLM and chat UI), MCP has no model of its own; it's the app projected as an MCP server for an outside AI to drive. It supports the full MCP feature set: **tools** (methods the agent calls), **resources** (read-only data the agent reads into context), **prompts** (reusable templates), and server **instructions** (toolset-level guidance shown to the calling agent).
 
-The platform hosts the server at `POST https://{app-host}/_/mcp` (where MCP clients connect), handles auth like the API interface (optional — a `Bearer` key resolves to a user with full RBAC, or calls run anonymously), and derives each tool's input schema from the method contract. The descriptions are the product: the calling agent has nothing but them to decide what to invoke, so write them self-contained for a stranger with no app context.
+The platform hosts the server at `POST https://{app-host}/_/mcp` (where MCP clients connect), handles auth like the API interface (optional — a `Bearer` key resolves to a user with full RBAC, or calls run anonymously), and derives each tool's input schema from the method contract. Write the descriptions for a stranger with no app context: they're all the calling agent has to decide what to invoke.
 
 ### Spec File: `src/interfaces/mcp.md`
 
@@ -633,7 +633,7 @@ dist/interfaces/agent/
 
 ### Auth
 
-**Every agent config declares an `auth` block.** Agent chat spends the owner's money on every message without necessarily touching a backend method, so the platform gates the lobby itself — enforced at thread creation and message send. `requireUser: true` limits chat to authenticated app users; `requireRole` (optional, requires `requireUser: true`) additionally demands at least one of the listed manifest role ids (OR semantics, matching the backend `auth.requireRole(...)`). Unknown role ids fail the build. Denials surface to the frontend SDK as `MindStudioInterfaceError` with code `auth_required` (401) or `role_required` (403). Dev preview is exempt. Older compiled apps without the block fall back to the manifest's `auth.enabled`.
+**Every agent config declares an `auth` block.** Agent chat spends the owner's money on every message without necessarily touching a backend method, so the platform gates the lobby itself, at thread creation and at message send. `requireUser: true` limits chat to authenticated app users; `requireRole` (optional, requires `requireUser: true`) additionally demands at least one of the listed manifest role ids (OR semantics, matching the backend `auth.requireRole(...)`). Unknown role ids fail the build. Denials surface to the frontend SDK as `MindStudioInterfaceError` with code `auth_required` (401) or `role_required` (403). Dev preview is exempt. Older compiled apps without the block fall back to the manifest's `auth.enabled`.
 
 Once inside, agent chat runs as the **authenticated user**, not as a system role — tool calls carry that user's roles, so method-level `auth.requireRole` checks behave exactly as they would from the web frontend. Anonymous visitors (when allowed) are scoped by a per-browser visitor identity: their threads are private to their browser, and gated methods still reject.
 
@@ -647,7 +647,7 @@ Once inside, agent chat runs as the **authenticated user**, not as a system role
 
 ## Voice (Realtime Conversation)
 
-A realtime voice interface: the user talks to the app and the app's voice agent talks back — sub-second speech, interruptible mid-sentence, with the app's methods available as tools mid-conversation. It is a sibling of the agent interface, not a mode of it. The two share a philosophy (an LLM projecting the backend contract into conversation), but everything the author touches differs: the persona is written for the ear, the toolset is smaller and curated for conversational latency, and every tool carries a **latency class** that governs how the agent handles the wait out loud.
+A realtime voice interface: the user talks to the app and the app's voice agent talks back, sub-second and interruptible mid-sentence, with the app's methods available as tools mid-conversation. It is a sibling of the agent interface, not a mode of it. Both are an LLM projecting the backend contract into conversation, but everything the author touches differs: the persona is written for the ear, the toolset is smaller and curated for conversational latency, and every tool carries a **latency class** that governs how the agent handles the wait out loud.
 
 The developer authors the spec in MSFM (`src/interfaces/voice.md`); the build agent compiles it into a voice-register system prompt and tool descriptions (`dist/interfaces/voice/`). The platform handles the realtime media transport, turn detection, barge-in, transcripts, and session limits.
 
@@ -674,7 +674,7 @@ greeting: Hey! I can help you book, reschedule, or answer questions — what do 
 | `turnDetection` | Optional. `{"eagerness": "low" \| "medium" \| "high"}` — how quickly the platform decides the user has finished speaking. High is snappier; low is more patient (better when users dictate numbers or addresses). Default `medium`. Not yet wired on Gemini realtime engines (a no-op there). |
 | `greeting` | Optional. A spoken opener delivered when the session starts. Omit it and the agent waits for the user to speak first. Verbatim on cascaded engines; model-spoken (may paraphrase slightly) on speech-to-speech. |
 
-The body reads like a character brief in the **voice register** — how the agent sounds, what it cares about, how it behaves — plus the explicit toolset:
+The body is a character brief in the **voice register** (how the agent sounds, what it cares about, how it behaves), plus the explicit toolset:
 
 ```markdown
 ## Tools
@@ -777,7 +777,7 @@ session.sendText('123 Main Street');  // inject text into the live conversation 
 session.end();
 ```
 
-Agent audio playback is handled inside the SDK (a hidden autoplaying element) — apps never create audio elements for the agent. Besides `microphone_denied`, `startSession()` throws `MindStudioInterfaceError` with code `voice_concurrency_limit` / `voice_visitor_limit` when the app's session limits are hit, and `auth_required` (401) / `role_required` (403) when the interface's `auth` block denies the caller.
+The SDK handles agent audio playback internally (a hidden autoplaying element); apps never create audio elements for the agent. Besides `microphone_denied`, `startSession()` throws `MindStudioInterfaceError` with code `voice_concurrency_limit` / `voice_visitor_limit` when the app's session limits are hit, and `auth_required` (401) / `role_required` (403) when the interface's `auth` block denies the caller.
 
 Past sessions are available as call records with transcripts:
 
@@ -805,13 +805,19 @@ export async function callMeAboutMyOrder(input: { phone: string }) {
 }
 ```
 
-The invoking method is the authorization gate (the interface `auth` block does not apply to calls the backend places deliberately). `assumeIdentity: true` runs the call as the invoking user — Current User block and tool RBAC — regardless of the number dialed; system/cron invocations always run anonymously. Deployed apps require a **dedicated phone number** (attached in app settings, $1/month) which becomes the caller ID everywhere — dev sessions included; without one, dev sessions use a shared platform test number under tighter limits and production calls throw `phone_out_requires_dedicated_number`. `voice.call` returns at dial time (`{ sessionId, status: 'dialing', from, to }`); the outcome (answered/busy/no-answer) lands on the call record. Limits: the app's concurrency policy, a daily outbound cap, a per-call duration ceiling, one active call per callee. Compliance: automated calls require the callee's prior consent (TCPA) — call your own opted-in users, honor calling hours, never dial cold lists.
+The invoking method is the authorization gate (the interface `auth` block does not apply to calls the backend places deliberately). `assumeIdentity: true` runs the call as the invoking user — Current User block and tool RBAC — regardless of the number dialed; system/cron invocations always run anonymously.
+
+Deployed apps require a **dedicated phone number** (attached in app settings, $1/month), which becomes the caller ID everywhere, dev sessions included. Without one, dev sessions use a shared platform test number under tighter limits, and production calls throw `phone_out_requires_dedicated_number`.
+
+`voice.call` returns at dial time (`{ sessionId, status: 'dialing', from, to }`); the outcome (answered/busy/no-answer) lands on the call record. Limits: the app's concurrency policy, a daily outbound cap, a per-call duration ceiling, one active call per callee. Compliance: automated calls require the callee's prior consent (TCPA) — call your own opted-in users, honor calling hours, never dial cold lists.
 
 ### Inbound calls
 
-An app with a dedicated number also answers it — the same voice agent, same tools. Inbound always runs the **live release** (test over the editor's WebRTC session; there is no dev inbound). The `auth` block still applies but a call can't show a login page, so `requireUser` becomes answer-then-verify: callers start anonymous, and the agent offers in-call verification through the app's own auth methods — SMS codes go to the number the caller is calling from; email verification matches the spoken address against existing accounts (transcription-tolerant) and emails the stored address. Existing accounts only, and the flow never confirms whether an account exists. Once verified, the running session upgrades to that user mid-call.
+An app with a dedicated number also answers it, with the same voice agent and the same tools. Inbound always runs the **live release** (test over the editor's WebRTC session; there is no dev inbound).
 
-`phone: { "trustCallerId": true }` lets a caller whose number exactly matches an app user's phone skip verification entirely. Caller ID is spoofable — this is an explicit tradeoff for low-stakes, convenience-first apps, and it lives in the interface config so enabling it is a reviewed, deploy-audited code change.
+The `auth` block still applies, but a call can't show a login page, so `requireUser` becomes answer-then-verify: callers start anonymous, and the agent offers in-call verification through the app's own auth methods. SMS codes go to the number the caller is calling from; email verification matches the spoken address against existing accounts (transcription-tolerant) and emails the stored address. Existing accounts only, and the flow never confirms whether an account exists. Once verified, the running session upgrades to that user mid-call.
+
+`phone: { "trustCallerId": true }` lets a caller whose number exactly matches an app user's phone skip verification. Caller ID is spoofable, so this is an explicit tradeoff for low-stakes, convenience-first apps; it lives in the interface config so enabling it is a reviewed, deploy-audited code change.
 
 Numbers, the call log (with transcripts), and voice policy settings are all manageable from the `mindstudio-prod voice` CLI family (`voice numbers search/buy/release/set-name`, `voice sessions list/get`, `voice settings get/set` — `set` merges, so only the settings you pass change). Buying a number is a recurring $1/month charge — agents must get the user's explicit confirmation first.
 
@@ -842,6 +848,6 @@ Each interface is declared in `mindstudio.json`:
 }
 ```
 
-Some interfaces (like `api`) work without a config file; just declaring the type is enough. Others need a config to specify which methods to expose, command mappings, schedules, etc.
+Some interfaces (like `api`) work without a config file; declaring the type is enough. Others need a config to specify which methods to expose, command mappings, schedules, etc.
 
 Set `"enabled": false` to skip an interface during build without removing it from the manifest.
