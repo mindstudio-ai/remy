@@ -44,6 +44,7 @@ All fields are nested under the `"web"` key.
 | `prerender` | `object` | — | Opt into prerendering the listed routes for crawlers/unfurlers. See "Prerendering for crawlers" below. |
 | `mounts` | `array` | — | Serve other apps from your workspace under path prefixes of this app's hosts. See "Mounting other apps" below. |
 | `redirects` | `array` | — | Path-level redirects. See "Redirects and trailing slashes" below. |
+| `rewrites` | `array` | — | Serve different content at the same URL. See "Rewrites" below. |
 | `trailingSlash` | `"strip"` \| `"append"` | — | Enforce a canonical trailing-slash form with a 308. Off by default. |
 
 ### Frontend SDK
@@ -180,6 +181,35 @@ A redirecting path is never prerendered or served — the redirect wins — so d
 
 Redirects can't be declared under `/_/`, which is the platform's own namespace (method calls, file reads, auth). Self-referential rules and two-rule loops fail the build.
 
+### Rewrites
+
+A rewrite serves *different content at the same URL* — no redirect, no URL change. This is how a file that lives somewhere other than your build output gets a clean path:
+
+```json
+{
+  "web": {
+    "rewrites": [
+      { "source": "/sitemap.xml", "destination": "/_/files/public/site/sitemap.xml" },
+      { "source": "/.well-known/ai-plugin.json", "destination": "/_/files/public/site/ai-plugin.json" },
+      { "source": "/docs/*rest", "destination": "/help/*rest" }
+    ]
+  }
+}
+```
+
+Two kinds of `destination`:
+
+- **`/_/files/public/<store>/<key>`** — the object's bytes are served inline at the requested URL. This is the answer for anything your app *generates* at runtime and uploads: a sitemap with per-entry URLs no static build could enumerate, a generated `robots.txt` or `llms.txt`, a `.well-known/*` file. The store must be **public** — a rewrite serves its bytes to anyone who can reach the URL, so a private object is rejected at build time.
+- **Any other path** — served from your build output instead of the requested path. `/docs/*rest` → `/help/*rest` serves the `/help` files under the `/docs` URLs.
+
+`source` patterns use the same syntax as `redirects` (`:name` for one segment, `*name` for many; path-to-regexp v8, not the Next.js dialect). First match wins.
+
+Objects above 10 MB fall back to a redirect to the CDN rather than being served through the origin — fine for documents, worth knowing if you rewrite something large.
+
+Rewriting to an **external URL is not supported**: use `mounts` to serve another app of yours under a path prefix. Rewriting to other `/_/` surfaces (a method, your REST API) isn't supported yet either.
+
+**Ordering.** Redirects resolve before everything; rewrites resolve at the content lookup, after prerendering. So a path with both a redirect and a rewrite gets the redirect, and a prerendered page is identified by the URL the crawler asked for rather than the rewritten target.
+
 ### Mounting other apps
 
 A web interface can serve **other apps from the same workspace under path prefixes of its own hosts** (the multi-zone pattern). A marketing site at `example.com` can serve a self-contained demo app (its own backend, database, and deploys) at `example.com/demos/vector-search` instead of linking out to the demo's subdomain:
@@ -203,18 +233,17 @@ Under the mount, everything is the child's: its live web bundle, its session (so
 
 **Prerendering is the child's.** The child's own `prerender.paths` gates its mounted pages, so a child that declares `/blog/*` gets crawler snapshots at `example.com/demos/vector-search/blog/x` with no parent configuration. Snapshots are keyed to the child's release: a child deploy refreshes them, and `prerender.invalidate(['/blog/x'])` from the child purges its mounted copies along with its own. The parent's `prerender.paths` covers only the parent's own routes.
 
-**SEO.** Mounted pages are advertised on the parent's domain automatically:
+**SEO under a mount is yours to wire, and it's two steps.** The platform serves the child's pages at the mounted URLs; it does not edit either app's SEO files.
 
-- The child's `sitemap.xml` is served under the mount with every URL rewritten to the mounted location, so it advertises `example.com/demos/vector-search/...` rather than the child's own host. Asset URLs (`<image:loc>`, `<video:content_loc>`) are left alone.
-- The parent's `robots.txt` gains a `Sitemap:` line per mount whose child ships a sitemap — including when the parent has no `robots.txt` of its own.
-- The child's `robots.txt` **rules** do not carry over. robots.txt is only ever read from a host root, and its paths are written against the child's own routes, so the parent's build log lists them in mount-prefixed form for you to adopt deliberately in the parent's own `robots.txt`.
-- Write per-route canonicals from the page's own location, not a hardcoded absolute URL. A canonical pointing at the child's own host tells crawlers to consolidate there and undoes the mount; the parent's build log warns when a target's `index.html` hardcodes one.
+- **In the child**, generate its sitemap with the *mounted* URLs. A sitemap built from the child's own hostname advertises a surface you don't want indexed, so point whatever base URL your generator uses at the mount. Expose it at a clean path with a rewrite (see "Rewrites") if the file doesn't live in your build output.
+- **In the parent**, advertise it: add a `Sitemap:` line to the parent's `robots.txt`, or nest the child's sitemap in the parent's sitemap index. The person adding a mount is the person who can add that line, so there's nothing to coordinate.
+- **Write per-route canonicals from the page's own location**, not a hardcoded absolute URL. A canonical pointing at the child's own host tells crawlers to consolidate there and undoes the mount; the parent's build log warns when a target's `index.html` hardcodes one.
 
 Notes:
 - **One signed-in state per host.** The auth cookie is per-host, so a parent and a mounted child that both use login on the same host will sign each other out. Mount auth-enabled apps only when the parent doesn't use auth (or vice versa).
 - A mount whose target has no live web build yet falls through to the parent's SPA until the child deploys one.
 - Mounts are single-level: a mounted child's own `mounts` are not served under the parent.
-- **Redirects and `trailingSlash` follow the same rule as prerendering**: within the mount prefix, the child's config applies, written against the child's own paths (`/old`, not `/demos/vector-search/old`), and the mount prefix is added back to relative destinations. A parent can't redirect inside a prefix it has handed to a child.
+- **Redirects, rewrites and `trailingSlash` follow the same rule as prerendering**: within the mount prefix, the child's config applies, written against the child's own paths (`/old`, not `/demos/vector-search/old`). Redirect destinations get the mount prefix added back; rewrite destinations resolve against the child's own build output and file store. A parent can't route inside a prefix it has handed to a child.
 
 ---
 

@@ -46,6 +46,7 @@ All fields are nested under the `"web"` key.
 | `prerender` | `object` | — | Opt into prerendering the listed routes/patterns for crawlers/unfurlers. See "Prerendering" below. |
 | `mounts` | `array` | — | Serve other same-workspace apps under path prefixes of this app's hosts. See "Mounting other apps" below. |
 | `redirects` | `array` | — | Path-level redirects. See "Redirects" below. |
+| `rewrites` | `array` | — | Serve different content at the same URL. See "Rewrites" below. |
 | `trailingSlash` | `"strip"` \| `"append"` | — | Enforce a canonical trailing-slash form with a 308. Off by default. |
 
 ### Frontend SDK
@@ -168,11 +169,26 @@ Declare moved URLs in `web.json` — never ship a component that redirects clien
 
 `trailingSlash` picks the canonical form (`"strip"`: `/about/` → `/about`; `"append"`: the reverse, skipping the root and paths with file extensions). Off by default. Write `source` patterns without trailing slashes either way — normalization and matching resolve in one hop. Sources under `/_/` are rejected, as are self-referential and two-rule loops. A redirecting path is never prerendered, so don't list one in `prerender.paths`.
 
+### Rewrites
+
+Serve different content at the same URL — no redirect. The way to give a clean path to a file that isn't in the build output:
+
+```json
+{ "web": { "rewrites": [
+  { "source": "/sitemap.xml", "destination": "/_/files/public/site/sitemap.xml" },
+  { "source": "/docs/*rest", "destination": "/help/*rest" }
+] } }
+```
+
+`destination` is either `/_/files/public/<store>/<key>` (the object's bytes served inline — use this for anything the app generates at runtime and uploads: sitemaps, `robots.txt`, `llms.txt`, `.well-known/*`; the store must be public, private is rejected at build) or another path in the build output. Same `source` syntax as redirects, first match wins. Objects over 10 MB fall back to a CDN redirect. External URLs are not supported (use `mounts`), nor are other `/_/` surfaces.
+
+Redirects resolve before everything; rewrites resolve at the content lookup, after prerendering — so a path with both gets the redirect.
+
 ### Mounting other apps
 
 Rare: `mounts` serves another same-workspace app under a path prefix of this app's hosts — `{ "web": { "mounts": [{ "path": "/docs", "app": "docs-site" }] } }` (`app` = the target's `custom_subdomain` or appId). The child is served first-class (its own bundle, session, backend, prerendering) and needs no mount-specific config; the two serving conventions above are what make an app mountable.
 
-Under a mount the child's own `web.json` governs its SEO and routing: its `prerender.paths` gates its mounted pages, its `prerender.invalidate` purges them, its `redirects`/`trailingSlash` apply within the prefix (written against its own paths, with the prefix added back to relative destinations), and its `sitemap.xml` is served with URLs rewritten to the mount and advertised in the parent's `robots.txt`. The child's `robots.txt` *rules* don't carry over (the build log lists them prefixed for the parent to adopt), and canonicals must be written from the page's own location — a hardcoded absolute canonical points crawlers back at the child's host and undoes the mount.
+Under a mount the child's own `web.json` governs its routing: its `prerender.paths` gates its mounted pages, its `prerender.invalidate` purges them, and its `redirects`/`rewrites`/`trailingSlash` apply within the prefix (written against its own paths). SEO files are NOT handled for you — the child must generate its sitemap with the mounted URLs, and the parent must advertise it in its own `robots.txt` or sitemap index. Canonicals must be written from the page's own location; a hardcoded absolute canonical points crawlers back at the child's host and undoes the mount.
 
 ## API Interface
 
