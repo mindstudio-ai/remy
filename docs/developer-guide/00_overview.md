@@ -1,4 +1,4 @@
-# Remy Apps: Developer Guide
+# Overview
 
 > **Note on audience.** This guide documents the platform's primitives: the spec format, the manifest, tables, methods, roles, interfaces. It's for developers building directly on the platform, and for anyone reading the code Remy generates who wants to understand how the pieces fit together. **It is not a description of how end-users of Remy interact with the product.** A Remy user describes what they want in plain language (voice, text, or pasted documents), and the agent generates everything in this guide on their behalf. The user doesn't write MSFM, define tables, or author methods by hand; the agent does that, after a conversation that turns intent into a spec. Read this guide to know *what gets generated*; read the [diligence material](../README.md#diligence--investor-facing-material) and [landing page](../diligence/landing-page.md) for *how the user experiences it*.
 

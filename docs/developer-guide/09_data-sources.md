@@ -1,4 +1,4 @@
-# Data Sources (Search Over Documents)
+# Vector Databases
 
 Per-app searchable document corpora. Upload PDFs, docs and text; ask questions in plain language; get back the passages that answer them, each with a citation pointing at the source document.
 

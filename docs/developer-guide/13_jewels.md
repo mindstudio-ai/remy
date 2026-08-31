@@ -1,4 +1,4 @@
-# Jewels (`defineJewel`)
+# Jewels
 
 A jewel is an optional AI companion for a single app method: `foo.jewel.ts` beside `foo.ts`. It proposes the method call a human would otherwise make. The method's `autonomy` setting in the manifest decides what happens to each proposal: recorded silently, queued for human review, or committed. Every proposal is graded against what really happened.
 

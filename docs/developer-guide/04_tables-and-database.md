@@ -1,4 +1,4 @@
-# Tables & Database
+# Tables & SQL Database
 
 ## Defining a Table
 
