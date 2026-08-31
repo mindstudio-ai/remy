@@ -97,8 +97,9 @@ export interface AgentState {
    * missing key means "use the server default for this agent" — we omit
    * `modelId` on those requests. Mutable mid-session via the `changeModels`
    * stdin command (preserves history; resolved live per call, so it takes
-   * effect on the next turn); empty/omitted resets to defaults. To also
-   * wipe history, the caller issues `clear` then `changeModels`. */
+   * effect on the next turn); empty/omitted resets to defaults. `clear` wipes
+   * history only and leaves these picks intact, so a caller wanting both
+   * issues `clear` and `changeModels` in either order. */
   models?: Record<string, string>;
 }
 

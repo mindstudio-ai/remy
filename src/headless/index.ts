@@ -1475,9 +1475,11 @@ export class HeadlessSession {
     // Echo the picker registry like session_restored and models_changed do —
     // the frontend adopts these fields from every session-shaped event and
     // treats their absence as null, so an empty payload wipes its registry
-    // (the "Model picker not available" bug). `models` stays omitted: clear
-    // resets picks to defaults, and absence means exactly that.
+    // (the "Model picker not available" bug). `models` rides along for that
+    // same reason: clear preserves the picks, and omitting them would read on
+    // the frontend as "reset to defaults" and blank the picker.
     return {
+      ...(this.state.models && { models: this.state.models }),
       modelSurfaces: getEffectiveModelSurfaces(),
       allowedModelsByType: ALLOWED_MODELS_BY_TYPE,
     };
