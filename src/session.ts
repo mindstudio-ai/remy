@@ -8,7 +8,7 @@
  * Auto-rotation: once the live file crosses ROTATE_THRESHOLD_BYTES,
  * saveSession archives the oldest messages into a sealed timestamped file
  * under .logs/sessions/ and keeps a recent tail live — the automatic mirror
- * of what /clear does (clearSession), minus the reset. Both go through the
+ * of what /clear does (clearSession), minus the history reset. Both go through the
  * same archiveMessages primitive, so every .logs/sessions/*.json shares one
  * schema and looks identical to a reader. This keeps the committed file
  * bounded (it's persisted to the app's _draft branch every snapshot) while
@@ -349,7 +349,7 @@ function readArchiveMessages(name: string): Message[] {
  * global offsets. Scope = `rotated-*` newer than the most recent `cleared-*`
  * (or all `rotated-*` if never cleared); `cleared-*` and pre-clear `rotated-*`
  * are abandoned prior conversations and excluded (`/clear` archives everything
- * as `cleared-*`, then resets). Empty/uncountable files are dropped so global
+ * as `cleared-*`, then resets history). Empty/uncountable files are dropped so global
  * ranges stay contiguous. Rebuilt from readdirSync each call — cheap, since
  * counts come from filenames — so it reflects in-process rotations and prunes.
  */
@@ -590,7 +590,8 @@ export function saveSession(state: AgentState): void {
 
 export function clearSession(state: AgentState): void {
   // Archive the whole conversation, then start fresh — the same archiving
-  // path as rotation (uniform schema), just applied to everything with a reset.
+  // path as rotation (uniform schema), applied to everything rather than to a
+  // tail. "Fresh" here means the history and nothing else; see below.
   try {
     if (state.messages.length > 0) {
       archiveMessages(state.messages, 'cleared', state.models);
@@ -599,17 +600,16 @@ export function clearSession(state: AgentState): void {
     log.warn('Session archive on clear failed', { error: err.message });
   }
   state.messages = [];
-  // Model picks persist in the session file being deleted below — clearing
-  // the session resets them too, or the in-memory picks would silently
-  // diverge from disk (applied until the process restarts, then gone).
-  state.models = undefined;
-  try {
-    if (fs.existsSync(SESSION_FILE)) {
-      fs.unlinkSync(SESSION_FILE);
-    }
-  } catch (err: any) {
-    log.warn('Session clear: could not remove live file', {
-      error: err.message,
-    });
-  }
+  // Clear wipes the conversation and nothing else — the user's model picks
+  // survive it. Dropping them here silently moved a deliberately cheaper pick
+  // back to the (Opus) default mid-session, so a clear could raise cost
+  // without the user doing anything.
+  //
+  // Rewriting the live file with empty history — rather than deleting it —
+  // keeps the picks on disk, so they also survive a process restart and can't
+  // diverge from memory. loadSession adopts `models` before it checks for
+  // messages, so an empty-history file restores the picks while still
+  // reporting "nothing restored". Resetting to defaults is still available
+  // via `changeModels` with an empty payload.
+  saveSession(state);
 }
