@@ -194,7 +194,7 @@ The frontend consumes with `events.connect({ getToken, onEvent, onConnect })` fr
 
 **A channel is an audience, and a method decides who is in it.** Default to per-user channels with publish-time fan-out (removing someone stops their events immediately); reserve shared channels for genuinely broadcast content. For anonymous visitors `auth.userId` is null — key their channels on `session.visitorId` instead. Events are at-most-once nudges — nothing is buffered or replayed, so clients refetch state in `onConnect` (subscribe for speed, reconcile for truth). Payloads cap at 32k serialized characters: publish ids, let the client fetch.
 
-Debug with `remy-admin events tail` / `publish` / `channels list`. Full treatment — channel design, grant lifecycle, the chat worked example — in the `realtime` skill.
+Debug with `remy-admin events tail` / `publish` / `channels list`. Full treatment — channel design, grant lifecycle, the chat worked example — in the `realtimeEvents` skill.
 
 ---
 
