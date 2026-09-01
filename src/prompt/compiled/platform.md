@@ -64,7 +64,7 @@ my-app/
 
 Two things the platform cannot do — be upfront when a request heads this way:
 - Native mobile apps (iOS/Android). Mobile-responsive web apps are fine.
-- Real-time multiplayer with persistent connections (no WebSocket support). Turn-based or async multiplayer works great.
+- Fast-twitch multiplayer and live co-editing (shared cursors, 60fps sync) — everything a client sends is a method invoke, so sub-100ms bidirectional interaction isn't a fit.
 
 ## The Two SDKs
 

@@ -51,8 +51,12 @@ const CONTENT_TYPES: Record<string, string> = {
  */
 const hosted = new Map<string, string>();
 
-/** True when the reference is already something the platform can fetch. */
-function isFetchableUrl(ref: string): boolean {
+/** True when the reference is already something the platform can fetch —
+ * i.e. anything that is not a path on the sandbox disk. Exported because
+ * callers that treat local files differently (analyzeDesign renders a local
+ * HTML document rather than uploading it) need the same test, and a second
+ * regex would drift from this one. */
+export function isFetchableUrl(ref: string): boolean {
   return /^(?:https?:|data:)/i.test(ref);
 }
 

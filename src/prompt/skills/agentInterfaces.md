@@ -65,6 +65,10 @@ Use MSFM annotations for implementation-level notes that the compiler needs but 
 
 When defining tools for multi-user apps with access restrictions, be sure to note the roles that are allowed or disallowed from accessing the tool, as well as any other restrictions. The actual tool invocation will be rejected at runtime if the requesting user is not allowed to access the underlying method, but defining this early allows the model to gate permissions cleanly rather than vomiting an error when the user tries to do something they're not permissioned for.
 
+### Structured output rides on explicit control syntax
+
+When the interface needs structured behavior inline — follow-up suggestion chips, a state flag the UI switches on, a directive to render an app component inside the answer — define an explicit syntax the agent emits (a fenced block, a marker line) and have the client parse that, rather than inferring intent from prose with regexes. Document the syntax in the compiled system prompt. A model-owned contract keeps rendering deterministic: the client knows exactly where each element begins and ends, which is also what makes buffered, finished-unit reveal possible.
+
 ### Anti-patterns
 
 - Avoid system prompts that restate tool schemas ("You have a tool called createTodo that takes a title and optional aiNotes...")
@@ -199,7 +203,9 @@ Display tokens as they arrive. No loading spinners that block the whole view —
 
 Use `streamdown` for rendering markdown from streaming text. It handles unterminated blocks gracefully (the core problem with react-markdown during mid-stream rendering), includes Shiki syntax highlighting for code blocks, and supports KaTeX math and Mermaid diagrams. Install the base package and tree-shake plugins as needed (`@streamdown/code`, `@streamdown/math`, `@streamdown/mermaid`).
 
-Pay attention to streaming text animation — fast token delivery can look jarring, and slow delivery can look laggy. Throttling renders to ~50-100ms batches smooths things out.
+One caveat: streamdown re-parses and re-renders the entire answer on every token, which remounts any component embedded in the markdown (an inline card, a citation popover) on every token — visible flicker, plus a flash of raw directive text. Keep the settled portion of the answer out of the re-parse path: split it at element boundaries into stable, memoized, keyed sibling nodes so only the actively streaming tail re-renders.
+
+Stream plain prose live, but buffer anything structured — citation marks, code blocks, embedded components, any control syntax the agent emits — until its closing token arrives, then reveal it as a finished unit. The gate is the element boundary, not a timer: fixed-interval batching eventually splits an element mid-structure and the user watches raw syntax rewrite itself into the finished thing. The design expert's chat reference carries the full motion direction (reveal cadence, caret behavior); this is the mechanism that makes it implementable.
 
 It is critical to never introduce layout shift or jarring transitions when dealing with responses. Messages should cleanly and smoothly transition between thinking, streaming, and completed states. Tool use should fit beautifully within the conversation and should never cause abrupt layout shift.
 

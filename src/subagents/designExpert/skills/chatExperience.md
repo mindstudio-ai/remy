@@ -26,18 +26,27 @@ Code blocks, tables, and lists inside agent turns are part of the brand too: sty
 
 ## Streaming craft
 
-Streaming is the heartbeat of the surface, and it must feel poured, not stuttered. Design the message lifecycle — thinking → streaming → complete — as one set of continuous, layout-shift-free transitions:
+Streaming is the heartbeat of the surface, and it must feel poured, not stuttered. The governing principle: the answer appears **written, not assembled** — nothing that would leak the rendering mechanism is ever shown mid-formation. Plain prose streams live, token by token. Anything with structure — a citation mark, a code block, an inline card, any control syntax the model emits — buffers until it is whole, then reveals as a finished unit. The gate is the element's closing boundary, not a timer: fixed batches eventually split an element mid-structure, and the user watches a naked bracket become a citation or a bare fence flicker into a code block. That reads as broken even when it is technically live.
+
+Prescribe the reveal cadence as a drain, not a metronome. Pending text drains onto the screen on an animation-frame loop, revealing a fraction of whatever is pending each frame (18% per frame with a 3-character floor is the proven default), so a burst of tokens pours quickly and eases as it catches up, and a stalled model quiets the reveal on its own. A fixed characters-per-tick reveal reads as mechanical typing, not a voice.
+
+The caret at the streaming edge is a status indicator, not decoration: solid while text is actively pouring, blinking only once the stream has stalled for ~400ms (so a blink genuinely means "waiting on the model"), fading out on completion rather than snapping away. It sits inline with the last text node — never dropped to its own line below a list, never floating after a code block.
+
+Design the message lifecycle — thinking → streaming → complete — as one set of continuous, layout-shift-free transitions:
 
 - **Thinking** shows as a compact, in-character indicator the moment the user sends (the optimistic send is non-negotiable: the user's message appears instantly, the indicator with it). If the model emits visible reasoning, give it a collapsed-but-present treatment the user can expand — never a wall of gray text pushed above the answer.
-- **Streaming** renders batched (~50–100ms per paint, not per token) so arrival reads as pouring; give the streaming edge a treatment — a soft cursor or shimmer — so "still writing" is legible at a glance.
-- **Completion** is a settle, not a jump: the cursor fades, actions (copy, retry) ease in. No element of the transcript moves except by growing downward.
+- **Completion** is a settle, not a jump: the caret fades, actions (copy, retry) ease in. No element of the transcript moves except by growing downward.
 - The transition between these states never reflows what's already on screen — reserve space for indicators instead of inserting them.
+
+Entrances are choreographed. Suggested-prompt chips and any list of generated items enter with a per-item stagger — simultaneous appearance reads as a glitch. A number that changes on screen counts up in tabular figures rather than snapping. And every animated element gets an explicit reduced-motion path that shows the final state instantly while keeping the feature fully functional — reduced motion is designed, not bolted on.
 
 ## Tool activity
 
 When the agent calls the app's methods, the transcript should show it working the way the product would say it: a compact status row in the app's voice ("Booking your appointment…", "Searching your library…"), appearing when the call starts and resolving in place when it lands — never raw method names, spinners without labels, or JSON. Design the row as a real element of the transcript: aligned to the agent's column, quiet, layout-stable.
 
-Results deserve more than prose when they're structural: the record the agent pulled up, the item it created, the rows it found can render as real UI inside the turn — a card, a compact list, the app's own components — so the agent visibly operates the same product the user sees. Decide which tools earn a rendered result and prescribe what it looks like. When the agent runs several tools in a row, collapse them into one grouped status that expands on demand; a stack of six status rows reads as noise.
+Results deserve more than prose when they're structural: the record the agent pulled up, the item it created, the rows it found can render as real UI inside the turn — a card, a compact list, the app's own components — so the agent visibly operates the same product the user sees. When the data behind the agent is structured, the strongest move is to quote that structure as live UI rather than paraphrase it into a sentence and a link. Decide which tools earn a rendered result and prescribe what it looks like. When the agent runs several tools in a row, collapse them into one grouped status that expands on demand; a stack of six status rows reads as noise.
+
+A dense panel that is itself a workspace — telemetry, an inspector, a long structured result — belongs in a dismissible overlay, not inline in the transcript: inline reveals are for glanceable things, and a tall instrument shoves the conversation around. In that instrument register, density is the aesthetic — tighten it rather than giving it conversational whitespace.
 
 ## The composer
 
@@ -53,7 +62,7 @@ Thread history is real navigation, not an afterthought dropdown: design where pa
 
 You art-direct this surface end-to-end. The developer has a terrible sense of design and will fill any gap you leave with a default — and defaults are how a designed conversation decays into a generic chatbot. Deliver an implementation-ready specification:
 
-- **Exact values everywhere.** The agent column's measure, type sizes and line heights for body and markdown levels, chip radius and max-width, spacing between and within turns, indicator dimensions, streaming batch interval, transition durations and easings, all colors as hexes from the brand.
+- **Exact values everywhere.** The agent column's measure, type sizes and line heights for body and markdown levels, chip radius and max-width, spacing between and within turns, indicator dimensions, the reveal drain fraction and caret stall threshold, transition durations and easings, all colors as hexes from the brand.
 - **The message lifecycle, state by state.** Sending / thinking / streaming / complete / error — what appears, where space is reserved, what animates — plus the tool-row lifecycle (start, running, resolved, grouped), so no transition is left to improvisation.
 - **One answer per question.** If you would accept either of two options, pick one and prescribe it. "Something like," "roughly," and "consider" are how implementations go generic; the only tolerances that exist are the ones you state numerically.
-- **A verification checklist.** End with the specific things to screenshot-check after implementation — no layout shift while streaming (capture mid-stream), tool rows appearing and resolving cleanly, the empty state, code blocks inside a turn, the mobile viewport with the keyboard up — so the developer can prove the direction landed rather than assume it did.
+- **A verification checklist.** End with the specific things to screenshot-check after implementation — no layout shift while streaming (capture mid-stream), no structured element caught half-formed mid-stream, tool rows appearing and resolving cleanly, the empty state, code blocks inside a turn, the mobile viewport with the keyboard up — so the developer can prove the direction landed rather than assume it did.

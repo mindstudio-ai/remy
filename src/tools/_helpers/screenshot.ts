@@ -62,14 +62,21 @@ export interface RenderHtmlResult {
 
 /**
  * Render an agent-authored HTML document in the sandbox browser and capture
- * it as a PNG at exact dimensions. Renders in a fresh tab — never touches the
- * app preview page. Used for deterministic brand graphics where the design
- * agent composes HTML/CSS and needs real pixels back.
+ * it as a PNG. Renders in a fresh tab — never touches the app preview page.
+ * Used for deterministic brand graphics where the design agent composes
+ * HTML/CSS and needs real pixels back, and for reviewing a document it wrote
+ * to disk.
  */
 export async function renderHtmlViaSidecar(opts: {
   html: string;
   width: number;
   height: number;
+  /** Fit the capture to the document's own height, for a document that
+   * declares no height — `height` becomes the starting viewport rather than
+   * the canvas, and the result comes back at whatever was used. A tunnel too
+   * old to know the flag ignores it and captures at `height`, so callers get a
+   * clipped or padded review, never an error. */
+  autoHeight?: boolean;
   /** True-alpha PNG — only meaningful when the document leaves its own
    * background transparent. */
   transparent?: boolean;
@@ -83,6 +90,7 @@ export async function renderHtmlViaSidecar(opts: {
       html: opts.html,
       width: opts.width,
       height: opts.height,
+      ...(opts.autoHeight ? { autoHeight: true } : {}),
       ...(opts.transparent ? { transparent: true } : {}),
       ...(opts.scale != null ? { scale: opts.scale } : {}),
     },

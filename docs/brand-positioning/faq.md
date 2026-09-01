@@ -55,7 +55,7 @@ Coming soon. Along with a lot of other things.
 - Backends are TypeScript (runs in a Node environment, any npm package)
 - Frontends just need to be able to run a build command (Vite + React is the default, but any framework works)
 - No native mobile apps (mobile-responsive web apps are fine)
-- No real-time multiplayer with persistent WebSocket connections (turn-based and async multiplayer work) great
+- No fast-twitch multiplayer or shared-cursor co-editing
 
 ## I have a feature request / I wish it had X.
 
