@@ -15,6 +15,13 @@ import type { ApiConfig } from './config.js';
 
 const log = createLogger('api');
 
+/** One suggestion chip: the words on the chip, and the message a tap sends.
+ * Parsed out of the assistant's own markdown by suggestions.ts. */
+export interface Suggestion {
+  label: string;
+  message: string;
+}
+
 // Normalized message format — matches the platform's ChatMessage type.
 // The platform translates to/from provider-specific formats.
 export interface Attachment {
@@ -52,7 +59,20 @@ export type ContentBlock =
       startedAt: number;
       completedAt?: number;
     }
-  | { type: 'text'; text: string; startedAt: number }
+  | {
+      type: 'text';
+      /** What the model wrote, verbatim — including any `[label](suggest:…)`
+       * chip links. This is the copy `cleanMessagesForApi` sends back, so Remy
+       * keeps seeing the options it offered. */
+      text: string;
+      startedAt: number;
+      /** The same text with standalone chip links removed, for display. Set by
+       * annotateSuggestions only when `text` contained chips; clients render
+       * `displayText ?? text`. */
+      displayText?: string;
+      /** Chips this block offers, in the order written. See suggestions.ts. */
+      suggestions?: Suggestion[];
+    }
   | {
       type: 'tool';
       id: string;
