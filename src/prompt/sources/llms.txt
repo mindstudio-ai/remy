@@ -1896,3 +1896,32 @@ Adding the same bytes twice is free — documents are content-addressed, so a re
 Everything in `SearchOptions` — `mode`, `filter`, `rerank`, `hybrid`, `maxPerDocument`, `highlight` — is free to change and takes effect on the next search. How documents are chunked and embedded is configured on the corpus itself with `remy-admin datasources config` — not in code — and changing it on a populated source is rejected rather than silently rebuilding.
 
 **A data source is live and shared.** Unlike database tables there is no dev copy and no per-release isolation: adding or removing a document changes what the deployed app retrieves, immediately. Scenarios never reset a data source, and re-ingesting a large corpus costs real money.
+
+#### `events` — server→client realtime (publish/subscribe)
+
+Publish to named channels from any backend code (a method, a cron, a webhook handler); connected clients receive the payloads instantly over a platform-held stream — live dashboards, notifications, chat, multi-tab/device sync, with no polling and no WebSocket code. Different from `stream()`, which narrates ONE invocation to the caller currently waiting on it: events reach clients that were not part of the invocation at all. Backend only (hook token).
+
+```typescript
+import { auth, events } from '@mindstudio-ai/agent';
+
+// The subscribe door is one of YOUR methods — auth checks first, then mint.
+// The grant is the ENTIRE subscribe-side authorization: whoever holds the
+// token receives those channels' events for its lifetime.
+export async function watchInbox() {
+  auth.requireRole('member');
+  return await events.grant(`user:${auth.userId}`);  // { token, expiresAt, ttlSeconds }; ttlSeconds? 60–3600, default 900
+}
+
+// Anything can publish — one call, up to 500 channels:
+const members = await RoomMembers.where({ roomId });
+const { delivered } = await events.publish(
+  members.map((m) => `user:${m.userId}`),
+  { type: 'message', roomId, msgId },
+);
+```
+
+The frontend consumes with `events.connect({ getToken, onEvent, onConnect })` from `@mindstudio-ai/interface` — `getToken` calls the minting method, and the SDK handles reconnection and grant renewal.
+
+**A channel is an audience, and a method decides who is in it.** Never put two users' data on one channel. Default to per-user channels with publish-time fan-out (as above) for membership-gated audiences — removing someone stops their events immediately; reserve a shared channel for genuinely broadcast content (a ticker, a live blog), where revocation waits out the grant TTL. For anonymous visitors `auth.userId` is null — key their channels on `session.visitorId` instead, or `user:null` becomes one channel shared by every anonymous user.
+
+**Events are at-most-once nudges.** Nothing is buffered while a client is disconnected and nothing replays on connect — clients refetch state in `onConnect` (subscribe for speed, reconcile for truth). `delivered: 0` means nobody is listening right now: normal, never an error. Payloads cap at 32k serialized chars — publish ids (`{ type, id }`), let the client fetch. Channels are exact strings (letters, digits, `: _ - .` — no wildcards), ≤500 per publish, ≤100 per grant. Publishes and grants are scoped to the execution's environment (live/preview/dev) automatically, so a dev-session publish can never reach live users. Debug with `remy-admin events tail | publish | channels list`.

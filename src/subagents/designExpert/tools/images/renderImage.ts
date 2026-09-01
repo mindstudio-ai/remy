@@ -28,8 +28,9 @@ const MAX_DIMENSION = 4096;
 
 // Fidelity review, not asset review: a render is the agent's own composition
 // coming back as pixels, so the questions are whether the browser realized it
-// faithfully — not what the image depicts.
-const RENDER_ANALYZE_PROMPT =
+// faithfully — not what the image depicts. Shared with analyzeDesign, which
+// asks the same question of a local HTML document (a wireframe) it renders.
+export const RENDER_ANALYZE_PROMPT =
   'You are reviewing a browser-rendered graphic (composed from HTML/CSS by a designer) for fidelity. Report: whether the composition fills the full canvas or leaves unintended gaps at any edge, any clipped or overflowing text, whether custom webfonts appear to have loaded (distinctive letterforms vs generic fallback serif/sans), any misalignment or uneven spacing, any unintended scrollbars or default-styling artifacts, and — if the background is transparent — any fringing or stray opaque pixels at the edges. Then briefly describe the overall composition and how polished it looks. Be concise and practical. Respond only with your analysis as Markdown (starting with the title "Render Review") and absolutely no other text. Do not use emojis - use unicode if you need symbols.';
 
 export const definition: ToolDefinition = {

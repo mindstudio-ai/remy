@@ -75,7 +75,7 @@ Push to the default branch → the platform builds, deploys, and goes live. Push
 Two things the platform cannot do. Say so early when a requirement heads this way:
 
 - **Native mobile apps** (iOS/Android). Mobile-responsive web apps are fine.
-- **Real-time multiplayer with persistent connections.** There is no WebSocket support. Turn-based or async multiplayer works well.
+- **Fast-twitch multiplayer and live co-editing** (shared cursors, 60fps sync) — everything a client sends is a method invoke, so sub-100ms bidirectional interaction isn't a fit.
 
 ---
 

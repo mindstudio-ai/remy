@@ -38,6 +38,7 @@ What the actions cover, including a few that aren't obvious:
 - **Video generation**, including from reference images and start frames, with audio and voice
 - **Speech and audio** — text-to-speech, music generation, transcription
 - **Detailed image and video analysis** via vision models
+- **Realtime events** — publish to named channels from any backend code; connected clients receive the payloads instantly (see Realtime Events below)
 
 ---
 
@@ -168,6 +169,32 @@ const result = await mindstudio.executeStepBatch([
 ]);
 // result.results[0].output, result.results[1].output
 ```
+
+---
+
+## Realtime Events
+
+Server→client push from backend code — no polling, no WebSocket code:
+
+```typescript
+import { auth, events } from '@mindstudio-ai/agent';
+
+// The subscribe door is one of your methods — auth checks first, then mint:
+export async function watchInbox() {
+  auth.requireRole('member');
+  return await events.grant(`user:${auth.userId}`); // { token, expiresAt, ttlSeconds }
+}
+
+// Anything can publish — a method, a cron, a webhook handler.
+// One call, up to 500 channels (audience fan-out):
+await events.publish(`user:${assignee}`, { type: 'ticket', id: ticket.id });
+```
+
+The frontend consumes with `events.connect({ getToken, onEvent, onConnect })` from `@mindstudio-ai/interface`; the SDK handles reconnection and grant renewal.
+
+**A channel is an audience, and a method decides who is in it.** Default to per-user channels with publish-time fan-out (removing someone stops their events immediately); reserve shared channels for genuinely broadcast content. For anonymous visitors `auth.userId` is null — key their channels on `session.visitorId` instead. Events are at-most-once nudges — nothing is buffered or replayed, so clients refetch state in `onConnect` (subscribe for speed, reconcile for truth). Payloads cap at 32k serialized characters: publish ids, let the client fetch.
+
+Debug with `remy-admin events tail` / `publish` / `channels list`. Full treatment — channel design, grant lifecycle, the chat worked example — in the `realtime` skill.
 
 ---
 

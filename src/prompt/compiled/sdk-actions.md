@@ -154,3 +154,7 @@ Consider the ways in which AI can be incorporated into backend methods to solve 
 ### Task Agents
 
 For multi-step tasks where the model needs to autonomously compose actions (research + scrape + generate, enrichment pipelines, content creation), use `runTask()` instead of chaining actions manually. It runs an agent loop and returns structured JSON. Its tools can include SDK actions, your app's own methods, and inline functions defined at the call site, so the agent can read your data to decide what to do next and write results back itself. Load the `taskAgents` skill before writing one — it is the full reference.
+
+### Realtime Events
+
+Server→client push, no polling: `events.publish(channels, data)` from any method/cron/webhook reaches connected clients instantly; `events.grant(channels)` in a method (after your auth checks) mints the subscribe token the frontend's `events.connect` consumes. This is how live dashboards, notifications, chat, and multi-tab sync work — whenever you're about to write a frontend polling loop against your own backend, reach for this instead. Load the `realtime` skill before designing with it: channel shape (per-user fan-out vs broadcast) is the decision that matters, and the skill carries it.

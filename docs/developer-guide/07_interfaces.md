@@ -91,6 +91,8 @@ auth.handleRemyRedirect()           // call once on load; completes delegated si
 auth.logout()                       // clears session
 ```
 
+Realtime: `events.connect({ getToken, onEvent, onConnect })` receives backend publishes live (dashboards, notifications, multi-tab sync) — the backend mints the token with `events.grant` and pushes with `events.publish`. See [SDK Actions — Realtime Events](11_sdk-actions.md#realtime-events).
+
 ### Deployment
 
 On `git push`, the platform runs `npm install && npm run build` in the web directory and hosts the output on CDN. The platform injects connection details automatically.
