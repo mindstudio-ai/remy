@@ -5,11 +5,28 @@
  * tools/index.ts.
  */
 
-import type { Message, Attachment } from './api.js';
+import type { Message, Attachment, Suggestion } from './api.js';
 
 // Events emitted to the UI layer
 export type AgentEvent =
   | { type: 'text'; text: string; parentToolId?: string }
+  | {
+      /**
+       * Snapshot of the open assistant text block once it offers suggestion
+       * chips. `text` is the block's full display copy — with the
+       * `[label](suggest:…)` links removed — and replaces whatever the client
+       * accumulated from `text` deltas for that block. Reconcile to it; don't
+       * diff it (same convention as queue_changed).
+       *
+       * Fires when a new chip completes mid-stream, and once more when the
+       * block closes so the client's copy matches what get_history will serve
+       * in `displayText`. Only ever describes top-level assistant prose —
+       * sub-agent text is never scanned for chips.
+       */
+      type: 'text_block';
+      text: string;
+      suggestions: Suggestion[];
+    }
   | { type: 'thinking'; text: string; parentToolId?: string }
   | {
       type: 'tool_input_delta';

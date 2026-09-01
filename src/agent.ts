@@ -42,6 +42,11 @@ import { NON_ACTION_SENTINELS } from './automatedActions/resolve.js';
 import { friendlyError } from './errors.js';
 
 import { cleanMessagesForApi } from './subagents/common/cleanMessages.js';
+import {
+  annotateSuggestions,
+  parseSuggestions,
+  SUGGEST_MARKER,
+} from './suggestions.js';
 import { parseSentinel } from './automatedActions/sentinel.js';
 import { triggerBrandExtraction } from './brandExtraction/trigger.js';
 import { resolveModel, filterModelPicks } from './models/surfaces.js';
@@ -427,6 +432,10 @@ export async function runTurn(params: {
       // trips Anthropic's thinking-block signature validation on the next
       // request.
       let textBlockOpen = false;
+      // Chips already announced for the open text block, so a mid-stream
+      // snapshot only goes out when a new one completes rather than on every
+      // token. Reset whenever a new text block starts.
+      let emittedSuggestionCount = 0;
       const toolInputAccumulators = new Map<string, ToolInputAcc>();
       let stopReason = 'end_turn';
       // Opaque provider state from this call's `done` event. Round-tripped on
@@ -516,6 +525,40 @@ export async function runTurn(params: {
         }
       }
 
+      /**
+       * Publish the open text block's display copy and the chips it offers.
+       *
+       * `closing` forces the emit even when no new chip appeared, because the
+       * standalone/inline classification of a chip can change as the rest of
+       * its line arrives — the final snapshot is the one that has to agree with
+       * `displayText` in history.
+       */
+      function emitTextBlockSnapshot(closing: boolean): void {
+        // Runs per delta, so walk back rather than copying: the open text block
+        // is the last block except at end of stream, where a tool_use may have
+        // been pushed after it.
+        let block: (ContentBlock & { type: 'text' }) | undefined;
+        for (let i = contentBlocks.length - 1; i >= 0; i--) {
+          const candidate = contentBlocks[i];
+          if (candidate.type === 'text') {
+            block = candidate;
+            break;
+          }
+        }
+        if (!block || !block.text.includes(SUGGEST_MARKER)) {
+          return;
+        }
+        const { text, suggestions } = parseSuggestions(block.text);
+        const worthSending = closing
+          ? suggestions.length > 0
+          : suggestions.length > emittedSuggestionCount;
+        if (!worthSending) {
+          return;
+        }
+        emittedSuggestionCount = suggestions.length;
+        onEvent({ type: 'text_block', text, suggestions });
+      }
+
       // Stream one LLM turn using the per-turn parent model resolved above.
       try {
         for await (const event of streamChatWithRetry(
@@ -558,9 +601,13 @@ export async function runTurn(params: {
                   text: event.text,
                   startedAt: event.ts,
                 });
+                emittedSuggestionCount = 0;
               }
               textBlockOpen = true;
               onEvent({ type: 'text', text: event.text });
+              // Deltas go out raw; a completed chip then supersedes them with a
+              // clean snapshot of the whole block.
+              emitTextBlockSnapshot(false);
               break;
             }
 
@@ -574,6 +621,9 @@ export async function runTurn(params: {
               // across the boundary.
               if (event.text === '') {
                 thinkingBlockStartTimes.push(event.ts);
+                if (textBlockOpen) {
+                  emitTextBlockSnapshot(true);
+                }
                 textBlockOpen = false;
               }
               onEvent({ type: 'thinking', text: event.text });
@@ -732,6 +782,14 @@ export async function runTurn(params: {
           throw err;
         }
       }
+
+      // The stream is done, so the last text block is too — settle its chips
+      // before the message is recorded either way.
+      if (textBlockOpen) {
+        emitTextBlockSnapshot(true);
+        textBlockOpen = false;
+      }
+      annotateSuggestions(contentBlocks);
 
       if (signal?.aborted) {
         statusWatcher.stop();

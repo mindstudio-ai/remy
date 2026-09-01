@@ -799,6 +799,15 @@ export class HeadlessSession {
           rid,
         );
         return;
+      case 'text_block':
+        // Full replacement for the open text block, not a delta — see the
+        // event's doc comment in types.ts.
+        this.emit(
+          'text_block',
+          { text: e.text, suggestions: e.suggestions },
+          rid,
+        );
+        return;
       case 'thinking':
         this.emit(
           'thinking',
