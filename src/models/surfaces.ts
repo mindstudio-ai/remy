@@ -153,6 +153,7 @@ export const ALLOWED_MODELS_BY_TYPE: Partial<Record<ModelType, string[]>> = {
     'claude-4-6-opus',
     'claude-4-6-sonnet',
     'claude-fable-5',
+    'claude-fable-5-1',
     'claude-5-sonnet',
     'gpt-5.5',
     'gpt-5.6-sol',
