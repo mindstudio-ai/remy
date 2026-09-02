@@ -164,6 +164,7 @@ export const ALLOWED_MODELS_BY_TYPE: Partial<Record<ModelType, string[]>> = {
     'gemini-3-flash',
     'gemini-3.5-flash',
     'gemini-3.7-flash',
+    'gemini-3.8-flash',
     'grok-build-0.1',
     'grok-4.5',
     'grok-4.6',
