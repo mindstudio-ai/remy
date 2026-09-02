@@ -18,7 +18,7 @@ export type { Skill } from '../../skillCatalog.js';
 
 const INTRO = `Platform capabilities most apps don't use, so their references are kept out of this prompt rather than competing for your attention on every task — not because they're marginal.
 
-Read what follows as part of what the platform can do, not as a lookup table. Recognising that one of these fits a feature is your job, and proposing one is fair game — several of them are the difference between an app that works and an app worth showing off. When a trigger fires, load the reference with loadSkill before writing the code rather than after. Loading is cheap and expected; guessing at one of these APIs is not.
+Read what follows as part of what the platform can do, not as a lookup table. Recognising that one of these fits a feature is your job, and proposing one is fair game — several of them are the difference between an app that works and an app worth showing off. When a trigger fires, load the reference with loadSkill before writing the spec or code rather than after. Loading is cheap and expected; guessing at one of these APIs is not.
 
 A loaded reference drops out of the conversation once it ages out. Re-read it at the path listed with readFile whenever you need it again.`;
 

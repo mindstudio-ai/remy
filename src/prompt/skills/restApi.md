@@ -1,7 +1,7 @@
 ---
 name: REST API
 what: A designed, documented REST surface over the app's methods — named routes, path and query params, resource groupings, and a generated OpenAPI spec. This is distinct from the method endpoints every app already has: those exist automatically and need nothing from you. This is for when the API itself is the product, or when something outside the app has to integrate against stable URLs rather than internal method names.
-when: Before authoring `src/interfaces/api.md` or adding an `api` interface with designed routes. Also load it when a method needs the raw HTTP request (headers, unparsed body).
+when: The moment the plan calls for a public or partner-facing API, or anything outside the app integrating against stable URLs — load it before designing that surface. Also before authoring `src/interfaces/api.md` or adding an `api` interface with designed routes, and when a method needs the raw HTTP request (headers, unparsed body).
 ---
 
 # REST API Interfaces

@@ -1,7 +1,7 @@
 ---
 name: Voice Interfaces
 what: Realtime voice conversation as a first-class interface — the user talks to the app and its voice agent talks back in sub-second, interruptible speech, calling the app's methods mid-conversation as the authenticated user. The platform handles the media transport, turn-taking, barge-in, and transcripts, so the work is authorship — a persona written for the ear, a small toolset where every tool carries a latency class, and descriptions that say results out loud. Any app whose methods do something interesting can pick up a voice, and it is often the most impressive surface it has.
-when: Before authoring `src/interfaces/voice.md`, choosing a voice model or pipeline, deciding which methods a voice agent gets, building the voice UI with `createVoiceClient()`, or working out why a voice agent behaved the way it did on a call.
+when: The moment a feature wants to be spoken — a phone line, a talking assistant, hands-free operation — load it before deciding how that feature is built. Also before authoring `src/interfaces/voice.md`, choosing a voice model or pipeline, deciding which methods a voice agent gets, building the voice UI with `createVoiceClient()`, or working out why a voice agent behaved the way it did on a call.
 ---
 
 # Building Voice Interfaces

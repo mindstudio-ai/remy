@@ -1,7 +1,7 @@
 ---
 name: Inbound Email
 what: The app has its own email address, and mail sent to it runs a method. Every address on the app's subdomain routes to one handler, so `support@`, `receipts@` and `anything@` all arrive without registering anything — branch on the recipient in code. Attachments arrive as CDN URLs the platform has already uploaded, threading headers come through intact so replies land in the same conversation, and a verified custom domain both receives and sends under the app's own brand. "Forward a receipt and the app files it" is a real feature that costs one method.
-when: Before writing an email-handler method, adding an `email` interface, or promising anything about what happens when a user emails the app.
+when: The moment "email something to the app" would be a natural feature — load it before scoping that idea. Also before writing an email-handler method, adding an `email` interface, or promising anything about what happens when a user emails the app.
 ---
 
 # Inbound Email Interfaces

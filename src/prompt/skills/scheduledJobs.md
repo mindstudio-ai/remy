@@ -1,7 +1,7 @@
 ---
 name: Scheduled Jobs
 what: Methods that run on a schedule, declared as cron expressions in an interface config and synced to the platform on deploy. Nothing to host and no scheduler to run — a job is a method plus a schedule line.
-when: Before adding a `cron` interface or writing a method meant to run on a timer.
+when: The moment anything should happen on a schedule — digests, syncs, reminders, cleanup — load it before designing that feature. Also before adding a `cron` interface or writing a method meant to run on a timer.
 ---
 
 # Cron Interfaces
