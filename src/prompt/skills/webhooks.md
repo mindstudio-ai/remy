@@ -1,7 +1,7 @@
 ---
 name: Webhooks
 what: Inbound HTTP endpoints that run a method synchronously, routed by a secret in the URL rather than by an auth header — which is what makes them the right fit for provider callbacks from Stripe, GitHub, Shopify, Slack or Twilio, since those senders can't present a bearer token. Signature verification works natively off the raw request body.
-when: Before adding a `webhook` interface or writing a method that receives a provider callback. Also load it before reaching for any confirmation-token, polling, or proxy workaround for inbound HTTP — those aren't needed here.
+when: The moment an external service needs to call the app — Stripe events, GitHub pushes, Twilio callbacks — load it before designing the receiving path. Also before adding a `webhook` interface or writing a method that receives a provider callback, and before reaching for any confirmation-token, polling, or proxy workaround for inbound HTTP — those aren't needed here.
 ---
 
 # Webhook Interfaces

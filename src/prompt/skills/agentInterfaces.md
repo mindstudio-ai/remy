@@ -1,7 +1,7 @@
 ---
 name: Agent Interfaces
 what: Conversational AI as a first-class interface to the app — an LLM with authenticated, per-user access to the app's methods as tools, paired with a streaming chat UI. The platform handles auth, tool dispatch, threads, and streaming, so the work is authorship: who the agent is, which methods it can reach, and how each one is described to it. Any app whose methods do something interesting can be projected into a conversation this way, often as its most compelling surface. This reference covers the whole feature — writing the agent spec, compiling it, and building the chat frontend.
-when: Before authoring `src/interfaces/agent.md`, compiling `dist/interfaces/agent/`, or building an agent's chat UI.
+when: When a conversational surface — a chat, an assistant — is part of the plan or spec, load it before deciding how that feature is built: this is the default architecture for conversation. Also before authoring `src/interfaces/agent.md`, compiling `dist/interfaces/agent/`, or building an agent's chat UI.
 ---
 
 # Building Agent Interfaces

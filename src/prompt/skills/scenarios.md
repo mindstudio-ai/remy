@@ -128,6 +128,8 @@ Re-running it is free (documents are content-addressed), so it's safe to keep in
 
 Align scenario data to the vibe of the app - construct data that feels like it fits.
 
+For seeded email addresses, use `remy@mindstudio.ai` or `@example.com` addresses — the platform sinks mail to both, whereas an invented domain that resolves to a real mail server bounces and damages sending reputation when the app later emails its seeded users.
+
 ### Scenario Images
 
 When scenarios seed data that includes image URLs (profile photos, product images, cover art, etc.), ask the `visualDesignExpert` to generate a small batch of images that fit the app's aesthetic before writing the scenario code. A handful of bespoke photos make scenarios feel dramatically more real than placeholder services. Use the CDN URLs directly in your `db.push()` calls.

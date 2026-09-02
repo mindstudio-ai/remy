@@ -224,7 +224,7 @@ The app projected as an MCP server for *external* AI agents to drive (Claude Des
 
 ## Agent (Conversational Interface)
 
-A conversational interface where the app's own LLM orchestrates its methods as tools — its own personality, system prompt, and model config (the inverse of MCP). Chat runs as the authenticated user, so every tool call carries that user's roles, and the config must declare an `auth` block (`{ "requireUser": boolean, "requireRole"?: string[] }`) gating who may chat at all. **Load the `agentInterfaces` skill** before authoring `src/interfaces/agent.md` or building the chat UI.
+A conversational interface where the app's own LLM orchestrates its methods as tools — its own personality, system prompt, and model config (the inverse of MCP). Chat runs as the authenticated user, so every tool call carries that user's roles, and the config must declare an `auth` block (`{ "requireUser": boolean, "requireRole"?: string[] }`) gating who may chat at all. When the app includes a conversational surface, this is the default way to build it — not a custom chat UI over per-turn method calls. **Load the `agentInterfaces` skill** when a conversational feature enters the plan, and before authoring `src/interfaces/agent.md` or building the chat UI.
 
 ## Voice (Realtime Conversation)
 

@@ -1,7 +1,7 @@
 ---
 name: MCP Interfaces
 what: Ships the app as an MCP server, so external AI agents — Claude Desktop, Cursor, anyone's agent — can drive it as a tool surface. The platform hosts the server, handles auth, and derives every tool's input schema from the method contract, so there is no protocol code to write: the work is choosing which methods an outsider should see and describing them well enough for a stranger to use correctly. Cheap to add to an app that already has methods, and it puts the app inside the tools its users already work in.
-when: Before authoring `src/interfaces/mcp.md`, deciding which of the app's methods an external agent gets to see, or writing the MCP interface config.
+when: The moment the plan wants the app reachable from Claude, Cursor, ChatGPT, or a user's own agents — load it before proposing how. Also before authoring `src/interfaces/mcp.md`, deciding which of the app's methods an external agent gets to see, or writing the MCP interface config.
 ---
 
 # MCP Interfaces
