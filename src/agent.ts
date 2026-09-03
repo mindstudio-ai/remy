@@ -49,7 +49,7 @@ import {
 } from './suggestions.js';
 import { parseSentinel } from './automatedActions/sentinel.js';
 import { triggerBrandExtraction } from './brandExtraction/trigger.js';
-import { resolveModel, filterModelPicks } from './models/surfaces.js';
+import { resolveModel, resolveParentModel } from './models/surfaces.js';
 import { USER_CANCELLED_RESULT } from './toolRegistry.js';
 import { capToolResult, capSubAgentTranscript } from './historyLimits.js';
 
@@ -192,25 +192,22 @@ export async function runTurn(params: {
   } = params;
   const tools = getToolDefinitions();
 
-  // Per-build executor model: the approve message may carry a `buildModel`
-  // that runs this build turn's parent surface on a non-default model. Scoped
-  // to this one turn (not persisted) and applied only to `parent` — subagents
-  // keep resolving their own surfaces. Validated against the text allow-list;
-  // an invalid pick falls through to the default.
-  const buildModelOverride = buildModel
-    ? filterModelPicks({ parent: buildModel }).parent
-    : undefined;
   // Resolve the parent model once per turn (deterministic: state.models is
-  // frozen while a turn runs). `baseline` is what the user would otherwise get
-  // (including any manual pick); a build override that diverges from it is
-  // recorded as `modelOverride` so history/UI can flag it, while a manual pick
-  // — folded into `baseline` — is intentionally left unflagged.
-  const baseline = resolveModel('parent', state.models, model);
-  const parentModel = buildModelOverride ?? baseline;
+  // frozen while a turn runs). The approve message may carry a `buildModel`
+  // that runs this build turn's parent surface on a non-default model —
+  // scoped to this one turn (not persisted), applied only to `parent`, and
+  // validated against the text allow-list (an invalid pick falls through to
+  // the default). `baseline` is what the user would otherwise get (including
+  // any manual pick); a build override that diverges from it is recorded as
+  // `modelOverride` so history/UI can flag it, while a manual pick — folded
+  // into `baseline` — is intentionally left unflagged.
+  const { baseline, effective: parentModel } = resolveParentModel(
+    state.models,
+    model,
+    buildModel,
+  );
   const modelOverride =
-    buildModelOverride && buildModelOverride !== baseline
-      ? { from: baseline }
-      : undefined;
+    parentModel !== baseline ? { from: baseline } : undefined;
 
   const totalAttachments = entries.reduce(
     (n, e) => n + (e.attachments?.length ?? 0),
@@ -219,7 +216,7 @@ export async function runTurn(params: {
   log.info('Turn started', {
     requestId,
     model,
-    buildModel: buildModelOverride,
+    buildModel: modelOverride ? parentModel : undefined,
     toolCount: tools.length,
     ...(entries.length > 1 && { entryCount: entries.length }),
     ...(totalAttachments > 0 && { attachmentCount: totalAttachments }),

@@ -138,45 +138,121 @@ export const MODEL_SURFACES = {
 export type SurfaceId = keyof typeof MODEL_SURFACES;
 
 /**
+ * Context-management thresholds for one text model, in provider-reported
+ * input tokens. Explicit per-model numbers, not percentages derived from a
+ * context window: what actually matters — the usable input ceiling under the
+ * provider's output/reasoning reserve, and where the pricing tier flips — is
+ * per-model knowledge that no formula recovers (RPT-1209: a fixed 850K gate
+ * sat above gpt-5.6-terra's ~794K truncation ceiling, so the gate never
+ * fired and the session paid max-context prices on every call, forever).
+ */
+export interface ModelContextLimits {
+  /** Force a blocking compaction before the next turn once the previous
+   * turn's last API call exceeded this. Must sit comfortably below the
+   * model's usable input ceiling — for OpenAI models the platform sends
+   * `truncation: 'auto'`, which silently caps reported input below the
+   * window (and churns the prompt cache), so provider-reported context can
+   * NEVER reach a threshold set at or above that ceiling. Leave enough
+   * headroom under the ceiling for a heavy turn's own growth (~150K+). */
+  forceCompactAt: number;
+  /** Where the frontend composer starts suggesting `/compact` to the user
+   * (the ContextBar affordance). Set just below the model's pricing-tier
+   * boundary — the point where the provider bills all input at a higher
+   * rate — so the suggestion appears before the price flips. Omitted for
+   * flat-priced models, which fall back to DEFAULT_SUGGEST_COMPACT_AT. */
+  suggestCompactAt?: number;
+}
+
+// The /compact suggestion point for models without their own
+// suggestCompactAt (flat-priced — no price cliff to stay under, so this is
+// purely the "worth condensing by now" size; it matches the frontend's
+// historical threshold). Tiered models set explicit values in TEXT_MODELS,
+// just below their pricing-tier boundary.
+const DEFAULT_SUGGEST_COMPACT_AT = 300_000;
+
+/**
+ * The chat-endpoint text-model allow-list, with each model's context
+ * thresholds. Single source of truth: ALLOWED_MODELS_BY_TYPE.text derives
+ * from these keys, so adding a model here is what allow-lists it — and
+ * forces choosing its thresholds at the same time.
+ *
+ * Sources for the numbers: context windows and pricing tiers from the
+ * platform model catalog (youai-api src/common/AIModels/catalog) and its
+ * adapters — OpenAI doubles rates above 272K input, Anthropic and Grok
+ * above 200K, Google (gemini-3.1-pro) above 200K.
+ */
+export const TEXT_MODELS: Record<string, ModelContextLimits> = {
+  // Anthropic 1M-context, flat-priced.
+  'claude-5-opus': { forceCompactAt: 850_000 },
+  'claude-4-8-opus': { forceCompactAt: 850_000 },
+  'claude-4-7-opus': { forceCompactAt: 850_000 },
+  // Anthropic 1M-context with 2x long-context pricing above 200K input.
+  'claude-4-6-opus': { forceCompactAt: 850_000, suggestCompactAt: 180_000 },
+  'claude-4-6-sonnet': { forceCompactAt: 850_000, suggestCompactAt: 180_000 },
+  'claude-fable-5': { forceCompactAt: 850_000 },
+  'claude-fable-5-1': { forceCompactAt: 850_000 },
+  'claude-5-sonnet': { forceCompactAt: 850_000 },
+  // OpenAI gpt-5.5/5.6: ~1M window, but the usable input ceiling under
+  // `truncation: 'auto'` is ~794K (output + reasoning reserve), and all
+  // rates double above 272K input.
+  'gpt-5.5': { forceCompactAt: 600_000, suggestCompactAt: 250_000 },
+  'gpt-5.6-sol': { forceCompactAt: 600_000, suggestCompactAt: 250_000 },
+  'gpt-5.6-terra': { forceCompactAt: 600_000, suggestCompactAt: 250_000 },
+  'gpt-5.6-luna': { forceCompactAt: 600_000, suggestCompactAt: 250_000 },
+  // Google ~1M-context; only 3.1-pro is tiered (higher rates above 200K).
+  'gemini-3-pro': { forceCompactAt: 850_000 },
+  'gemini-3.1-pro': { forceCompactAt: 850_000, suggestCompactAt: 180_000 },
+  'gemini-3-flash': { forceCompactAt: 850_000 },
+  'gemini-3.5-flash': { forceCompactAt: 850_000 },
+  'gemini-3.7-flash': { forceCompactAt: 850_000 },
+  // 256K window; its 200K pricing tier sits above the gate, so no nudge.
+  'grok-build-0.1': { forceCompactAt: 180_000 },
+  'grok-4.5': { forceCompactAt: 400_000 }, // 500K window
+  'grok-4.6': { forceCompactAt: 400_000 }, // 500K window
+  'glm-5.2': { forceCompactAt: 850_000 },
+  'muse-spark-1.1': { forceCompactAt: 850_000 },
+  'kimi-k2-7-code': { forceCompactAt: 200_000 }, // 262K window
+  'kimi-k3': { forceCompactAt: 850_000 },
+  'deepseek-v4-flash-0731': { forceCompactAt: 850_000 },
+  'qwen3.8-2.4t-a95b-deepinfra': { forceCompactAt: 200_000 }, // 262K window
+  'qwen3.8-27b-deepinfra': { forceCompactAt: 200_000 }, // 262K window
+  'minimax-m3': { forceCompactAt: 420_000 }, // 524K window
+};
+
+/**
+ * Thresholds for models outside TEXT_MODELS — reachable only via a dev
+ * `--model` override, since picks are validated against the allow-list.
+ * Matches the historical fixed gate.
+ */
+const DEFAULT_CONTEXT_LIMITS: ModelContextLimits = { forceCompactAt: 850_000 };
+
+/** Context thresholds for a model id, with the conservative-for-1M-class
+ * default for unknown ids. */
+export function getContextLimits(modelId: string): ModelContextLimits {
+  return TEXT_MODELS[modelId] ?? DEFAULT_CONTEXT_LIMITS;
+}
+
+/** Where the frontend starts suggesting `/compact` for this model: the
+ * model's pricing-tier point when it has one, the flat-rate default
+ * otherwise. Shipped on the stats payload (.remy-stats.json) so the
+ * composer's ContextBar threshold tracks the active parent model. */
+export function getSuggestCompactAt(modelId: string): number {
+  return (
+    getContextLimits(modelId).suggestCompactAt ?? DEFAULT_SUGGEST_COMPACT_AT
+  );
+}
+
+/**
  * Allow-list of pickable model IDs by model type.
  *
- * `text` surfaces are constrained to the chat-endpoint allow-list. `vision`
- * and `image_generation` surfaces are unconstrained — the frontend renders
- * them from its own model catalog. An undefined value means "no allow-list —
- * pick anything of this type from the catalog."
+ * `text` surfaces are constrained to the chat-endpoint allow-list (the
+ * TEXT_MODELS keys). `vision` and `image_generation` surfaces are
+ * unconstrained — the frontend renders them from its own model catalog. An
+ * undefined value means "no allow-list — pick anything of this type from
+ * the catalog."
  */
 export const ALLOWED_MODELS_BY_TYPE: Partial<Record<ModelType, string[]>> = {
-  text: [
-    'claude-5-opus',
-    'claude-4-8-opus',
-    'claude-4-7-opus',
-    'claude-4-6-opus',
-    'claude-4-6-sonnet',
-    'claude-fable-5',
-    'claude-fable-5-1',
-    'claude-5-sonnet',
-    'gpt-5.5',
-    'gpt-5.6-sol',
-    'gpt-5.6-terra',
-    'gpt-5.6-luna',
-    'gemini-3-pro',
-    'gemini-3.1-pro',
-    'gemini-3-flash',
-    'gemini-3.5-flash',
-    'gemini-3.7-flash',
-    'gemini-3.8-flash',
-    'grok-build-0.1',
-    'grok-4.5',
-    'grok-4.6',
-    'glm-5.2',
-    'muse-spark-1.1',
-    'kimi-k2-7-code',
-    'kimi-k3',
-    'deepseek-v4-flash-0731',
-    'qwen3.8-2.4t-a95b-deepinfra',
-    'qwen3.8-27b-deepinfra',
-    'minimax-m3',
-  ],
+  text: Object.keys(TEXT_MODELS),
   // vision: undefined — unconstrained
   // image_generation: undefined — unconstrained
 };
@@ -264,4 +340,25 @@ export function resolveModel(
     orgDefaultModels[surfaceId] ??
     MODEL_SURFACES[surfaceId].default
   );
+}
+
+/**
+ * Resolve the parent-agent model for an upcoming turn, including the
+ * per-build-turn override that rides on an approve command. `baseline` is
+ * what the user would otherwise get (their pick / overrides / default);
+ * `effective` is what the turn actually runs on. They differ only when a
+ * valid buildModel override is present — callers that flag the divergence
+ * (agent.ts's modelOverride) need both, the forced-compaction gate needs
+ * just `effective`.
+ */
+export function resolveParentModel(
+  models?: Record<string, string>,
+  fallback?: string,
+  buildModel?: string,
+): { baseline: string; effective: string } {
+  const override = buildModel
+    ? filterModelPicks({ parent: buildModel }).parent
+    : undefined;
+  const baseline = resolveModel('parent', models, fallback);
+  return { baseline, effective: override ?? baseline };
 }

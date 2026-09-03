@@ -142,6 +142,20 @@ function classify(line: string, matches: LinkMatch[]): void {
 }
 
 /**
+ * Chip labels read as standalone UI, but an inline link's label is written as
+ * part of a sentence and arrives lowercase. Uppercase the first letter for the
+ * chip only — the prose keeps the original label so the sentence still reads.
+ * First-letter-only, never title-case (which mangled proper nouns mid-label),
+ * and a label opening with a code span is left alone.
+ */
+function chipCase(label: string): string {
+  if (label.startsWith('`')) {
+    return label;
+  }
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+/**
  * Split a block of assistant text into the copy to render and the chips it
  * offers.
  *
@@ -184,7 +198,7 @@ export function parseSuggestions(raw: string): {
       const key = `${m.label}::${m.message}`;
       if (!seen.has(key)) {
         seen.add(key);
-        suggestions.push({ label: m.label, message: m.message });
+        suggestions.push({ label: chipCase(m.label), message: m.message });
       }
     }
 
