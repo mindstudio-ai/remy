@@ -194,6 +194,8 @@ const rows = await db.sql<{ questionId: string; n: number }>(
 
 Read-only: the statement must start with `SELECT` or `WITH`, and writes throw, so use Table methods for those. Positional `?` bind params. Lazy and batchable via `db.batch()`. Multi-database apps pass `{ database: 'name' }` as the third argument. Treat it as a last resort: prefer the typed API (including `aggregate()`) whenever it can express the query, since raw rows come back close to how SQLite stores them and may not exactly match the typed API's representations.
 
+Every read, typed or raw, returns at most 100,000 rows or 64MB of JSON; past either limit the query fails with `result_too_large`. Paginate, select fewer columns, or use an aggregate instead.
+
 ### Updating Records
 
 ```typescript

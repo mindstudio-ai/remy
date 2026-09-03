@@ -68,7 +68,12 @@ import {
 } from '../models/surfaces.js';
 import type { StdinCommand } from '../types.js';
 import { ToolRegistry, USER_CANCELLED_RESULT } from '../toolRegistry.js';
-import { persistAttachments, buildUploadHeader } from './attachments.js';
+import {
+  persistAttachments,
+  persistAttachmentList,
+  buildUploadHeader,
+} from './attachments.js';
+import type { PersistResult } from './attachments.js';
 import { applyPlanFileSideEffect } from './planFile.js';
 import {
   createSessionStats,
@@ -691,10 +696,9 @@ export class HeadlessSession {
   // External tool bridge
   //////////////////////////////////////////////////////////////////////////////
 
-  private resolveExternalTool = (
+  private awaitExternalToolResult = (
     id: string,
     name: string,
-    _input: Record<string, any>,
   ): Promise<string> => {
     const early = this.earlyResults.get(id);
     if (early !== undefined) {
@@ -724,6 +728,20 @@ export class HeadlessSession {
         timeout,
       });
     });
+  };
+
+  // promptUser answers carry private-upload descriptors for `file` questions;
+  // persist them to disk and hand the model local paths (see
+  // persistPromptUserUploads). Every other external tool passes through.
+  private resolveExternalTool = (
+    id: string,
+    name: string,
+    input: Record<string, any>,
+  ): Promise<string> => {
+    const result = this.awaitExternalToolResult(id, name);
+    return name === 'promptUser'
+      ? result.then((raw) => this.persistPromptUserUploads(input, raw))
+      : result;
   };
 
   //////////////////////////////////////////////////////////////////////////////
@@ -946,6 +964,112 @@ export class HeadlessSession {
       log.warn('Attachment persistence failed', { error: err.message });
       return undefined;
     }
+  }
+
+  /**
+   * promptUser `file` answers arrive as private-upload descriptors
+   * ({url, key, filename, extractedTextUrl}) — the same shape as a chat
+   * attachment. Download them to src/.user-uploads/ and rewrite each answer to
+   * the local path(s) BEFORE the result settles, so the model, the tool block,
+   * the saved session and the frontend transcript all see paths and never a
+   * signed url that dies in an hour. Non-file answers, dismissals and anything
+   * unparseable pass through untouched.
+   *
+   * Runs while the turn is blocked on this tool, so it can't overlap the
+   * turn's own persistEntryAttachments; the ASAP/queue persist paths only run
+   * after the tool batch settles. One prompt is open at a time, so two results
+   * can't race either.
+   */
+  private async persistPromptUserUploads(
+    input: Record<string, any>,
+    raw: string,
+  ): Promise<string> {
+    let answers: any;
+    try {
+      answers = JSON.parse(raw);
+    } catch {
+      return raw;
+    }
+    if (
+      !answers ||
+      typeof answers !== 'object' ||
+      Array.isArray(answers) ||
+      answers._dismissed
+    ) {
+      return raw;
+    }
+
+    const isDescriptor = (
+      d: unknown,
+    ): d is {
+      url: string;
+      key?: string;
+      filename?: string;
+      extractedTextUrl?: string | null;
+    } => !!d && typeof d === 'object' && typeof (d as any).url === 'string';
+
+    const questions: any[] = Array.isArray(input?.questions)
+      ? input.questions
+      : [];
+    // One batch across every file question, so the persister's per-call
+    // filename de-dup spans the whole form.
+    const batch: Attachment[] = [];
+    const slots: Array<{ id: string; isArray: boolean; count: number }> = [];
+    for (const q of questions) {
+      if (q?.type !== 'file' || typeof q.id !== 'string') {
+        continue;
+      }
+      const val = answers[q.id];
+      const items = (Array.isArray(val) ? val : [val]).filter(isDescriptor);
+      if (items.length === 0) {
+        continue;
+      }
+      slots.push({
+        id: q.id,
+        isArray: Array.isArray(val),
+        count: items.length,
+      });
+      for (const d of items) {
+        batch.push({
+          url: d.url,
+          key: d.key,
+          filename: d.filename,
+          extractedTextUrl: d.extractedTextUrl ?? undefined,
+        });
+      }
+    }
+    if (batch.length === 0) {
+      return raw;
+    }
+
+    let results: PersistResult[];
+    try {
+      results = await persistAttachmentList(batch);
+    } catch (err: any) {
+      log.warn('promptUser upload persistence failed', {
+        error: err.message,
+      });
+      results = batch.map(() => null);
+    }
+
+    let cursor = 0;
+    for (const slot of slots) {
+      const paths = results.slice(cursor, cursor + slot.count).map((r, i) => {
+        if (r) {
+          return r.localPath;
+        }
+        // The signed url still works for ~1h — better than dropping the answer.
+        const att = batch[cursor + i];
+        log.warn('promptUser upload not persisted; falling back to url', {
+          filename: att.filename,
+        });
+        return att.url;
+      });
+      cursor += slot.count;
+      answers[slot.id] = slot.isArray ? paths : paths[0];
+    }
+    log.info('promptUser uploads persisted', { count: batch.length });
+    return JSON.stringify(answers);
   }
 
   /**

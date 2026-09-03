@@ -71,13 +71,17 @@ function isImageAttachment(att: Attachment): boolean {
   return IMAGE_EXTENSIONS.has(extname(name).toLowerCase());
 }
 
-export async function persistAttachments(
+/**
+ * Persist non-voice attachments to disk. `result[i]` aligns with the i-th
+ * non-voice input; `null` means that download failed.
+ */
+export async function persistAttachmentList(
   attachments: Attachment[],
-): Promise<{ documents: PersistResult[]; images: PersistResult[] }> {
+): Promise<PersistResult[]> {
   // Skip voice messages (transcripts stay inline)
   const nonVoice = attachments.filter((a) => !a.isVoice);
   if (nonVoice.length === 0) {
-    return { documents: [], images: [] };
+    return [];
   }
 
   mkdirSync(UPLOADS_DIR, { recursive: true });
@@ -140,8 +144,16 @@ export async function persistAttachments(
     }),
   );
 
-  const settled = results.map((r, i) => ({
-    result: r.status === 'fulfilled' ? r.value : null,
+  return results.map((r) => (r.status === 'fulfilled' ? r.value : null));
+}
+
+export async function persistAttachments(
+  attachments: Attachment[],
+): Promise<{ documents: PersistResult[]; images: PersistResult[] }> {
+  const nonVoice = attachments.filter((a) => !a.isVoice);
+  const results = await persistAttachmentList(nonVoice);
+  const settled = results.map((result, i) => ({
+    result,
     isImage: isImageAttachment(nonVoice[i]),
   }));
   return {
