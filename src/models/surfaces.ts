@@ -206,6 +206,7 @@ export const TEXT_MODELS: Record<string, ModelContextLimits> = {
   'gpt-5.6-sol': { forceCompactAt: 600_000, suggestCompactAt: 250_000 },
   'gpt-5.6-terra': { forceCompactAt: 600_000, suggestCompactAt: 250_000 },
   'gpt-5.6-luna': { forceCompactAt: 600_000, suggestCompactAt: 250_000 },
+  'gpt-6-astra': { forceCompactAt: 600_000, suggestCompactAt: 250_000 },
   // Google ~1M-context; only 3.1-pro is tiered (higher rates above 200K).
   'gemini-3-pro': { forceCompactAt: 850_000 },
   'gemini-3.1-pro': { forceCompactAt: 850_000, suggestCompactAt: 180_000 },
