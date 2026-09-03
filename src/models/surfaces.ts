@@ -223,6 +223,7 @@ export const TEXT_MODELS: Record<string, ModelContextLimits> = {
   'kimi-k2-7-code': { forceCompactAt: 200_000 }, // 262K window
   'kimi-k3': { forceCompactAt: 850_000 },
   'deepseek-v4-flash-0731': { forceCompactAt: 850_000 },
+  'deepseek-v4-pro': { forceCompactAt: 850_000 },
   'qwen3.8-2.4t-a95b-deepinfra': { forceCompactAt: 200_000 }, // 262K window
   'qwen3.8-27b-deepinfra': { forceCompactAt: 200_000 }, // 262K window
   'minimax-m3': { forceCompactAt: 420_000 }, // 524K window
