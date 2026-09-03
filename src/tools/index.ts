@@ -151,6 +151,7 @@ import { codeSanityCheckTool } from '../subagents/codeSanityCheck/index.js';
 import { copyEditorTool } from '../subagents/copyEditor/index.js';
 import { specSyncTool } from '../subagents/specSync/index.js';
 import { researchTool } from '../subagents/research/index.js';
+import { reviewExistingProjectTool } from '../subagents/reviewExistingProject/index.js';
 import { scrapeWebUrlTool } from './common/scrapeWebUrl.js';
 import { buildOverviewTool } from './spec/writeBuildOverview.js';
 
@@ -203,6 +204,7 @@ const ALL_TOOLS: Tool[] = [
   loadSkillTool,
   testJewelTool,
   researchTool,
+  reviewExistingProjectTool,
 ];
 
 /**
@@ -220,6 +222,7 @@ export const SUBAGENT_TOOL_NAMES = new Set([
   'runAutomatedBrowserTest',
   'askMindStudioSdk',
   'research',
+  'reviewExistingProject',
 ]);
 
 /** Tool definitions array — sent to the LLM in each request. The set is

@@ -50,6 +50,11 @@ async function listRecursive(dir: string): Promise<string[]> {
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
+      // Dot-directories (.user-uploads, .wireframes) hold user material and
+      // artifacts, not spec. An unpacked upload can be thousands of files.
+      if (entry.name.startsWith('.')) {
+        continue;
+      }
       results.push(`${fullPath}/`);
       results.push(...(await listRecursive(fullPath)));
     } else {

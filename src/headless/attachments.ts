@@ -7,8 +7,11 @@
  * also receives them as visual attachments.
  */
 
-import { mkdirSync, existsSync } from 'node:fs';
-import { writeFile } from 'node:fs/promises';
+import { mkdirSync, existsSync, createWriteStream } from 'node:fs';
+import { writeFile, stat } from 'node:fs/promises';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
+import type { ReadableStream as WebReadableStream } from 'node:stream/web';
 import { basename, join, extname } from 'node:path';
 import { createLogger } from '../logger.js';
 import type { Attachment } from '../api.js';
@@ -16,6 +19,12 @@ import type { Attachment } from '../api.js';
 const log = createLogger('headless:attachments');
 
 const UPLOADS_DIR = 'src/.user-uploads';
+
+// Images are small and the model is waiting on them; documents and archives
+// can be a zipped codebase at the 100 MB frontend cap, so give those the
+// time a slow link needs.
+const IMAGE_DOWNLOAD_TIMEOUT_MS = 30_000;
+const DOCUMENT_DOWNLOAD_TIMEOUT_MS = 300_000;
 
 export type PersistResult = {
   filename: string;
@@ -105,18 +114,26 @@ export async function persistAttachmentList(
       const name = names[i];
       const localPath = join(UPLOADS_DIR, name);
 
+      const timeoutMs = isImageAttachment(att)
+        ? IMAGE_DOWNLOAD_TIMEOUT_MS
+        : DOCUMENT_DOWNLOAD_TIMEOUT_MS;
       const res = await fetch(att.url, {
-        signal: AbortSignal.timeout(30_000),
+        signal: AbortSignal.timeout(timeoutMs),
       });
-      if (!res.ok) {
+      if (!res.ok || !res.body) {
         throw new Error(`HTTP ${res.status} downloading ${att.url}`);
       }
-      const buffer = Buffer.from(await res.arrayBuffer());
-      await writeFile(localPath, buffer);
+      // Stream to disk rather than buffering: an upload can be a zipped
+      // codebase tens of MB in size.
+      await pipeline(
+        Readable.fromWeb(res.body as WebReadableStream),
+        createWriteStream(localPath),
+      );
+      const { size } = await stat(localPath);
       log.info('Attachment saved', {
         filename: name,
         path: localPath,
-        bytes: buffer.length,
+        bytes: size,
       });
 
       let extractedTextPath: string | undefined;

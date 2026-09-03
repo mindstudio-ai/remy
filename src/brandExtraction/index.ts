@@ -196,7 +196,12 @@ function walkMdFiles(dir: string): string[] {
     for (const entry of entries) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        results.push(...walkMdFiles(full));
+        // Dot-directories (.user-uploads, .wireframes) are user material and
+        // artifacts, not spec — keep an unpacked upload out of the brand
+        // corpus and its gate hash.
+        if (!entry.name.startsWith('.')) {
+          results.push(...walkMdFiles(full));
+        }
       } else if (entry.name.endsWith('.md')) {
         results.push(full);
       }

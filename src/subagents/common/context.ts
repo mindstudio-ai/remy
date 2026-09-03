@@ -14,7 +14,10 @@ function walkMdFiles(dir: string, skip?: Set<string>): string[] {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        if (!skip?.has(entry.name)) {
+        // Dot-directories under src/ (.user-uploads, .wireframes) hold user
+        // material and artifacts, not spec — an unpacked upload's README.md
+        // must not show up as a spec file.
+        if (!skip?.has(entry.name) && !entry.name.startsWith('.')) {
           files.push(...walkMdFiles(full, skip));
         }
       } else if (entry.name.endsWith('.md')) {
