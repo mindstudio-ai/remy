@@ -75,6 +75,13 @@ export const MODEL_SURFACES = {
     modelType: 'text',
     userPickable: true,
   },
+  research: {
+    default: 'claude-5-sonnet',
+    label: 'Research Agent',
+    description: 'Researches using the web and reports back with citations.',
+    modelType: 'text',
+    userPickable: true,
+  },
   copyEditor: {
     default: 'claude-5-sonnet',
     label: 'Copy Agent',

@@ -124,7 +124,6 @@ import { promptUserTool } from './common/promptUser.js';
 import { confirmDestructiveActionTool } from './common/confirmDestructiveAction.js';
 import { askMindStudioSdkTool } from '../subagents/sdkConsultant/index.js';
 
-import { searchGoogleTool } from './common/searchGoogle.js';
 import { setProjectMetadataTool } from './common/setProjectMetadata.js';
 import { compactConversationTool } from './common/compactConversation.js';
 import { loadSkillTool } from './common/loadSkill.js';
@@ -151,6 +150,7 @@ import { productVisionTool } from '../subagents/productVision/index.js';
 import { codeSanityCheckTool } from '../subagents/codeSanityCheck/index.js';
 import { copyEditorTool } from '../subagents/copyEditor/index.js';
 import { specSyncTool } from '../subagents/specSync/index.js';
+import { researchTool } from '../subagents/research/index.js';
 import { scrapeWebUrlTool } from './common/scrapeWebUrl.js';
 import { buildOverviewTool } from './spec/writeBuildOverview.js';
 
@@ -164,7 +164,6 @@ const ALL_TOOLS: Tool[] = [
   confirmDestructiveActionTool,
   askMindStudioSdkTool,
   scrapeWebUrlTool,
-  searchGoogleTool,
   setProjectMetadataTool,
   designExpertTool,
   productVisionTool,
@@ -203,6 +202,7 @@ const ALL_TOOLS: Tool[] = [
   // new tool goes at the end to leave every existing session's prefix intact.
   loadSkillTool,
   testJewelTool,
+  researchTool,
 ];
 
 /**
@@ -219,6 +219,7 @@ export const SUBAGENT_TOOL_NAMES = new Set([
   'specSync',
   'runAutomatedBrowserTest',
   'askMindStudioSdk',
+  'research',
 ]);
 
 /** Tool definitions array — sent to the LLM in each request. The set is

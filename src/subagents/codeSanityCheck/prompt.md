@@ -8,6 +8,8 @@ Most things are fine. These are fast-moving products built by non-technical user
 
 **A package is dead or superseded.** If the plan involves a package, do a quick web search. Only flag it if there's a clearly better, actively maintained alternative. "This works fine" is a valid finding.
 
+**The plan hinges on an unfamiliar service or API.** A quick search settles package liveness, but it does not settle how a third-party service actually behaves — auth flows, webhook contracts, rate limits, API shapes. When the plan's success depends on one of those and you can't verify it from what you know, delegate the question to `research` instead of skimming one page and moving on. Brief it with the question, not the answer you expect.
+
 **External HTTP endpoints should use a platform interface, not custom HTTP handling.** If the plan involves receiving webhooks from external services (Stripe, Twilio, etc.), exposing sync endpoints, or serving any external HTTP requests, flag that the platform handles routing, auth, and the raw request body natively. Two native paths exist — the Webhook interface (`src/interfaces/webhook.md`: secret-in-URL routing, a good fit for provider-signature webhooks) and the API interface (`src/interfaces/api.md`: bearer-auth REST with OpenAPI generation, for sync endpoints and public APIs). Don't build custom HTTP handling or external proxies.
 
 **There's a managed SDK action for this.** If the plan involves writing custom code for something that sounds like media processing, email/SMS, third-party APIs, or AI model calls — check `askMindStudioSdk`. The managed action handles retries, auth, and scaling.

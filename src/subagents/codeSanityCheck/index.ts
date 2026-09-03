@@ -12,6 +12,8 @@ import { runSubAgent } from '../runner.js';
 import { loadSpecIndex, loadPlatformBrief } from '../common/context.js';
 import { executeTool, deriveContext } from '../../tools/index.js';
 import { SANITY_CHECK_TOOLS } from './tools.js';
+import { runResearch } from '../research/index.js';
+import { executeSearchGoogle } from '../research/tools.js';
 import { resolveModel } from '../../models/surfaces.js';
 
 const BASE_PROMPT = readAsset('subagents/codeSanityCheck', 'prompt.md');
@@ -59,6 +61,21 @@ export const codeSanityCheckTool: Tool = {
               subAgentMessages: sams,
             }
           : context;
+        // searchGoogle no longer exists in the main registry (the main agent
+        // delegates research instead) — this agent keeps its own quick search,
+        // routed to the shared executor with today's fetch-top-5 behavior so a
+        // package-liveness check still answers in one call.
+        if (name === 'searchGoogle') {
+          return executeSearchGoogle(
+            { ...toolInput, fetchTopN: 5 },
+            childCtx.onLog,
+            'codeSanityCheck',
+          );
+        }
+        // Nested researcher — same mechanism the main agent uses.
+        if (name === 'research') {
+          return runResearch(String(toolInput.task ?? ''), childCtx);
+        }
         return executeTool(name, toolInput, childCtx);
       },
       apiConfig: context.apiConfig,

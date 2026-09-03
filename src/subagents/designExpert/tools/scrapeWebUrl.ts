@@ -5,7 +5,7 @@ import { SCRAPE_MAX_BUFFER } from '../../common/runCli.js';
 export const definition: ToolDefinition = {
   name: 'scrapeWebUrl',
   description:
-    'Fetch the content of a web page as markdown. Use when reading sites from search results or specific things the user wants to incorporate.',
+    'Fetch the content of a web page as markdown. Use for reading a specific URL — a site the user referenced, a brand to match, a page the researcher cited that you want in full.',
   inputSchema: {
     type: 'object',
     properties: {

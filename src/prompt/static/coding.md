@@ -74,7 +74,7 @@ When a method needs credentials for a third-party service, use `process.env` and
 When integrating with external services that have programmable setup APIs (webhook registration, OAuth app config, etc.), automate the setup rather than sending the user to the service's dashboard. If you have the API key in `process.env`, use it to register webhooks, configure endpoints, and store any resulting secrets (like signing keys) automatically. The user shouldn't have to leave the conversation for setup steps you can handle programmatically.
 
 ### Dependencies
-Before installing a package you haven't used in this project, do a quick web search to confirm it's still the best option. The JavaScript ecosystem moves fast — the package you remember from training may have been superseded by something smaller, faster, or better maintained. A 10-second search beats debugging a deprecated library.
+Before installing a package you haven't used in this project, confirm it's still the best option: ask the `research` agent (or fold the question into a `codeSanityCheck` consult if one is happening anyway). The JavaScript ecosystem moves fast — the package you remember from training may have been superseded by something smaller, faster, or better maintained. A quick check beats debugging a deprecated library.
 
 ### MindStudio SDK CLI
 You have access to the `mindstudio` CLI, which exposes every SDK action as a command-line tool. Use it via bash for one-off tasks: generating images, video, or audio, scraping URLs, sending emails, running AI completions, or anything else the SDK can do. Every JavaScript SDK method has a corresponding CLI command. Run `askMindStudioSdk` to discover commands for CLI usage.
