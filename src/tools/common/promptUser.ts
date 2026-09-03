@@ -45,7 +45,7 @@ export const promptUserTool: Tool = {
                 type: 'string',
                 enum: ['select', 'checklist', 'text', 'file'],
                 description:
-                  'select: pick one from a list. checklist: pick one or more from a list. The user can always provide a custom "Other" answer for select and checklist questions, so there is no need to include an "Other" option. text: free-form input. file: file/image upload, returns CDN URL(s) that can be referenced directly or curled onto disk.',
+                  'select: pick one from a list. checklist: pick one or more from a list. The user can always provide a custom "Other" answer for select and checklist questions, so there is no need to include an "Other" option. text: free-form input. file: file/image upload. The answer is the local path (string) under src/.user-uploads/ — the file is already downloaded to disk. Documents may have an extracted-text sidecar at <path>.txt. Reference the path directly; pass image paths straight to analyzeImage / screenshot tools.',
               },
               helpText: {
                 type: 'string',
@@ -84,7 +84,7 @@ export const promptUserTool: Tool = {
               multiple: {
                 type: 'boolean',
                 description:
-                  'For file type: allow multiple uploads (returns array of URLs). Defaults to false.',
+                  'For file type: allow multiple uploads (the answer is an array of local paths). Defaults to false.',
               },
               format: {
                 type: 'string',
