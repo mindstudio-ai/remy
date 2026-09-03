@@ -174,15 +174,21 @@ const result = await mindstudio.executeStepBatch([
 
 ## Realtime Events
 
-Server→client push from backend code — no polling, no WebSocket code:
+Realtime over named channels — no polling, no WebSocket code:
 
 ```typescript
 import { auth, events } from '@mindstudio-ai/agent';
 
-// The subscribe door is one of your methods — auth checks first, then mint:
+// The subscribe door is one of your methods — auth checks first, then mint.
+// `publish` names channels the CLIENT may speak on (ephemeral signals like
+// cursors and typing, sent directly — no method invoke per signal):
 export async function watchInbox() {
   auth.requireRole('member');
   return await events.grant(`user:${auth.userId}`); // { token, expiresAt, ttlSeconds }
+}
+export async function joinCanvas(input: { roomId: string }) {
+  await assertRoomMember(input.roomId);
+  return await events.grant(`canvas:${input.roomId}`, { publish: [`canvas:${input.roomId}`] });
 }
 
 // Anything can publish — a method, a cron, a webhook handler.
@@ -190,9 +196,9 @@ export async function watchInbox() {
 await events.publish(`user:${assignee}`, { type: 'ticket', id: ticket.id });
 ```
 
-The frontend consumes with `events.connect({ getToken, onEvent, onConnect })` from `@mindstudio-ai/interface`; the SDK handles reconnection and grant renewal.
+The frontend consumes with `events.connect({ getToken, onEvent, onConnect })` from `@mindstudio-ai/interface`; the SDK handles reconnection and grant renewal. The returned subscription exposes `sub.publish(channels, data)` for grant-authorized client signals — call it per input event; the SDK coalesces to ~40ms batches and drops (never retries) on failure. Client events cap at 8k serialized, 30 batches/sec per grant.
 
-**A channel is an audience, and a method decides who is in it.** Default to per-user channels with publish-time fan-out (removing someone stops their events immediately); reserve shared channels for genuinely broadcast content. For anonymous visitors `auth.userId` is null — key their channels on `session.visitorId` instead. Events are at-most-once nudges — nothing is buffered or replayed, so clients refetch state in `onConnect` (subscribe for speed, reconcile for truth). Payloads cap at 32k serialized characters: publish ids, let the client fetch.
+**A channel is an audience, and a method decides who is in it.** Default to per-user channels with publish-time fan-out (removing someone stops their events immediately); reserve shared channels for genuinely broadcast content. For anonymous visitors `auth.userId` is null — key their channels on `session.visitorId` instead. Events are at-most-once nudges — nothing is buffered or replayed, so clients refetch state in `onConnect` (subscribe for speed, reconcile for truth). Every frame carries the platform-stamped publish `id` (dedupe key: `id` + `channel`), and `publish` returns the same id. Payloads cap at 256k serialized characters, checked in the SDK before the network call; when a publish carries data, publish before committing the write it announces — high-rate paths publish ids and let the client fetch.
 
 Debug with `remy-admin events tail` / `publish` / `channels list`. Full treatment — channel design, grant lifecycle, the chat worked example — in the `realtimeEvents` skill.
 

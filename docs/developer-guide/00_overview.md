@@ -75,7 +75,7 @@ Push to the default branch → the platform builds, deploys, and goes live. Push
 Two things the platform cannot do. Say so early when a requirement heads this way:
 
 - **Native mobile apps** (iOS/Android). Mobile-responsive web apps are fine.
-- **Fast-twitch multiplayer and live co-editing** (shared cursors, 60fps sync) — everything a client sends is a method invoke, so sub-100ms bidirectional interaction isn't a fit.
+- **Real-time action games** (server-authoritative simulation, guaranteed-order sync) — event delivery is at-most-once and ordering is the app's job, so there is no server tick to build one on.
 
 ---
 

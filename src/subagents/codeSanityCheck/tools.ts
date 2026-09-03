@@ -1,6 +1,10 @@
 /**
  * Tool definitions for the code sanity check sub-agent.
- * Common read tools + web search + SDK consultant.
+ * Common read tools + web search + SDK consultant + the researcher.
+ *
+ * `searchGoogle` and `research` are routed explicitly in index.ts (search to
+ * the shared research executor, research to the nested sub-agent); the rest
+ * pass through to the main registry by name.
  */
 
 import type { ToolDefinition } from '../../api.js';
@@ -54,6 +58,22 @@ export const SANITY_CHECK_TOOLS: ToolDefinition[] = [
         command: { type: 'string', description: 'The command to run.' },
       },
       required: ['command'],
+    },
+  },
+  // Appended last: tool order is part of the subagent's prompt-cache prefix.
+  {
+    name: 'research',
+    description:
+      'Deep researcher. When the plan hinges on an unfamiliar third-party service, API, or claim you cannot settle with a quick search, hand it the question — it researches properly (multiple sources, official docs, reading real source code) and returns a distilled, citation-backed report. Quick package-liveness checks stay on searchGoogle; use this when being wrong would be expensive. Brief it neutrally: the question, not the answer you expect.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        task: {
+          type: 'string',
+          description: 'What you need to find out, in natural language.',
+        },
+      },
+      required: ['task'],
     },
   },
 ];
