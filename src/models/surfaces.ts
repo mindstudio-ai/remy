@@ -218,6 +218,8 @@ export const TEXT_MODELS: Record<string, ModelContextLimits> = {
   'grok-4.6': { forceCompactAt: 400_000 }, // 500K window
   'glm-5.2': { forceCompactAt: 850_000 },
   'muse-spark-1.1': { forceCompactAt: 850_000 },
+  'muse-spark-1.2': { forceCompactAt: 850_000 },
+  'muse-spark-1.3': { forceCompactAt: 850_000 },
   'kimi-k2-7-code': { forceCompactAt: 200_000 }, // 262K window
   'kimi-k3': { forceCompactAt: 850_000 },
   'deepseek-v4-flash-0731': { forceCompactAt: 850_000 },
