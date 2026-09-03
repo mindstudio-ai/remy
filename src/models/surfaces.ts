@@ -217,6 +217,8 @@ export const TEXT_MODELS: Record<string, ModelContextLimits> = {
   'grok-4.5': { forceCompactAt: 400_000 }, // 500K window
   'grok-4.6': { forceCompactAt: 400_000 }, // 500K window
   'glm-5.2': { forceCompactAt: 850_000 },
+  'glm-5.3': { forceCompactAt: 850_000 },
+  'glm-5.3-flash': { forceCompactAt: 850_000 },
   'muse-spark-1.1': { forceCompactAt: 850_000 },
   'muse-spark-1.2': { forceCompactAt: 850_000 },
   'muse-spark-1.3': { forceCompactAt: 850_000 },
