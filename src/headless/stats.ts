@@ -75,11 +75,16 @@ export function loadPassiveResults(): PassiveResult[] {
   return [];
 }
 
-/** Persist stats + queue + passive pen to disk. Best-effort (swallows errors). */
+/** Persist stats + queue + passive pen to disk. Best-effort (swallows errors).
+ *
+ * `suggestCompactAt` is the active parent model's /compact suggestion
+ * threshold (models/surfaces getSuggestCompactAt) — the frontend composer
+ * shows its ContextBar once lastContextSize exceeds it. */
 export function writeStats(
   stats: SessionStats,
   queue: QueuedMessage[],
   passiveResults: PassiveResult[],
+  suggestCompactAt: number,
 ): void {
   try {
     // Atomic: the sandbox watcher broadcasts this file to the frontend on
@@ -89,6 +94,7 @@ export function writeStats(
       STATS_FILE,
       JSON.stringify({
         ...stats,
+        suggestCompactAt,
         queue,
         passiveResults,
       }),

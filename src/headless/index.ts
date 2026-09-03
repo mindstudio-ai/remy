@@ -60,8 +60,11 @@ import {
 } from '../session.js';
 import {
   ALLOWED_MODELS_BY_TYPE,
+  getContextLimits,
   getEffectiveModelSurfaces,
+  getSuggestCompactAt,
   resolveModel,
+  resolveParentModel,
 } from '../models/surfaces.js';
 import type { StdinCommand } from '../types.js';
 import { ToolRegistry, USER_CANCELLED_RESULT } from '../toolRegistry.js';
@@ -123,14 +126,6 @@ interface BlockUpdate {
   result: string;
   subAgentMessages?: Message[];
 }
-
-/**
- * If the most recent API call's input size exceeds this threshold, the next
- * turn forces a blocking compaction before proceeding. The 1M-token API cap
- * leaves ~150k of headroom for tool round-trips inside the upcoming turn —
- * raising this gets risky, lowering it triggers compaction more often.
- */
-const FORCED_COMPACTION_THRESHOLD_TOKENS = 850_000;
 
 /**
  * Encapsulates all state and behavior for a headless session. State is
@@ -537,7 +532,17 @@ export class HeadlessSession {
   /** Persist sessionStats + queue snapshot + passive pen to .remy-stats.json. */
   private persistStats(): void {
     this.sessionStats.updatedAt = Date.now();
-    writeStats(this.sessionStats, this.queue.snapshot(), this.passivePen);
+    // Resolved fresh on every write so the frontend's /compact suggestion
+    // threshold tracks the active parent-model pick.
+    const suggestCompactAt = getSuggestCompactAt(
+      resolveParentModel(this.state.models, this.opts.model).effective,
+    );
+    writeStats(
+      this.sessionStats,
+      this.queue.snapshot(),
+      this.passivePen,
+      suggestCompactAt,
+    );
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -571,8 +576,9 @@ export class HeadlessSession {
   }
 
   /**
-   * Forced compaction gate. If lastContextSize exceeds the threshold, compact
-   * before letting the upcoming turn run. Coalesces with any in-flight
+   * Forced compaction gate. If lastContextSize exceeds the upcoming turn's
+   * model threshold (per-model — see ModelContextLimits in models/surfaces),
+   * compact before letting the turn run. Coalesces with any in-flight
    * compaction (e.g., one already started by /compact or a tool call). No
    * timeout — compaction takes as long as it takes.
    *
@@ -585,15 +591,16 @@ export class HeadlessSession {
    */
   private async runForcedCompactionIfNeeded(
     requestId: string | undefined,
+    parentModel: string,
   ): Promise<void> {
-    if (
-      this.sessionStats.lastContextSize <= FORCED_COMPACTION_THRESHOLD_TOKENS
-    ) {
+    const threshold = getContextLimits(parentModel).forceCompactAt;
+    if (this.sessionStats.lastContextSize <= threshold) {
       return;
     }
     log.info('Forced compaction gate triggered', {
       contextSize: this.sessionStats.lastContextSize,
-      threshold: FORCED_COMPACTION_THRESHOLD_TOKENS,
+      threshold,
+      model: parentModel,
       requestId,
     });
     try {
@@ -1236,10 +1243,19 @@ export class HeadlessSession {
       return steered;
     };
 
-    // Forced compaction gate: if the conversation is approaching the API cap,
-    // compact before processing this turn. Coalesces with any in-flight
-    // compaction. No timeout — compaction takes as long as it takes.
-    await this.runForcedCompactionIfNeeded(requestId);
+    // Resolve the model the upcoming turn will run on (the same resolution
+    // runTurn performs) — both compaction thresholds below are per-model.
+    const parentModel = resolveParentModel(
+      this.state.models,
+      this.opts.model,
+      params.buildModel,
+    ).effective;
+
+    // Forced compaction gate: if the conversation is approaching this model's
+    // usable input ceiling, compact before processing this turn. Coalesces
+    // with any in-flight compaction. No timeout — compaction takes as long as
+    // it takes.
+    await this.runForcedCompactionIfNeeded(requestId, parentModel);
 
     try {
       await runTurn({
