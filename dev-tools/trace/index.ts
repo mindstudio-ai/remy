@@ -103,15 +103,31 @@ function readNdjson(rel: string): Record<string, any>[] | undefined {
     return undefined;
   }
   const rows: Record<string, any>[] = [];
+  let sawNonObject = false;
   for (const line of text.split('\n')) {
     if (!line.trim()) {
       continue;
     }
+    let parsed: unknown;
     try {
-      rows.push(JSON.parse(line));
+      parsed = JSON.parse(line);
     } catch {
       rows.push({ text: line });
+      continue;
     }
+    // Valid JSON that isn't a record (a bare `null`, a number) — the RPT-1213
+    // bundle had five log files whose entire content was the text `null`, and
+    // dereferencing that row crashed the transformer. Keep the line as text
+    // and flag the file.
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      rows.push({ text: line });
+      sawNonObject = true;
+      continue;
+    }
+    rows.push(parsed as Record<string, any>);
+  }
+  if (sawNonObject) {
+    unparseableFiles.push(rel);
   }
   return rows;
 }
