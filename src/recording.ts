@@ -23,6 +23,10 @@ export interface RecordingRef {
   containsSnapshot: boolean;
   startTs: number;
   endTs: number;
+  /** Recorded viewport in CSS px; 0 on chunks that predate the field. The
+   *  editor reserves the player's box from it before fetching anything. */
+  width: number;
+  height: number;
 }
 
 /**
@@ -69,6 +73,8 @@ export function liftRecording(result: string): {
     containsSnapshot: ref.containsSnapshot === true,
     startTs: typeof ref.startTs === 'number' ? ref.startTs : 0,
     endTs: typeof ref.endTs === 'number' ? ref.endTs : 0,
+    width: typeof ref.width === 'number' ? ref.width : 0,
+    height: typeof ref.height === 'number' ? ref.height : 0,
   };
   const rest = { ...obj };
   delete rest.recording;
