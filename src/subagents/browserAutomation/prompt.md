@@ -80,7 +80,7 @@ Each browserCommand returns:
 - `snapshot`: the final page state after all steps complete (always present, even without an explicit snapshot step)
 - `logs`: array of browser-side events that fired during the batch (console output, network failures, JS errors, user interactions). Check this for errors before reporting pass.
 - `duration`: total execution time in ms
-- `recording` (optional): metadata for an rrweb session recording, present whenever the batch contained an interactive step (click, type, select). Each call returns one chunk of a continuous per-session recording (the viewer stitches chunks by `sessionId`/`seq` into a single replay) — it's not a standalone clip. Note in your failure reports that a recording is available so the main agent can surface it.
+- `recorded` (optional): `true` when the batch contained an interactive step (click, type, select) and a replay of it was saved. The editor stitches every recorded batch of the session into one continuous replay the user can watch. Note in your failure reports that a recording is available so the main agent can surface it.
 
 On error, the failing step has an `error` field and execution stops. Remaining steps are skipped.
 

@@ -36,6 +36,7 @@
  */
 
 import type { Message, ContentBlock } from './api.js';
+import { liftRecording } from './recording.js';
 
 // --- Layer 1: ingestion ---
 
@@ -135,6 +136,16 @@ export function capMessageForHistory(
         continue;
       }
       if (typeof block.result === 'string') {
+        // A replay reference must never ride inside the capped string. Lift
+        // one that an older remy left there before the cap can destroy it —
+        // a no-op for results the runner already lifted (`recorded: true`).
+        if (block.name === 'browserCommand' && !block.recording) {
+          const lifted = liftRecording(block.result);
+          if (lifted.recording) {
+            block.result = lifted.result;
+            block.recording = lifted.recording;
+          }
+        }
         block.result = capToolResult(block.result, maxBytes);
       }
       if (typeof block.backgroundResult === 'string') {

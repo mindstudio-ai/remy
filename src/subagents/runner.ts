@@ -24,6 +24,8 @@ const log = createLogger('sub-agent');
 import type { AgentEvent, ExternalToolResolver } from '../types.js';
 import { type ToolRegistry, USER_CANCELLED_RESULT } from '../toolRegistry.js';
 import { capToolResult, capSubAgentTranscript } from '../historyLimits.js';
+import { liftRecording } from '../recording.js';
+import type { RecordingRef } from '../recording.js';
 import type { ApiConfig } from '../config.js';
 import { startStatusWatcher, sanitizeStatusText } from '../statusWatcher.js';
 import { cleanMessagesForApi } from './common/cleanMessages.js';
@@ -478,13 +480,24 @@ export async function runSubAgent(
             }
 
             // Per-tool controllable promise + abort
-            let settle!: (result: string, isError: boolean) => void;
+            let settle!: (
+              result: string,
+              isError: boolean,
+              recording?: RecordingRef,
+            ) => void;
             const resultPromise = new Promise<{
               id: string;
               result: string;
               isError: boolean;
+              recording?: RecordingRef;
             }>((res) => {
-              settle = (result, isError) => res({ id: tc.id, result, isError });
+              settle = (result, isError, recording) =>
+                res({
+                  id: tc.id,
+                  result,
+                  isError,
+                  ...(recording ? { recording } : {}),
+                });
             });
 
             let toolAbort = new AbortController();
@@ -492,20 +505,33 @@ export async function runSubAgent(
             signal?.addEventListener('abort', cascadeAbort, { once: true });
 
             let settled = false;
-            const safeSettle = (result: string, isError: boolean) => {
+            const safeSettle = (
+              result: string,
+              isError: boolean,
+              recording?: RecordingRef,
+            ) => {
               if (settled) {
                 return;
               }
               settled = true;
               signal?.removeEventListener('abort', cascadeAbort);
-              settle(result, isError);
+              settle(result, isError, recording);
             };
 
             const run = async (input: Record<string, any>) => {
               try {
                 let result: string;
+                let recording: RecordingRef | undefined;
                 if (externalTools.has(tc.name) && resolveExternalTool) {
                   result = await resolveExternalTool(tc.id, tc.name, input);
+                  // browserCommand carries its replay reference inside the
+                  // result JSON. Move it onto the block before the cap below
+                  // can truncate it away (see recording.ts).
+                  if (tc.name === 'browserCommand') {
+                    const lifted = liftRecording(result);
+                    result = lifted.result;
+                    recording = lifted.recording;
+                  }
                 } else {
                   const onLog = (line: string) =>
                     emit({
@@ -530,7 +556,11 @@ export async function runSubAgent(
                 // is the path capToolResult was written for: browserCommand runs
                 // only here, in the browserAutomation sub-agent, never on the main
                 // agent, so the main-agent cap never covered it.
-                safeSettle(capToolResult(result), result.startsWith('Error'));
+                safeSettle(
+                  capToolResult(result),
+                  result.startsWith('Error'),
+                  recording,
+                );
               } catch (err: any) {
                 safeSettle(`Error: ${err.message}`, true);
               }
@@ -578,6 +608,7 @@ export async function runSubAgent(
               name: tc.name,
               result: r.result,
               isError: r.isError,
+              ...(r.recording ? { recording: r.recording } : {}),
             });
             return r;
           }),
@@ -596,6 +627,9 @@ export async function runSubAgent(
             block.result = r.result;
             block.isError = r.isError;
             block.completedAt = Date.now();
+            if (r.recording) {
+              block.recording = r.recording;
+            }
             const innerMsgs = subAgentMessages.get(r.id);
             if (innerMsgs) {
               // Same bound as the main agent applies (agent.ts): nested

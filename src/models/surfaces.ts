@@ -82,6 +82,14 @@ export const MODEL_SURFACES = {
     modelType: 'text',
     userPickable: true,
   },
+  reviewExistingProject: {
+    default: 'claude-5-sonnet',
+    label: 'Existing Project Review',
+    description:
+      'Reviews a project you bring from another tool and reports what is worth carrying forward.',
+    modelType: 'text',
+    userPickable: true,
+  },
   copyEditor: {
     default: 'claude-5-sonnet',
     label: 'Copy Agent',
