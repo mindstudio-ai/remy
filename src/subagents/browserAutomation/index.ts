@@ -38,6 +38,8 @@ const CAPTURE_COMMANDS = new Set(['screenshotViewport', 'screenshotFullPage']);
  */
 export interface BrowserAutomationResult {
   text: string;
+  /** True when any browserCommand in the run was recorded (see recording.ts). */
+  recorded: boolean;
   screenshot?: { url: string; styleMap?: string; analysis?: string };
 }
 
@@ -235,8 +237,21 @@ export async function runBrowserAutomation(
       opts?.capture === 'viewport'
         ? (lastCapture.viewport ?? lastCapture.fullPage)
         : (lastCapture.fullPage ?? lastCapture.viewport);
+    // Recorded batches leave a `recording` on their browserCommand block (the
+    // runner lifts it off the result string). Any one means the run has a
+    // replay the caller can reference.
+    const recorded = result.messages.some(
+      (m) =>
+        m.role === 'assistant' &&
+        Array.isArray(m.content) &&
+        m.content.some(
+          (b) =>
+            b.type === 'tool' && b.name === 'browserCommand' && !!b.recording,
+        ),
+    );
     return {
       text: result.text,
+      recorded,
       ...(preferred?.url ? { screenshot: preferred } : {}),
     };
   } finally {
@@ -267,11 +282,20 @@ export const browserAutomationTool: Tool = {
       return 'Error: browser automation requires execution context (only available in headless mode)';
     }
     const result = await runBrowserAutomation(input.task as string, context);
+    let text = result.text;
     // When a final-state screenshot was captured, append it as a markdown
     // image so the frontend renders it inline alongside the prose.
     if (result.screenshot) {
-      return `${result.text}\n\n![Final state](${result.screenshot.url})`;
+      text += `\n\n![Final state](${result.screenshot.url})`;
     }
-    return result.text;
+    // The replay receipt. The editor resolves the reference to this call's
+    // browserCommand children and plays their recording inline, in the QA
+    // result view and wherever the main agent pastes the line. Remy is the
+    // only source of a valid reference: the format appears in no prompt or
+    // tool description, so a reference can't be composed from memory.
+    if (result.recorded) {
+      text += `\n\nReplay of this run: ![Browser test replay](replay:${context.toolCallId})`;
+    }
+    return text;
   },
 };

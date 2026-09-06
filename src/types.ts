@@ -6,6 +6,7 @@
  */
 
 import type { Message, Attachment, Suggestion } from './api.js';
+import type { RecordingRef } from './recording.js';
 
 // Events emitted to the UI layer
 export type AgentEvent =
@@ -50,6 +51,8 @@ export type AgentEvent =
       name: string;
       result: string;
       isError: boolean;
+      /** Browser-test replay chunk, off the result string (see recording.ts). */
+      recording?: RecordingRef;
       parentToolId?: string;
     }
   | {

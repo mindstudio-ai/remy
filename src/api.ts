@@ -12,6 +12,7 @@
 
 import { createLogger } from './logger.js';
 import type { ApiConfig } from './config.js';
+import type { RecordingRef } from './recording.js';
 
 const log = createLogger('api');
 
@@ -87,6 +88,10 @@ export type ContentBlock =
       background?: boolean;
       /** Final result from a backgrounded sub-agent (set when background work completes). */
       backgroundResult?: string;
+      /** Browser-test replay chunk (browserCommand only). Lifted off the
+       * result string by liftRecording so the history cap can't lose it; the
+       * editor stitches a session's chunks by sessionId + seq. See recording.ts. */
+      recording?: RecordingRef;
       /** UI/history-only tool block (e.g. the synthesized row for a user- or
        * gate-initiated compaction). Any message containing one is dropped
        * from API payloads by cleanMessagesForApi — the model never sees it. */

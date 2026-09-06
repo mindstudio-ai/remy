@@ -877,6 +877,7 @@ export class HeadlessSession {
             name: e.name,
             result: e.result,
             isError: e.isError,
+            ...(e.recording && { recording: e.recording }),
             ...(e.parentToolId && { parentToolId: e.parentToolId }),
           },
           rid,
