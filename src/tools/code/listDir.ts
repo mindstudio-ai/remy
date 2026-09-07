@@ -31,7 +31,7 @@ async function collapsePath(
 ): Promise<[string, string]> {
   let display = name;
   let current = path.join(basePath, name);
-  for (;;) {
+  while (true) {
     let children: Dirent[];
     try {
       children = await readAndSort(current);

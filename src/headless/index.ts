@@ -1013,15 +1013,21 @@ export class HeadlessSession {
       ? input.questions
       : [];
     // One batch across every file question, so the persister's per-call
-    // filename de-dup spans the whole form.
+    // filename de-dup spans the whole form. Store landings ({ kind: 'store',
+    // store, prefix, files, bytes }) are not descriptors: the files live in
+    // the app's file store, not on disk, and the object passes through as the
+    // answer for the model to read in place.
     const batch: Attachment[] = [];
     const slots: Array<{ id: string; isArray: boolean; count: number }> = [];
+    let landings = 0;
     for (const q of questions) {
       if (q?.type !== 'file' || typeof q.id !== 'string') {
         continue;
       }
       const val = answers[q.id];
-      const items = (Array.isArray(val) ? val : [val]).filter(isDescriptor);
+      const all = Array.isArray(val) ? val : [val];
+      landings += all.filter((v) => v && v.kind === 'store').length;
+      const items = all.filter(isDescriptor);
       if (items.length === 0) {
         continue;
       }
@@ -1040,6 +1046,9 @@ export class HeadlessSession {
       }
     }
     if (batch.length === 0) {
+      if (landings > 0) {
+        log.info('promptUser store landings passed through', { landings });
+      }
       return raw;
     }
 
@@ -1565,7 +1574,7 @@ export class HeadlessSession {
    * there would strand the chain steps and background results behind it.
    */
   private async drainQueueLoop(): Promise<void> {
-    for (;;) {
+    while (true) {
       const at = this.queue.firstDeliverableIndex();
       if (at === -1) {
         return;
