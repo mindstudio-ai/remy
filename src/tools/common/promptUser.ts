@@ -45,7 +45,7 @@ export const promptUserTool: Tool = {
                 type: 'string',
                 enum: ['select', 'checklist', 'text', 'file'],
                 description:
-                  'select: pick one from a list. checklist: pick one or more from a list. The user can always provide a custom "Other" answer for select and checklist questions, so there is no need to include an "Other" option. text: free-form input. file: file/image upload. The answer is the local path (string) under src/.user-uploads/ — the file is already downloaded to disk. Documents may have an extracted-text sidecar at <path>.txt. Reference the path directly; pass image paths straight to analyzeImage / screenshot tools.',
+                  'select: pick one from a list. checklist: pick one or more from a list. The user can always provide a custom "Other" answer for select and checklist questions, so there is no need to include an "Other" option. text: free-form input. file: the user hands over files, a folder, or a paste (set `multiple: true` to take several). Each answer arrives in one of two shapes. A local path (string) under src/.user-uploads/: the file is already on disk, documents may have an extracted-text sidecar at <path>.txt, and a folder arrives as src/.user-uploads/<folder>.zip for you to unpack with bash. Or, when the user brought a dataset (a folder over about 100 MB or 500 files, or any single file over 100 MB), a store landing object { kind: "store", store, prefix, files, bytes, failed } — the files were streamed into the app\'s private file store `uploads` under that prefix and are NOT on disk; read them in place with `remy-admin datasources inspect --store <store> --prefix <prefix>` and `remy-admin files get`, never download the whole set. Pass image paths straight to analyzeImage / screenshot tools.',
               },
               helpText: {
                 type: 'string',
@@ -84,7 +84,7 @@ export const promptUserTool: Tool = {
               multiple: {
                 type: 'boolean',
                 description:
-                  'For file type: allow multiple uploads (the answer is an array of local paths). Defaults to false.',
+                  'For file type: allow several files or folders (the answer is an array of local paths and/or store landings). Defaults to false. Set it whenever you ask for "a few examples" or "a sample of your data".',
               },
               format: {
                 type: 'string',
