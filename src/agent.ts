@@ -47,11 +47,11 @@ import {
   parseSuggestions,
   SUGGEST_MARKER,
 } from './suggestions.js';
-import { parseSentinel } from './automatedActions/sentinel.js';
+import { parseSentinel, sentinelParams } from './automatedActions/sentinel.js';
 import { triggerBrandExtraction } from './brandExtraction/trigger.js';
 import { resolveModel, resolveParentModel } from './models/surfaces.js';
-import { USER_CANCELLED_RESULT } from './toolRegistry.js';
-import { capToolResult, capSubAgentTranscript } from './historyLimits.js';
+import { cancelledToolResult } from './toolRegistry.js';
+import { capToolResult, attachSubAgentTranscript } from './historyLimits.js';
 
 // Tools whose success can change a brand-extraction gate input: spec writes
 // (may touch @brand/ or design/color|typography specs) and metadata updates
@@ -374,7 +374,14 @@ export async function runTurn(params: {
               // Non-action sentinels are plumbing, not actions; their name
               // ("background_results") leaks straight into the label.
               if (!NON_ACTION_SENTINELS.has(automated.name)) {
-                parts.push(`Automated action: ${automated.name}`);
+                // A resumed step is picking up interrupted work, not starting
+                // it — the label shouldn't announce it as a fresh action.
+                const resumed = sentinelParams(entry.text).resumed === true;
+                parts.push(
+                  `Automated action: ${automated.name}${
+                    resumed ? ' (resuming interrupted work)' : ''
+                  }`,
+                );
                 hasUserSignal = true;
               }
             } else if (entry.text) {
@@ -915,7 +922,11 @@ export async function runTurn(params: {
       const results = await Promise.all(
         toolCalls.map(async (tc) => {
           if (signal?.aborted) {
-            return { id: tc.id, result: USER_CANCELLED_RESULT, isError: true };
+            return {
+              id: tc.id,
+              result: cancelledToolResult(signal),
+              isError: true,
+            };
           }
 
           const toolStart = Date.now();
@@ -947,7 +958,7 @@ export async function runTurn(params: {
           const cascadeAbort = () => {
             toolAbort.abort();
             // Force-settle the tool so Promise.all doesn't hang
-            safeSettle(USER_CANCELLED_RESULT, true);
+            safeSettle(cancelledToolResult(signal), true);
           };
           signal?.addEventListener('abort', cascadeAbort, { once: true });
 
@@ -1073,8 +1084,9 @@ export async function runTurn(params: {
           if (msgs) {
             // Persisted transcripts are display/stale-resume data, not live
             // context — bound them so one browser run against a dense page
-            // can't put megabytes into the session (see historyLimits.ts).
-            block.subAgentMessages = capSubAgentTranscript(msgs);
+            // can't put megabytes into the session, and keep the run's replay
+            // references clear of that bound (see historyLimits.ts).
+            attachSubAgentTranscript(block, msgs);
           }
         }
       }

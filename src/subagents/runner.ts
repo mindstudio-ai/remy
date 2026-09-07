@@ -22,8 +22,8 @@ import { recordUsage, nanoToDollars } from '../usageLedger.js';
 
 const log = createLogger('sub-agent');
 import type { AgentEvent, ExternalToolResolver } from '../types.js';
-import { type ToolRegistry, USER_CANCELLED_RESULT } from '../toolRegistry.js';
-import { capToolResult, capSubAgentTranscript } from '../historyLimits.js';
+import { type ToolRegistry, cancelledToolResult } from '../toolRegistry.js';
+import { capToolResult, attachSubAgentTranscript } from '../historyLimits.js';
 import { liftRecording } from '../recording.js';
 import type { RecordingRef } from '../recording.js';
 import type { ApiConfig } from '../config.js';
@@ -186,7 +186,7 @@ export async function runSubAgent(
           messages: thisInvocation(),
         };
       }
-      return { text: USER_CANCELLED_RESULT, messages: thisInvocation() };
+      return { text: cancelledToolResult(signal), messages: thisInvocation() };
     }
 
     let lastToolResult = '';
@@ -474,7 +474,7 @@ export async function runSubAgent(
             if (signal?.aborted) {
               return {
                 id: tc.id,
-                result: USER_CANCELLED_RESULT,
+                result: cancelledToolResult(signal),
                 isError: true,
               };
             }
@@ -634,7 +634,7 @@ export async function runSubAgent(
             if (innerMsgs) {
               // Same bound as the main agent applies (agent.ts): nested
               // transcripts are persisted for display, not live context.
-              block.subAgentMessages = capSubAgentTranscript(innerMsgs);
+              attachSubAgentTranscript(block, innerMsgs);
             }
 
             // Capture artifact if this tool is in the captureArtifacts list

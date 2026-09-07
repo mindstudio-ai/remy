@@ -47,6 +47,54 @@ export function parseSentinel(
 }
 
 /**
+ * The JSON params carried on the sentinel line, or `{}` when there are none
+ * (absent, malformed, or not an object). Params are metadata for remy and the
+ * frontend only — stripSentinelLine drops the whole line before the message
+ * reaches the model, so anything the LLM must see belongs in the body.
+ */
+export function sentinelParams(text: string): Record<string, unknown> {
+  const parsed = parseSentinel(text);
+  if (!parsed) {
+    return {};
+  }
+  const firstLine = parsed.remainder.split('\n')[0].trim();
+  if (!firstLine) {
+    return {};
+  }
+  try {
+    const value = JSON.parse(firstLine);
+    return value && typeof value === 'object' && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Merge params into an automated message's sentinel line, leaving the body
+ * untouched. Returns `text` unchanged when it isn't an automated message.
+ *
+ * Merges rather than replaces so a step's own params survive being re-marked
+ * (buildFromRoadmap carries `{"path":…}`) and so marking twice is idempotent —
+ * a step can be interrupted more than once.
+ */
+export function setSentinelParams(
+  text: string,
+  patch: Record<string, unknown>,
+): string {
+  const parsed = parseSentinel(text);
+  if (!parsed) {
+    return text;
+  }
+  const newlineAt = parsed.remainder.indexOf('\n');
+  const body = newlineAt === -1 ? '' : parsed.remainder.slice(newlineAt + 1);
+  const params = { ...sentinelParams(text), ...patch };
+  const line = `${sentinel(parsed.name)}${JSON.stringify(params)}`;
+  return body ? `${line}\n${body}` : line;
+}
+
+/**
  * Strip the leading `@@automated::<name>@@[params]\n` line from a message,
  * leaving the body. Used by cleanMessagesForApi before sending to the LLM.
  */

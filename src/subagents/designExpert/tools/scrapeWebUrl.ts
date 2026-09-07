@@ -1,11 +1,10 @@
 import type { ToolDefinition } from '../../../api.js';
-import { runMindstudioCli } from '../../common/runMindstudioCli.js';
-import { SCRAPE_MAX_BUFFER } from '../../common/runCli.js';
+import { fetchWebPage } from '../../../tools/common/scrapeWebUrl.js';
 
 export const definition: ToolDefinition = {
   name: 'scrapeWebUrl',
   description:
-    'Fetch the content of a web page as markdown. Use for reading a specific URL — a site the user referenced, a brand to match, a page the researcher cited that you want in full.',
+    'Fetch a web page as markdown, plus `screenshot`, a full-page capture you can analyze. Use for reading a specific URL — a site the user referenced, a brand to match, a page the researcher cited that you want in full.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -22,15 +21,9 @@ export async function execute(
   input: Record<string, any>,
   onLog?: (line: string) => void,
 ): Promise<string> {
-  const pageOptions: Record<string, any> = { onlyMainContent: true };
-  return runMindstudioCli(
-    [
-      'scrape-url',
-      '--url',
-      input.url,
-      '--page-options',
-      JSON.stringify(pageOptions),
-    ],
-    { onLog, caller: 'designExpert', maxBuffer: SCRAPE_MAX_BUFFER },
-  );
+  return fetchWebPage(String(input.url), {
+    screenshot: true,
+    caller: 'designExpert',
+    onLog,
+  });
 }

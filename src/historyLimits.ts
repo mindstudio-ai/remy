@@ -9,14 +9,16 @@
  *      context: a ~12.9MB runMethod result once got stored verbatim and
  *      re-sent on every turn, pushing every request past the gateway's body
  *      limit (HTTP 413).
- *   2. Attach — capSubAgentTranscript when a finished sub-agent's transcript
- *      is persisted onto its tool block (agent.ts and subagents/runner.ts).
- *      Protects persisted history: browserCommand returns a full
- *      accessibility snapshot (~300KB against a dense data grid) per step,
- *      so one ~20-step screenshot run persisted a ~6MB transcript; four of
- *      them made a 16MB get_history page that could never be built and
- *      delivered inside the editor's 15s connection deadline — a permanent
- *      "Connection Lost" for that app.
+ *   2. Attach — attachSubAgentTranscript when a finished sub-agent's
+ *      transcript is persisted onto its tool block (agent.ts and
+ *      subagents/runner.ts). Protects persisted history: browserCommand
+ *      returns a full accessibility snapshot (~300KB against a dense data
+ *      grid) per step, so one ~20-step screenshot run persisted a ~6MB
+ *      transcript; four of them made a 16MB get_history page that could never
+ *      be built and delivered inside the editor's 15s connection deadline — a
+ *      permanent "Connection Lost" for that app. Attach is also where a run's
+ *      replay references are lifted clear of the cap, since capping is
+ *      lossy by design and they must not be part of what it loses.
  *   3. Load — capMessageForHistory at the disk→memory boundary
  *      (session.ts loadSession and parseArchive). Heals sessions and sealed
  *      archives written before layers 1–2 existed.
@@ -36,7 +38,7 @@
  */
 
 import type { Message, ContentBlock } from './api.js';
-import { liftRecording } from './recording.js';
+import { collectRecordings, liftRecording } from './recording.js';
 
 // --- Layer 1: ingestion ---
 
@@ -76,6 +78,57 @@ export function capToolResult(
 // they can always refetch from.
 export const MAX_SUBAGENT_RESULT_BYTES = 32 * 1024;
 export const MAX_SUBAGENT_TRANSCRIPT_BYTES = 512 * 1024;
+
+/**
+ * Persist a finished sub-agent's transcript onto its tool block: the single
+ * entry point for attach, so nothing that has to outlive capping can be
+ * forgotten at one call site and remembered at another.
+ *
+ * Order matters. The replay references are collected first, because
+ * capSubAgentTranscript below drops the transcript's oldest messages and a
+ * run's FullSnapshot chunk is always among them — the page load is the first
+ * thing a browser run does. Collecting after the cap is what left committed QA
+ * runs with an unplayable tail of references and no anchor.
+ *
+ * The list is written once. On the load path (layer 3) the transcript has
+ * already been capped, so re-deriving it there would replace a complete list
+ * with a subset; an existing one is authoritative and left alone. A block
+ * without one is either a run that recorded nothing or a session written
+ * before this existed, and for those a best-effort backfill from whatever
+ * survived is better than nothing.
+ */
+export function attachSubAgentTranscript(
+  block: ContentBlock & { type: 'tool' },
+  messages: Message[],
+): void {
+  if (!block.recordings) {
+    const recordings = collectRecordings(messages);
+    if (recordings.length > 0) {
+      block.recordings = recordings;
+    }
+  }
+  block.subAgentMessages = capSubAgentTranscript(messages);
+}
+
+/**
+ * Drop the tool-result messages from a transcript that's about to be
+ * persisted, halving what a step costs: the runner already merged every
+ * result onto its tool block, and the sandbox drops these user copies again
+ * when it serves history, so they are budget spent on bytes no reader ever
+ * sees. What the doubled cost buys is fewer steps kept — a 17-step QA run
+ * fits ~11.
+ *
+ * Only safe for sub-agents whose transcripts are never replayed as model
+ * context: getSubAgentHistory pairs tool_use with tool_result and matches on
+ * the sub-agent's tool name (visualDesignExpert, productVision), so those
+ * must keep theirs. Nothing reaches the API from here regardless —
+ * cleanMessagesForApi rebuilds assistant messages field by field and never
+ * emits subAgentMessages — but the resuming sub-agents would see a transcript
+ * of calls with no answers.
+ */
+export function dropToolResultMessages(messages: Message[]): Message[] {
+  return messages.filter((m) => !(m.role === 'user' && m.toolCallId));
+}
 
 /**
  * Bound a sub-agent transcript before it's persisted onto a tool block:
@@ -155,7 +208,7 @@ export function capMessageForHistory(
         );
       }
       if (Array.isArray(block.subAgentMessages)) {
-        block.subAgentMessages = capSubAgentTranscript(block.subAgentMessages);
+        attachSubAgentTranscript(block, block.subAgentMessages);
       }
     }
   } else if (

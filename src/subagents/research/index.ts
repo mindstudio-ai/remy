@@ -18,11 +18,8 @@ import { readAsset } from '../../assets.js';
 import { runSubAgent } from '../runner.js';
 import { loadSpecIndex, loadPlatformBrief } from '../common/context.js';
 import { executeTool, deriveContext } from '../../tools/index.js';
-import {
-  RESEARCH_TOOLS,
-  executeSearchGoogle,
-  executeScrapeWebUrl,
-} from './tools.js';
+import { fetchWebPage } from '../../tools/common/scrapeWebUrl.js';
+import { RESEARCH_TOOLS, executeSearchGoogle } from './tools.js';
 import { resolveModel } from '../../models/surfaces.js';
 
 const BASE_PROMPT = readAsset('subagents/research', 'prompt.md');
@@ -62,7 +59,11 @@ export async function runResearch(
         return executeSearchGoogle(toolInput, childCtx.onLog, 'research');
       }
       if (name === 'scrapeWebUrl') {
-        return executeScrapeWebUrl(toolInput, childCtx.onLog, 'research');
+        return fetchWebPage(String(toolInput.url), {
+          screenshot: false,
+          caller: 'research',
+          onLog: childCtx.onLog,
+        });
       }
       // Reads + bash resolve through the main registry.
       return executeTool(name, toolInput, childCtx);

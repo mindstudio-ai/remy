@@ -2,9 +2,11 @@
  * Tool definitions and web executors for the research sub-agent.
  *
  * Common read tools + web search + page fetch + bash. Search and fetch have
- * their own definitions here (not the deleted main-agent copies): the
- * researcher's search exposes `fetchTopN` as a model-controlled knob, and both
- * executors attribute usage-ledger rows to the invoking agent via `caller`.
+ * their own definitions here (not the main-agent copies): the researcher's
+ * search exposes `fetchTopN` as a model-controlled knob, and its fetch is
+ * described for volume reading. Fetching itself runs through the shared
+ * `fetchWebPage` (tools/common/scrapeWebUrl.ts), without the screenshot the
+ * user-facing callers take.
  *
  * `executeSearchGoogle` is shared with codeSanityCheck, which kept its own
  * quick package-liveness search when the main agent's searchGoogle was
@@ -15,7 +17,7 @@
 import type { ToolDefinition } from '../../api.js';
 import { COMMON_READ_TOOLS } from '../common/tools.js';
 import { runMindstudioCli } from '../common/runMindstudioCli.js';
-import { SEARCH_MAX_BUFFER, SCRAPE_MAX_BUFFER } from '../common/runCli.js';
+import { SEARCH_MAX_BUFFER } from '../common/runCli.js';
 import { bashTool } from '../../tools/code/bash.js';
 
 export const searchGoogleDefinition: ToolDefinition = {
@@ -83,28 +85,6 @@ export async function executeSearchGoogle(
     {
       outputKey: 'results',
       maxBuffer: SEARCH_MAX_BUFFER,
-      onLog,
-      caller,
-    },
-  );
-}
-
-/** Fetch a page as markdown via the mindstudio CLI. */
-export async function executeScrapeWebUrl(
-  input: Record<string, any>,
-  onLog: ((line: string) => void) | undefined,
-  caller: string,
-): Promise<string> {
-  return runMindstudioCli(
-    [
-      'scrape-url',
-      '--url',
-      String(input.url),
-      '--page-options',
-      JSON.stringify({ onlyMainContent: true }),
-    ],
-    {
-      maxBuffer: SCRAPE_MAX_BUFFER,
       onLog,
       caller,
     },

@@ -43,6 +43,22 @@ export interface QueuedMessage {
    * agent activity — see the sandbox's derived busy.
    */
   held?: boolean;
+  /**
+   * Who put the hold on. Absent — the normal case — means the user: they
+   * pressed Stop, or the process died under a message they typed, and the item
+   * waits for them.
+   *
+   * `'shutdown'` means the environment took the agent down (a pod recycle, a
+   * pre-destroy flush). That still has to pause the queue — nothing may start
+   * a turn while the workspace is being tarred — but the user never asked for
+   * it, so `releaseShutdownHolds` lets Remy's own pipeline steps carry on by
+   * themselves at boot instead of waiting for a message nobody knows to send.
+   *
+   * Set only on the hold's TRANSITION (see holdWhere): an item the user had
+   * already paused keeps its own untagged hold, so a later shutdown can't
+   * convert their deliberate Stop into an unattended auto-resume.
+   */
+  heldBy?: 'shutdown';
 }
 
 /**
@@ -58,6 +74,29 @@ export function holdRestoredUserItems(items: QueuedMessage[]): QueuedMessage[] {
   return items.map((item) =>
     item.source === 'user' ? { ...item, held: true } : item,
   );
+}
+
+/**
+ * Release the holds a SHUTDOWN put on Remy's own pipeline steps, so a build
+ * interrupted by the environment resumes itself on the next boot rather than
+ * stalling until someone sends a message they have no reason to send. Applied
+ * to `loadQueue()`'s result, alongside holdRestoredUserItems.
+ *
+ * The tag goes with the hold: leaving it behind would mean a later user Stop of
+ * the same step got auto-released by the next restart.
+ *
+ * User items are never released here, whatever put the hold on them — a
+ * message someone typed before the process died must not fire on its own.
+ * That is holdRestoredUserItems' rule and it wins.
+ */
+export function releaseShutdownHolds(items: QueuedMessage[]): QueuedMessage[] {
+  return items.map((item) => {
+    if (item.heldBy !== 'shutdown' || item.source === 'user') {
+      return item;
+    }
+    const { held: _held, heldBy: _heldBy, ...released } = item;
+    return released;
+  });
 }
 
 export class MessageQueue {
@@ -139,16 +178,30 @@ export class MessageQueue {
   /**
    * Mark matching items `held` — waiting on the user rather than on the agent.
    * Fires onChange only if something changed. Returns the held items.
+   *
+   * `heldBy` is stamped only on items this call actually transitions. An item
+   * that was ALREADY held keeps whatever hold it had: otherwise a shutdown
+   * arriving after a user's Stop — a box reaped while they were away from the
+   * tab — would retag their deliberate pause as environmental and the next
+   * boot would auto-run the very build they stopped.
    */
-  holdWhere(predicate: (item: QueuedMessage) => boolean): QueuedMessage[] {
+  holdWhere(
+    predicate: (item: QueuedMessage) => boolean,
+    heldBy?: 'shutdown',
+  ): QueuedMessage[] {
     const held: QueuedMessage[] = [];
     let changed = false;
     for (const item of this.items) {
       if (!predicate(item)) {
         continue;
       }
-      changed = changed || !item.held;
-      item.held = true;
+      if (!item.held) {
+        changed = true;
+        item.held = true;
+        if (heldBy) {
+          item.heldBy = heldBy;
+        }
+      }
       held.push(item);
     }
     if (changed) {
@@ -201,7 +254,10 @@ export class MessageQueue {
     }
     const [item] = this.items.splice(idx, 1);
     item.delivery = 'asap';
+    // `heldBy` goes with the hold everywhere — a stale tag on a released item
+    // would let a later restart auto-resume something the user had paused.
     delete item.held;
+    delete item.heldBy;
     this.items.unshift(item);
     this.onChange?.();
     return item;
@@ -227,7 +283,9 @@ export class MessageQueue {
       if (!item.held) {
         continue;
       }
+      // See promoteToFront: the tag never outlives the hold.
       delete item.held;
+      delete item.heldBy;
       released.push(item);
     }
     const back = this.items.filter(defer);
