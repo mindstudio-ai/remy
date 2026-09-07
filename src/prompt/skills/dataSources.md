@@ -71,10 +71,10 @@ People are bad at describing their own data, and the more of it they have the wo
 
 1. **Look before you promise.** `datasources inspect` over the store or the bucket: key shapes, counts and bytes by extension, size buckets, sampled heads with their JSON keys. Report it in the user's vocabulary: how many objects, how many formats, what is not documents, which parts nobody mentioned.
 2. **Ask the questions only the user can answer**, as a form, and stop for them: what is in scope and what is not, what one document is (a file, a record, the latest version of a record), what counts as a duplicate, what to do with the low-value kinds, who holds the rights to anything third-party. Do not guess these; they decide what the mapper does.
-3. **Shape it, if the file is not the document.** Write the mapper and `map test --dev` it over twenty real objects; read the outcomes back to the user as documents, metadata and skips with reasons. Adjust and re-run; deploy only when the outcomes read right.
+3. **Shape it, if the file is not the document.** Write the mapper and `map test --dev` it over twenty real objects; read the outcomes back to the user as documents, metadata and skips with reasons. Adjust and re-run. When the outcomes read right, push a branch, `releases wait`, then `map deploy`: that build's mapper becomes the source's. Nothing is published.
 4. **Sample before the whole thing.** `jobs start --limit 500` loads a slice cheaply; search it; fix the mapper; `remap`. A mistake on five hundred documents costs cents.
 5. **Show the plan and get an explicit yes.** The plan is the bill: documents, chunks, cost per stage, storage, duration, and whether the corpus fits where the source lives. Present it, then `jobs approve`. If it answers `plan_requires_dedicated`, the size decision comes first: show the offering's price, get a yes, `infra provision`, `datasources move`, then approve.
-6. **Run it, and read what came out.** `jobs status` for progress and the last failures; `jobs quarantine` for what the mapper skipped or failed on, by reason; fix, deploy, `jobs replay`. Search works on the partial corpus throughout.
+6. **Run it, and read what came out.** `jobs status` for progress and the last failures; `jobs quarantine` for what the mapper skipped or failed on, by reason; fix, push, `map deploy`, `jobs replay`. Search works on the partial corpus throughout.
 7. **Keep it current.** For a bucket, a cron method calling `Source.sync()`; for anything else, the same job re-run (unchanged objects cost nothing).
 8. **Measure before you change anything.** A sample source and an eval set; compare versions and models with numbers, and ask before promoting.
 
@@ -191,13 +191,17 @@ The loop, in this order:
 ```bash
 remy-admin datasources inspect --source archive --connector                        # look first
 remy-admin datasources map test --source archive --connector --limit 20 --dev      # the LOCAL mapper, real objects, nothing ingested
-# fix, re-run, until the outcomes read right; then deploy
-remy-admin datasources map test --source archive --connector --limit 20            # the compiled mapper, same objects
+# fix, re-run, until the outcomes read right; then push a branch and wait for its build
+remy-admin releases wait
+remy-admin datasources map deploy --source archive                                 # that build's mapper becomes the source's
+remy-admin datasources map test --source archive --connector --limit 20            # the active mapper, same objects
 remy-admin datasources sync --source archive --wait                                # or jobs start
 remy-admin datasources jobs quarantine <id>                                        # what it skipped or failed on, by reason
-remy-admin datasources jobs replay <id> --wait                                     # after a fix + deploy: just those objects again
+remy-admin datasources jobs replay <id> --wait                                     # after a fix, push and map deploy: just those objects again
 remy-admin datasources remap --source archive --wait                               # a changed mapper over every raw copy
 ```
+
+A mapper runs on the platform, so the platform has to build it. Any push builds it, and a branch push is a private preview build, which is all a mapper needs. `map deploy` then makes that build's mapper the source's active one: jobs, syncs and `add()` run it from then on, whether or not the app has ever been published. Publishing to main activates the mapper main declares as well, so merge the branch before you publish. `jobs start` refuses with `mapper_not_deployed` while the dev session declares a mapper that is not yet active, because the job would otherwise load the raw records as documents.
 
 `map test --dev` needs the dev session running (`npx mindstudio dev`); it runs the mapper from local source through the tunnel and prints every outcome with markdown previews. The plan of a mapped job records the mapper's outcome mix on its sample; a run whose skip share climbs past twice that pauses with `pauseReason: 'skips'` for a look at the quarantine. `remap` reads the platform's own raw copies — no origin traffic — skips unchanged markdown by hash, and supersedes changed documents, so a metadata tweak on a million-document source costs frames and little else. `externalId` is the identity everything replaces by; choose it deliberately (the record's stable id, never the key of a file that gets rewritten in place).
 
