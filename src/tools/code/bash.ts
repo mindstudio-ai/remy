@@ -50,11 +50,32 @@ export const bashTool: Tool = {
     const timeoutMs = input.timeout ? input.timeout * 1000 : DEFAULT_TIMEOUT_MS;
 
     return new Promise<string>((resolve) => {
-      const child = spawn('sh', ['-c', input.command], {
+      // bash, not sh. `/bin/sh` is dash on Debian, and this tool is called
+      // `bash` and described as running shell commands, so the model writes
+      // bash: `$'\t'`, `[[ ]]`, arrays, process substitution. Under dash those
+      // degrade silently rather than erroring — `column -t -s $'\t'` reached
+      // column as the literal characters `$`, `\`, `t` and split every row on
+      // the letter t. The sandbox's own pty handler picked bash for the same
+      // reason (mindstudio-sandbox src/server/wsHandlers/pty.ts).
+      // Resolved via PATH rather than pinned to /bin/bash so a dev box with a
+      // newer bash earlier in PATH gets it.
+      const child = spawn('bash', ['-c', input.command], {
         // Pinned rather than inherited. `undefined` here means "wherever the
         // process happens to be", which is the project root only by luck.
         cwd: input.cwd ? path.resolve(PROJECT_ROOT, input.cwd) : PROJECT_ROOT,
-        env: { ...process.env, FORCE_COLOR: '1' },
+        // Output is rendered in a terminal view in the IDE, so ask tools for
+        // color. The devbox image sets none of these — it declares only
+        // WORKSPACE_DIR, LANG, LC_ALL, PIP_BREAK_SYSTEM_PACKAGES,
+        // NPM_CONFIG_PREFIX and PATH — and a container gets no TERM unless
+        // something sets it, so without TERM anything driving terminfo assumes
+        // a dumb terminal. Same trio the sandbox's pty handler sets, for the
+        // same reason; FORCE_COLOR alone only reaches the Node/chalk ecosystem.
+        env: {
+          ...process.env,
+          TERM: 'xterm-256color',
+          CLICOLOR: '1',
+          FORCE_COLOR: '1',
+        },
       });
 
       let output = '';
