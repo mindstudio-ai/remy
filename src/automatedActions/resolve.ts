@@ -8,7 +8,12 @@
  */
 
 import { readAsset } from '../assets.js';
-import { parseSentinel, automatedMessage } from './sentinel.js';
+import {
+  parseSentinel,
+  automatedMessage,
+  sentinelParams,
+  setSentinelParams,
+} from './sentinel.js';
 
 /** Sentinels that use the @@automated:: prefix but are not action files. */
 export const NON_ACTION_SENTINELS = new Set(['background_results']);
@@ -30,18 +35,13 @@ export function resolveAction(text: string): ResolvedAction | null {
     return null;
   }
 
-  const { name: triggerName, remainder } = parsed;
+  const { name: triggerName } = parsed;
   if (NON_ACTION_SENTINELS.has(triggerName)) {
     return null;
   }
 
-  // Parse optional JSON params from the first line after @@
-  let params: Record<string, unknown> = {};
-  if (remainder) {
-    try {
-      params = JSON.parse(remainder.split('\n')[0]);
-    } catch {}
-  }
+  // Optional JSON params from the sentinel line.
+  const params = sentinelParams(text);
 
   // Load asset and extract 'next' from frontmatter before stripping
   let body = readAsset('automatedActions', `${triggerName}.md`);
@@ -61,8 +61,29 @@ export function resolveAction(text: string): ResolvedAction | null {
     body = body.replaceAll(`{{${key}}}`, str);
   }
 
+  // A step that was interrupted and re-queued is a RESUMPTION, not a replay.
+  // Its body was written for a first run ("The spec is written. Build
+  // everything now") and is a lie the second time around — which is how a
+  // stopped-then-continued build ended up rebuilding an app it had just
+  // finished. The preamble goes in the body because that is the only part the
+  // model sees: cleanMessagesForApi strips the sentinel line, params and all.
+  const resumed = params.resumed === true;
+  if (resumed) {
+    body = `${readAsset('automatedActions', '_resumed.md')}\n\n${body}`;
+  }
+
+  // `resumed` is the one param carried onto the emitted message. History is
+  // what the transcript renders from, and both the chat row and the queue card
+  // label a resumed step off this marker — without it, a resumed step is
+  // indistinguishable from a duplicate. Every other param stays behind: the
+  // model never sees the sentinel line, so copying a whole annotated-notes or
+  // seed payload into the conversation would be dead weight.
   return {
-    message: automatedMessage(triggerName, body),
+    message: resumed
+      ? setSentinelParams(automatedMessage(triggerName, body), {
+          resumed: true,
+        })
+      : automatedMessage(triggerName, body),
     next,
   };
 }

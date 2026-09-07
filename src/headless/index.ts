@@ -67,7 +67,11 @@ import {
   resolveParentModel,
 } from '../models/surfaces.js';
 import type { StdinCommand } from '../types.js';
-import { ToolRegistry, USER_CANCELLED_RESULT } from '../toolRegistry.js';
+import {
+  ToolRegistry,
+  USER_CANCELLED_RESULT,
+  ENV_INTERRUPTED_RESULT,
+} from '../toolRegistry.js';
 import {
   persistAttachments,
   persistAttachmentList,
@@ -87,6 +91,7 @@ import { getToolByName } from '../tools/index.js';
 import {
   MessageQueue,
   holdRestoredUserItems,
+  releaseShutdownHolds,
   type QueuedMessage,
 } from './messageQueue.js';
 import { resolveAction, getActionChain } from '../automatedActions/resolve.js';
@@ -94,6 +99,7 @@ import {
   sentinel,
   hasSentinel,
   isAutomatedMessage,
+  setSentinelParams,
   buildBackgroundResultsMessage,
   mergeBackgroundResultsMessages,
 } from '../automatedActions/sentinel.js';
@@ -270,10 +276,18 @@ export class HeadlessSession {
     // persistStats below without emitting a queue_changed nobody is listening
     // for yet. Remy's own chain/background items are left alone — surviving a
     // restart is exactly why they're persisted.
-    this.queue = new MessageQueue(holdRestoredUserItems(loadQueue()), () => {
-      this.persistStats();
-      this.emit('queue_changed', { queuedMessages: this.queue.snapshot() });
-    });
+    //
+    // And the mirror of that: a pipeline the ENVIRONMENT paused (a pod recycle
+    // mid-build, tagged `heldBy: 'shutdown'`) is released here, so it resumes
+    // itself rather than waiting on a message the user has no reason to send —
+    // they never stopped it. The sandbox's `resume` on connect does the rest.
+    this.queue = new MessageQueue(
+      releaseShutdownHolds(holdRestoredUserItems(loadQueue())),
+      () => {
+        this.persistStats();
+        this.emit('queue_changed', { queuedMessages: this.queue.snapshot() });
+      },
+    );
     this.passivePen = loadPassiveResults();
     // Rewrite stats at boot: sessionStats starts fresh in memory, so this
     // clears a stale `compactionInProgress: true` left on disk by a crash
@@ -463,6 +477,23 @@ export class HeadlessSession {
   }
 
   private shutdown = (): void => {
+    // A container's SIGTERM reaches us at the same moment it reaches the
+    // sandbox controller, so on any teardown that doesn't go through the
+    // platform's `/flush` first we are gone before the quiesce's `cancel` can
+    // be written. Do it ourselves: the step that is mid-flight is NOT in the
+    // queue (the drain takes it out before running it), so without this it
+    // simply vanishes and the restored box resumes one step PAST the
+    // interruption — polishing a half-built app. handleCancel puts it back,
+    // tagged so the next boot resumes the pipeline by itself.
+    //
+    // Safe in a signal handler: the whole path is synchronous, including the
+    // persist (writeStats → writeFileAtomicSync). Guarded so a throw can never
+    // cost us the exit.
+    try {
+      this.handleCancel('shutdown');
+    } catch (err: any) {
+      log.warn('Shutdown cancel failed', { error: err?.message });
+    }
     this.emit('stopping');
     this.emit('stopped');
     process.exit(0);
@@ -1743,6 +1774,19 @@ export class HeadlessSession {
    * pipeline where it stopped. Holding only the remainder would resume one step
    * PAST the interruption, polishing and finalizing half-built code.
    *
+   * That re-queued step is marked `resumed`, which is what stops it being a
+   * verbatim replay. The message the user sends to un-pause a build is usually
+   * the rest of that build ("try again, I fixed the adapter") and Remy does the
+   * work inside that turn — so re-delivering the original "build everything
+   * now" afterwards had it rebuild an app it had just finished.
+   *
+   * `reason: 'shutdown'` is the environment taking the agent down rather than a
+   * person pressing Stop. It pauses identically — nothing may start a turn
+   * while the workspace is being tarred — but tags the chain steps it holds so
+   * the next boot releases them and the pipeline carries on by itself. Called
+   * from the stdin `cancel` (the sandbox's pre-destroy quiesce) and from our own
+   * SIGTERM handler, whichever gets there first.
+   *
    * A compaction is cancelled here too, unconditionally. It gates every queued
    * message and outlives the turn that started it, so leaving it running means
    * Stop can't reach idle. The cost is the summary work in flight; the forced
@@ -1753,19 +1797,25 @@ export class HeadlessSession {
    * `{cancelled, absorbed:true}` terminal. Only items still sitting in the
    * queue survive.
    */
-  private handleCancel(): {
+  private handleCancel(reason?: 'shutdown'): {
     flushed: QueuedMessage[];
     held: QueuedMessage[];
     pausedPipeline: boolean;
     cancelledCompaction: boolean;
   } {
     if (this.currentAbort) {
-      this.currentAbort.abort();
+      // The reason rides on the signal: every tool the abort cascade settles
+      // writes its own result into the conversation, and "the user cancelled
+      // this, wait for their next message" is both untrue and stalling when
+      // the truth is that the box went away (see cancelledToolResult).
+      this.currentAbort.abort(reason);
     }
     const cancelledCompaction = cancelInflightCompaction();
     for (const [id, pending] of this.pendingTools) {
       clearTimeout(pending.timeout);
-      pending.resolve(USER_CANCELLED_RESULT);
+      pending.resolve(
+        reason === 'shutdown' ? ENV_INTERRUPTED_RESULT : USER_CANCELLED_RESULT,
+      );
       this.pendingTools.delete(id);
     }
 
@@ -1785,7 +1835,13 @@ export class HeadlessSession {
       this.queue.unshift({
         command: {
           action: 'message',
-          text: step.text,
+          // Marked so it comes back as a resumption rather than a replay: the
+          // step already ran once, and whatever the user does between here and
+          // its re-delivery may well be the rest of it. resolveAction turns
+          // this param into a preamble, and both the chat row and the queue
+          // card label the step off it. Merged, so a step interrupted twice
+          // keeps its own params and re-marking stays idempotent.
+          text: setSentinelParams(step.text, { resumed: true }),
           onboardingState: step.onboardingState,
           // Fresh id: the original command's terminal has already gone out as
           // cancelled, and one command gets exactly one `completed`.
@@ -1794,15 +1850,26 @@ export class HeadlessSession {
         source: 'chain',
         enqueuedAt: Date.now(),
         held: true,
+        ...(reason === 'shutdown' && { heldBy: reason }),
       });
       this.currentChainStep = null;
     }
 
     // Everything left now waits on the user: their own messages, as before,
     // plus the pipeline this Stop paused.
-    const held = this.queue.holdWhere(
-      (item) => item.source === 'user' || item.source === 'chain',
-    );
+    //
+    // Chain items are held separately so a shutdown can tag them: Remy's own
+    // pipeline resumes itself after an environment teardown, while the user's
+    // messages stay held whatever took the agent down. The tag only lands on
+    // items this call transitions, so a shutdown after a user's Stop leaves
+    // their pause exactly as they left it (see holdWhere).
+    const held = [
+      ...this.queue.holdWhere(
+        (item) => item.source === 'chain',
+        reason === 'shutdown' ? reason : undefined,
+      ),
+      ...this.queue.holdWhere((item) => item.source === 'user'),
+    ];
     return {
       flushed,
       held,
@@ -1815,9 +1882,10 @@ export class HeadlessSession {
    * Remove pending queued messages: all user messages (no id), or a single item
    * by id. Does not affect the in-flight turn (use `cancel` for that).
    *
-   * Held chain items — a paused pipeline — are removable only by explicit id.
-   * The id-less form is the queue card's "Clear" and the pre-destroy quiesce,
-   * neither of which should get to decide the pipeline's fate. A DELIVERABLE
+   * Held chain items — a paused pipeline — are removable only by explicit id:
+   * the queue card's Discard sends one call per step, and its per-step X sends
+   * one. The id-less form is the card's "Clear", which is about the user's own
+   * messages and shouldn't get to decide the pipeline's fate. A DELIVERABLE
    * chain item is never removable: that's live pipeline work. (The step
    * actually running isn't in the queue at all — drainQueueLoop takes it out
    * before running it.)
@@ -1959,8 +2027,12 @@ export class HeadlessSession {
     }
 
     if (action === 'cancel') {
+      // `reason: 'shutdown'` — the sandbox's pre-destroy quiesce, not a person
+      // pressing Stop. Anything else (including absent) is a user Stop.
       const { flushed, held, pausedPipeline, cancelledCompaction } =
-        this.handleCancel();
+        this.handleCancel(
+          parsed.reason === 'shutdown' ? 'shutdown' : undefined,
+        );
       // The in-flight message's completed(success:false, error:"cancelled")
       // is handled by onEvent when turn_cancelled fires. The cancel's own
       // completed reports what this cancel actually did — a cancel with no turn

@@ -92,6 +92,12 @@ export type ContentBlock =
        * result string by liftRecording so the history cap can't lose it; the
        * editor stitches a session's chunks by sessionId + seq. See recording.ts. */
       recording?: RecordingRef;
+      /** Every chunk a sub-agent run recorded (set on the spawning block, e.g.
+       * runAutomatedBrowserTest). The per-block `recording` above survives the
+       * result cap but not the transcript cap, which drops the oldest messages
+       * — and with them the run's only FullSnapshot anchor. This list is
+       * collected before that cap and written once. See recording.ts. */
+      recordings?: RecordingRef[];
       /** UI/history-only tool block (e.g. the synthesized row for a user- or
        * gate-initiated compaction). Any message containing one is dropped
        * from API payloads by cleanMessagesForApi — the model never sees it. */

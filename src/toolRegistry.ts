@@ -24,6 +24,31 @@ const log = createLogger('tool-registry');
 export const USER_CANCELLED_RESULT =
   '[USER CANCELLED] The user manually cancelled this tool. Do not retry it automatically — wait for the user’s next message for direction.';
 
+/**
+ * Tool-result string for a cancellation nobody asked for: the environment is
+ * going away (a pod recycle or pre-destroy flush mid-turn).
+ *
+ * Distinct from USER_CANCELLED_RESULT because that one instructs the model to
+ * wait for the user's next message — untrue here, and actively harmful: a
+ * pipeline paused by a shutdown resumes itself on the next boot, and this
+ * string sits in the conversation right before the resumed step's own
+ * "pick up from where this left off". The nearer, more specific instruction
+ * would win, and the resumed turn would do nothing.
+ */
+export const ENV_INTERRUPTED_RESULT =
+  '[INTERRUPTED] The environment shut down while this tool was running. No user action was involved — pick up from here.';
+
+/**
+ * The right cancellation text for a turn aborted by `signal`. Reads the abort
+ * reason, which is `'shutdown'` only for an environment teardown (see
+ * ENV_INTERRUPTED_RESULT); everything else is a user Stop.
+ */
+export function cancelledToolResult(signal?: AbortSignal): string {
+  return signal?.reason === 'shutdown'
+    ? ENV_INTERRUPTED_RESULT
+    : USER_CANCELLED_RESULT;
+}
+
 export interface ToolRegistryEntry {
   id: string;
   name: string;

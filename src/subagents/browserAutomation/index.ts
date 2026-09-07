@@ -12,6 +12,8 @@ import {
   deriveContext,
 } from '../../tools/index.js';
 import { runSubAgent } from '../runner.js';
+import { dropToolResultMessages } from '../../historyLimits.js';
+import { collectRecordings } from '../../recording.js';
 import { BROWSER_TOOLS, BROWSER_EXTERNAL_TOOLS } from './tools.js';
 import { COMMON_READ_TOOL_NAMES } from '../common/tools.js';
 import { readSpecTool } from '../../tools/spec/readSpec.js';
@@ -228,7 +230,14 @@ export async function runBrowserAutomation(
       toolRegistry: context.toolRegistry,
     });
 
-    context.subAgentMessages?.set(context.toolCallId, result.messages);
+    // A browser transcript is the most expensive one we persist — every step
+    // carries an accessibility snapshot — and it is never replayed as model
+    // context, so it keeps only the assistant side. The results are already
+    // on the tool blocks (see historyLimits.ts).
+    context.subAgentMessages?.set(
+      context.toolCallId,
+      dropToolResultMessages(result.messages),
+    );
 
     // Surface the kind the caller asked for; fall back to whichever the
     // sub-agent actually captured so a result is never dropped. Both come from
@@ -240,15 +249,7 @@ export async function runBrowserAutomation(
     // Recorded batches leave a `recording` on their browserCommand block (the
     // runner lifts it off the result string). Any one means the run has a
     // replay the caller can reference.
-    const recorded = result.messages.some(
-      (m) =>
-        m.role === 'assistant' &&
-        Array.isArray(m.content) &&
-        m.content.some(
-          (b) =>
-            b.type === 'tool' && b.name === 'browserCommand' && !!b.recording,
-        ),
-    );
+    const recorded = collectRecordings(result.messages).length > 0;
     return {
       text: result.text,
       recorded,

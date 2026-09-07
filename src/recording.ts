@@ -10,7 +10,20 @@
  * the tool block (`ContentBlock.recording`), where nothing caps it, and leaves
  * the model a plain `recorded: true` flag: the sub-agent only needs to know a
  * replay exists, never the storage path.
+ *
+ * The surviving blocks aren't a reliable carrier either, which is the other
+ * half of the story. A persisted sub-agent transcript is capped by dropping
+ * its oldest messages, and a run's FullSnapshot chunk — the one anchor its
+ * later incremental-only chunks can play against — is always in the oldest of
+ * them, because the run's page load is the first thing that happens. A QA run
+ * past ~11 steps therefore committed with every chunk reference except the one
+ * that made them playable, and the editor showed nothing on reload.
+ * `collectRecordings` reads the whole run's references off a transcript before
+ * it is capped, so they can be kept on the spawning tool block instead — see
+ * attachSubAgentTranscript in historyLimits.ts.
  */
+
+import type { ContentBlock, Message } from './api.js';
 
 export interface RecordingRef {
   /** Private-bucket storage ref (`s3://bucket/key`); the editor signs it. */
@@ -27,6 +40,26 @@ export interface RecordingRef {
    *  editor reserves the player's box from it before fetching anything. */
   width: number;
   height: number;
+}
+
+/**
+ * Every chunk reference in a sub-agent transcript, in the order the run
+ * produced them. Call this on the transcript as the run left it — once it has
+ * been capped, the references it dropped are gone for good.
+ */
+export function collectRecordings(messages: Message[]): RecordingRef[] {
+  const recordings: RecordingRef[] = [];
+  for (const msg of messages) {
+    if (msg.role !== 'assistant' || !Array.isArray(msg.content)) {
+      continue;
+    }
+    for (const block of msg.content as ContentBlock[]) {
+      if (block.type === 'tool' && block.recording) {
+        recordings.push(block.recording);
+      }
+    }
+  }
+  return recordings;
 }
 
 /**
