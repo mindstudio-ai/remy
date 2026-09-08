@@ -134,6 +134,7 @@ remy-admin secrets set ARCHIVE_S3_SECRET --prod <value>
 remy-admin datasources connect --source archive --bucket acme-docs --region us-east-1 --prefix contracts/ --access-key-secret ARCHIVE_S3_KEY --secret-key-secret ARCHIVE_S3_SECRET --budget-per-sync 5
 remy-admin datasources sync --source archive --wait     # first sync: plans the whole bucket, stops for approval if over the budget
 remy-admin datasources sync --source archive --limit 20000 --concurrency 64   # a slice, run hard: how a big backfill is measured before it is approved
+remy-admin datasources sync --source archive --concurrency 256 --priority    # the real backfill when the clock matters: the whole fleet, priority-tier embedding at 1.5x the embedding price
 remy-admin datasources connector --source archive       # what it follows, last sync, object counts
 ```
 
