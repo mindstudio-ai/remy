@@ -46,7 +46,7 @@ Search is deterministic for a fixed corpus and configuration, so eval sets and r
 
 **Debugging retrieval.** Two opt-in options, neither of which changes the results or their order: `explain: true` adds `explain.{dense, lexical, matchedVia}` (which half of hybrid found each hit; costs two extra round trips), and `expand: 1` adds `neighbors.{before, after}` for surrounding context. When a document never comes back at all, `Policies.stats()` reports the config actually in effect and `Policies.chunks(documentId)` shows exactly how it was split.
 
-**A cold index (shared capacity).** By default a data source lives on shared retrieval capacity: its vectors sit in their own isolated partition of a pool many apps share, and the pool keeps only a working set resident. A source nobody has searched for a while is unloaded to make room and reloaded from durable storage on the next search. A small corpus reloads inside that search and nobody notices; a large one (hundreds of thousands of chunks) reloads in the background for a minute or two, and `search()` throws `index_warming` (HTTP 503) until it lands. That means *loading*, never *empty*: catch it, tell the user the knowledge base is warming up, and retry shortly. Before a demo, `remy-admin datasources hydrate --source <slug> --wait` reloads it ahead of time. The way out of the cycle is dedicated capacity (below): a source on its own provisioned retrieval is never unloaded and never warms.
+**A cold index (shared capacity).** By default a data source lives on shared retrieval capacity: its vectors sit in their own isolated partition of a pool many apps share, and the pool keeps only a working set resident. A source nobody has searched for a while is unloaded to make room and reloaded from durable storage on the next search. A small corpus reloads inside that search and nobody notices; a large one (hundreds of thousands of chunks) reloads in the background for a minute or two, and `search()` throws `index_warming` (HTTP 503) until it lands. That means *loading*, never *empty*: catch it, tell the user the knowledge base is warming up, and retry shortly. Before a demo, `remy-admin datasources hydrate --source <slug> --wait` reloads it ahead of time. The way out of the cycle is dedicated capacity (below): a source on its own provisioned retrieval is never unloaded and never warms. It has one pause of its own instead: while a bulk load runs, the index is not built behind every write, it is built once when the load finishes, and until then `search()` throws `index_building` (HTTP 503) with "N of M vectors indexed" in the message. Same handling as `index_warming`: the knowledge base is being built, never empty. `remy-admin datasources list` shows the index as `deferred`, `building` or `ready`.
 
 **Configuration is not declared in code** — chunking and embedding settings live on the corpus and are set with the CLI, so code and reality can't drift.
 
@@ -103,6 +103,7 @@ await Policies.add(buffer, {
   metadata: { department: 'legal' },   // filterable at search time
 });
 const docs = await Policies.documents({ ids: [document!.id] });   // 'processing' | 'done' | 'error'; plain documents() is the first thousand
+for await (const doc of Policies.allDocuments()) { /* ... */ }    // walk a corpus of any size, oldest first, a page at a time behind the scenes
 await Policies.remove(documentId);
 ```
 
@@ -201,6 +202,8 @@ remy-admin datasources jobs quarantine <id>                                     
 remy-admin datasources jobs replay <id> --wait                                     # after a fix, push and map deploy: just those objects again
 remy-admin datasources remap --source archive --wait                               # a changed mapper over every raw copy
 ```
+
+**A mapper is a pure transform: one object in, documents out, nothing else.** `remap` and `jobs replay` run it again over the raw copies, and a frame runs in the context of the release that compiled it, so anything a mapper writes on the side is written twice and possibly into the wrong data plane. The per-document facts an app needs later belong in `metadata`; an app that wants its own view of a big corpus (a timeline, counts by year, a table of ids) builds it after ingest by walking `Source.allDocuments()` in a background task, and keeps it current from what each sync adds.
 
 A mapper runs on the platform, so the platform has to build it. Any push builds it, and a branch push is a private preview build, which is all a mapper needs. `map deploy` then makes that build's mapper the source's active one: jobs, syncs and `add()` run it from then on, whether or not the app has ever been published. Publishing to main activates the mapper main declares as well, so merge the branch before you publish. `jobs start` refuses with `mapper_not_deployed` while the dev session declares a mapper that is not yet active, because the job would otherwise load the raw records as documents.
 
