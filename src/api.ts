@@ -29,7 +29,7 @@ const log = createLogger('api');
  * that box's org. Absent outside a sandbox (the CLI, a service account), where there is no lease to
  * renew.
  */
-function sandboxSessionHeader(): Record<string, string> {
+export function sandboxSessionHeader(): Record<string, string> {
   const sessionId = process.env.MINDSTUDIO_SESSION_ID;
   return sessionId ? { 'x-sandbox-session': sessionId } : {};
 }
