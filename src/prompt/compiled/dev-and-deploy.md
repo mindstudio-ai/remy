@@ -27,8 +27,11 @@ The dev database is disposable. Experiment freely — there's no risk of breakin
 
 ## What Happens on Deploy
 
+Publishing advances the default branch to your own branch's tip — the `publishing` skill has the
+flow. This section is what the platform does once that branch moves:
+
 ```bash
-git push origin main
+git push origin HEAD "HEAD:refs/heads/$MINDSTUDIO_DEFAULT_BRANCH"
 ```
 
 The platform builds and deploys automatically:

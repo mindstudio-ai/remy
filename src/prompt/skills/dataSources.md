@@ -80,6 +80,15 @@ People are bad at describing their own data, and the more of it they have the wo
 
 Three rules hold throughout: credentials are app secrets referred to by NAME and never appear in chat or code; nothing that spends is approved or provisioned without the user's explicit yes on the numbers; and dedicated capacity is proposed when a plan asks for it, not before.
 
+### Building an initial app (intake) when a user brings a data source
+
+When a user shows up with a data source from the first message, prefer the following workflow:
+- Get a feel for the data, using the methods discussed above
+- Then, and perhaps most importantly, understand what it is the user is trying to *do* with the data. Are they building a generic RAG chatbot, or something more interesting? What is important to them - grounding, citations, etc? And why?
+- Vectorized data that does nothing isn't very useful - building the app that will consume it to do something compelling is the important bit.
+- If the data smells truly large (e.g., will require async work, meaningful cost to ingest, or dedicated capacity/planning, etc), focus on putting a small sample of the data in a data source and then focus on building and delivering the MVP.
+- After the MVP is built and the user feels good about it, you can help the user bring in the full data source.
+
 ## Loading documents — normally at build time, from the CLI
 
 ```bash

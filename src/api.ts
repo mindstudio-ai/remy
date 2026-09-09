@@ -16,6 +16,24 @@ import type { RecordingRef } from './recording.js';
 
 const log = createLogger('api');
 
+/**
+ * Which dev box this agent is running in, so the platform renews the right lease.
+ *
+ * Every agent call doubles as a liveness signal for the box the agent is in — the browser tab's own
+ * keepalive is throttled when the tab is backgrounded, so on a long unattended task this is the only
+ * signal there is. An app can have a box per branch, and without naming ours the platform renews ALL
+ * of them: one busy box would hold every other branch's box open and nothing would ever hibernate.
+ *
+ * Read from the environment because that is where the sandbox puts it (`MINDSTUDIO_SESSION_ID`), and
+ * it is not a secret — it names a box, and every request carrying it is already authenticated as
+ * that box's org. Absent outside a sandbox (the CLI, a service account), where there is no lease to
+ * renew.
+ */
+function sandboxSessionHeader(): Record<string, string> {
+  const sessionId = process.env.MINDSTUDIO_SESSION_ID;
+  return sessionId ? { 'x-sandbox-session': sessionId } : {};
+}
+
 /** One suggestion chip: the words on the chip, and the message a tap sends.
  * Parsed out of the assistant's own markdown by suggestions.ts. */
 export interface Suggestion {
@@ -312,6 +330,7 @@ export async function* streamChat(
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
+        ...sandboxSessionHeader(),
       },
       body: JSON.stringify(requestBody),
       signal,
@@ -621,6 +640,7 @@ export async function generateBackgroundAck(params: {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${params.apiConfig.apiKey}`,
+        ...sandboxSessionHeader(),
       },
       body: JSON.stringify({
         appId: params.apiConfig.appId,
