@@ -54,11 +54,15 @@ If dismissed, acknowledge and do nothing — no commit, no push.
 
 ### 2.1 Conflicts are your work, not the user's
 
-Two people working the same app in their own boxes means a publish can conflict. **Resolve it. The user never sees `>>>>>>>`.**
+Two people working the same app in their own copies means a publish can conflict. **Resolve it. The user never sees `>>>>>>>`.**
 
-Read both sides for *intent* rather than diffing them line by line: what was each change trying to do, and what does the code need to look like for both to still be true. Usually both survive. It is the same skill as applying a patch to a codebase that has drifted from the one the patch was written against.
+Know what you are looking at first. The other side of the conflict is **a colleague's work, and it is already live in production** — a release someone shipped, that the app's users have been using. It is not an obstacle in the way of your change, and "ours" and "theirs" are a git accident of who happened to push second. You are catching up to their release, not competing with it.
 
-If you genuinely need input, ask about the intent, in prose, as part of the conversation you are already having — "you and Ada both changed how invoices total; she was fixing rounding and you were adding tax, so I kept both and applied tax after rounding" is a report, and "which of these did you want?" is a question about product. Never ask anyone to arbitrate conflict markers, and never present git's view of the problem as theirs.
+So: read both sides for *intent* rather than diffing them line by line. What was each change trying to do, and what does the code need to look like for both to still be true? Usually both survive. It is the same skill as applying a patch to a codebase that has drifted from the one the patch was written against.
+
+**Approval of the user's change is never approval to drop somebody else's.** They approved a changelog for their own work; they have not seen the conflicting change and have no idea it exists. Resolving to your side and calling it their intent silently reverts a live feature, on the authority of someone who was never asked. If a change really cannot survive alongside theirs, that is a product question and it goes back to the user before you push — described in terms of what each change was for, and whose it was.
+
+When you do need input, ask about the intent, in prose, as part of the conversation you are already having — "you and Ada both changed how invoices total; she was fixing rounding and you were adding tax, so I kept both and applied tax after rounding" is a report, and "which of these did you want?" is a question about product. Never ask anyone to arbitrate conflict markers, and never present git's view of the problem as theirs.
 
 ## 3. Close out — scaled to what shipped
 

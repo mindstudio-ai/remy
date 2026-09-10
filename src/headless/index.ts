@@ -83,10 +83,14 @@ import {
   createSessionStats,
   loadQueue,
   loadPassiveResults,
+  loadWorkspaceNotice,
+  emptyWorkspaceNotice,
   writeStats,
   type SessionStats,
   type PassiveResult,
+  type WorkspaceNotice,
 } from './stats.js';
+import { readUpstreamStatus } from '../git/upstreamStatus.js';
 import { getToolByName } from '../tools/index.js';
 import {
   MessageQueue,
@@ -101,6 +105,7 @@ import {
   isAutomatedMessage,
   setSentinelParams,
   buildBackgroundResultsMessage,
+  buildWorkspaceStatusMessage,
   mergeBackgroundResultsMessages,
 } from '../automatedActions/sentinel.js';
 
@@ -211,6 +216,16 @@ export class HeadlessSession {
    */
   private passivePen: PassiveResult[] = [];
 
+  /**
+   * The workspace-behind note, and the upstream tip it was raised for.
+   *
+   * Rides the same sweep as the passive pen and for the same reason: a
+   * workspace that is behind is worth knowing about before the next piece of
+   * work, and worth nothing at all if nobody is working — so it must never
+   * initiate a turn of its own.
+   */
+  private workspaceNotice: WorkspaceNotice = emptyWorkspaceNotice();
+
   // External tool bridge
   private pendingTools = new Map<string, PendingTool>();
   private earlyResults = new Map<string, string>();
@@ -289,6 +304,12 @@ export class HeadlessSession {
       },
     );
     this.passivePen = loadPassiveResults();
+    this.workspaceNotice = loadWorkspaceNotice();
+    // Is this workspace missing work that is already in production? Deliberately
+    // not awaited: it fetches, so blocking boot on it would put the network
+    // between the person and their editor, and there is nothing to deliver into
+    // until they say something anyway.
+    void this.checkUpstream();
     // Rewrite stats at boot: sessionStats starts fresh in memory, so this
     // clears a stale `compactionInProgress: true` left on disk by a crash
     // mid-compaction (compaction itself never survives a restart) — otherwise
@@ -581,7 +602,44 @@ export class HeadlessSession {
       this.queue.snapshot(),
       this.passivePen,
       suggestCompactAt,
+      this.workspaceNotice,
     );
+  }
+
+  /**
+   * Park a note if this workspace is missing work that is already in production.
+   *
+   * Once per upstream tip rather than once per boot. Remy restarts for reasons
+   * that have nothing to do with the repo — a pod recycle, a crash, a new
+   * session — and re-raising the same note on each of those turns a useful
+   * signal into nagging. A colleague publishing again moves the tip, which
+   * re-arms it; bringing the workspace current means there is nothing to raise.
+   *
+   * Never throws: this is called unawaited from the boot path, so an unhandled
+   * rejection here would be a crash at the least recoverable moment.
+   */
+  private async checkUpstream(): Promise<void> {
+    try {
+      const status = await readUpstreamStatus();
+      if (
+        !status ||
+        status.upstream === this.workspaceNotice.lastNotedUpstream
+      ) {
+        return;
+      }
+      this.workspaceNotice = {
+        pendingNote: buildWorkspaceStatusMessage(status),
+        lastNotedUpstream: status.upstream,
+      };
+      this.persistStats();
+      log.info('workspace behind upstream; note parked for the next turn', {
+        behind: status.behind,
+        ahead: status.ahead,
+        dirty: status.dirty,
+      });
+    } catch (err) {
+      log.info(`upstream check failed: ${String(err)}`);
+    }
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -1378,6 +1436,21 @@ export class HeadlessSession {
         text: buildBackgroundResultsMessage(swept),
         hidden: true,
       });
+    }
+
+    // The workspace-behind note rides the same choke point, and is unshifted
+    // after the pen so it lands ahead of it: it is context for everything in
+    // the turn, including any background result that arrived while the person
+    // was away. Cleared as it is delivered — one note per upstream tip, and
+    // `checkUpstream` will not raise another until the tip moves.
+    if (this.workspaceNotice.pendingNote) {
+      const note = this.workspaceNotice.pendingNote;
+      this.workspaceNotice = {
+        ...this.workspaceNotice,
+        pendingNote: null,
+      };
+      this.persistStats();
+      entries.unshift({ text: note, hidden: true });
     }
 
     // Pull hook for ASAP-promoted queued messages, called by runTurn at each

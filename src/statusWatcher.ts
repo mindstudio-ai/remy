@@ -26,6 +26,7 @@ const INTERNAL_PAYLOAD_MARKERS = [
   '[INTERRUPTED]',
   '[INTERRUPTED - PARTIAL OUTPUT RETRIEVED]',
   '<background_results>',
+  '<workspace_status>',
   '<tool_result',
 ];
 

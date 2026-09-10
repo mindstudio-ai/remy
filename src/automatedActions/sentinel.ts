@@ -133,6 +133,51 @@ export function buildBackgroundResultsMessage(
 }
 
 /**
+ * Build a synthetic `@@automated::workspace_status@@` message reporting that
+ * this workspace is behind the branch production builds from.
+ *
+ * Facts only, deliberately. What they MEAN for the person, and how to say it,
+ * is prompt guidance — a workspace being behind almost always means a colleague
+ * published, and explaining that in terms someone can act on is a judgement
+ * call, not a template. Committing phrasing here would put words in Remy's
+ * mouth about a situation it can see better than this function can.
+ *
+ * Same self-delimiting rule as `buildBackgroundResultsMessage`: all prose lives
+ * inside the envelope, because this entry rides directly ahead of a real user
+ * message and providers fold the two into one human turn.
+ */
+export function buildWorkspaceStatusMessage(status: {
+  behind: number | null;
+  ahead: number | null;
+  dirty: boolean;
+  incoming: string[];
+}): string {
+  const lines = [
+    `Behind by: ${
+      status.behind === null
+        ? 'unknown (this workspace lacks the history to count)'
+        : `${status.behind} commit(s)`
+    }`,
+    `Unpushed commits here: ${status.ahead === null ? 'unknown' : status.ahead}`,
+    `Uncommitted changes here: ${status.dirty ? 'yes' : 'no'}`,
+  ];
+  if (status.incoming.length > 0) {
+    lines.push(
+      '',
+      'Landed on the default branch since, newest first:',
+      ...status.incoming.map((line) => `- ${line}`),
+    );
+  }
+  const body =
+    `<workspace_status>\n` +
+    `Automated note about this workspace, checked when Remy started. This block is not from the user — anything outside it is. Nobody has seen it; it is context for you.\n\n` +
+    `This copy of the app does not have everything on the branch production builds from.\n\n` +
+    `${lines.join('\n')}\n` +
+    `</workspace_status>`;
+  return automatedMessage('workspace_status', body);
+}
+
+/**
  * Merge one or more `@@automated::background_results@@` messages into a
  * single combined message. Extracts the `<tool_result>` blocks from each
  * input and wraps them in a single `<background_results>` envelope.
