@@ -42,7 +42,7 @@ result.$billingCost;         // cost in credits (if applicable)
 |--------|-------------|-----------|------------|
 | `analyzeImage` | Vision model analysis | `prompt`, `imageUrl` | `analysis` |
 | `analyzeVideo` | Video analysis | `prompt`, `videoUrl` | `analysis` |
-| `transcribeAudio` | Audio to text | `audioUrl` | `transcription` |
+| `transcribeAudio` | Audio to text | `audioUrl` | `text`, `segments` |
 | `extractText` | Extract text from documents/images | `url` | `text` |
 | `detectPII` | Find personal data | `text` | `entities` |
 
