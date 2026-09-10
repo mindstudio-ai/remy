@@ -92,7 +92,7 @@ const { vendor } = await api.approveVendor({ vendorId: '...' });
 - **Built-in auth.** Opt-in via manifest. Developer builds login UI, platform handles verification codes (email/SMS), cookie sessions, and role enforcement. Backend methods use `auth.requireRole('admin')` for access control.
 - **Multiple interfaces, one codebase.** Web, API, Cron, Webhook, Email, MCP, Agent, Voice — all invoke the same methods. Methods don't know which interface called them.
 - **Sandboxed execution.** Each method invocation runs in its own isolated execution context with npm packages pre-installed.
-- **Git-native deployment.** Everyone works on their own branch; publishing advances the default branch, which deploys. Pushing your own branch builds a preview. Rollback is a git revert.
+- **Git-native deployment.** Push to default branch to deploy. Push to feature branch for preview. Rollback is a git revert.
 - **Secrets.** Encrypted environment variables with separate dev/prod values. Injected as `process.env` in methods. For third-party service credentials not covered by the SDK.
 
 ## Minimum Viable App
