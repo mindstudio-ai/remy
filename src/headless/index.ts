@@ -332,12 +332,14 @@ export class HeadlessSession {
         // User/gate compactions have no tool block of their own — synthesize
         // a UI-only one so every compaction renders as a normal tool call
         // (standard tool row, ToolList, ToolDetail). Never for 'tool' origin
-        // (a real block exists). Both remaining origins only ever execute at
-        // safe append points — 'gate' fires pre-runTurn, and 'user' runs
-        // either idle or as its own drain step (a mid-turn /compact enqueues
-        // instead of running) — so there is never a dangling tool_use to
-        // splice into. `uiOnly` keeps the message out of every API payload
-        // (cleanMessagesForApi).
+        // (a real block exists). Both remaining origins execute at safe
+        // message boundaries — 'gate' fires pre-runTurn or, for the mid-turn
+        // context guard, right after a tool_use/tool_result pair is appended
+        // (agent.ts), and 'user' runs either idle or as its own drain step (a
+        // mid-turn /compact enqueues instead of running) — so the synthesized
+        // block only ever appends after a complete pair, never between a
+        // tool_use and its results. `uiOnly` keeps the message out of every
+        // API payload (cleanMessagesForApi).
         //
         // Deliberately a FOREGROUND block, unlike the model-invoked
         // compactConversation tool (backgroundOnly): the user is actively
@@ -383,10 +385,11 @@ export class HeadlessSession {
 
         // Complete the synthesized block directly: set result/isError on the
         // block and emit a real (late) tool_done — the only event carrying
-        // that pair. Direct mutation is safe here because user/gate
-        // compactions never complete mid-LLM-loop (the gate is awaited
-        // pre-turn; /compact runs idle or as its own drain step), so there is
-        // no in-flight request whose payload this could race.
+        // that pair. Direct mutation is safe here because a gate/user
+        // compaction is always awaited by its caller before the next LLM call
+        // (the pre-turn gate, the mid-turn guard between tool batches, or a
+        // /compact drain step), so there is no in-flight request whose payload
+        // this mutation could race.
         if (this.syntheticCompactionId) {
           const id = this.syntheticCompactionId;
           this.syntheticCompactionId = null;
@@ -961,6 +964,14 @@ export class HeadlessSession {
         );
         return;
       case 'error':
+        // Keep the forced-compaction gate armed after an error turn: turn_done
+        // is the only other setter of lastContextSize, and an errored turn
+        // never reaches it, so without this the next turn could send the same
+        // oversized history and fail again (RPT-1225).
+        if (typeof e.lastCallInputTokens === 'number') {
+          this.sessionStats.lastContextSize = e.lastCallInputTokens;
+          this.persistStats();
+        }
         this.emit(
           'error',
           { error: e.error, ...(e.code ? { code: e.code } : {}) },

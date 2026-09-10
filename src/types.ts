@@ -107,7 +107,16 @@ export type AgentEvent =
     }
   | { type: 'turn_cancelled' }
   | { type: 'status'; message: string; parentToolId?: string }
-  | { type: 'error'; error: string; code?: string };
+  | {
+      type: 'error';
+      error: string;
+      code?: string;
+      /** Input-token size of the LLM call that failed, when known. The
+       * headless layer records it as `lastContextSize` so the forced-compaction
+       * gate stays armed after an error turn (turn_done is the only other
+       * setter, and an errored turn never reaches it). */
+      lastCallInputTokens?: number;
+    };
 
 // Conversation state persisted across turns
 export interface AgentState {
