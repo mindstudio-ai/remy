@@ -18,9 +18,18 @@
  * main agent.
  */
 
-import { fetchRemyContext, type RemyContext } from './api.js';
+import {
+  fetchRemyContext,
+  fetchRemyModelSurfaces,
+  type RemyContext,
+} from './api.js';
 import type { ApiConfig } from './config.js';
-import { filterModelPicks, setOrgDefaultModels } from './models/surfaces.js';
+import {
+  filterModelPicks,
+  parseTextModels,
+  setOrgDefaultModels,
+  setTextModels,
+} from './models/surfaces.js';
 import { createLogger } from './logger.js';
 
 const log = createLogger('orgContext');
@@ -30,7 +39,20 @@ let cached: RemyContext | null = null;
 /** Fetch and cache org context. Never throws — startup must not block on it. */
 export async function initOrgContext(config: ApiConfig): Promise<void> {
   try {
+    // Text-model catalog first so filterModelPicks sees the live allow-list.
+    // Public remy-model-surfaces is the primary source (no appId / auth);
+    // remy-context carries the same table and is applied if this misses.
+    const surfaces = await fetchRemyModelSurfaces(config);
+    const fromSurfaces = parseTextModels(surfaces?.textModels);
+    if (fromSurfaces) {
+      setTextModels(fromSurfaces);
+    }
+
     cached = await fetchRemyContext(config);
+    const fromContext = parseTextModels(cached?.textModels);
+    if (fromContext) {
+      setTextModels(fromContext);
+    }
     // Validate + publish org default model picks to the surfaces registry so
     // resolveModel and the picker payloads use them as the live per-surface
     // default. Invalid/unknown entries are dropped; absent ⇒ registry defaults.
@@ -41,6 +63,7 @@ export async function initOrgContext(config: ApiConfig): Promise<void> {
       requireDelegatedOnly: cached?.auth?.requireDelegatedOnly ?? false,
       hasOrgName: !!cached?.org?.name,
       orgDefaultModels,
+      textModelCount: Object.keys(fromContext ?? fromSurfaces ?? {}).length,
     });
   } catch (err: any) {
     cached = null;

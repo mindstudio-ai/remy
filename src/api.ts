@@ -729,6 +729,13 @@ export interface RemyContext {
    * ALLOWED_MODELS_BY_TYPE (filterModelPicks) and applies the rest as the
    * live per-surface default (below a user's own pick). */
   defaultModels?: Record<string, string>;
+  /** Live Remy text allow-list + compaction thresholds. Same payload as
+   * `/v1/site-settings/remy-model-surfaces`. Applied via setTextModels. */
+  textModels?: Record<
+    string,
+    { forceCompactAt: number; suggestCompactAt?: number }
+  >;
+  allowedModelsByType?: Partial<Record<string, string[]>>;
 }
 
 /**
@@ -763,6 +770,36 @@ export async function fetchRemyContext(
     return data;
   } catch (err: any) {
     log.debug('remy-context fetch failed', { error: err.message });
+    return null;
+  }
+}
+
+/**
+ * Public Remy surface catalog (surfaces + text-model allow-list + compact
+ * thresholds). No auth — same CDN-cached route the frontend reads.
+ */
+export async function fetchRemyModelSurfaces(config: ApiConfig): Promise<{
+  textModels?: RemyContext['textModels'];
+} | null> {
+  const url = `${config.baseUrl}/v1/site-settings/remy-model-surfaces`;
+  try {
+    const res = await fetch(url, {
+      method: 'GET',
+      signal: AbortSignal.timeout(20000),
+    });
+    if (!res.ok) {
+      log.debug('remy-model-surfaces fetch non-OK', { status: res.status });
+      return null;
+    }
+    const data = (await res.json()) as {
+      textModels?: RemyContext['textModels'];
+    };
+    if (!data || typeof data !== 'object') {
+      return null;
+    }
+    return data;
+  } catch (err: any) {
+    log.debug('remy-model-surfaces fetch failed', { error: err.message });
     return null;
   }
 }

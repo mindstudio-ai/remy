@@ -1,16 +1,18 @@
 /**
  * Authoritative registry of every pickable model surface in Remy.
  *
- * Single source of truth for defaults, picker metadata, user-facing
- * labels/descriptions, and allow-lists. Every call site that needs a
- * model goes through `resolveModel(surfaceId, models, fallback)` —
- * four-tier resolution: explicit user pick > startup-time global
- * override > org default > registry default.
+ * Surfaces (defaults, labels, descriptions) live here. The text-model
+ * allow-list and compaction thresholds are fetched from the platform at
+ * boot (`setTextModels`) — TEXT_MODELS is only the offline fallback.
+ *
+ * Every call site that needs a model goes through
+ * `resolveModel(surfaceId, models, fallback)` — four-tier resolution:
+ * explicit user pick > startup-time global override > org default >
+ * registry default.
  *
  * The frontend reads this registry over the stdin protocol (shipped on
  * `session_restored` and `get_history` payloads) and renders the picker
- * UI from it. No duplicated default/label/description knowledge on
- * either side.
+ * UI from it.
  */
 
 export type ModelType = 'text' | 'vision' | 'image_generation';
@@ -181,20 +183,16 @@ export interface ModelContextLimits {
 // The /compact suggestion point for models without their own
 // suggestCompactAt (flat-priced — no price cliff to stay under, so this is
 // purely the "worth condensing by now" size; it matches the frontend's
-// historical threshold). Tiered models set explicit values in TEXT_MODELS,
-// just below their pricing-tier boundary.
+// historical threshold). Tiered models set explicit values on the catalog
+// `remy` block, just below their pricing-tier boundary.
 const DEFAULT_SUGGEST_COMPACT_AT = 300_000;
 
 /**
- * The chat-endpoint text-model allow-list, with each model's context
- * thresholds. Single source of truth: ALLOWED_MODELS_BY_TYPE.text derives
- * from these keys, so adding a model here is what allow-lists it — and
- * forces choosing its thresholds at the same time.
- *
- * Sources for the numbers: context windows and pricing tiers from the
- * platform model catalog (youai-api src/common/AIModels/catalog) and its
- * adapters — OpenAI doubles rates above 272K input, Anthropic and Grok
- * above 200K, Google (gemini-3.1-pro) above 200K.
+ * Offline fallback for the Remy text allow-list. Live values come from
+ * the platform (`/v1/site-settings/remy-model-surfaces` / remy-context)
+ * via `setTextModels` at boot. Do not add new models here — author
+ * `remy: { text: true, forceCompactAt, suggestCompactAt? }` on the
+ * catalog file in youai-api.
  */
 export const TEXT_MODELS: Record<string, ModelContextLimits> = {
   // Anthropic 1M-context, flat-priced.
@@ -242,16 +240,58 @@ export const TEXT_MODELS: Record<string, ModelContextLimits> = {
 };
 
 /**
- * Thresholds for models outside TEXT_MODELS — reachable only via a dev
- * `--model` override, since picks are validated against the allow-list.
- * Matches the historical fixed gate.
+ * Thresholds for models outside the live allow-list — reachable only via a
+ * dev `--model` override. Matches the historical fixed gate.
  */
 const DEFAULT_CONTEXT_LIMITS: ModelContextLimits = { forceCompactAt: 850_000 };
+
+/** Live text-model table. Starts as TEXT_MODELS; replaced at boot when
+ * the platform catalog fetch succeeds. */
+let liveTextModels: Record<string, ModelContextLimits> = { ...TEXT_MODELS };
+
+/** Replace the process-wide text allow-list + compaction thresholds.
+ * Pass an already-validated map (see parseTextModels). */
+export function setTextModels(
+  models: Record<string, ModelContextLimits>,
+): void {
+  liveTextModels = models;
+}
+
+/** Accept a platform `textModels` payload. Returns a clean map, or null
+ * when nothing valid is present (caller keeps the fallback). */
+export function parseTextModels(
+  raw: unknown,
+): Record<string, ModelContextLimits> | null {
+  if (!raw || typeof raw !== 'object') {
+    return null;
+  }
+  const out: Record<string, ModelContextLimits> = {};
+  for (const [id, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (!id || typeof id !== 'string') {
+      continue;
+    }
+    if (!value || typeof value !== 'object') {
+      continue;
+    }
+    const force = (value as { forceCompactAt?: unknown }).forceCompactAt;
+    if (typeof force !== 'number' || !Number.isFinite(force) || force <= 0) {
+      continue;
+    }
+    const suggest = (value as { suggestCompactAt?: unknown }).suggestCompactAt;
+    out[id] = {
+      forceCompactAt: force,
+      ...(typeof suggest === 'number' && Number.isFinite(suggest) && suggest > 0
+        ? { suggestCompactAt: suggest }
+        : {}),
+    };
+  }
+  return Object.keys(out).length > 0 ? out : null;
+}
 
 /** Context thresholds for a model id, with the conservative-for-1M-class
  * default for unknown ids. */
 export function getContextLimits(modelId: string): ModelContextLimits {
-  return TEXT_MODELS[modelId] ?? DEFAULT_CONTEXT_LIMITS;
+  return liveTextModels[modelId] ?? DEFAULT_CONTEXT_LIMITS;
 }
 
 /** Where the frontend starts suggesting `/compact` for this model: the
@@ -267,14 +307,16 @@ export function getSuggestCompactAt(modelId: string): number {
 /**
  * Allow-list of pickable model IDs by model type.
  *
- * `text` surfaces are constrained to the chat-endpoint allow-list (the
+ * `text` surfaces are constrained to the live catalog fetch (fallback:
  * TEXT_MODELS keys). `vision` and `image_generation` surfaces are
  * unconstrained — the frontend renders them from its own model catalog. An
  * undefined value means "no allow-list — pick anything of this type from
  * the catalog."
  */
 export const ALLOWED_MODELS_BY_TYPE: Partial<Record<ModelType, string[]>> = {
-  text: Object.keys(TEXT_MODELS),
+  get text() {
+    return Object.keys(liveTextModels);
+  },
   // vision: undefined — unconstrained
   // image_generation: undefined — unconstrained
 };
