@@ -20,6 +20,7 @@
 
 import {
   streamChatWithRetry,
+  MAX_RETRIES,
   type Message,
   type ContentBlock,
   type Attachment,
@@ -32,14 +33,18 @@ import {
 } from './tools/index.js';
 import { saveSession } from './session.js';
 import { createLogger } from './logger.js';
-import { recordUsage, nanoToDollars } from './usageLedger.js';
+import {
+  recordUsage,
+  nanoToDollars,
+  thinkingTokensFromBilling,
+} from './usageLedger.js';
 import type { ApiConfig } from './config.js';
 
 const log = createLogger('agent');
 import { parsePartialJson } from './parsePartialJson.js';
 import { startStatusWatcher, sanitizeStatusText } from './statusWatcher.js';
 import { NON_ACTION_SENTINELS } from './automatedActions/resolve.js';
-import { friendlyError } from './errors.js';
+import { friendlyError, isContextOverflowError } from './errors.js';
 
 import { cleanMessagesForApi } from './subagents/common/cleanMessages.js';
 import {
@@ -49,7 +54,15 @@ import {
 } from './suggestions.js';
 import { parseSentinel, sentinelParams } from './automatedActions/sentinel.js';
 import { triggerBrandExtraction } from './brandExtraction/trigger.js';
-import { resolveModel, resolveParentModel } from './models/surfaces.js';
+import {
+  resolveModel,
+  resolveParentModel,
+  getContextLimits,
+} from './models/surfaces.js';
+import {
+  triggerCompaction,
+  applyPendingSummaries,
+} from './compaction/trigger.js';
 import { cancelledToolResult } from './toolRegistry.js';
 import { capToolResult, attachSubAgentTranscript } from './historyLimits.js';
 
@@ -309,14 +322,50 @@ export async function runTurn(params: {
   let lastCallCacheCreation = 0;
   let lastCallCacheRead = 0;
 
-  // Abnormal-stop recoveries this turn. A `repetition` stop (the API caught a
-  // degenerate repetition loop, aborted the stream, and truncated the repeated
-  // tail) or a `max_tokens` stop with no tool call are both pathologies, not
-  // finished turns — nudge the model to continue instead of silently ending
-  // (which killed MVP builds mid-chain). Capped so a model that immediately
-  // degenerates again can't keep the turn alive forever.
-  let abnormalStopRecoveries = 0;
-  const MAX_ABNORMAL_STOP_RECOVERIES = 2;
+  // Recoveries this turn, shared across every "not a finished turn" pathology:
+  // a provider `repetition`/`max_tokens` abnormal stop, and a harness-detected
+  // reasoning loop we aborted mid-call (see RepetitionDetector). Each nudges
+  // the model to continue instead of silently ending (which killed MVP builds
+  // mid-chain). Capped so a model that keeps degenerating can't hold the turn
+  // open forever.
+  let recoveries = 0;
+  const MAX_RECOVERIES = 2;
+
+  // Mid-turn forced compactions this turn (proactive context guard). Capped so
+  // a runaway turn can't compact on every iteration.
+  let midTurnCompactions = 0;
+  const MAX_MID_TURN_COMPACTIONS = 2;
+
+  // One reactive compact-and-retry for a context-overflow error per turn. A
+  // second overflow after compaction surfaces as a normal error.
+  let overflowRecovered = false;
+
+  // Compact the conversation in place at a safe message boundary, then apply
+  // the checkpoint. Shared by the proactive guard and the overflow-recovery
+  // path. Best-effort — a failed compaction logs and returns; the caller's
+  // next LLM call still surfaces any real overflow.
+  const compactNow = async (reason: string): Promise<void> => {
+    log.warn('Compacting mid-turn', {
+      requestId,
+      reason,
+      lastCallInputTokens,
+    });
+    onEvent({ type: 'status', message: 'Compacting the conversation…' });
+    try {
+      await triggerCompaction(state, apiConfig, {
+        blocking: true,
+        requestId,
+        model,
+        origin: 'gate',
+      });
+      applyPendingSummaries(state);
+    } catch (err: any) {
+      log.error('Mid-turn compaction failed', {
+        requestId,
+        error: err?.message ?? String(err),
+      });
+    }
+  };
 
   // One watcher for the whole turn, stopped in the finally below. It used to
   // be created per loop iteration, which both multiplied requests (each new
@@ -563,6 +612,12 @@ export async function runTurn(params: {
         onEvent({ type: 'text_block', text, suggestions });
       }
 
+      // Set when the stream yields a provider error, handled after the loop so
+      // a context overflow (or a harness-detected reasoning loop) can recover
+      // instead of ending the turn. streamChatWithRetry runs the repetition
+      // guard as SSE arrives and surfaces a trip as a `repetition_loop` error.
+      let streamError: { error: string; code?: string } | null = null;
+
       // Stream one LLM turn using the per-turn parent model resolved above.
       try {
         for await (const event of streamChatWithRetry(
@@ -582,9 +637,13 @@ export async function runTurn(params: {
             onRetry: (attempt) => {
               onEvent({
                 type: 'status',
-                message: `Lost connection, retrying (attempt ${attempt + 2} of 3)`,
+                message: `Lost connection, retrying (attempt ${attempt + 2} of ${MAX_RETRIES})`,
               });
             },
+            // Watch the streamed reasoning/text for a runaway repetition loop
+            // and abort the in-flight call early (RPT-1225). Surfaces as a
+            // `repetition_loop` error handled below.
+            detectRepetition: true,
           },
         )) {
           if (signal?.aborted) {
@@ -615,7 +674,7 @@ export async function runTurn(params: {
               break;
             }
 
-            case 'thinking':
+            case 'thinking': {
               // The platform emits a `thinking` event with `text: ''` at
               // each thinking-block start (see AnthropicAdapter handling of
               // content_block_start for type=thinking). Each empty-text
@@ -632,6 +691,7 @@ export async function runTurn(params: {
               }
               onEvent({ type: 'thinking', text: event.text });
               break;
+            }
 
             case 'thinking_complete': {
               const startedAt =
@@ -752,6 +812,11 @@ export async function runTurn(params: {
                 outputTokens: event.usage.outputTokens,
                 cacheCreationTokens: event.usage.cacheCreationTokens,
                 cacheReadTokens: event.usage.cacheReadTokens,
+                thinkingTokens:
+                  thinkingTokensFromBilling(
+                    event.billingEvents,
+                    event.usage.outputTokens,
+                  ) || undefined,
                 cost: nanoToDollars(event.cost),
                 billingEvents: event.billingEvents,
                 durationMs: Date.now() - iterStart,
@@ -765,18 +830,16 @@ export async function runTurn(params: {
               break;
 
             case 'error':
-              // Stop before emitting so an in-flight tick can't land a status
-              // label after the error (same reason as the turn_done path).
-              statusWatcher.stop();
-              // `friendlyError` rewrites the human-readable string; the machine
-              // `code` (e.g. `insufficient_credits/balance`) passes through
-              // untouched so the frontend can drive interactive recovery.
-              onEvent({
-                type: 'error',
-                error: friendlyError(event.error),
-                ...(event.code ? { code: event.code } : {}),
-              });
-              return;
+              // Capture and handle after the loop. A context overflow or a
+              // detected repetition loop recovers rather than ending the turn,
+              // so we can't emit + return inline. The stream has already ended
+              // (streamChatWithRetry returned the error), so just break out.
+              streamError = { error: event.error, code: event.code };
+              break;
+          }
+
+          if (streamError) {
+            break;
           }
         }
       } catch (err: any) {
@@ -828,6 +891,76 @@ export async function runTurn(params: {
         return;
       }
 
+      // Provider error, or a harness signal (repetition loop) surfaced as one.
+      // Recoverable cases discard this call's partial (which for an error is
+      // empty) and loop back; everything else is surfaced and ends the turn.
+      if (streamError) {
+        const { error, code } = streamError;
+
+        // Runaway reasoning loop caught mid-stream (streamChatWithRetry
+        // aborted the call). Within the recovery budget, nudge and re-issue;
+        // otherwise stop rather than keep paying.
+        if (code === 'repetition_loop') {
+          if (recoveries < MAX_RECOVERIES && !signal?.aborted) {
+            recoveries++;
+            log.warn('Repetition loop — nudging model to continue', {
+              requestId,
+              attempt: recoveries,
+            });
+            const nudge =
+              'Your previous response was stopped because it kept repeating ' +
+              'the same reasoning without making progress. Do not deliberate ' +
+              'further — take the next concrete action now: make the tool ' +
+              'call or give the answer.';
+            state.messages.push({
+              role: 'user',
+              content: nudge,
+              hidden: true,
+            });
+            onEvent({ type: 'user_message', text: nudge, hidden: true });
+            continue;
+          }
+          statusWatcher.stop();
+          saveSession(state);
+          log.warn('Repetition loop over recovery cap — ending turn', {
+            requestId,
+          });
+          onEvent({
+            type: 'error',
+            error:
+              'The model kept repeating itself without making progress, so ' +
+              'Remy stopped the turn to avoid runaway cost. Try again, or ' +
+              'rephrase your request.',
+            lastCallInputTokens,
+          });
+          return;
+        }
+
+        // Context overflow gets one compact-and-retry.
+        if (
+          isContextOverflowError(error, code) &&
+          !overflowRecovered &&
+          !signal?.aborted
+        ) {
+          overflowRecovered = true;
+          await compactNow('context overflow');
+          continue;
+        }
+
+        statusWatcher.stop();
+        // Save first: earlier iterations pushed tool results into history that
+        // the error path would otherwise drop (the assistant tool_use blocks
+        // are already persisted, so their results must be too).
+        saveSession(state);
+        onEvent({
+          type: 'error',
+          error: friendlyError(error),
+          ...(code ? { code } : {}),
+          lastCallInputTokens,
+        });
+        return;
+      }
+
       // Record assistant message in conversation history (skip if empty)
       if (contentBlocks.length > 0) {
         state.messages.push({
@@ -854,21 +987,24 @@ export async function runTurn(params: {
       if (
         toolCalls.length === 0 &&
         (stopReason === 'repetition' || stopReason === 'max_tokens') &&
-        abnormalStopRecoveries < MAX_ABNORMAL_STOP_RECOVERIES &&
+        recoveries < MAX_RECOVERIES &&
         !signal?.aborted
       ) {
-        abnormalStopRecoveries++;
+        recoveries++;
         log.warn('Abnormal stop — nudging model to continue', {
           requestId,
           stopReason,
-          attempt: abnormalStopRecoveries,
+          attempt: recoveries,
         });
+        // `max_tokens` here means the budget was spent before a tool call
+        // closed — most often extended reasoning, not visible output. Name
+        // both so the nudge is true either way.
         const nudge =
-          'Your previous response was cut off — it degenerated into repeated ' +
-          'text or hit the output limit, and the repeated portion was ' +
-          'removed. Reassess where you are in the task and continue from ' +
-          'where you left off. Prefer a tool call over restating what you ' +
-          'were about to do.';
+          'Your previous response was cut off before you finished — it hit ' +
+          'the output limit (often from over-long reasoning) or degenerated ' +
+          'into repeated text, and the unusable part was removed. Stop ' +
+          'deliberating, reassess where you are, and continue with a concrete ' +
+          'tool call rather than restating your plan.';
         state.messages.push({ role: 'user', content: nudge, hidden: true });
         onEvent({ type: 'user_message', text: nudge, hidden: true });
         continue;
@@ -1110,6 +1246,23 @@ export async function runTurn(params: {
           toolCallId: r.id,
           isToolError: r.isError,
         });
+      }
+
+      // Proactive mid-turn context guard. state.messages now ends on a
+      // complete assistant(tool_use…) + user(tool_result…) boundary and no
+      // request is in flight, so this is a safe point to compact. Without it,
+      // a single long turn can grow past the model's usable input ceiling and
+      // die on the provider's hard limit before the turn-start gate ever runs
+      // again (RPT-1225). `lastCallInputTokens` is the size of the call that
+      // produced these tool calls; the next call adds the tool-result bytes.
+      const { forceCompactAt } = getContextLimits(parentModel);
+      if (
+        lastCallInputTokens > forceCompactAt &&
+        midTurnCompactions < MAX_MID_TURN_COMPACTIONS &&
+        !signal?.aborted
+      ) {
+        midTurnCompactions++;
+        await compactNow(`context ${lastCallInputTokens} > ${forceCompactAt}`);
       }
 
       // ASAP messages: pull any queued user messages promoted to mid-turn

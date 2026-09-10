@@ -31,12 +31,38 @@ export interface UsageEntry {
   outputTokens: number;
   cacheCreationTokens?: number;
   cacheReadTokens?: number;
+  /** Reasoning tokens generated this call (Google bills thinking as output,
+   * disjoint from visible output). Derived from billingEvents — see
+   * `thinkingTokensFromBilling`. Present only when the breakdown reveals a
+   * nonzero thinking component; absent for models that don't report it. */
+  thinkingTokens?: number;
   /** Org-marked-up customer cost in dollars for this call. */
   cost?: number;
   /** Per-event billing breakdown; sums to cost. */
   billingEvents?: BillingEvent[];
   durationMs: number;
   toolNames: string[];
+}
+
+/**
+ * Reasoning ("thinking") tokens for a call, derived from its billing
+ * breakdown. Providers that price thinking as output report a `-response`
+ * billing event whose unit count is (visible output + thinking); subtracting
+ * the visible `outputTokens` recovers the thinking portion. Anthropic-style
+ * providers fold thinking into `outputTokens` and emit no separate signal, so
+ * this returns 0 there. Never negative.
+ */
+export function thinkingTokensFromBilling(
+  billingEvents: BillingEvent[] | undefined,
+  outputTokens: number,
+): number {
+  if (!billingEvents?.length) {
+    return 0;
+  }
+  const billedResponseUnits = billingEvents
+    .filter((e) => e.eventType.endsWith('-response'))
+    .reduce((sum, e) => sum + e.numUnits, 0);
+  return Math.max(0, billedResponseUnits - outputTokens);
 }
 
 let fd: number | null = null;

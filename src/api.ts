@@ -11,6 +11,7 @@
  */
 
 import { createLogger } from './logger.js';
+import { RepetitionDetector } from './loopGuard.js';
 import type { ApiConfig } from './config.js';
 import type { RecordingRef } from './recording.js';
 
@@ -523,7 +524,7 @@ export async function* streamChat(
 
 // --- Retry wrapper ---
 
-const MAX_RETRIES = 5;
+export const MAX_RETRIES = 5;
 const INITIAL_BACKOFF_MS = 1000;
 
 // Machine-readable error codes the API relays from the provider (the SSE
@@ -567,32 +568,83 @@ function sleep(ms: number): Promise<void> {
  * On retryable failure, discards the buffer and retries with exponential
  * backoff. This prevents the agent loop from accumulating partial text
  * from a failed attempt.
+ *
+ * With `detectRepetition`, the streamed reasoning/text is fed to a repetition
+ * guard AS IT ARRIVES (this is the only place events are seen incrementally —
+ * the buffer above defers everything else to end-of-stream). A runaway loop
+ * aborts the in-flight call and surfaces as a `repetition_loop` error so the
+ * agent can nudge and re-issue instead of paying out the whole output budget
+ * on repeated thinking (RPT-1225).
  */
 export async function* streamChatWithRetry(
   params: Parameters<typeof streamChat>[0],
   options?: {
     onRetry?: (attempt: number, error: string) => void;
+    detectRepetition?: boolean;
   },
 ): AsyncGenerator<StreamEvent> {
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     const buffer: StreamEvent[] = [];
     let retryableFailure = false;
 
-    for await (const event of streamChat(params)) {
-      if (event.type === 'error') {
-        if (
-          isRetryableError(event.error, event.code) &&
-          attempt < MAX_RETRIES - 1
-        ) {
-          options?.onRetry?.(attempt, event.error);
-          retryableFailure = true;
-          break;
-        }
-        // Non-retryable or final attempt — yield the error
-        yield event;
-        return;
+    // Per-attempt repetition guard + an internal abort chained to the caller's
+    // signal, so a detected loop can stop the upstream request without the
+    // caller owning the controller. streamChat still sees turn cancellation
+    // via the chained abort.
+    const detector = options?.detectRepetition
+      ? new RepetitionDetector()
+      : null;
+    const streamAbort = new AbortController();
+    const onCallerAbort = () => streamAbort.abort();
+    if (params.signal) {
+      if (params.signal.aborted) {
+        streamAbort.abort();
+      } else {
+        params.signal.addEventListener('abort', onCallerAbort, { once: true });
       }
-      buffer.push(event);
+    }
+
+    try {
+      for await (const event of streamChat({
+        ...params,
+        signal: streamAbort.signal,
+      })) {
+        if (event.type === 'error') {
+          if (
+            isRetryableError(event.error, event.code) &&
+            attempt < MAX_RETRIES - 1
+          ) {
+            options?.onRetry?.(attempt, event.error);
+            retryableFailure = true;
+            break;
+          }
+          // Non-retryable or final attempt — yield the error
+          yield event;
+          return;
+        }
+        if (detector && (event.type === 'text' || event.type === 'thinking')) {
+          const loop = detector.feed(event.text);
+          if (loop) {
+            log.warn('Repetition loop detected — aborting call', {
+              requestId: params.requestId,
+              kind: loop.kind,
+              repeats: loop.repeats,
+            });
+            streamAbort.abort();
+            yield {
+              type: 'error',
+              error:
+                'Response stopped: the model was repeating its reasoning ' +
+                'without making progress.',
+              code: 'repetition_loop',
+            };
+            return;
+          }
+        }
+        buffer.push(event);
+      }
+    } finally {
+      params.signal?.removeEventListener('abort', onCallerAbort);
     }
 
     if (retryableFailure) {
