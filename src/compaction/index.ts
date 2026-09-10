@@ -475,6 +475,21 @@ function serializeForSummary(messages: Message[]): string {
       continue;
     }
 
+    // Internal machinery, not anything anyone said. `hidden` entries and
+    // automated-sentinel messages are swept into turns by the platform —
+    // background results, the workspace-behind note — and quoting them as
+    // `[user]:` puts words in the user's mouth in a summary they can open: the
+    // note's own body says "this block is not from the user", which the
+    // summarizer would then faithfully attribute to them. `narrativeText` above
+    // excludes the same two for the same reason.
+    if (
+      msg.role === 'user' &&
+      (msg.hidden ||
+        (typeof msg.content === 'string' && isAutomatedMessage(msg.content)))
+    ) {
+      continue;
+    }
+
     if (typeof msg.content === 'string') {
       if (msg.content.trim()) {
         lines.push(`[${msg.role}]: ${msg.content}`);

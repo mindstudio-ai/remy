@@ -1,6 +1,6 @@
 # Development & Deployment
 
-Development happens in the hosted sandbox, against a dev release with its own copy of the database. Everyone works on their own branch; publishing advances the default branch, and that is what builds a new release and promotes it. Both run through the same execution pipeline, the same SDK, and the same schema rules, so code that works in the sandbox works in production.
+Development happens in the hosted sandbox, against a dev release with its own copy of the database. Each person with edit access gets their own workspace — their own copy of the code, their own dev database — and everyone publishes to the same default branch, which is what builds a new release and promotes it. Both run through the same execution pipeline, the same SDK, and the same schema rules, so code that works in the sandbox works in production.
 
 ---
 
@@ -93,15 +93,13 @@ Aggregated execution metrics: call count, error rate, duration percentiles.
 
 ## What Happens on Deploy
 
-Every commit that lands on the default branch deploys. Publishing is what puts one there: the default branch is merged into your branch, and both refs go up in one atomic push.
+Every commit that lands on the default branch deploys. Publishing is what puts one there: the workspace commits its changes and pushes.
 
 ```bash
-git fetch origin main
-git merge origin/main
-git push --atomic origin HEAD HEAD:refs/heads/main
+git push origin HEAD
 ```
 
-The default branch fast-forwards to your branch, so the two are equal afterwards and there is nothing to catch up on next time. The merge happens on your branch — the default branch is never checked out, which is what lets several people publish from several sandboxes without contending for one working tree.
+Each workspace is a full clone on the default branch, so there is no shared working tree to contend for — several people can publish from several sandboxes. When two of them publish close together the second push is rejected as non-fast-forward; that workspace fetches, merges the release it missed, and pushes again.
 
 From the push on, the platform builds and deploys automatically:
 
@@ -137,10 +135,10 @@ live → superseded             (new release goes live)
 
 ### Preview Deployments
 
-Push your own branch on its own:
+Push any branch other than the default:
 
 ```bash
-git push origin HEAD
+git push origin HEAD:refs/heads/<branch>
 ```
 
 Same build pipeline, but the release is marked `preview` instead of `live`. Accessible via a branch-specific URL, and it runs against a copy of the data rather than production. Each branch gets its own preview release; pushing the branch again supersedes the previous one.
@@ -221,11 +219,11 @@ The audit runs asynchronously and **lands ~30–60s after the release goes live*
 
 ### Rollback
 
-Rollback is a git operation: revert on your branch, then publish.
+Rollback is a git operation: revert, then publish.
 
 ```bash
 git revert HEAD
-git push --atomic origin HEAD HEAD:refs/heads/main
+git push origin HEAD
 ```
 
 This creates a new commit that undoes the last change, triggering a new build and deploy. The previous release's database is still available (databases are per-release), so data isn't lost.

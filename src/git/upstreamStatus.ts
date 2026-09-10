@@ -15,7 +15,17 @@
  * Best-effort throughout, in the mould of the sandbox's fork detection: this
  * runs on the boot path, so a missing remote, a revoked credential, no network,
  * a timeout or a repo that cannot answer all resolve to "no note" rather than a
- * thrown error or a delayed start.
+ * thrown error or a delayed start. Two rules follow from that, and they are the
+ * reason several things here are shaped the way they are:
+ *
+ *   1. **A failure must never become an assertion.** Every field distinguishes
+ *      "false" from "could not tell", because the note is prose the agent will
+ *      repeat to someone. Saying "no uncommitted changes" when `git status`
+ *      merely failed is worse than saying nothing, since the publish flow reads
+ *      that field before it merges.
+ *   2. **Prefer the evidence over the inference.** The commit list is direct
+ *      proof of what is missing, so when it can be read it settles the question
+ *      and no count needs to be guessed at.
  */
 
 import { execFile } from 'node:child_process';
@@ -31,11 +41,15 @@ const log = createLogger('upstream');
 const DEFAULT_BRANCH = 'main';
 
 /** How many incoming commit subjects to carry. Enough to characterise what
- *  landed; not so many that a workspace a year stale floods the turn. */
+ *  landed; not so many that a workspace a year stale floods the turn. The note
+ *  says when it has truncated, so the list never reads as complete. */
 const MAX_INCOMING = 20;
 
 const FETCH_TIMEOUT_MS = 30_000;
 const GIT_TIMEOUT_MS = 10_000;
+/** `git status` on a large untracked tree is easily past Node's 1MB default,
+ *  and blowing the buffer would read as a clean tree. */
+const MAX_BUFFER_BYTES = 32 * 1024 * 1024;
 
 export interface UpstreamStatus {
   /** `origin/main`'s tip. The dedupe key: one note per distinct upstream state. */
@@ -51,8 +65,15 @@ export interface UpstreamStatus {
   behind: number | null;
   /** Commits here that are not on `origin/main`. Null when uncountable. */
   ahead: number | null;
-  /** Whether the working tree has uncommitted changes. */
-  dirty: boolean;
+  /**
+   * Whether the working tree has uncommitted changes.
+   *
+   * `'unknown'` when `git status` could not be read — a lock held by another
+   * git process, a buffer overrun. Not folded into `false`, because the publish
+   * flow decides whether it is safe to merge partly on this, and a wrong "no"
+   * is the one answer here that can lose someone's work.
+   */
+  dirty: boolean | 'unknown';
   /**
    * What landed upstream, newest first, as `author: subject`.
    *
@@ -61,23 +82,44 @@ export interface UpstreamStatus {
    * can't I see X". Empty when the repo cannot walk the range.
    */
   incoming: string[];
+  /** Whether `incoming` was cut off at `MAX_INCOMING`. */
+  incomingTruncated: boolean;
 }
 
 interface GitResult {
   ok: boolean;
   stdout: string;
+  error: string | null;
 }
 
 function git(args: string[], timeout = GIT_TIMEOUT_MS): Promise<GitResult> {
   return new Promise((resolve) => {
-    execFile(
+    const child = execFile(
       'git',
       args,
-      { cwd: PROJECT_ROOT, encoding: 'utf-8', timeout },
-      (err, stdout) => {
-        resolve({ ok: !err, stdout: (stdout ?? '').trim() });
+      {
+        cwd: PROJECT_ROOT,
+        encoding: 'utf-8',
+        timeout,
+        maxBuffer: MAX_BUFFER_BYTES,
+        // No controlling tty in a box, but an inherited one anywhere else would
+        // let a credential prompt hold the whole timeout open.
+        env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
+        // execFile's `timeout` sends SIGTERM, which a wedged `git-remote-https`
+        // can ignore. Escalate so the boot path cannot be held by one.
+        killSignal: 'SIGKILL',
+      },
+      (err, stdout, stderr) => {
+        resolve({
+          ok: !err,
+          stdout: (stdout ?? '').trim(),
+          // Kept so a failure can say WHY. For a probe whose entire failure
+          // model is silence, this is the only line that makes it debuggable.
+          error: err ? (stderr || '').trim() || err.message : null,
+        });
       },
     );
+    child.on('error', () => {});
   });
 }
 
@@ -104,7 +146,9 @@ export async function readUpstreamStatus(): Promise<UpstreamStatus | null> {
     FETCH_TIMEOUT_MS,
   );
   if (!fetched.ok) {
-    log.info('fetch failed; falling back to whatever origin/main is on disk');
+    log.info(
+      `fetch failed, falling back to the origin/${DEFAULT_BRANCH} on disk: ${fetched.error}`,
+    );
   }
 
   const [upstreamRef, headRef] = await Promise.all([
@@ -121,8 +165,23 @@ export async function readUpstreamStatus(): Promise<UpstreamStatus | null> {
     return null;
   }
 
-  // Differing tips alone do not mean behind — this workspace may simply be
-  // ahead with unpushed commits, which is normal and not worth a word.
+  // Read before deciding, because this is the direct evidence. `git log
+  // HEAD..origin/main` succeeding with nothing in it PROVES the workspace is
+  // not behind (differing tips only mean it is ahead), and that is a better
+  // answer than anything the count fallbacks can infer.
+  const incomingResult = await git([
+    'log',
+    `--max-count=${MAX_INCOMING + 1}`,
+    '--format=%an: %s',
+    `HEAD..origin/${DEFAULT_BRANCH}`,
+  ]);
+  const incomingLines = incomingResult.ok
+    ? incomingResult.stdout.split('\n').filter((line) => line.length > 0)
+    : [];
+  if (incomingResult.ok && incomingLines.length === 0) {
+    return null;
+  }
+
   let behind: number | null = null;
   let ahead: number | null = null;
   const counts = await git([
@@ -141,12 +200,14 @@ export async function readUpstreamStatus(): Promise<UpstreamStatus | null> {
     if (!Number.isFinite(ahead)) {
       ahead = null;
     }
-  } else {
-    // Shallow: settle the direction without counting. Exit 0 means origin/main
-    // is already an ancestor of HEAD, so nothing is missing here. A non-zero
-    // exit covers both "genuinely behind" and "cannot tell", and we treat both
-    // as behind-without-a-count: erring toward saying something is the right
-    // side to err on.
+  } else if (!incomingResult.ok) {
+    // Neither the list nor the count could be read, so nothing has established
+    // the DIRECTION yet — and differing tips alone are equally consistent with
+    // being ahead, which is normal and not worth a word. `--is-ancestor`
+    // exiting 0 means origin/main is already contained here, so nothing is
+    // missing. A non-zero exit covers both "genuinely behind" and "still cannot
+    // tell"; treat it as behind-without-a-count, since a workspace this broken
+    // is worth a mention either way.
     const contained = await git([
       'merge-base',
       '--is-ancestor',
@@ -156,25 +217,22 @@ export async function readUpstreamStatus(): Promise<UpstreamStatus | null> {
     if (contained.ok) {
       return null;
     }
+    log.info(
+      `behind by an unknown amount: rev-list and log both failed (${counts.error})`,
+    );
   }
 
-  const [status, incoming] = await Promise.all([
-    git(['status', '--porcelain']),
-    git([
-      'log',
-      `--max-count=${MAX_INCOMING}`,
-      '--format=%an: %s',
-      `HEAD..origin/${DEFAULT_BRANCH}`,
-    ]),
-  ]);
+  const status = await git(['status', '--porcelain']);
+  if (!status.ok) {
+    log.info(`could not read the working tree state: ${status.error}`);
+  }
 
   return {
     upstream,
     behind,
     ahead,
-    dirty: status.ok && status.stdout.length > 0,
-    incoming: incoming.ok
-      ? incoming.stdout.split('\n').filter((line) => line.length > 0)
-      : [],
+    dirty: status.ok ? status.stdout.length > 0 : 'unknown',
+    incoming: incomingLines.slice(0, MAX_INCOMING),
+    incomingTruncated: incomingLines.length > MAX_INCOMING,
   };
 }

@@ -147,34 +147,66 @@ export function buildBackgroundResultsMessage(
  * message and providers fold the two into one human turn.
  */
 export function buildWorkspaceStatusMessage(status: {
+  upstream: string;
   behind: number | null;
   ahead: number | null;
-  dirty: boolean;
+  dirty: boolean | 'unknown';
   incoming: string[];
+  incomingTruncated: boolean;
 }): string {
   const lines = [
+    `Default branch tip: ${status.upstream}`,
+    `Checked at: ${new Date().toISOString()}`,
     `Behind by: ${
       status.behind === null
-        ? 'unknown (this workspace lacks the history to count)'
+        ? 'unknown (could not count — treat the list below as what is missing)'
         : `${status.behind} commit(s)`
     }`,
     `Unpushed commits here: ${status.ahead === null ? 'unknown' : status.ahead}`,
-    `Uncommitted changes here: ${status.dirty ? 'yes' : 'no'}`,
+    `Uncommitted changes here: ${
+      status.dirty === 'unknown'
+        ? 'could not tell — check with `git status` before relying on it'
+        : status.dirty
+          ? 'yes'
+          : 'no'
+    }`,
   ];
   if (status.incoming.length > 0) {
     lines.push(
       '',
-      'Landed on the default branch since, newest first:',
-      ...status.incoming.map((line) => `- ${line}`),
+      status.incomingTruncated
+        ? `Landed on the default branch since, newest first (first ${status.incoming.length}; there are more):`
+        : 'Landed on the default branch since, newest first:',
+      // Escaped, not interpolated raw. These are commit subjects and author
+      // names, so anyone with commit access to the app controls them — and a
+      // subject containing `</workspace_status>` would close this envelope
+      // early, putting everything after it (including the real user message
+      // that follows) outside the "not from the user" boundary. Same attribution
+      // hazard `buildBackgroundResultsMessage` describes, with an untrusted
+      // input attached.
+      ...status.incoming.map((line) => `- ${escapeForEnvelope(line)}`),
     );
   }
   const body =
     `<workspace_status>\n` +
-    `Automated note about this workspace, checked when Remy started. This block is not from the user — anything outside it is. Nobody has seen it; it is context for you.\n\n` +
+    `Automated note about this workspace, checked when Remy started — the timestamp below says when, and it may have been a while. This block is not from the user; anything outside it is. Nobody has seen it, and nobody can see it; it is context for you.\n\n` +
     `This copy of the app does not have everything on the branch production builds from.\n\n` +
     `${lines.join('\n')}\n` +
     `</workspace_status>`;
   return automatedMessage('workspace_status', body);
+}
+
+/**
+ * Neutralise anything in untrusted text that could break out of an envelope or
+ * impersonate a sentinel. Angle brackets go to their HTML entities (so a stray
+ * closing tag reads as text) and the sentinel prefix is defanged.
+ */
+function escapeForEnvelope(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/@@automated/g, '@ @automated');
 }
 
 /**

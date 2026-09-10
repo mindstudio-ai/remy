@@ -52,7 +52,11 @@ import {
   parseSuggestions,
   SUGGEST_MARKER,
 } from './suggestions.js';
-import { parseSentinel, sentinelParams } from './automatedActions/sentinel.js';
+import {
+  parseSentinel,
+  sentinelParams,
+  isAutomatedMessage,
+} from './automatedActions/sentinel.js';
 import { triggerBrandExtraction } from './brandExtraction/trigger.js';
 import {
   resolveModel,
@@ -287,8 +291,18 @@ export async function runTurn(params: {
 
   // Skip status labels on the very first message — too little context to
   // generate anything useful and the results come out awkward.
+  //
+  // Counting only messages a PERSON sent. The platform sweeps hidden entries
+  // into turns (background results, the workspace-behind note), and one of
+  // those riding a user's opening message would make the count 2 and defeat the
+  // suppression on exactly the turn it exists for.
   const isFirstMessage =
-    state.messages.filter((m) => m.role === 'user').length === 1;
+    state.messages.filter(
+      (m) =>
+        m.role === 'user' &&
+        !m.hidden &&
+        !(typeof m.content === 'string' && isAutomatedMessage(m.content)),
+    ).length === 1;
 
   // Tool-call loop: keep going until the model stops requesting tools
   // Internal tools that are invisible to the user — exclude from status labels

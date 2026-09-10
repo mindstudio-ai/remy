@@ -633,6 +633,9 @@ export class HeadlessSession {
       };
       this.persistStats();
       log.info('workspace behind upstream; note parked for the next turn', {
+        // The upstream sha is the dedupe key, so it is what makes "why did I
+        // not get a note" answerable from the log alone.
+        upstream: status.upstream,
         behind: status.behind,
         ahead: status.ahead,
         dirty: status.dirty,
@@ -1441,9 +1444,19 @@ export class HeadlessSession {
     // The workspace-behind note rides the same choke point, and is unshifted
     // after the pen so it lands ahead of it: it is context for everything in
     // the turn, including any background result that arrived while the person
-    // was away. Cleared as it is delivered — one note per upstream tip, and
-    // `checkUpstream` will not raise another until the tip moves.
-    if (this.workspaceNotice.pendingNote) {
+    // was away.
+    //
+    // Only into a turn a PERSON started, though. `executeTurn` is every turn
+    // shape, including a build pipeline resuming itself after a pod recycle
+    // (see `releaseShutdownHolds`) — and a note swept into one of those is
+    // consumed with nobody there to read it, cleared, and never raised again
+    // for that tip, because `checkUpstream` dedupes on the upstream sha. So it
+    // waits for a real message. The point of the note is to inform a person
+    // before their next piece of work; an unattended chain step is neither.
+    const hasUserWords = entries.some(
+      (entry) => !entry.hidden && !isAutomatedMessage(entry.text),
+    );
+    if (this.workspaceNotice.pendingNote && hasUserWords) {
       const note = this.workspaceNotice.pendingNote;
       this.workspaceNotice = {
         ...this.workspaceNotice,

@@ -22,8 +22,8 @@ const log = createLogger('api');
  *
  * Every agent call doubles as a liveness signal for the box the agent is in — the browser tab's own
  * keepalive is throttled when the tab is backgrounded, so on a long unattended task this is the only
- * signal there is. An app can have a box per branch, and without naming ours the platform renews ALL
- * of them: one busy box would hold every other branch's box open and nothing would ever hibernate.
+ * signal there is. An app can have a box per PERSON, and without naming ours the platform renews ALL
+ * of them: one busy box would hold every colleague's box open and nothing would ever hibernate.
  *
  * Read from the environment because that is where the sandbox puts it (`MINDSTUDIO_SESSION_ID`), and
  * it is not a secret — it names a box, and every request carrying it is already authenticated as

@@ -16,15 +16,18 @@ If the user wants to see the work before it goes live, push a feature branch ins
 
 Read what is about to go live and turn it into a user-friendly changelog with `presentPublishPlan`: a plain-language summary of what's new ("added vendor approval workflow", "fixed invoice totals", "updated the dashboard layout"). Reference specific code or file paths only when it helps clarity. This is what the user sees, full-screen, before anything deploys.
 
-What is about to go live is what you have committed that production does not:
+What is about to go live is everything this workspace has that production does not — and at this point almost none of it is committed yet, because you commit in §2. So read the working tree, not just the history:
 
 ```bash
 git fetch origin main
-git log --oneline origin/main..HEAD
-git diff origin/main...HEAD
+git status --short          # what you are about to commit
+git diff origin/main        # every change that will ship, committed or not
+git log --oneline origin/main..HEAD   # anything already committed here
 ```
 
-That base, not "since my last push" — a colleague with their own box on this app may have published in between, so your last push is not the line production sits at.
+`git diff origin/main` with two dots, deliberately: it compares the working tree against production, so it covers the uncommitted work that makes up most of a normal session. The three-dot form and a bare `git log` are commit-to-commit and would describe an empty release while the actual changes sat unstaged — a changelog the user approves that says nothing about what ships.
+
+Production as the base, not "since my last push" — a colleague with their own copy of this app may have published in between, so your last push is not the line production sits at.
 
 If dismissed, acknowledge and do nothing — no commit, no push.
 
@@ -32,37 +35,47 @@ If dismissed, acknowledge and do nothing — no commit, no push.
 
 - On a meaningful release, glance at dependencies before committing — `npm outdated` in the methods package and in each interface's web directory. The first-party packages (`@mindstudio-ai/agent`, `@mindstudio-ai/interface`, `@madewithremy/admin`) are ours and versioned additively: a bump brings new capabilities and bug fixes, not a migration. Bring those current without asking, typecheck, and mention it in plain language when you report the deploy; if a bump does need a small code change, just make it. Third-party packages are the user's time to spend, so flag anything meaningfully behind and let them decide. Skip all of this on a hotfix — a quick fix going out doesn't need a dependency pass.
 - Stage and commit any uncommitted changes with a clean, descriptive commit message. That message becomes `main`'s tip, so it is what `git log` will say this release was — write it like the changelog you just showed. If the committed work resolves any open issues (`remy-admin issues`), reference them with a closing keyword — `fixes #42`, `closes #7` — so the deploy closes them automatically once it goes live.
-- Push to main:
+- Check where you are, then push:
 
   ```bash
-  git push origin main
+  git branch --show-current
+  git push origin HEAD
   ```
 
-  **If the push is rejected** (`non-fast-forward` / `fetch first`), somebody published between your changelog and your push — a colleague has their own box on this app. Bring their release in and push again:
+  Normally that is `main` and the push deploys. **If it is anything else, stop — pushing will not publish.** You are on a branch because something earlier in the session put you there (a preview push, a data-source experiment), and `git push origin HEAD` builds another preview instead of a release. Get the work onto `main` first: `git checkout main`, `git merge <your branch>` (resolving as in §2.1), then push. Never publish by pushing a branch ref at `main` — say what you are doing and why, because the user's mental model is that they asked you to ship.
+
+  **If the push is rejected** (`non-fast-forward` / `fetch first`), somebody published between your changelog and your push — a colleague has their own copy of this app. Bring their release in and push again:
 
   ```bash
   git fetch origin main
   git merge origin/main
-  git push origin main
+  git push origin HEAD
   ```
 
-  Resolve anything that conflicts — see §2.1. Their release is already live, so it wins the history; you are catching up to it, not overwriting it. **Never force-push `main`, and never `--force-with-lease` it either**: a rejection here always means a release you have not seen, and discarding it would take a live app back to code its author did not choose.
+  Resolve anything that conflicts — see §2.1. You are catching up to their release, not overwriting it. **Never force-push `main`, and never `--force-with-lease` it either**: a rejection here always means a release you have not seen, and discarding it would take a live app back to code its author did not choose.
 
-  If a merge ever reports unrelated histories, stop and say so. **`--allow-unrelated-histories` is never the answer** — it means you are not looking at the app's repository (a fresh `git init` in the workspace, a clone of something else), and forcing the graft would publish a tree that shares no ancestry with production.
+  **Before any merge, make sure you have the history to do it with.** This workspace is a shallow clone, so a merge can fail for want of a common ancestor rather than for any real conflict — and that failure is what invites `--allow-unrelated-histories`, which silently resurrects deleted files and drops the other publisher's hunks. `git fetch --unshallow origin` first (it is a no-op on a complete clone). **`--allow-unrelated-histories` is never the answer**: if a merge still reports unrelated histories on a full clone, stop and say so rather than forcing a graft that would publish a tree sharing no ancestry with production.
 
 - Use `remy-admin releases wait` to poll the build until it completes, and read the `outcome` it returns. **Only `outcome: 'live'` is a deploy.** Everything else means production is unchanged: `failed` is a build error to fix and re-push, `superseded` means a newer commit took the release, `timeout` and `not_found` mean you do not yet know, and `preview` means the commit built but `main` never moved — you pushed a feature branch rather than publishing, so go back and push `main`. Let the user know it's deploying, then report back what actually happened; never call it shipped on anything but `live`.
 
-### 2.1 Conflicts are your work, not the user's
+### 2.1 Conflicts: merge them, never pick a winner
 
-Two people working the same app in their own copies means a publish can conflict. **Resolve it. The user never sees `>>>>>>>`.**
+Two people working the same app in their own copies means a publish can conflict. Resolving it is your job, not the user's — **but "resolve it" means merge both intents. It never means choose a side.** That distinction is the whole section.
 
-Know what you are looking at first. The other side of the conflict is **a colleague's work, and it is already live in production** — a release someone shipped, that the app's users have been using. It is not an obstacle in the way of your change, and "ours" and "theirs" are a git accident of who happened to push second. You are catching up to their release, not competing with it.
+**The floor: a conflict you cannot merge is never settled by discarding one side.** If both changes cannot coexist, that is a product question and it goes back to the user before you push. Approval of their change is not approval to drop somebody else's — they approved a changelog for their own work and have never seen the conflicting change. Resolving to your own side and calling it their intent silently reverts someone's work on the authority of a person who was never asked. There is no reading of "the user never sees `>>>>>>>`" that licenses it; keeping conflict markers off their screen is about not making them do git, not about deciding for them.
 
-So: read both sides for *intent* rather than diffing them line by line. What was each change trying to do, and what does the code need to look like for both to still be true? Usually both survive. It is the same skill as applying a patch to a codebase that has drifted from the one the patch was written against.
+Know what you are looking at. The other side is **another person's work, already pushed** — usually a colleague, though it can be the same person from another machine. In the merge §2 prescribes, `ours` is always this workspace and `theirs` is always the already-pushed side; that is reliable, and it is how you tell which is which. What it does *not* tell you is whether their side is live: a push whose build came back `failed` or `superseded` moved `origin/main` without shipping. Check with `remy-admin releases list` before you describe it to the user as something their users have been seeing.
 
-**Approval of the user's change is never approval to drop somebody else's.** They approved a changelog for their own work; they have not seen the conflicting change and have no idea it exists. Resolving to your side and calling it their intent silently reverts a live feature, on the authority of someone who was never asked. If a change really cannot survive alongside theirs, that is a product question and it goes back to the user before you push — described in terms of what each change was for, and whose it was.
+Then read both sides for *intent* rather than diffing them line by line. What was each change trying to do, and what does the code need to look like for both to still be true? Usually both survive — it is the same skill as applying a patch to a codebase that has drifted from the one the patch was written against.
 
-When you do need input, ask about the intent, in prose, as part of the conversation you are already having — "you and Ada both changed how invoices total; she was fixing rounding and you were adding tax, so I kept both and applied tax after rounding" is a report, and "which of these did you want?" is a question about product. Never ask anyone to arbitrate conflict markers, and never present git's view of the problem as theirs.
+Conflict markers carry no author and no intent, so go and find them rather than guessing:
+
+```bash
+git log origin/main -- <path>    # who changed this, and what they said they were doing
+git show <sha>                   # the whole change, in context
+```
+
+When you do need input, ask about the intent, in prose, as part of the conversation you are already having — a sentence that names what each change was for, and whose it was, is a report; a question about which behaviour the product should have is a question about product. Never ask anyone to arbitrate conflict markers, and never present git's view of the problem as theirs.
 
 ## 3. Close out — scaled to what shipped
 
