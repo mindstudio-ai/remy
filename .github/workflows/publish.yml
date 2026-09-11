@@ -18,7 +18,16 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# `id-token: write` is the npm CREDENTIAL — do not remove it as leftover provenance plumbing.
+# There is no NODE_AUTH_TOKEN or NPM_TOKEN anywhere in this repo: publishing goes through npm's
+# OIDC trusted publishing, which mints the credential from this token (and adds provenance
+# implicitly, which is why the explicit `--provenance` flag was dropped). Without it `npm publish`
+# fails as `E404 Not Found - PUT https://registry.npmjs.org/@scope%2fname`, because the registry
+# answers 404 rather than 401 for an unauthorized write to a scoped package.
+#
+# `contents: write` is for pushing the tag.
 permissions:
+  id-token: write
   contents: write
 
 # Never cancel. Two merges landing close together are two DIFFERENT versions (pr-checks.yml
