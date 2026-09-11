@@ -1,0 +1,120 @@
+name: PR checks
+
+# The gate for merge = release (see publish.yml). Merging to main publishes, so main is what has to
+# be checked — and by release time the merge has already happened, which is why the real checks live
+# here rather than in the release workflow.
+
+on:
+  # `labeled`/`unlabeled` are additive to the defaults (opened, synchronize, reopened) and are what
+  # make the `no-release` escape hatch work without a manual re-run: without them, adding the label
+  # leaves the already-failed check failed.
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - run: npm ci --ignore-scripts
+
+      # tsup transpiles without typechecking, so a green build proves nothing about types. The
+      # release workflow runs this too, but only after the merge that already shipped.
+      - run: npm run typecheck
+
+  version-bumped:
+    name: Version bumped
+    # Only meaningful on a PR: the check is "is this branch's version above its base's", and on a
+    # push to main there is no second side. Required status checks are evaluated on PRs, so skipping
+    # it here costs nothing.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      # Two comparisons, because npm alone is not enough. npm stops you republishing a version that
+      # exists; it does NOT stop two PRs opened around the same time from both bumping to the same
+      # next version, where the first to merge publishes and the second merges into a silent no-op.
+      # Requiring the version to be strictly above the base's is what catches that, and the remedy
+      # is a rebase and a re-bump. This repo takes outside contributions, so that race is real.
+      #
+      # The label escape is an early exit INSIDE the job, not a job-level `if:`. A required check
+      # that is skipped reads as pending and blocks the merge, which is the opposite of an escape
+      # hatch.
+      - name: Require a version above main and unpublished
+        env:
+          SKIP: ${{ contains(github.event.pull_request.labels.*.name, 'no-release') }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          set -euo pipefail
+
+          if [ "$SKIP" = "true" ]; then
+            echo "no-release label present - not requiring a version bump."
+            echo "\`no-release\` label present, so no version bump is required." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          # Only a merge into main releases. A PR stacked onto another branch publishes nothing, so
+          # gating it against main would fail it for no reason.
+          if [ "$BASE_REF" != "main" ]; then
+            echo "This PR targets ${BASE_REF}, not main - merging it does not publish."
+            exit 0
+          fi
+
+          PKG=$(node -p "require('./package.json').name")
+          PR_VERSION=$(node -p "require('./package.json').version")
+
+          # An explicit refspec, and not just `git fetch origin main`: on a `pull_request` run
+          # actions/checkout leaves a merge ref at depth 1 with no wildcard fetch configured, so
+          # without naming the destination there is no refs/remotes/origin/main to read.
+          git fetch --depth=1 origin +refs/heads/main:refs/remotes/origin/main
+          git show origin/main:package.json > /tmp/main-package.json
+          MAIN_VERSION=$(node -p "require('/tmp/main-package.json').version")
+
+          fail() {
+            echo "::error::$1"
+            { echo "### Version bump required"; echo; echo "$1"; } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          }
+
+          # `npm view <pkg>@<version>` exits non-zero (E404) when that exact version does not
+          # exist, which is a cleaner membership test than parsing the `versions` array (whose
+          # shape differs for a package with only one published version).
+          if npm view "${PKG}@${PR_VERSION}" version >/dev/null 2>&1; then
+            fail "${PKG}@${PR_VERSION} is already published. Bump the version in package.json, or add the \`no-release\` label if this PR should not ship a release."
+          fi
+
+          if [ "$PR_VERSION" = "$MAIN_VERSION" ]; then
+            fail "package.json is still at ${MAIN_VERSION}, the same as main, so merging would publish nothing. Bump it, or add the \`no-release\` label."
+          fi
+
+          # `sort -V` rather than a string compare, so 0.1.99 -> 0.1.100 reads as forward. Plain
+          # x.y.z only; these packages do not publish prereleases, which -V orders by its own rules
+          # rather than semver's.
+          HIGHEST=$(printf '%s\n%s\n' "$MAIN_VERSION" "$PR_VERSION" | sort -V | tail -1)
+          if [ "$HIGHEST" != "$PR_VERSION" ]; then
+            fail "package.json is at ${PR_VERSION}, BELOW main's ${MAIN_VERSION}. Rebase on main and re-bump."
+          fi
+
+          echo "OK: ${MAIN_VERSION} -> ${PR_VERSION}, unpublished. Merging will release it."
+          echo "Merging publishes \`${PKG}@${PR_VERSION}\` (main is at ${MAIN_VERSION})." >> "$GITHUB_STEP_SUMMARY"
