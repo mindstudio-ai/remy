@@ -113,9 +113,11 @@ A spec starts with YAML frontmatter followed by freeform Markdown. There's no ma
 - `name` (required) — display name for the spec file
 - `description` (optional) — short summary of what this file covers
 - `type` (optional) — defaults to `spec`. Other values: `design/color` (color palette definition), `design/typography` (font and type style definition), `roadmap` (feature roadmap item). The frontend renders these types with specialized editors.
-- `status` (roadmap only) — `done`, `in-progress`, or `not-started`
-- `requires` (roadmap only) — array of slugs for prerequisite roadmap items. Empty array means available now.
+- `status` (roadmap only) — `done`, `in-progress`, or `not-started`. `in-progress` means being built right now, so it is transient: at most one item holds it, and it becomes `done` when the build lands. There is no `blocked` value — blocking is derived from `requires`, and authoring it separately creates a second source of truth that drifts.
+- `requires` (roadmap only) — inline array of **filenames** for prerequisite roadmap items, e.g. `["core-collections.md", "agent-chat.md"]`. Empty array means available now. Filenames, not slugs, so the entries match the names `index.json` uses.
 - `effort` (roadmap only) — `quick`, `small`, `medium`, or `large`
+
+**Don't quote frontmatter values** unless the value contains a `:` and would otherwise be ambiguous. Quotes are stripped when the file is read, so `name: Share & Export` and `name: "Share & Export"` are the same value — the unquoted form is what everything else uses.
 
 ```markdown
 ---
@@ -210,6 +212,16 @@ Share haikus as styled image cards on social media or download as prints.
 The card system generates images using the brand's typography and color
 palette, creating shareable assets that feel native to the app's identity.
 
+## What it looks like
+
+- Card composer — pick a haiku, pick a frame
+- Share sheet — one tap to any social app
+- Print export — a high-resolution file for a real print
+
+## Key details
+
+Cards always carry the app's own type and color, never a generic template.
+
 ~~~
 Use generateImage to create styled cards. Card template
 applies brand typography and colors from the spec. Export as PNG via
@@ -217,10 +229,22 @@ CDN transform at 2x resolution. Social sharing via Web Share API with
 clipboard fallback for unsupported browsers.
 ~~~
 
+## Still to build
+
+A frame gallery — seasonal and custom frames — and scheduled sharing.
+
 ## History
 
-- **2026-03-22** — Built card generation using generateImage.
-  Added share button to haiku detail view.
+- **2026-03-22** — Built the composer, share sheet and print export.
+  Frame gallery and scheduling deferred.
 ```
 
-Unbuilt item — same shape with `status: not-started`, a body describing the intended feature, and no History section (History is appended when it's built).
+Unbuilt item — same shape with `status: not-started`, a body describing the intended feature, and no History or Still to build section (both are written when it's built).
+
+Three body sections on roadmap items are read by the frontend, so their shape matters:
+
+- **`## What it looks like`** — one bullet per user-visible surface the item delivers. The roadmap sizes an item from how many surfaces it has, so every item needs this section and every bullet should name one concrete surface.
+- **`## Still to build`** — a sentence or two naming what this item deliberately deferred. Only present when there is something. This is how a `done` item says it landed partially, so name real scope, not vague polish.
+- **`## History`** — one `- **YYYY-MM-DD** — …` entry per build, newest last. Keep entries to a sentence or two about what shipped and what was deferred; they are read in a sidebar, not as a changelog essay.
+
+Write all three as ordinary Markdown — plain `-` bullets and prose. Don't use task-list checkboxes (`- [x]`); the spec editor doesn't round-trip them, so they are erased the first time anyone edits the file.

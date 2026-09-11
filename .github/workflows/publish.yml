@@ -1,24 +1,60 @@
 name: Release
 
+# Merge = release. The version in package.json IS the trigger: land a PR that bumps it, and merging
+# publishes. Nothing to click afterwards, and no bot commit pushed back to main — the version is
+# already there, reviewed, in the same diff as the code it describes.
+#
+# `check-version` is what makes running on every push safe: a merge that did not move the version is
+# a no-op rather than a failed publish. A missed bump is caught earlier, on the PR, by
+# pr-checks.yml's `version-bumped` job; this gate is the backstop for anything that reaches main
+# another way.
+#
+# `workflow_dispatch` stays as a manual escape hatch and deliberately bypasses the gate, so
+# dispatching with nothing to release fails loudly at `npm publish` (E403) instead of quietly
+# doing nothing.
+
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      bump:
-        description: 'Version bump type'
-        required: true
-        default: 'patch'
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
 
 permissions:
-  id-token: write
   contents: write
 
+# Never cancel. Two merges landing close together are two DIFFERENT versions (pr-checks.yml
+# guarantees the second is strictly greater), so both have to publish — and interrupting a release
+# mid-flight leaves npm and the git tag disagreeing about what shipped.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.check.outputs.should_release }}
+      version: ${{ steps.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # The version is read ONCE, here, so the publish and the tag cannot disagree.
+      - name: Check if version is already published
+        id: check
+        run: |
+          LOCAL_VERSION=$(node -p "require('./package.json').version")
+          PUBLISHED=$(npm view @mindstudio-ai/remy version 2>/dev/null || echo "0.0.0")
+          echo "version=${LOCAL_VERSION}" >> "$GITHUB_OUTPUT"
+          if [ "$LOCAL_VERSION" != "$PUBLISHED" ]; then
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+            echo "Version $LOCAL_VERSION not yet published (npm has $PUBLISHED)"
+          else
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+            echo "Version $LOCAL_VERSION already published, skipping release"
+          fi
+
   publish-npm:
+    needs: check-version
+    if: needs.check-version.outputs.should_release == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,29 +66,24 @@ jobs:
 
       - run: npm ci --ignore-scripts
 
-      - name: Bump version
-        run: npm version ${{ inputs.bump }} --no-git-tag-version
+      # tsup transpiles without typechecking, so the build alone catches no type errors.
+      - run: npm run typecheck
 
-      - name: Get version
-        id: version
-        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
-
+      # Required, not belt-and-braces: this package has no `prepublishOnly`, so nothing else
+      # produces dist/ before the publish below.
       - run: npm run build
 
       - run: npm publish --access public
 
-      - name: Commit, tag, and push
+      # Tag only — under merge = release the version is already on main, so there is nothing to
+      # commit. Tagged after the publish so a tag only ever names something that reached npm.
+      #
+      # continue-on-error because the package is live by the time this runs: a red run here would
+      # say "release failed" about a release that succeeded. The step still shows as failed, so a
+      # missing tag is visible rather than swallowed.
+      - name: Tag the release
+        continue-on-error: true
         run: |
-          VERSION="v${{ steps.version.outputs.version }}"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add package.json package-lock.json
-          git commit -m "${VERSION}"
-          git tag "${VERSION}"
-          git push origin HEAD "${VERSION}"
-
-      # - name: Rebuild v2 sandbox snapshot
-      #   run: |
-      #     curl -sf -X POST \
-      #       -H "server-token: ${{ secrets.CRON_SECRET_TOKEN }}" \
-      #       https://v1.mindstudio-api.com/v1/admin/app-functions/rebuild-v2-sandbox-snapshot
+          VERSION="v${{ needs.check-version.outputs.version }}"
+          git tag "$VERSION"
+          git push origin "$VERSION"
