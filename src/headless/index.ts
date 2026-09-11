@@ -33,6 +33,7 @@ import { createLogger } from '../logger.js';
 import type { Attachment, ContentBlock, Message } from '../api.js';
 import { resolveConfig } from '../config.js';
 import { initOrgContext } from '../orgContext.js';
+import { initModelRegistry } from '../models/init.js';
 import { buildSystemPrompt } from '../prompt/index.js';
 import {
   triggerCompaction,
@@ -59,7 +60,7 @@ import {
   getHistoryPage,
 } from '../session.js';
 import {
-  ALLOWED_MODELS_BY_TYPE,
+  getAllowedModelsByType,
   getContextLimits,
   getEffectiveModelSurfaces,
   getSuggestCompactAt,
@@ -273,6 +274,11 @@ export class HeadlessSession {
       baseUrl: this.opts.baseUrl,
     });
 
+    // The model-surface registry, FIRST and required: org defaults are
+    // validated against the allow-list it carries, and no agent can resolve a
+    // model without it. Fatal on failure by design — see models/init.ts.
+    await initModelRegistry(this.config);
+
     // Warm the build-time org context before any buildSystemPrompt call
     // (per-message / compaction). Best-effort — never blocks or throws.
     await initOrgContext(this.config);
@@ -321,7 +327,7 @@ export class HeadlessSession {
         messageCount: this.state.messages.length,
         ...(this.state.models && { models: this.state.models }),
         modelSurfaces: getEffectiveModelSurfaces(),
-        allowedModelsByType: ALLOWED_MODELS_BY_TYPE,
+        allowedModelsByType: getAllowedModelsByType(),
       });
     }
 
@@ -1829,7 +1835,7 @@ export class HeadlessSession {
     return {
       ...(this.state.models && { models: this.state.models }),
       modelSurfaces: getEffectiveModelSurfaces(),
-      allowedModelsByType: ALLOWED_MODELS_BY_TYPE,
+      allowedModelsByType: getAllowedModelsByType(),
     };
   }
 
@@ -1846,7 +1852,7 @@ export class HeadlessSession {
     return {
       ...(this.state.models && { models: this.state.models }),
       modelSurfaces: getEffectiveModelSurfaces(),
-      allowedModelsByType: ALLOWED_MODELS_BY_TYPE,
+      allowedModelsByType: getAllowedModelsByType(),
     };
   }
 
@@ -2077,7 +2083,7 @@ export class HeadlessSession {
           : {}),
         ...(this.state.models && { models: this.state.models }),
         modelSurfaces: getEffectiveModelSurfaces(),
-        allowedModelsByType: ALLOWED_MODELS_BY_TYPE,
+        allowedModelsByType: getAllowedModelsByType(),
         // Current queue snapshot for connect/reconnect — get_history is the
         // on-demand "current state" query. Always an array (possibly empty),
         // matching the queue_changed convention so the client reconciles the

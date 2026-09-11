@@ -52,11 +52,20 @@ Scenarios live at `dist/methods/.scenarios/` — inside the methods package scop
 // dist/methods/.scenarios/apOverdueInvoices.ts
 
 import { db } from '@mindstudio-ai/agent';
+import { Users } from '../src/tables/users';
 import { Vendors } from '../src/tables/vendors';
 import { PurchaseOrders } from '../src/tables/purchase-orders';
 import { Invoices } from '../src/tables/invoices';
 
 export async function apOverdueInvoices() {
+  // Seed an app user through the auth-mapped table. Never set `id` — omit it so
+  // the platform assigns the UUID that maps this row to its managed user. A
+  // hand-written id ('user-requester-1', etc.) can't sync and orphans the row.
+  const requester = await Users.push({
+    email: 'jordan@example.com',
+    roles: ['requester'],
+  });
+
   const vendor = await Vendors.push({
     name: 'Acme Corp',
     contactEmail: 'billing@acme.com',
@@ -65,7 +74,7 @@ export async function apOverdueInvoices() {
 
   const po = await PurchaseOrders.push({
     vendorId: vendor.id,
-    requestedBy: 'user-requester-1',
+    requestedBy: requester.id,
     totalAmountCents: 500000,
     status: 'active',
   });
@@ -93,7 +102,8 @@ An empty scenario is valid — it exists so you can switch to "clean slate" stat
 
 ```typescript
 export async function emptyRequester() {
-  // No data — the truncate clears everything.
+  // No data — the truncate clears every table (the auth users table aside,
+  // whose real accounts are preserved).
 }
 ```
 
@@ -102,7 +112,7 @@ Shared setup code can go in `dist/methods/.scenarios/_helpers/`.
 ## How Scenarios Run
 
 When a scenario runs, the platform:
-1. **Truncates** all tables (deletes all rows, preserves schema - unless skipTruncate is true)
+1. **Truncates** all tables (deletes all rows, preserves schema - unless skipTruncate is true). The auth-mapped users table is the exception — it's preserved, because its rows are real app accounts mirrored to the platform, so a reseed must never delete them. Seed users additively with `Users.push(...)` (id omitted); they persist across reseeds.
 2. **Executes** the seed function (your `db.push()` calls populate the clean database)
 3. **Assigns** the roles from the scenario's `roles` field to the dev test user — a real write to that user's row, so it requires app auth to be enabled
 

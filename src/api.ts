@@ -486,6 +486,10 @@ export async function* streamChat(
             requestId,
             ...(subAgentId && { subAgentId }),
             error: event.error,
+            // The code decides whether this retries, so omitting it made a
+            // debug bundle unable to answer why a turn died — the whole
+            // classification input was invisible in 32k log lines (RPT-1234).
+            ...(event.code && { code: event.code }),
             durationMs: Date.now() - startTime,
           });
         }
@@ -536,8 +540,33 @@ const RETRYABLE_ERROR_CODES = new Set([
   'overloaded_error', // Anthropic's 529-equivalent
 ]);
 
+/**
+ * Provider code prefixes for "we could not fetch the media you referenced".
+ *
+ * Every provider fetches url-source image blocks server-side on EVERY call, so
+ * one attached screenshot is re-fetched once per turn iteration — a long tool
+ * loop gives a rare per-fetch failure dozens of chances to land. The images
+ * themselves are fine; the same URL succeeds on the next attempt.
+ *
+ * Matched by prefix because the sub-reason is not something we can act on
+ * differently, and because these providers keep adding sub-reasons. Meta alone
+ * returns `media_url_not_fetchable`, `media_url_origin_error` and
+ * `media_url_robots_disallowed` — and crucially it returns the FIRST of those,
+ * its SSRF-refusal code, for transient resolve failures on plainly public S3
+ * hosts. Its fetcher fails closed, so a momentary blip wears a
+ * permanent-looking label (RPT-1234: verified by replaying the exact URL that
+ * failed, which Meta then fetched and described correctly 14/14 times).
+ *
+ * The cost of being wrong here is bounded: a genuinely dead URL burns the
+ * retry budget and then surfaces the same error it would have surfaced anyway.
+ */
+const RETRYABLE_ERROR_CODE_PREFIXES = ['media_url_'];
+
 function isRetryableError(error: string, code?: string): boolean {
   if (code && RETRYABLE_ERROR_CODES.has(code)) {
+    return true;
+  }
+  if (code && RETRYABLE_ERROR_CODE_PREFIXES.some((p) => code.startsWith(p))) {
     return true;
   }
   return (
@@ -549,11 +578,13 @@ function isRetryableError(error: string, code?: string): boolean {
     // The API's friendly mapping of a provider 500 — belt-and-suspenders for
     // pods that don't send a machine-readable code.
     /Internal API error/i.test(error) ||
-    // Anthropic fetches url-source image blocks server-side on every call;
-    // a transient failure anywhere in that chain (S3 signing edge, resize
-    // proxy, their fetcher) surfaces as this message. The images themselves
-    // are fine — the same URLs typically succeed on the next attempt.
-    /Unable to download/i.test(error)
+    // Server-side media-fetch failures, for providers that send no usable
+    // code. Matching PROSE is the fallback, not the mechanism: keying on one
+    // vendor's wording is what let this class through before — Anthropic's
+    // "Unable to download" was handled while Meta's "failed to download
+    // media" was fatal, for the identical failure with the identical remedy.
+    /Unable to download/i.test(error) ||
+    /failed to download media/i.test(error)
   );
 }
 
@@ -724,11 +755,97 @@ export interface RemyContext {
    * design agent, not the main agent. */
   designSystem?: string;
   /** Org-configured default model picks: a partial surfaceId -> model ID map,
-   * omitted when the org has set none. Best-effort and unvalidated by the
-   * platform — Remy validates each entry against MODEL_SURFACES /
-   * ALLOWED_MODELS_BY_TYPE (filterModelPicks) and applies the rest as the
-   * live per-surface default (below a user's own pick). */
+   * omitted when the org has set none. Validated by the platform against the
+   * same allow-list Remy fetches, and re-validated here by filterModelPicks
+   * before being applied as the live per-surface default (below a user's own
+   * pick). */
   defaultModels?: Record<string, string>;
+}
+
+/**
+ * The platform's model-surface registry: what surfaces exist, what each
+ * defaults to, which models are pickable, and the context facts Remy needs to
+ * set its own compaction thresholds.
+ *
+ * Published at `/v1/site-settings/remy-model-surfaces` — public and
+ * CDN-cached, so this needs no key and no appId (surfaces are global, not
+ * app-scoped). The org-settings UI renders from the same payload, which is
+ * what keeps "what the org can choose" and "what Remy honours" identical.
+ */
+export interface ModelSurfacesPayload {
+  surfaces: Array<{
+    id: string;
+    label: string;
+    description: string;
+    modelType: 'text' | 'vision' | 'image_generation';
+    default: string;
+  }>;
+  allowedModelsByType?: Partial<
+    Record<'text' | 'vision' | 'image_generation', string[]>
+  >;
+  /**
+   * Compaction thresholds per allow-listed text model, keyed by catalog id.
+   * Declared on each model in youai-api's catalog and validated there against
+   * the model's usable input ceiling and pricing tier, so Remy applies them
+   * rather than computing or tuning anything.
+   */
+  textModels?: Record<
+    string,
+    { forceCompactAt: number; suggestCompactAt?: number }
+  >;
+}
+
+const SURFACES_FETCH_ATTEMPTS = 3;
+
+/**
+ * Fetch the model-surface registry. REQUIRED, unlike everything else in this
+ * file: without it Remy has no surfaces, so no agent can resolve a model and
+ * there is nothing sensible to degrade to. A baked fallback is deliberately
+ * not offered — a stale copy of this is the exact duplication it replaced.
+ *
+ * Retries a few times with backoff so a transient blip costs a few seconds
+ * rather than a boot, then throws. The caller turns that into a fatal boot
+ * error naming this fetch.
+ */
+export async function fetchModelSurfaces(
+  config: ApiConfig,
+): Promise<ModelSurfacesPayload> {
+  const url = `${config.baseUrl}/v1/site-settings/remy-model-surfaces`;
+  let lastError = '';
+
+  for (let attempt = 1; attempt <= SURFACES_FETCH_ATTEMPTS; attempt++) {
+    try {
+      const res = await fetch(url, {
+        method: 'GET',
+        signal: AbortSignal.timeout(20000),
+      });
+      if (!res.ok) {
+        lastError = `HTTP ${res.status}`;
+      } else {
+        const data = (await res.json()) as ModelSurfacesPayload;
+        if (Array.isArray(data?.surfaces) && data.surfaces.length > 0) {
+          return data;
+        }
+        lastError = 'response carried no surfaces';
+      }
+    } catch (err: any) {
+      lastError = err?.message ?? String(err);
+    }
+
+    if (attempt < SURFACES_FETCH_ATTEMPTS) {
+      const backoffMs = attempt * 2000;
+      log.debug('model-surfaces fetch failed, retrying', {
+        attempt,
+        backoffMs,
+        error: lastError,
+      });
+      await new Promise((resolve) => setTimeout(resolve, backoffMs));
+    }
+  }
+
+  throw new Error(
+    `Could not load model surfaces from ${url} after ${SURFACES_FETCH_ATTEMPTS} attempts (${lastError})`,
+  );
 }
 
 /**

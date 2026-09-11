@@ -15,6 +15,7 @@ import path from 'node:path';
 import { App } from './tui/App.js';
 import { resolveConfig } from './config.js';
 import { initOrgContext } from './orgContext.js';
+import { initModelRegistry } from './models/init.js';
 import {
   createLogger,
   initLoggerHeadless,
@@ -98,6 +99,13 @@ if (headless) {
     });
 
     printDebugInfo(config);
+
+    // The model-surface registry, FIRST and required: it defines which
+    // surfaces exist and which models are pickable, so org defaults cannot be
+    // validated before it and no agent can resolve a model without it. A
+    // failure here is fatal by design — there is no local copy to fall back
+    // to, which is what guarantees Remy and the platform agree.
+    await initModelRegistry(config);
 
     // Warm the build-time org context before the first (synchronous)
     // buildSystemPrompt call in <App>. Best-effort — never blocks or throws.

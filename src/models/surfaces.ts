@@ -1,283 +1,252 @@
 /**
- * Authoritative registry of every pickable model surface in Remy.
+ * Every pickable model surface in Remy, and the model each one resolves to.
  *
- * Single source of truth for defaults, picker metadata, user-facing
- * labels/descriptions, and allow-lists. Every call site that needs a
- * model goes through `resolveModel(surfaceId, models, fallback)` —
- * four-tier resolution: explicit user pick > startup-time global
- * override > org default > registry default.
+ * The surface IDENTIFIERS live here because they are code-level vocabulary —
+ * Remy has a `parent` agent, a `specSync` subagent, a `brandExtractor` utility,
+ * and ~24 files call `resolveModel('parent')` with a literal. Adding a surface
+ * means writing code for it, so its name has to be known at compile time.
  *
- * The frontend reads this registry over the stdin protocol (shipped on
- * `session_restored` and `get_history` payloads) and renders the picker
- * UI from it. No duplicated default/label/description knowledge on
- * either side.
+ * Everything ELSE about a surface — its label, description, default model, and
+ * which models are pickable at all — comes from the platform at boot, over
+ * `/v1/site-settings/remy-model-surfaces`. That is the same payload the org
+ * "default models" settings UI renders from, so the two cannot disagree about
+ * what is offered or what an unset surface falls back to. They used to: this
+ * file and youai-api's copy drifted in both directions, and the visible symptom
+ * was an org setting `gemini-3.8-flash` as a default, the platform storing it,
+ * and Remy silently dropping it as out-of-allow-list.
+ *
+ * The compaction thresholds come from the platform too, declared per model
+ * alongside the allow-list. They live there rather than here because that is
+ * where the two numbers they must respect are also declared — the usable input
+ * ceiling and the pricing cliff — so `defineModel` can refuse a threshold that
+ * contradicts them. A copy here could be checked against nothing.
+ *
+ * Every call site goes through `resolveModel(surfaceId, models, fallback)` —
+ * four-tier resolution: explicit user pick > startup-time global override >
+ * org default > registry default.
  */
+
+import type { ModelSurfacesPayload } from '../api.js';
 
 export type ModelType = 'text' | 'vision' | 'image_generation';
 
 export interface ModelSurface {
-  /** Authoritative default model ID. Remy always resolves to this when
-   * the user hasn't picked and no global override is set. */
+  /** Authoritative default model ID, as published by the platform. */
   default: string;
   /** Short display name for the picker UI (e.g. "Roadmap Agent"). */
   label: string;
   /** Longer user-facing description for the picker. */
   description: string;
-  /** Model family this surface picks from. The frontend uses this to
-   * scope the picker's options list (text agents pick from the chat
-   * allow-list; vision and image_generation pick from their respective
-   * catalogs). */
+  /** Model family this surface picks from. The frontend uses this to scope
+   * the picker's options list. */
   modelType: ModelType;
-  /** Whether this surface appears in the picker UI. False for internal
-   * surfaces that Remy uses but the user shouldn't see. */
+  /** Whether this surface appears in the picker UI. */
   userPickable: boolean;
 }
 
-// Object key order is preserved by JS — match the frontend's picker order.
-export const MODEL_SURFACES = {
-  parent: {
-    default: 'claude-4-8-opus',
-    label: 'Remy',
-    description:
-      'The main Remy agent you chat with about your product. Writes code and manages delegation to other agents.',
-    modelType: 'text',
-    userPickable: true,
-  },
-  visualDesignExpert: {
-    default: 'claude-4-8-opus',
-    label: 'Design Agent',
-    description:
-      "Designs your product's interfaces, including components, layouts, typography, color, and visual identity.",
-    modelType: 'text',
-    userPickable: true,
-  },
-  productVision: {
-    default: 'claude-5-sonnet',
-    label: 'Roadmap Agent',
-    description:
-      "Owns your product's roadmap and pitch deck. Helps decide what to build next and how to frame the big picture.",
-    modelType: 'text',
-    userPickable: true,
-  },
-  browserAutomation: {
-    default: 'claude-5-sonnet',
-    label: 'QA Agent',
-    description:
-      'Tests features and UI flows in an automated browser to verify they work end to end.',
-    modelType: 'text',
-    userPickable: true,
-  },
-  codeSanityCheck: {
-    default: 'claude-5-sonnet',
-    label: 'Architecture Agent',
-    description:
-      'Reviews the architecture and structure of code changes to avoid technical debt.',
-    modelType: 'text',
-    userPickable: true,
-  },
-  research: {
-    default: 'claude-5-sonnet',
-    label: 'Research Agent',
-    description: 'Researches using the web and reports back with citations.',
-    modelType: 'text',
-    userPickable: true,
-  },
-  reviewExistingProject: {
-    default: 'claude-5-sonnet',
-    label: 'Existing Project Review',
-    description:
-      'Reviews a project you bring from another tool and reports what is worth carrying forward.',
-    modelType: 'text',
-    userPickable: true,
-  },
-  copyEditor: {
-    default: 'claude-5-sonnet',
-    label: 'Copy Agent',
-    description:
-      'Tightens prose and copy across your app and its launch materials so it reads sharp and human, never machine-made.',
-    modelType: 'text',
-    userPickable: true,
-  },
-  specSync: {
-    default: 'claude-5-sonnet',
-    label: 'Spec Sync Agent',
-    description:
-      'Keeps your spec in sync with the code as you build, updating the affected sections in the background after changes.',
-    modelType: 'text',
-    userPickable: true,
-  },
-  imageGeneration: {
-    default: 'gpt-image-2',
-    label: 'Image Generation',
-    description:
-      'Creates images for your product — icons, illustrations, photos, and any other visual assets.',
-    modelType: 'image_generation',
-    userPickable: true,
-  },
-  imageAnalysis: {
-    default: 'claude-5-sonnet',
-    label: 'Image Analysis',
-    description:
-      'Reads screenshots taken by the QA agent during automated browser tests. Other agents use their own built-in image analysis when they need to read images.',
-    modelType: 'vision',
-    userPickable: true,
-  },
-  conversationSummarizer: {
-    default: 'claude-5-sonnet',
-    label: 'Compaction Utility',
-    description:
-      'Compresses long conversations into summaries to keep things responsive.',
-    modelType: 'text',
-    userPickable: true,
-  },
-  brandExtractor: {
-    default: 'claude-5-sonnet',
-    label: 'Brand Utility',
-    description:
-      "Extracts your product's name, colors, and fonts from your spec for use in branded documents.",
-    modelType: 'text',
-    userPickable: true,
-  },
-  // Internal surface — not user-pickable. Remy uses this to rewrite design
-  // briefs into model-optimized image prompts before image generation.
-  imagePromptEnhancer: {
-    default: 'claude-5-sonnet',
+/**
+ * The surfaces Remy knows how to run, in picker order.
+ *
+ * A surface the platform publishes but that is missing here is ignored — Remy
+ * has no code to run it. A surface here that the platform does not publish is
+ * a deploy-order problem and surfaces as a hard error at boot (see
+ * `setModelRegistry`), rather than as an agent quietly running on a fallback.
+ */
+export const SURFACE_IDS = [
+  'parent',
+  'visualDesignExpert',
+  'productVision',
+  'browserAutomation',
+  'codeSanityCheck',
+  'research',
+  'reviewExistingProject',
+  'copyEditor',
+  'specSync',
+  'imageGeneration',
+  'imageAnalysis',
+  'conversationSummarizer',
+  'brandExtractor',
+  'imagePromptEnhancer',
+] as const;
+
+export type SurfaceId = (typeof SURFACE_IDS)[number];
+
+/**
+ * Context-management thresholds for one text model, in provider-reported input
+ * tokens. Declared per model in the platform catalog and fetched at boot.
+ *
+ * Explicit numbers rather than percentages of a context window, because what
+ * matters is the usable input ceiling under the provider's output/reasoning
+ * reserve and where the pricing tier flips — neither of which a formula
+ * recovers. RPT-1209 is the cost of getting it wrong: a fixed 850K gate sat
+ * above gpt-5.6-terra's ~794K truncation ceiling, so the gate never fired and
+ * the session paid max-context prices on every call, forever.
+ */
+export interface ModelContextLimits {
+  /** Force a blocking compaction before the next turn once the previous turn's
+   * last API call exceeded this. Must sit comfortably below the model's usable
+   * input ceiling, with room for a heavy turn's own growth (~150K+). */
+  forceCompactAt: number;
+  /** Where the frontend composer starts suggesting `/compact` (the ContextBar
+   * affordance). Just below the model's pricing-tier boundary, so the
+   * suggestion appears before the price flips. */
+  suggestCompactAt?: number;
+}
+
+// The /compact suggestion point for flat-priced models — no price cliff to
+// stay under, so this is purely the "worth condensing by now" size.
+const DEFAULT_SUGGEST_COMPACT_AT = 300_000;
+
+// No local threshold table, and no derivation from context windows. Both are
+// deliberate: the numbers are declared per model in youai-api's catalog
+// (`defineModel({ remy: { forceCompactAt, suggestCompactAt? } })`), where
+// `defineModel` can check them against the two facts they have to respect —
+// the usable input ceiling and the pricing cliff. A copy here could not be
+// checked against anything, and drifted: this file had `gemini-3-pro` as
+// flat-priced when it declares a 200K tier, so it never warned before that
+// model's input price roughly doubled.
+
+/**
+ * Conservative fallback for an id the platform published no thresholds for.
+ *
+ * Reachable only through a dev `--model` override naming something outside the
+ * allow-list — a normal pick is validated against it, so this is not a path a
+ * user can take.
+ */
+const FALLBACK_CONTEXT_LIMITS: ModelContextLimits = { forceCompactAt: 850_000 };
+
+//////////////////////////////////////////////////////////////////////////////
+// Boot-loaded platform state
+//////////////////////////////////////////////////////////////////////////////
+
+let surfaces: Partial<Record<SurfaceId, ModelSurface>> = {};
+let allowedModelsByType: Partial<Record<ModelType, string[]>> = {};
+let textModels = new Map<string, ModelContextLimits>();
+let registryLoaded = false;
+
+/**
+ * Publish the platform's surface registry into this module. Called once at
+ * boot, before anything resolves a model.
+ *
+ * Throws when the platform does not publish a surface Remy has code for: that
+ * means a Remy release expecting a surface the deployed platform has not
+ * shipped yet, and the honest outcome is a loud boot failure rather than every
+ * agent on that surface silently running someone else's default.
+ */
+export function setModelRegistry(payload: ModelSurfacesPayload): void {
+  const bySurface: Partial<Record<SurfaceId, ModelSurface>> = {};
+  for (const surface of payload.surfaces) {
+    if ((SURFACE_IDS as readonly string[]).includes(surface.id)) {
+      bySurface[surface.id as SurfaceId] = {
+        default: surface.default,
+        label: surface.label,
+        description: surface.description,
+        modelType: surface.modelType,
+        // The platform only publishes user-pickable surfaces; internal ones
+        // (imagePromptEnhancer) are Remy's own and never appear in a picker.
+        userPickable: true,
+      };
+    }
+  }
+
+  const missing = SURFACE_IDS.filter(
+    (id) => !bySurface[id] && id !== 'imagePromptEnhancer',
+  );
+  if (missing.length > 0) {
+    throw new Error(
+      `The platform published no model surface for: ${missing.join(', ')}. ` +
+        `This Remy build expects them — the platform is likely older than this release.`,
+    );
+  }
+
+  // Internal surface, not published: Remy uses it to rewrite design briefs
+  // into model-optimized image prompts. Follows the parent's own default.
+  bySurface.imagePromptEnhancer = {
+    default: bySurface.conversationSummarizer!.default,
     label: 'Image Prompt Enhancer',
     description:
       'Rewrites image briefs into model-optimized prompts before image generation.',
     modelType: 'text',
     userPickable: false,
-  },
-} as const satisfies Record<string, ModelSurface>;
+  };
 
-export type SurfaceId = keyof typeof MODEL_SURFACES;
-
-/**
- * Context-management thresholds for one text model, in provider-reported
- * input tokens. Explicit per-model numbers, not percentages derived from a
- * context window: what actually matters — the usable input ceiling under the
- * provider's output/reasoning reserve, and where the pricing tier flips — is
- * per-model knowledge that no formula recovers (RPT-1209: a fixed 850K gate
- * sat above gpt-5.6-terra's ~794K truncation ceiling, so the gate never
- * fired and the session paid max-context prices on every call, forever).
- */
-export interface ModelContextLimits {
-  /** Force a blocking compaction before the next turn once the previous
-   * turn's last API call exceeded this. Must sit comfortably below the
-   * model's usable input ceiling — for OpenAI models the platform sends
-   * `truncation: 'auto'`, which silently caps reported input below the
-   * window (and churns the prompt cache), so provider-reported context can
-   * NEVER reach a threshold set at or above that ceiling. Leave enough
-   * headroom under the ceiling for a heavy turn's own growth (~150K+). */
-  forceCompactAt: number;
-  /** Where the frontend composer starts suggesting `/compact` to the user
-   * (the ContextBar affordance). Set just below the model's pricing-tier
-   * boundary — the point where the provider bills all input at a higher
-   * rate — so the suggestion appears before the price flips. Omitted for
-   * flat-priced models, which fall back to DEFAULT_SUGGEST_COMPACT_AT. */
-  suggestCompactAt?: number;
+  surfaces = bySurface;
+  allowedModelsByType = payload.allowedModelsByType ?? {};
+  textModels = parseTextModels(payload.textModels);
+  registryLoaded = true;
 }
 
-// The /compact suggestion point for models without their own
-// suggestCompactAt (flat-priced — no price cliff to stay under, so this is
-// purely the "worth condensing by now" size; it matches the frontend's
-// historical threshold). Tiered models set explicit values in TEXT_MODELS,
-// just below their pricing-tier boundary.
-const DEFAULT_SUGGEST_COMPACT_AT = 300_000;
-
 /**
- * The chat-endpoint text-model allow-list, with each model's context
- * thresholds. Single source of truth: ALLOWED_MODELS_BY_TYPE.text derives
- * from these keys, so adding a model here is what allow-lists it — and
- * forces choosing its thresholds at the same time.
+ * Accept the platform's `textModels` table, keeping only entries that carry a
+ * usable `forceCompactAt`.
  *
- * Sources for the numbers: context windows and pricing tiers from the
- * platform model catalog (youai-api src/common/AIModels/catalog) and its
- * adapters — OpenAI doubles rates above 272K input, Anthropic and Grok
- * above 200K, Google (gemini-3.1-pro) above 200K.
+ * Validated rather than trusted because a bad number here is expensive and
+ * silent in both directions: too high and the compaction gate never fires
+ * (RPT-1209), too low and every session compacts constantly. An entry that
+ * fails falls through to FALLBACK_CONTEXT_LIMITS, which is conservative.
  */
-export const TEXT_MODELS: Record<string, ModelContextLimits> = {
-  // Anthropic 1M-context, flat-priced.
-  'claude-5-opus': { forceCompactAt: 850_000 },
-  'claude-4-8-opus': { forceCompactAt: 850_000 },
-  'claude-4-7-opus': { forceCompactAt: 850_000 },
-  // Anthropic 1M-context with 2x long-context pricing above 200K input.
-  'claude-4-6-opus': { forceCompactAt: 850_000, suggestCompactAt: 180_000 },
-  'claude-4-6-sonnet': { forceCompactAt: 850_000, suggestCompactAt: 180_000 },
-  'claude-fable-5': { forceCompactAt: 850_000 },
-  'claude-fable-5-1': { forceCompactAt: 850_000 },
-  'claude-5-sonnet': { forceCompactAt: 850_000 },
-  // OpenAI gpt-5.5/5.6: ~1M window, but the usable input ceiling under
-  // `truncation: 'auto'` is ~794K (output + reasoning reserve), and all
-  // rates double above 272K input.
-  'gpt-5.5': { forceCompactAt: 600_000, suggestCompactAt: 250_000 },
-  'gpt-5.6-sol': { forceCompactAt: 600_000, suggestCompactAt: 250_000 },
-  'gpt-5.6-terra': { forceCompactAt: 600_000, suggestCompactAt: 250_000 },
-  'gpt-5.6-luna': { forceCompactAt: 600_000, suggestCompactAt: 250_000 },
-  'gpt-6-astra': { forceCompactAt: 600_000, suggestCompactAt: 250_000 },
-  // Google ~1M-context; only 3.1-pro is tiered (higher rates above 200K).
-  'gemini-3-pro': { forceCompactAt: 850_000 },
-  'gemini-3.1-pro': { forceCompactAt: 850_000, suggestCompactAt: 180_000 },
-  'gemini-3-flash': { forceCompactAt: 850_000 },
-  'gemini-3.5-flash': { forceCompactAt: 850_000 },
-  'gemini-3.7-flash': { forceCompactAt: 850_000 },
-  // 256K window; its 200K pricing tier sits above the gate, so no nudge.
-  'grok-build-0.1': { forceCompactAt: 180_000 },
-  'grok-4.5': { forceCompactAt: 400_000 }, // 500K window
-  'grok-4.6': { forceCompactAt: 400_000 }, // 500K window
-  'glm-5.2': { forceCompactAt: 850_000 },
-  'glm-5.3': { forceCompactAt: 850_000 },
-  'glm-5.3-flash': { forceCompactAt: 850_000 },
-  'muse-spark-1.1': { forceCompactAt: 850_000 },
-  'muse-spark-1.2': { forceCompactAt: 850_000 },
-  'muse-spark-1.3': { forceCompactAt: 850_000 },
-  'kimi-k2-7-code': { forceCompactAt: 200_000 }, // 262K window
-  'kimi-k3': { forceCompactAt: 850_000 },
-  'deepseek-v4-flash-0731': { forceCompactAt: 850_000 },
-  'deepseek-v4-pro': { forceCompactAt: 850_000 },
-  'deepseek-v4.1-flash': { forceCompactAt: 850_000 },
-  'qwen3.8-2.4t-a95b-deepinfra': { forceCompactAt: 200_000 }, // 262K window
-  'qwen3.8-27b-deepinfra': { forceCompactAt: 200_000 }, // 262K window
-  'minimax-m3': { forceCompactAt: 420_000 }, // 524K window
-};
-
-/**
- * Thresholds for models outside TEXT_MODELS — reachable only via a dev
- * `--model` override, since picks are validated against the allow-list.
- * Matches the historical fixed gate.
- */
-const DEFAULT_CONTEXT_LIMITS: ModelContextLimits = { forceCompactAt: 850_000 };
-
-/** Context thresholds for a model id, with the conservative-for-1M-class
- * default for unknown ids. */
-export function getContextLimits(modelId: string): ModelContextLimits {
-  return TEXT_MODELS[modelId] ?? DEFAULT_CONTEXT_LIMITS;
+function parseTextModels(
+  raw: Record<string, ModelContextLimits> | undefined,
+): Map<string, ModelContextLimits> {
+  const out = new Map<string, ModelContextLimits>();
+  if (!raw || typeof raw !== 'object') {
+    return out;
+  }
+  for (const [id, value] of Object.entries(raw)) {
+    const force = value?.forceCompactAt;
+    if (
+      !id ||
+      typeof force !== 'number' ||
+      !Number.isFinite(force) ||
+      force <= 0
+    ) {
+      continue;
+    }
+    const suggest = value?.suggestCompactAt;
+    out.set(id, {
+      forceCompactAt: force,
+      ...(typeof suggest === 'number' && Number.isFinite(suggest) && suggest > 0
+        ? { suggestCompactAt: suggest }
+        : {}),
+    });
+  }
+  return out;
 }
 
-/** Where the frontend starts suggesting `/compact` for this model: the
- * model's pricing-tier point when it has one, the flat-rate default
- * otherwise. Shipped on the stats payload (.remy-stats.json) so the
- * composer's ContextBar threshold tracks the active parent model. */
+function requireSurface(surfaceId: SurfaceId): ModelSurface {
+  const surface = surfaces[surfaceId];
+  if (!surface) {
+    throw new Error(
+      registryLoaded
+        ? `Unknown model surface '${surfaceId}'.`
+        : `Model surfaces were read before the platform registry loaded (surface '${surfaceId}'). ` +
+            `setModelRegistry must run during boot.`,
+    );
+  }
+  return surface;
+}
+
+/** Allow-list of pickable model IDs by type, as published by the platform. */
+export function getAllowedModelsByType(): Partial<Record<ModelType, string[]>> {
+  return allowedModelsByType;
+}
+
+/**
+ * Context thresholds for a model id, as declared by the platform.
+ *
+ * A missing entry means the id is outside the allow-list, which a validated
+ * pick cannot be — only a dev `--model` override reaches it.
+ */
+export function getContextLimits(modelId: string): ModelContextLimits {
+  return textModels.get(modelId) ?? FALLBACK_CONTEXT_LIMITS;
+}
+
+/** Where the frontend starts suggesting `/compact` for this model. */
 export function getSuggestCompactAt(modelId: string): number {
   return (
     getContextLimits(modelId).suggestCompactAt ?? DEFAULT_SUGGEST_COMPACT_AT
   );
 }
-
-/**
- * Allow-list of pickable model IDs by model type.
- *
- * `text` surfaces are constrained to the chat-endpoint allow-list (the
- * TEXT_MODELS keys). `vision` and `image_generation` surfaces are
- * unconstrained — the frontend renders them from its own model catalog. An
- * undefined value means "no allow-list — pick anything of this type from
- * the catalog."
- */
-export const ALLOWED_MODELS_BY_TYPE: Partial<Record<ModelType, string[]>> = {
-  text: Object.keys(TEXT_MODELS),
-  // vision: undefined — unconstrained
-  // image_generation: undefined — unconstrained
-};
 
 /**
  * Org-configured default model picks, validated and held for the process
@@ -313,17 +282,17 @@ export function filterModelPicks(
     return out;
   }
   for (const [key, value] of Object.entries(picks)) {
-    if (!(key in MODEL_SURFACES)) {
+    const surface = surfaces[key as SurfaceId];
+    if (!surface) {
       continue; // unknown surface
     }
-    const surface = MODEL_SURFACES[key as SurfaceId];
     if (!surface.userPickable) {
       continue; // internal surface (e.g. imagePromptEnhancer)
     }
     if (typeof value !== 'string' || value.length === 0) {
       continue; // require a non-empty string
     }
-    const allow = ALLOWED_MODELS_BY_TYPE[surface.modelType];
+    const allow = allowedModelsByType[surface.modelType];
     if (allow && !allow.includes(value)) {
       continue; // out of allow-list (text only; vision/image_generation skip)
     }
@@ -333,14 +302,18 @@ export function filterModelPicks(
 }
 
 /**
- * MODEL_SURFACES with each `default` overlaid from the org defaults (registry
- * default where the org hasn't set that surface). This is what ships to the
- * frontend picker, so it displays — and "reset to default" lands on — the org
- * default. Identical to MODEL_SURFACES when no org defaults are set.
+ * The surface registry with each `default` overlaid from the org defaults
+ * (platform default where the org hasn't set that surface). This is what ships
+ * to the frontend picker, so it displays — and "reset to default" lands on —
+ * the org default.
  */
 export function getEffectiveModelSurfaces(): Record<string, ModelSurface> {
   const out: Record<string, ModelSurface> = {};
-  for (const [id, surface] of Object.entries(MODEL_SURFACES)) {
+  for (const id of SURFACE_IDS) {
+    const surface = surfaces[id];
+    if (!surface) {
+      continue;
+    }
     const orgDefault = orgDefaultModels[id];
     out[id] = orgDefault ? { ...surface, default: orgDefault } : { ...surface };
   }
@@ -349,7 +322,7 @@ export function getEffectiveModelSurfaces(): Record<string, ModelSurface> {
 
 /**
  * Four-tier resolution: explicit user pick > global startup override >
- * org default > registry default. Always returns a non-empty string.
+ * org default > platform default. Always returns a non-empty string.
  */
 export function resolveModel(
   surfaceId: SurfaceId,
@@ -360,7 +333,7 @@ export function resolveModel(
     models?.[surfaceId] ??
     fallback ??
     orgDefaultModels[surfaceId] ??
-    MODEL_SURFACES[surfaceId].default
+    requireSurface(surfaceId).default
   );
 }
 
