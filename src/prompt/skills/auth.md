@@ -100,6 +100,7 @@ export const Users = db.defineTable<{
 
 ### Platform-Managed Column Behavior
 
+- **`id`** — the platform-assigned managed-user UUID. Omit it on every insert (`Users.push({ email, ... })`) and let it default; never hand-write one (`id: 'analyst-test'`, etc.). A non-UUID id can't map to the platform user record — it silently never syncs and orphans the row. Reference a user by the id returned from `Users.push(...)`, never a made-up string. (This is the trap scenario seeds fall into — see the `scenarios` skill.)
 - **`email` / `phone` / `apiKey`** — read-only from code. Writing via `update()` or `push()` throws a `MindStudioError`. Use the auth API to change a user's email or phone, and `auth.createApiKey()` / `auth.revokeApiKey()` for API keys.
 - **`roles`** — read/write from both code and the dashboard. `Users.update(userId, { roles: ['admin'] })` works and syncs to the platform. Dashboard role changes sync back to the table.
 - All other columns are fully the developer's. When auth creates a user row, only the managed columns (email/phone, roles) are populated. All user-defined columns start as null until the user completes onboarding — type them as optional and guard against null.
