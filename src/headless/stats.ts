@@ -75,6 +75,56 @@ export function loadPassiveResults(): PassiveResult[] {
   return [];
 }
 
+/**
+ * The workspace-behind note's durable state.
+ *
+ * Both halves have to survive a restart, for opposite reasons. `lastNotedUpstream`
+ * is what makes the note fire once per upstream tip rather than once per boot —
+ * a bare remy restart on the same tip must stay quiet, while a colleague
+ * publishing again is a new tip and re-arms it. `pendingNote` is a note that has
+ * been parked but not yet ridden a turn, which is the normal state for a
+ * workspace nobody has typed into: without persisting it, a restart before the
+ * first message would drop it silently AND leave `lastNotedUpstream` set, so it
+ * would never fire at all.
+ *
+ * Kept in `.remy-stats.json` rather than a file of its own on purpose. The app
+ * template's `.gitignore` names each `.remy-*` file explicitly instead of by
+ * wildcard, and every existing app carries its own copy that cannot be changed
+ * retroactively — so a new sibling file would sit untracked in every app that
+ * already exists and could be swept into a publish commit.
+ */
+export interface WorkspaceNotice {
+  /** Note text awaiting the next real turn, or null when nothing is parked. */
+  pendingNote: string | null;
+  /** `origin/<default>` tip the last note was raised for. */
+  lastNotedUpstream: string | null;
+}
+
+export function emptyWorkspaceNotice(): WorkspaceNotice {
+  return { pendingNote: null, lastNotedUpstream: null };
+}
+
+/** Load the persisted workspace-behind state. Empty when absent or invalid. */
+export function loadWorkspaceNotice(): WorkspaceNotice {
+  try {
+    const stats = JSON.parse(readFileSync(STATS_FILE, 'utf-8'));
+    const notice = stats.workspaceNotice;
+    if (notice && typeof notice === 'object') {
+      return {
+        pendingNote:
+          typeof notice.pendingNote === 'string' ? notice.pendingNote : null,
+        lastNotedUpstream:
+          typeof notice.lastNotedUpstream === 'string'
+            ? notice.lastNotedUpstream
+            : null,
+      };
+    }
+  } catch {
+    // No stats file or invalid — start fresh
+  }
+  return emptyWorkspaceNotice();
+}
+
 /** Persist stats + queue + passive pen to disk. Best-effort (swallows errors).
  *
  * `suggestCompactAt` is the active parent model's /compact suggestion
@@ -85,6 +135,7 @@ export function writeStats(
   queue: QueuedMessage[],
   passiveResults: PassiveResult[],
   suggestCompactAt: number,
+  workspaceNotice: WorkspaceNotice,
 ): void {
   try {
     // Atomic: the sandbox watcher broadcasts this file to the frontend on
@@ -97,6 +148,7 @@ export function writeStats(
         suggestCompactAt,
         queue,
         passiveResults,
+        workspaceNotice,
       }),
     );
   } catch {}

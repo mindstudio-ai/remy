@@ -16,7 +16,10 @@ import {
 } from './sentinel.js';
 
 /** Sentinels that use the @@automated:: prefix but are not action files. */
-export const NON_ACTION_SENTINELS = new Set(['background_results']);
+export const NON_ACTION_SENTINELS = new Set([
+  'background_results',
+  'workspace_status',
+]);
 
 export interface ResolvedAction {
   message: string;

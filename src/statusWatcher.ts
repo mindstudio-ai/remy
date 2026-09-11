@@ -12,6 +12,7 @@
  * model's temperature produces natural variation across polls.
  */
 
+import { sandboxSessionHeader } from './api.js';
 import type { ApiConfig } from './config.js';
 
 /**
@@ -25,6 +26,7 @@ const INTERNAL_PAYLOAD_MARKERS = [
   '[INTERRUPTED]',
   '[INTERRUPTED - PARTIAL OUTPUT RETRIEVED]',
   '<background_results>',
+  '<workspace_status>',
   '<tool_result',
 ];
 
@@ -116,6 +118,10 @@ export function startStatusWatcher(config: StatusWatcherConfig): StatusWatcher {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${apiConfig.apiKey}`,
+          // Also a liveness signal for this box, and the most frequent one there is — this ticks
+          // every few seconds for as long as the agent is working, which is exactly the window in
+          // which the user may have backgrounded the tab and stopped its own keepalive.
+          ...sandboxSessionHeader(),
         },
         body: JSON.stringify({ appId: apiConfig.appId, context }),
         signal,

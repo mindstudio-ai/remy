@@ -1,6 +1,6 @@
 # Development & Deployment
 
-Development happens in the hosted sandbox, against a dev release with its own copy of the database. Deployment is a `git push` that builds a new release and promotes it. Both run through the same execution pipeline, the same SDK, and the same schema rules, so code that works in the sandbox works in production.
+Development happens in the hosted sandbox, against a dev release with its own copy of the database. Each person with edit access gets their own workspace — their own copy of the code, their own dev database — and everyone publishes to the same default branch, which is what builds a new release and promotes it. Both run through the same execution pipeline, the same SDK, and the same schema rules, so code that works in the sandbox works in production.
 
 ---
 
@@ -93,11 +93,15 @@ Aggregated execution metrics: call count, error rate, duration percentiles.
 
 ## What Happens on Deploy
 
+Every commit that lands on the default branch deploys. Publishing is what puts one there: the workspace commits its changes and pushes.
+
 ```bash
-git push origin main
+git push origin HEAD
 ```
 
-The platform builds and deploys automatically:
+Each workspace is a full clone on the default branch, so there is no shared working tree to contend for — several people can publish from several sandboxes. When two of them publish close together the second push is rejected as non-fast-forward; that workspace fetches, merges the release it missed, and pushes again.
+
+From the push on, the platform builds and deploys automatically:
 
 1. **Parse manifest** — read `mindstudio.json` from the commit
 2. **Create release** — record in Postgres with status `building`
@@ -131,15 +135,15 @@ live → superseded             (new release goes live)
 
 ### Preview Deployments
 
-Push to a non-default branch:
+Push any branch other than the default:
 
 ```bash
-git push origin feat/approvals
+git push origin HEAD:refs/heads/<branch>
 ```
 
-Same build pipeline, but the release is marked `preview` instead of `live`. Accessible via a branch-specific URL. Each branch gets its own preview release. Pushing again to the same branch supersedes the previous preview.
+Same build pipeline, but the release is marked `preview` instead of `live`. Accessible via a branch-specific URL, and it runs against a copy of the data rather than production. Each branch gets its own preview release; pushing the branch again supersedes the previous one.
 
-Preview deployments don't affect the live app. Useful for testing changes before merging.
+Preview deployments don't affect the live app — they are how you show work before it ships. A branch sitting at the default branch's tip builds no preview, because the live release already covers that commit.
 
 ### Database Migrations
 
@@ -215,11 +219,11 @@ The audit runs asynchronously and **lands ~30–60s after the release goes live*
 
 ### Rollback
 
-Rollback is a git operation:
+Rollback is a git operation: revert, then publish.
 
 ```bash
 git revert HEAD
-git push origin main
+git push origin HEAD
 ```
 
 This creates a new commit that undoes the last change, triggering a new build and deploy. The previous release's database is still available (databases are per-release), so data isn't lost.

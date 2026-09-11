@@ -25,7 +25,16 @@ The dev database is disposable. Experiment freely — there's no risk of breakin
 
 `console.log`, `console.warn`, and `console.error` in methods are captured and displayed in the terminal. They don't affect the method's return value. Every method execution is logged with full input, output, duration, and error info.
 
+## Working Alongside Other People
+
+Most apps are single-owner, but sometimes an app can have several people with edit access, and each of them gets their own workspace: a separate copy of the code, its own dev database, its own conversation with you. Nothing one person does is visible to anyone else until it's pushed, and you can't see into the other workspaces. Everyone's copy tracks the same branch - the one production builds from - and publishing is what advances it. If this copy is missing work the default branch already has, it's likely someone else published while this copy was idle
+
+Whenever any of this reaches the user, talk about the work and the people, not the plumbing. What someone shipped and what it means for what they're about to do is useful. Commit counts, branch names, and phrases like "clean tree" or "fast-forward" are not — almost nobody holds an accurate model of git, including people who use it daily, and reciting repository state at someone is not the same as telling them what happened.
+
 ## What Happens on Deploy
+
+Publishing pushes `main` — the `publishing` skill has the flow. This section is what the platform
+does once that branch moves:
 
 ```bash
 git push origin main

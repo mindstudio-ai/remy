@@ -82,6 +82,15 @@ People are bad at describing their own data, and the more of it they have the wo
 
 Three rules hold throughout: credentials are app secrets referred to by NAME and never appear in chat or code; nothing that spends is approved or provisioned without the user's explicit yes on the numbers; and dedicated capacity is proposed when a plan asks for it, not before.
 
+### Building an initial app (intake) when a user brings a data source
+
+When a user shows up with a data source from the first message, prefer the following workflow:
+- Get a feel for the data, using the methods discussed above
+- Then, and perhaps most importantly, understand what it is the user is trying to *do* with the data. Are they building a generic RAG chatbot, or something more interesting? What is important to them - grounding, citations, etc? And why?
+- Vectorized data that does nothing isn't very useful - building the app that will consume it to do something compelling is the important bit.
+- If the data smells truly large (e.g., will require async work, meaningful cost to ingest, or dedicated capacity/planning, etc), focus on putting a small sample of the data in a data source and then focus on building and delivering the MVP.
+- After the MVP is built and the user feels good about it, you can help the user bring in the full data source.
+
 ## Loading documents — normally at build time, from the CLI
 
 ```bash
@@ -124,7 +133,7 @@ remy-admin datasources jobs approve <id> --wait                                 
 remy-admin datasources jobs start --source archive --manifest urls.jsonl --limit 200 --approve --wait   # a cheap sample first
 ```
 
-Two gates decide whether a plan can run: the corpus has to fit the source's placement (a shared-pool source over the per-source cap answers `plan_requires_dedicated`; see Dedicated capacity below), and the workspace has to be able to cover the projection (`insufficient_credits`). **Show the user the plan and get an explicit yes before approving** — the plan is the whole point. `--budget <dollars>` pauses the job at a ceiling; `--limit <n>` loads a sample of the corpus to check quality before committing to all of it. Unchanged documents are skipped by content hash, so re-running a job is free. `jobs pause|resume|cancel` are the controls; search works on the partial corpus throughout. One bulk operation per source at a time (`data_source_busy`).
+Two gates decide whether a plan can run: the corpus has to fit the source's placement (a shared-pool source over the per-source cap answers `plan_requires_dedicated`; see Dedicated capacity below), and the workspace has to be able to cover the projection (`insufficient_credits`). **Show the user the plan and get an explicit yes before approving** — the plan is the whole point. `--budget <dollars>` pauses the job at a ceiling; `--limit <n>` loads a sample of the corpus to check quality before committing to all of it. Unchanged documents are skipped by content hash, so re-running a job is free. `jobs pause|resume|cancel` are the controls; search works on the partial corpus throughout. A batch that fails five times stays failed and the job finishes without it; once the cause is fixed, `jobs retry <id>` runs just those batches again and finishes the job. One bulk operation per source at a time (`data_source_busy`); documents stranded by failed batches do not block a move, and `jobs retry` builds them onto wherever the source lives now.
 
 ## Keeping a corpus in sync with an S3 bucket (connectors)
 
@@ -210,7 +219,7 @@ remy-admin datasources remap --source archive --wait                            
 
 On a job, mapping is its own stage. The mapper turns each object into documents; the platform then ingests those documents in parallel batches of fifty across its workers, whatever one object became. So the size of an object does not set the pace, and a bundle of a thousand records is fine; only the number of objects sets how wide the mapping stage itself runs (three huge files map on three workers, the plan says so as a warning). `jobs status` reads "mapping N of M objects" until that stage is through, then counts documents.
 
-A mapper runs on the platform, so the platform has to build it. Any push builds it, and a branch push is a private preview build, which is all a mapper needs. `map deploy` then makes that build's mapper the source's active one: jobs, syncs and `add()` run it from then on, whether or not the app has ever been published. Publishing activates the mapper the live release declares — which is the one you deployed, since publishing fast-forwards the default branch to your branch. So there is nothing extra to do at publish time, and nothing to merge by hand: publishing is the merge (see the publishing skill). `jobs start` refuses with `mapper_not_deployed` while the dev session declares a mapper that is not yet active, because the job would otherwise load the raw records as documents.
+A mapper runs on the platform, so the platform has to build it. Any push builds it, and a branch push is a private preview build, which is all a mapper needs. `map deploy` then makes that build's mapper the source's active one: jobs, syncs and `add()` run it from then on, whether or not the app has ever been published. Publishing activates the mapper the *live release* declares — so if you deployed a mapper from a branch build, that code still has to reach `main` for the next release to declare it. Getting it there is the publish flow's job, not a separate step you invent (see the publishing skill). `jobs start` refuses with `mapper_not_deployed` while the dev session declares a mapper that is not yet active, because the job would otherwise load the raw records as documents.
 
 `map test --dev` needs the dev session running (`npx mindstudio dev`); it runs the mapper from local source through the tunnel and prints every outcome with markdown previews. The plan of a mapped job records the mapper's outcome mix on its sample; a run whose skip share climbs past twice that pauses with `pauseReason: 'skips'` for a look at the quarantine. `remap` reads the platform's own raw copies — no origin traffic — skips unchanged markdown by hash, and supersedes changed documents, so a metadata tweak on a million-document source costs frames and little else. `externalId` is the identity everything replaces by; choose it deliberately (the record's stable id, never the key of a file that gets rewritten in place).
 
