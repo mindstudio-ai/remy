@@ -308,23 +308,21 @@ const [vendor, orders, pendingCount] = await db.batch(
 
 ### How Schema Changes Work
 
-No migration files. Migrations are automatic:
-- **New tables** — `CREATE TABLE` applied automatically
-- **New columns** — `ALTER TABLE ADD COLUMN` applied automatically
-- **Dropped columns** — `ALTER TABLE DROP COLUMN` applied automatically when a column is removed from the interface
-- **Dropped tables** — `DROP TABLE` applied automatically when a table file is removed from the manifest
-- **Type changes and renames** — not supported in the automatic migration path
+No migration files. The table's TypeScript interface is the schema, and the platform brings the database to match it:
+- **New tables** — created
+- **New, dropped, or retyped columns, and changed `unique` constraints** — the table is rebuilt: a table with the declared shape is created, every row is copied across, and it replaces the old one in a single transaction. New columns arrive empty; dropped columns and their data are gone; a retyped column's values are carried across, converted where SQLite can and kept as stored where it can't.
+- **Dropped tables** — dropped when the table file is removed from the manifest
+- **Renames** — not detected; a renamed column or table is a drop plus an add, so its data does not carry over
 
 On `git push`, the platform:
 1. Parses your table definition files (TypeScript AST)
 2. Diffs against the current live database schema
-3. Generates DDL (`CREATE TABLE`, `ALTER TABLE ADD COLUMN`, `ALTER TABLE DROP COLUMN`, `DROP TABLE`)
-4. Applies to a staging copy of the database
-5. Promotes the staging copy to live
+3. Clones the live database and applies the changes to the clone
+4. Promotes the clone to live — if any change fails, the release fails and the live database is untouched
 
 ### In Development
 
-The CLI syncs schema changes to the dev database via `POST /dev/manage/sync-schema`. Same constraints as production.
+The CLI syncs schema changes to the dev database via `POST /dev/manage/sync-schema`, applied in place by the same rules. If a sync fails, the error names the table and what is out of step between the platform's schema record and the table itself — fix that, don't guess.
 
 ---
 
