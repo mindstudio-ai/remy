@@ -151,12 +151,11 @@ On deploy, the platform:
 
 1. Parses the table definition files (TypeScript AST)
 2. Compares against the current live database schema
-3. Generates DDL (`CREATE TABLE`, `ALTER TABLE ADD COLUMN`, `ALTER TABLE DROP COLUMN`, `DROP TABLE`)
-4. Clones the live database to a staging copy
-5. Applies DDL to the staging copy
-6. Promotes the staging copy to live
+3. Clones the live database to a staging copy
+4. Applies the changes to the staging copy — new tables are created; a table with new, dropped, or retyped columns or changed `unique` constraints is rebuilt (a table with the declared shape is created, every row is copied across, and it replaces the old one in one transaction); tables removed from the manifest are dropped
+5. Promotes the staging copy to live
 
-Automatic migrations handle new tables, new columns, dropped columns (when removed from the table's TypeScript type), and dropped tables (when removed from the manifest). Type changes and renames are not supported in the automatic path.
+Renames are not detected: a renamed column or table is a drop plus an add, so its data does not carry over.
 
 **Safety** — schema changes are always applied to a clone, never to the live database directly. If the DDL fails, the live database is untouched and the release is marked `failed`.
 

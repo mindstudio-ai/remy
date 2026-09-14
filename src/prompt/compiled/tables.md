@@ -389,20 +389,14 @@ const [_, newOrder, pending] = await db.batch(
 
 ## Migrations
 
-No migration files. Migrations are automatic:
-- **New tables** — `CREATE TABLE` applied automatically
-- **New columns** — `ALTER TABLE ADD COLUMN` applied automatically
-- **Dropped columns** — `ALTER TABLE DROP COLUMN` applied automatically when a column is removed from the interface
-- **Dropped tables** — `DROP TABLE` applied automatically when a table file is removed from the manifest
-- **Type changes and renames** — not supported in the automatic migration path
+No migration files. The table's TypeScript interface is the schema, and the platform brings the database to match it:
+- **New tables** — created
+- **New, dropped, or retyped columns, and changed `unique` constraints** — the table is rebuilt: a table with the declared shape is created, every row is copied across, and it replaces the old one in one transaction. New columns arrive empty; dropped columns and their data are gone; a retyped column's values are carried across, converted where SQLite can.
+- **Dropped tables** — dropped when the table file is removed from the manifest
+- **Renames** — not detected; a renamed column or table is a drop plus an add, and its data does not carry over
 
-On deploy, the platform:
-1. Parses your table definition files (TypeScript AST — the interface IS the schema)
-2. Diffs against the current live database schema
-3. Generates DDL (`CREATE TABLE`, `ALTER TABLE ADD COLUMN`, `ALTER TABLE DROP COLUMN`, `DROP TABLE`)
-4. Applies to a staging copy of the database
-5. Promotes the staging copy to live
+On deploy, the platform parses the table files, diffs against the live schema, applies the changes to a clone of the live database, and promotes the clone. If any change fails, the release fails and the live database is untouched.
 
-The TypeScript interface is the single source of truth for the schema. Add a field to the interface, push, and the column exists. No migration files, no CLI commands.
+Add a field to the interface, push, and the column exists. No migration files, no CLI commands.
 
-**In development**, schema changes are synced automatically to the dev database. The dev database is a disposable snapshot — it can be reset to a fresh copy of production data or truncated to empty tables at any time. There's no risk of breaking anything by experimenting with schema changes in dev.
+**In development**, schema changes are applied to the dev database automatically, by the same rules. Its data is disposable — it can be reset to a fresh copy of production or truncated to empty tables at any time. If a schema sync fails, the error names the table and what is out of step between the platform's schema record and the table itself; fix exactly that.
