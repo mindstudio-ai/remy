@@ -114,13 +114,15 @@ remy-admin files rm --store handoff --key <key> --private               # revoke
 
 ## Generated assets
 
-MindStudio SDK Actions that produce a file (`generateImage`, `generateVideo`, `generateSpeech`, `generatePdf`, `upscaleImage`, …) can optionally write straight into a store — pass the handle as `store` in the options object:
+Every MindStudio SDK Action that produces a file (`generateImage`, `generateVideo`, `generateSpeech`, `generatePdf`, `upscaleImage`, `trimMedia`, `convertPdfToImages`, `screenshotUrl`, `getGmailAttachments`, …) can write straight into a store — pass the handle as `store` in the options object:
 
 ```typescript
 const { imageUrl } = await mindstudio.generateImage({ prompt }, { store: Assets });
 ```
 
-If omitted, files are written to the default global, public MindStudio CDN.
+If omitted, the file goes to the shared public MindStudio CDN, where the URL is unlisted but readable by anyone who has it, forever. **For anything confidential, pass a private store.** That's the one thing to get right here — the default is fine for marketing images and wrong for client material.
+
+**Actions never publish what you give them.** An input that's already one of the app's own files — a private object, a `shareUrl` link, a `/_/files/...` path — is read where it sits, and anything the platform has to convert first (a non-mp4 video, the pages of a PDF, a document an extraction model must fetch) is staged privately and discarded when the call finishes. So handing `extractText` a private contract, or `trimMedia` a private `.mov`, leaves no public copy behind.
 
 ## When public vs private
 

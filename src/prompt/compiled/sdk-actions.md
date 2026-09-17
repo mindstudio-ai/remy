@@ -22,6 +22,20 @@ result.content;              // step-specific output
 result.$billingCost;         // cost in credits (if applicable)
 ```
 
+## Where files an action produces end up
+
+Any action that returns a file URL writes to the shared **public** MindStudio CDN by default: unlisted, but readable by anyone holding the URL, and it never expires. Pass a file store as `store` in the options object to write into the app's own storage instead — a private store means the URL only loads for an authorized app session.
+
+```typescript
+const Reports = files.defineStore('reports', { access: 'private' });
+
+const { imageUrl } = await mindstudio.generateImage({ prompt }, { store: Reports });
+```
+
+**Use a store whenever the file belongs to a specific user or is confidential** (a client document, a participant recording, anything the app wouldn't publish). The public default is for marketing images and other genuinely world-readable assets. See the `files` skill.
+
+Inputs are safe either way: a private file or a `shareUrl` handed to an action is read where it sits, and any intermediate the platform needs (transcoding a video, rasterizing a PDF) is staged privately and deleted when the call finishes.
+
 ## Available Actions
 
 ### AI Generation
