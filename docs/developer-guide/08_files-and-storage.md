@@ -185,7 +185,7 @@ Write that URL into your JSX/HTML. The key is content-addressed by default, so t
 
 ## Generated Assets
 
-Actions that produce a file — `generateImage`, `generateVideo`, `generateSpeech`, `generatePdf`, `upscaleImage` and friends — can write their output straight into one of your stores. Pass the store handle as `store` in the options object (the second argument):
+Any action that produces a file — `generateImage`, `generateVideo`, `generateSpeech`, `generatePdf`, `upscaleImage`, `trimMedia`, `convertPdfToImages`, `screenshotUrl`, `getGmailAttachments` and the rest — can write its output straight into one of your stores. Pass the store handle as `store` in the options object (the second argument):
 
 ```typescript
 import { Assets } from './files/assets';
@@ -196,7 +196,22 @@ const { imageUrl } = await mindstudio.generateImage(
 );
 ```
 
-`store` is optional. Leave it off and the asset is hosted on the shared MindStudio CDN, which is fine for most things. Reach for a store when the asset belongs to the app: generated for a specific user, or something you want sitting alongside the app's other files.
+`store` is optional. Leave it off and the asset is hosted on the shared public MindStudio CDN, which is fine for most things — but that URL is unlisted rather than protected, and it doesn't expire. Reach for a store when the asset belongs to the app: generated for a specific user, confidential, or something you want sitting alongside the app's other files.
+
+### Inputs you hand an action are never published
+
+Passing an action one of your own files is safe. A private object, a `shareUrl` link and a relative `/_/files/...` path are all read where they sit — the platform signs a short-lived URL for whatever has to fetch them (an extraction model, the video transcoder) rather than copying the bytes somewhere public. When a conversion genuinely needs an intermediate — rasterizing the pages of a PDF, transcoding a `.mov` so ffmpeg can read it — that intermediate is written to private platform storage and deleted when the call finishes.
+
+So this leaves nothing behind, whatever the source file is:
+
+```typescript
+const contract = await Contracts.put(bytes, { filename: 'msa.pdf' });
+const { text } = await mindstudio.extractText({ url: contract.url });
+const { imageUrls } = await mindstudio.convertPdfToImages(
+  { pdfUrl: contract.url },
+  { store: Contracts },
+);
+```
 
 ## Public vs Private — When to Use Which
 
