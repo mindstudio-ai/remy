@@ -27,7 +27,6 @@ import { capToolResult, attachSubAgentTranscript } from '../historyLimits.js';
 import { liftRecording } from '../recording.js';
 import type { RecordingRef } from '../recording.js';
 import type { ApiConfig } from '../config.js';
-import { startStatusWatcher, sanitizeStatusText } from '../statusWatcher.js';
 import { cleanMessagesForApi } from './common/cleanMessages.js';
 
 export interface SubAgentConfig {
@@ -189,477 +188,438 @@ export async function runSubAgent(
       return { text: cancelledToolResult(signal), messages: thisInvocation() };
     }
 
-    let lastToolResult = '';
-    // Per-iteration state the turn-scoped watcher reads.
-    let watchedBlocks: ContentBlock[] = [];
-    let watchedToolNames = '';
+    // No status watcher here, deliberately. There used to be one PER SUB-AGENT
+    // RUN alongside the parent's, so a turn with two sub-agents generated three
+    // labels every five seconds — roughly a third of the ~7,000 paid label
+    // calls one workspace made in four days (RPT-1252). The parent's watcher
+    // already describes the turn, including which sub-agent it is waiting on,
+    // and this loop still emits its own model-free statuses for the states
+    // worth calling out (a connection retry, a failed validation). A label per
+    // agent is not worth a model call per agent.
+    //
+    // The try/finally that used to wrap this loop went with it: its only job
+    // was stopping that watcher's interval on every exit path.
+    while (true) {
+      turns++;
+      if (signal?.aborted) {
+        return abortResult([]);
+      }
 
-    // One watcher per sub-agent run, stopped in the finally below — it used
-    // to be per loop iteration and leaked a live interval on the streaming
-    // error and rethrow paths.
-    const statusWatcher = startStatusWatcher({
-      apiConfig,
-      getContext: () => {
-        const parts: string[] = [];
-        if (task) {
-          parts.push(`Task: ${sanitizeStatusText(task).slice(-200)}`);
-        }
-        const text = getPartialText(watchedBlocks);
-        if (text) {
-          parts.push(`Assistant text: ${text.slice(-500)}`);
-        }
-        if (watchedToolNames) {
-          parts.push(`Tool: ${watchedToolNames}`);
-        }
-        const toolResult = sanitizeStatusText(lastToolResult);
-        if (toolResult) {
-          parts.push(`Tool result: ${toolResult.slice(-200)}`);
-        }
-        return parts.join('\n');
-      },
-      onStatus: (label) => emit({ type: 'status', message: label }),
-      signal,
-    });
+      const iterStart = Date.now();
+      const contentBlocks: ContentBlock[] = [];
+      let thinkingStartedAt = 0;
+      let lastThinkingRelatedStartedAt: number | undefined;
+      let stopReason = 'end_turn';
+      let lastUsage: Message['usage'] | undefined;
+      let lastProviderMetadata: Record<string, any> | undefined;
+      // Authoritative model id echoed on `done`; persisted on the subagent
+      // assistant message for history attribution.
+      let lastModelId: string | undefined;
 
-    try {
-      while (true) {
-        turns++;
-        if (signal?.aborted) {
-          return abortResult([]);
-        }
+      try {
+        for await (const event of streamChatWithRetry(
+          {
+            ...apiConfig,
+            model,
+            requestId,
+            subAgentId,
+            system: fullSystem,
+            messages: cleanMessagesForApi(messages),
+            tools,
+            cachePolicy,
+            signal,
+          },
+          {
+            onRetry: (attempt) =>
+              emit({
+                type: 'status',
+                message: `Lost connection, retrying (attempt ${attempt + 2} of 3)`,
+              }),
+          },
+        )) {
+          if (signal?.aborted) {
+            break;
+          }
 
-        const iterStart = Date.now();
-        const contentBlocks: ContentBlock[] = [];
-        let thinkingStartedAt = 0;
-        let lastThinkingRelatedStartedAt: number | undefined;
-        let stopReason = 'end_turn';
-        let lastUsage: Message['usage'] | undefined;
-        let lastProviderMetadata: Record<string, any> | undefined;
-        // Authoritative model id echoed on `done`; persisted on the subagent
-        // assistant message for history attribution.
-        let lastModelId: string | undefined;
-
-        // Point the run's watcher at this iteration's blocks.
-        watchedBlocks = contentBlocks;
-        watchedToolNames = '';
-
-        try {
-          for await (const event of streamChatWithRetry(
-            {
-              ...apiConfig,
-              model,
-              requestId,
-              subAgentId,
-              system: fullSystem,
-              messages: cleanMessagesForApi(messages),
-              tools,
-              cachePolicy,
-              signal,
-            },
-            {
-              onRetry: (attempt) =>
-                emit({
-                  type: 'status',
-                  message: `Lost connection, retrying (attempt ${attempt + 2} of 3)`,
-                }),
-            },
-          )) {
-            if (signal?.aborted) {
+          switch (event.type) {
+            case 'text': {
+              const lastBlock = contentBlocks.at(-1);
+              if (lastBlock?.type === 'text') {
+                lastBlock.text += event.text;
+              } else {
+                contentBlocks.push({
+                  type: 'text',
+                  text: event.text,
+                  startedAt: event.ts,
+                });
+              }
+              emit({ type: 'text', text: event.text });
               break;
             }
 
-            switch (event.type) {
-              case 'text': {
-                const lastBlock = contentBlocks.at(-1);
-                if (lastBlock?.type === 'text') {
-                  lastBlock.text += event.text;
-                } else {
-                  contentBlocks.push({
-                    type: 'text',
-                    text: event.text,
-                    startedAt: event.ts,
-                  });
-                }
-                emit({ type: 'text', text: event.text });
-                break;
+            case 'thinking':
+              if (!thinkingStartedAt) {
+                thinkingStartedAt = event.ts;
               }
+              emit({ type: 'thinking', text: event.text });
+              break;
 
-              case 'thinking':
-                if (!thinkingStartedAt) {
-                  thinkingStartedAt = event.ts;
-                }
-                emit({ type: 'thinking', text: event.text });
-                break;
-
-              case 'thinking_complete':
-                contentBlocks.push({
-                  type: 'thinking',
-                  thinking: event.thinking,
-                  signature: event.signature,
-                  startedAt: thinkingStartedAt,
-                  completedAt: event.ts,
-                });
-                lastThinkingRelatedStartedAt = thinkingStartedAt;
-                thinkingStartedAt = 0;
-                break;
-
-              case 'redacted_thinking_complete': {
-                // No streaming start event for redacted blocks; synthesize a
-                // startedAt that places it just after the most recent thinking
-                // block (preserves relative order among thinking entries) and
-                // before any text/tool block.
-                const startedAt =
-                  lastThinkingRelatedStartedAt !== undefined
-                    ? lastThinkingRelatedStartedAt + 1
-                    : event.ts;
-                contentBlocks.push({
-                  type: 'redacted_thinking',
-                  data: event.data,
-                  startedAt,
-                  completedAt: event.ts,
-                });
-                lastThinkingRelatedStartedAt = startedAt;
-                break;
-              }
-
-              case 'tool_use':
-                contentBlocks.push({
-                  type: 'tool',
-                  id: event.id,
-                  name: event.name,
-                  input: event.input,
-                  startedAt: Date.now(),
-                });
-                emit({
-                  type: 'tool_start',
-                  id: event.id,
-                  name: event.name,
-                  input: event.input,
-                });
-                break;
-
-              case 'done':
-                stopReason = event.stopReason;
-                lastUsage = {
-                  inputTokens: event.usage.inputTokens,
-                  outputTokens: event.usage.outputTokens,
-                  cacheCreationTokens: event.usage.cacheCreationTokens,
-                  cacheReadTokens: event.usage.cacheReadTokens,
-                  llmCalls: 1,
-                };
-                lastProviderMetadata = event.providerMetadata;
-                lastModelId = event.modelId;
-                recordUsage({
-                  ts: Date.now(),
-                  requestId,
-                  agentName: subAgentId || 'sub-agent',
-                  parentToolId,
-                  modelId: event.modelId,
-                  inputTokens: event.usage.inputTokens,
-                  outputTokens: event.usage.outputTokens,
-                  cacheCreationTokens: event.usage.cacheCreationTokens,
-                  cacheReadTokens: event.usage.cacheReadTokens,
-                  cost: nanoToDollars(event.cost),
-                  billingEvents: event.billingEvents,
-                  durationMs: Date.now() - iterStart,
-                  toolNames: contentBlocks
-                    .filter(
-                      (b): b is ContentBlock & { type: 'tool' } =>
-                        b.type === 'tool',
-                    )
-                    .map((b) => b.name),
-                });
-                break;
-
-              case 'error':
-                // Stop before returning so an in-flight tick can't emit a
-                // status label after the run has failed.
-                statusWatcher.stop();
-                return {
-                  text: `Error: ${event.error}`,
-                  messages: thisInvocation(),
-                };
-            }
-          }
-        } catch (err: any) {
-          if (!signal?.aborted) {
-            throw err;
-          }
-        }
-
-        if (signal?.aborted) {
-          statusWatcher.stop();
-          return abortResult(contentBlocks);
-        }
-
-        // Record assistant message
-        messages.push({
-          role: 'assistant',
-          content: contentBlocks,
-          ...(lastUsage ? { usage: lastUsage } : {}),
-          ...(lastProviderMetadata
-            ? { providerMetadata: lastProviderMetadata }
-            : {}),
-          model: lastModelId ?? model,
-        });
-
-        // Extract tool calls from content blocks
-        const toolCalls = contentBlocks.filter(
-          (b): b is ContentBlock & { type: 'tool' } => b.type === 'tool',
-        );
-
-        // If no tool calls, we're done
-        if (stopReason !== 'tool_use' || toolCalls.length === 0) {
-          let text = getPartialText(contentBlocks);
-
-          // Give the validator a chance to reject the final response. On the
-          // first objection the loop runs once more with the objection as a
-          // corrective user message; a second objection is appended to the
-          // returned text instead, so the caller knows the response carries
-          // unverified claims. Each iteration's content blocks are fresh, so
-          // a retry's text fully replaces the rejected attempt — the
-          // objection message must ask for a complete re-send.
-          if (validateResult) {
-            let objection: string | null = null;
-            try {
-              objection = await validateResult(text, thisInvocation());
-            } catch (err: any) {
-              log.warn('Result validator failed, accepting response', {
-                requestId,
-                parentToolId,
-                agentName,
-                error: err.message,
+            case 'thinking_complete':
+              contentBlocks.push({
+                type: 'thinking',
+                thinking: event.thinking,
+                signature: event.signature,
+                startedAt: thinkingStartedAt,
+                completedAt: event.ts,
               });
+              lastThinkingRelatedStartedAt = thinkingStartedAt;
+              thinkingStartedAt = 0;
+              break;
+
+            case 'redacted_thinking_complete': {
+              // No streaming start event for redacted blocks; synthesize a
+              // startedAt that places it just after the most recent thinking
+              // block (preserves relative order among thinking entries) and
+              // before any text/tool block.
+              const startedAt =
+                lastThinkingRelatedStartedAt !== undefined
+                  ? lastThinkingRelatedStartedAt + 1
+                  : event.ts;
+              contentBlocks.push({
+                type: 'redacted_thinking',
+                data: event.data,
+                startedAt,
+                completedAt: event.ts,
+              });
+              lastThinkingRelatedStartedAt = startedAt;
+              break;
             }
-            if (objection && !validationRetried && !signal?.aborted) {
-              validationRetried = true;
-              log.info('Result rejected by validator, retrying once', {
-                requestId,
-                parentToolId,
-                agentName,
-                objection: objection.slice(0, 200),
+
+            case 'tool_use':
+              contentBlocks.push({
+                type: 'tool',
+                id: event.id,
+                name: event.name,
+                input: event.input,
+                startedAt: Date.now(),
               });
               emit({
-                type: 'status',
-                message: 'Response failed validation, revising',
+                type: 'tool_start',
+                id: event.id,
+                name: event.name,
+                input: event.input,
               });
-              messages.push({ role: 'user', content: objection });
-              continue;
-            }
-            if (objection) {
-              text = `${text}\n\n[Response validator: ${objection}]`;
-            }
-          }
+              break;
 
-          statusWatcher.stop();
-          const hasArtifacts = Object.keys(artifacts).length > 0;
-          return {
-            text,
-            messages: thisInvocation(),
-            ...(hasArtifacts ? { artifacts } : {}),
-          };
-        }
-
-        // Execute tool calls
-        log.info('Tools executing', {
-          requestId,
-          parentToolId,
-          count: toolCalls.length,
-          tools: toolCalls.map((tc) => tc.name),
-        });
-        watchedToolNames = toolCalls.map((tc) => tc.name).join(', ');
-
-        const results = await Promise.all(
-          toolCalls.map(async (tc) => {
-            if (signal?.aborted) {
-              return {
-                id: tc.id,
-                result: cancelledToolResult(signal),
-                isError: true,
+            case 'done':
+              stopReason = event.stopReason;
+              lastUsage = {
+                inputTokens: event.usage.inputTokens,
+                outputTokens: event.usage.outputTokens,
+                cacheCreationTokens: event.usage.cacheCreationTokens,
+                cacheReadTokens: event.usage.cacheReadTokens,
+                llmCalls: 1,
               };
-            }
+              lastProviderMetadata = event.providerMetadata;
+              lastModelId = event.modelId;
+              recordUsage({
+                ts: Date.now(),
+                requestId,
+                agentName: subAgentId || 'sub-agent',
+                parentToolId,
+                modelId: event.modelId,
+                inputTokens: event.usage.inputTokens,
+                outputTokens: event.usage.outputTokens,
+                cacheCreationTokens: event.usage.cacheCreationTokens,
+                cacheReadTokens: event.usage.cacheReadTokens,
+                cost: nanoToDollars(event.cost),
+                billingEvents: event.billingEvents,
+                durationMs: Date.now() - iterStart,
+                toolNames: contentBlocks
+                  .filter(
+                    (b): b is ContentBlock & { type: 'tool' } =>
+                      b.type === 'tool',
+                  )
+                  .map((b) => b.name),
+              });
+              break;
 
-            // Per-tool controllable promise + abort
-            let settle!: (
-              result: string,
-              isError: boolean,
-              recording?: RecordingRef,
-            ) => void;
-            const resultPromise = new Promise<{
-              id: string;
-              result: string;
-              isError: boolean;
-              recording?: RecordingRef;
-            }>((res) => {
-              settle = (result, isError, recording) =>
-                res({
-                  id: tc.id,
-                  result,
-                  isError,
-                  ...(recording ? { recording } : {}),
-                });
-            });
-
-            let toolAbort = new AbortController();
-            const cascadeAbort = () => toolAbort.abort();
-            signal?.addEventListener('abort', cascadeAbort, { once: true });
-
-            let settled = false;
-            const safeSettle = (
-              result: string,
-              isError: boolean,
-              recording?: RecordingRef,
-            ) => {
-              if (settled) {
-                return;
-              }
-              settled = true;
-              signal?.removeEventListener('abort', cascadeAbort);
-              settle(result, isError, recording);
-            };
-
-            const run = async (input: Record<string, any>) => {
-              try {
-                let result: string;
-                let recording: RecordingRef | undefined;
-                if (externalTools.has(tc.name) && resolveExternalTool) {
-                  result = await resolveExternalTool(tc.id, tc.name, input);
-                  // browserCommand carries its replay reference inside the
-                  // result JSON. Move it onto the block before the cap below
-                  // can truncate it away (see recording.ts).
-                  if (tc.name === 'browserCommand') {
-                    const lifted = liftRecording(result);
-                    result = lifted.result;
-                    recording = lifted.recording;
-                  }
-                } else {
-                  const onLog = (line: string) =>
-                    emit({
-                      type: 'tool_input_delta',
-                      id: tc.id,
-                      name: tc.name,
-                      result: line,
-                    });
-                  result = await executeTool(
-                    tc.name,
-                    input,
-                    tc.id,
-                    onLog,
-                    subAgentMessages,
-                  );
-                }
-                // Cap each result before it enters the sub-agent's history, exactly
-                // as the main agent does (agent.ts). Without this, an external data
-                // tool with no self-imposed cap — browserCommand returns a full
-                // accessibility snapshot on every call — accumulates uncapped and
-                // walks the sub-agent straight into the model's context limit. This
-                // is the path capToolResult was written for: browserCommand runs
-                // only here, in the browserAutomation sub-agent, never on the main
-                // agent, so the main-agent cap never covered it.
-                safeSettle(
-                  capToolResult(result),
-                  result.startsWith('Error'),
-                  recording,
-                );
-              } catch (err: any) {
-                safeSettle(`Error: ${err.message}`, true);
-              }
-            };
-
-            // Register for lifecycle management
-            const entry = {
-              id: tc.id,
-              name: tc.name,
-              input: tc.input,
-              parentToolId,
-              abortController: toolAbort,
-              startedAt: Date.now(),
-              settle: safeSettle,
-              rerun: (newInput: Record<string, any>) => {
-                settled = false;
-                toolAbort = new AbortController();
-                signal?.addEventListener('abort', () => toolAbort.abort(), {
-                  once: true,
-                });
-                entry.abortController = toolAbort;
-                entry.input = newInput;
-                run(newInput);
-              },
-            };
-            toolRegistry?.register(entry);
-
-            const toolStart = Date.now();
-            run(tc.input);
-
-            const r = await resultPromise;
-            toolRegistry?.unregister(tc.id);
-
-            log.info('Tool completed', {
-              requestId,
-              parentToolId,
-              toolCallId: tc.id,
-              name: tc.name,
-              durationMs: Date.now() - toolStart,
-              isError: r.isError,
-            });
-            emit({
-              type: 'tool_done',
-              id: tc.id,
-              name: tc.name,
-              result: r.result,
-              isError: r.isError,
-              ...(r.recording ? { recording: r.recording } : {}),
-            });
-            return r;
-          }),
-        );
-
-        lastToolResult = results.at(-1)?.result ?? '';
-
-        // Merge results onto the tool content blocks (so sub-agent messages
-        // are self-contained — the frontend can read result directly from
-        // the tool block without cross-referencing user messages).
-        for (const r of results) {
-          const block = contentBlocks.find(
-            (b) => b.type === 'tool' && b.id === r.id,
-          );
-          if (block?.type === 'tool') {
-            block.result = r.result;
-            block.isError = r.isError;
-            block.completedAt = Date.now();
-            if (r.recording) {
-              block.recording = r.recording;
-            }
-            const innerMsgs = subAgentMessages.get(r.id);
-            if (innerMsgs) {
-              // Same bound as the main agent applies (agent.ts): nested
-              // transcripts are persisted for display, not live context.
-              attachSubAgentTranscript(block, innerMsgs);
-            }
-
-            // Capture artifact if this tool is in the captureArtifacts list
-            if (captureArtifacts?.includes(block.name) && !r.isError) {
-              try {
-                artifacts[block.name] = JSON.parse(r.result);
-              } catch {
-                // Not JSON — skip
-              }
-            }
+            case 'error':
+              return {
+                text: `Error: ${event.error}`,
+                messages: thisInvocation(),
+              };
           }
-
-          // Still append as user messages — the LLM needs them for the next loop iteration
-          messages.push({
-            role: 'user',
-            content: r.result,
-            toolCallId: r.id,
-            isToolError: r.isError,
-          });
+        }
+      } catch (err: any) {
+        if (!signal?.aborted) {
+          throw err;
         }
       }
-    } finally {
-      // No exit path — including a thrown streaming error — may leave the
-      // interval alive.
-      statusWatcher.stop();
+
+      if (signal?.aborted) {
+        return abortResult(contentBlocks);
+      }
+
+      // Record assistant message
+      messages.push({
+        role: 'assistant',
+        content: contentBlocks,
+        ...(lastUsage ? { usage: lastUsage } : {}),
+        ...(lastProviderMetadata
+          ? { providerMetadata: lastProviderMetadata }
+          : {}),
+        model: lastModelId ?? model,
+      });
+
+      // Extract tool calls from content blocks
+      const toolCalls = contentBlocks.filter(
+        (b): b is ContentBlock & { type: 'tool' } => b.type === 'tool',
+      );
+
+      // If no tool calls, we're done
+      if (stopReason !== 'tool_use' || toolCalls.length === 0) {
+        let text = getPartialText(contentBlocks);
+
+        // Give the validator a chance to reject the final response. On the
+        // first objection the loop runs once more with the objection as a
+        // corrective user message; a second objection is appended to the
+        // returned text instead, so the caller knows the response carries
+        // unverified claims. Each iteration's content blocks are fresh, so
+        // a retry's text fully replaces the rejected attempt — the
+        // objection message must ask for a complete re-send.
+        if (validateResult) {
+          let objection: string | null = null;
+          try {
+            objection = await validateResult(text, thisInvocation());
+          } catch (err: any) {
+            log.warn('Result validator failed, accepting response', {
+              requestId,
+              parentToolId,
+              agentName,
+              error: err.message,
+            });
+          }
+          if (objection && !validationRetried && !signal?.aborted) {
+            validationRetried = true;
+            log.info('Result rejected by validator, retrying once', {
+              requestId,
+              parentToolId,
+              agentName,
+              objection: objection.slice(0, 200),
+            });
+            emit({
+              type: 'status',
+              message: 'Response failed validation, revising',
+            });
+            messages.push({ role: 'user', content: objection });
+            continue;
+          }
+          if (objection) {
+            text = `${text}\n\n[Response validator: ${objection}]`;
+          }
+        }
+
+        const hasArtifacts = Object.keys(artifacts).length > 0;
+        return {
+          text,
+          messages: thisInvocation(),
+          ...(hasArtifacts ? { artifacts } : {}),
+        };
+      }
+
+      // Execute tool calls
+      log.info('Tools executing', {
+        requestId,
+        parentToolId,
+        count: toolCalls.length,
+        tools: toolCalls.map((tc) => tc.name),
+      });
+
+      const results = await Promise.all(
+        toolCalls.map(async (tc) => {
+          if (signal?.aborted) {
+            return {
+              id: tc.id,
+              result: cancelledToolResult(signal),
+              isError: true,
+            };
+          }
+
+          // Per-tool controllable promise + abort
+          let settle!: (
+            result: string,
+            isError: boolean,
+            recording?: RecordingRef,
+          ) => void;
+          const resultPromise = new Promise<{
+            id: string;
+            result: string;
+            isError: boolean;
+            recording?: RecordingRef;
+          }>((res) => {
+            settle = (result, isError, recording) =>
+              res({
+                id: tc.id,
+                result,
+                isError,
+                ...(recording ? { recording } : {}),
+              });
+          });
+
+          let toolAbort = new AbortController();
+          const cascadeAbort = () => toolAbort.abort();
+          signal?.addEventListener('abort', cascadeAbort, { once: true });
+
+          let settled = false;
+          const safeSettle = (
+            result: string,
+            isError: boolean,
+            recording?: RecordingRef,
+          ) => {
+            if (settled) {
+              return;
+            }
+            settled = true;
+            signal?.removeEventListener('abort', cascadeAbort);
+            settle(result, isError, recording);
+          };
+
+          const run = async (input: Record<string, any>) => {
+            try {
+              let result: string;
+              let recording: RecordingRef | undefined;
+              if (externalTools.has(tc.name) && resolveExternalTool) {
+                result = await resolveExternalTool(tc.id, tc.name, input);
+                // browserCommand carries its replay reference inside the
+                // result JSON. Move it onto the block before the cap below
+                // can truncate it away (see recording.ts).
+                if (tc.name === 'browserCommand') {
+                  const lifted = liftRecording(result);
+                  result = lifted.result;
+                  recording = lifted.recording;
+                }
+              } else {
+                const onLog = (line: string) =>
+                  emit({
+                    type: 'tool_input_delta',
+                    id: tc.id,
+                    name: tc.name,
+                    result: line,
+                  });
+                result = await executeTool(
+                  tc.name,
+                  input,
+                  tc.id,
+                  onLog,
+                  subAgentMessages,
+                );
+              }
+              // Cap each result before it enters the sub-agent's history, exactly
+              // as the main agent does (agent.ts). Without this, an external data
+              // tool with no self-imposed cap — browserCommand returns a full
+              // accessibility snapshot on every call — accumulates uncapped and
+              // walks the sub-agent straight into the model's context limit. This
+              // is the path capToolResult was written for: browserCommand runs
+              // only here, in the browserAutomation sub-agent, never on the main
+              // agent, so the main-agent cap never covered it.
+              safeSettle(
+                capToolResult(result),
+                result.startsWith('Error'),
+                recording,
+              );
+            } catch (err: any) {
+              safeSettle(`Error: ${err.message}`, true);
+            }
+          };
+
+          // Register for lifecycle management
+          const entry = {
+            id: tc.id,
+            name: tc.name,
+            input: tc.input,
+            parentToolId,
+            abortController: toolAbort,
+            startedAt: Date.now(),
+            settle: safeSettle,
+            rerun: (newInput: Record<string, any>) => {
+              settled = false;
+              toolAbort = new AbortController();
+              signal?.addEventListener('abort', () => toolAbort.abort(), {
+                once: true,
+              });
+              entry.abortController = toolAbort;
+              entry.input = newInput;
+              run(newInput);
+            },
+          };
+          toolRegistry?.register(entry);
+
+          const toolStart = Date.now();
+          run(tc.input);
+
+          const r = await resultPromise;
+          toolRegistry?.unregister(tc.id);
+
+          log.info('Tool completed', {
+            requestId,
+            parentToolId,
+            toolCallId: tc.id,
+            name: tc.name,
+            durationMs: Date.now() - toolStart,
+            isError: r.isError,
+          });
+          emit({
+            type: 'tool_done',
+            id: tc.id,
+            name: tc.name,
+            result: r.result,
+            isError: r.isError,
+            ...(r.recording ? { recording: r.recording } : {}),
+          });
+          return r;
+        }),
+      );
+
+      // Merge results onto the tool content blocks (so sub-agent messages
+      // are self-contained — the frontend can read result directly from
+      // the tool block without cross-referencing user messages).
+      for (const r of results) {
+        const block = contentBlocks.find(
+          (b) => b.type === 'tool' && b.id === r.id,
+        );
+        if (block?.type === 'tool') {
+          block.result = r.result;
+          block.isError = r.isError;
+          block.completedAt = Date.now();
+          if (r.recording) {
+            block.recording = r.recording;
+          }
+          const innerMsgs = subAgentMessages.get(r.id);
+          if (innerMsgs) {
+            // Same bound as the main agent applies (agent.ts): nested
+            // transcripts are persisted for display, not live context.
+            attachSubAgentTranscript(block, innerMsgs);
+          }
+
+          // Capture artifact if this tool is in the captureArtifacts list
+          if (captureArtifacts?.includes(block.name) && !r.isError) {
+            try {
+              artifacts[block.name] = JSON.parse(r.result);
+            } catch {
+              // Not JSON — skip
+            }
+          }
+        }
+
+        // Still append as user messages — the LLM needs them for the next loop iteration
+        messages.push({
+          role: 'user',
+          content: r.result,
+          toolCallId: r.id,
+          isToolError: r.isError,
+        });
+      }
     }
   };
 
