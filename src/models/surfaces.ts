@@ -51,6 +51,13 @@ export interface ModelSurface {
  * has no code to run it. A surface here that the platform does not publish is
  * a deploy-order problem and surfaces as a hard error at boot (see
  * `setModelRegistry`), rather than as an agent quietly running on a fallback.
+ *
+ * The first case is now routine, not just a version skew: the platform's
+ * registry also carries surfaces the platform runs ITSELF (its `group:
+ * 'platform'` entries — the security assessment of a deployed release, issue
+ * triage). They are pickable on the org's Default Models page and resolved
+ * server-side, never by a Remy session, so they are deliberately absent from
+ * this list and this list is what keeps them out of the project picker.
  */
 export const SURFACE_IDS = [
   'parent',
