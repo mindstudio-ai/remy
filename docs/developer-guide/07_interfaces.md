@@ -41,11 +41,44 @@ All fields are nested under the `"web"` key.
 | `devPort` | `number` | `5173` | Port for the dev server |
 | `devCommand` | `string` | `"npm run dev"` | Command to start the dev server |
 | `defaultPreviewMode` | `"desktop"` \| `"mobile"` | `"desktop"` | Default preview viewport in the editor. Set to `"mobile"` for mobile-first apps. |
+| `previewLinks` | `array` | — | Places worth opening directly, shown as a row of chips under the editor's preview address bar. See "Preview links" below. |
 | `prerender` | `object` | — | Opt into prerendering the listed routes for crawlers/unfurlers. See "Prerendering for crawlers" below. |
 | `mounts` | `array` | — | Serve other apps from your workspace under path prefixes of this app's hosts. See "Mounting other apps" below. |
 | `redirects` | `array` | — | Path-level redirects. See "Redirects and trailing slashes" below. |
 | `rewrites` | `array` | — | Serve different content at the same URL. See "Rewrites" below. |
 | `trailingSlash` | `"strip"` \| `"append"` | — | Enforce a canonical trailing-slash form with a 308. Off by default. |
+
+### Preview links
+
+A short list of places in the app worth opening directly. The editor renders them as a row of chips under the preview's address bar, so someone poking at the app can reach them in one click.
+
+```json
+{
+  "web": {
+    "previewLinks": [
+      { "label": "Admin console", "path": "/console" },
+      { "label": "Staff sign-in", "path": "/tech" },
+      { "label": "Sample report", "path": "/report/demo-token" }
+    ]
+  }
+}
+```
+
+Each entry is a `label` (short, human, what the place is) and a `path` (`/`-prefixed, on this app). Order is preserved. If the app has an agent interface with a `webInterfacePath`, a chip for it is added automatically unless one of your entries already points there.
+
+**Use the same judgement you use for scenarios.** Scenarios are a few things worth smoke-testing, not a test per branch; these are a few places worth visiting, not a chip per route. A list of fifteen is worse than a list of four, because the point is orientation.
+
+The root path is already covered: the preview's address bar has back, forward, refresh and home buttons, so a chip for `/` spends space on a click the user already has.
+
+The entries that earn their place first are the ones a person can't reach by clicking around from the homepage:
+
+- Surfaces behind their own sign-in that nothing links to — an admin console, a staff dashboard.
+- Pages that need a token or an id in the URL. Point these at a record your scenarios seed, using the known id or slug, so the link lands on real content.
+- Anything gated by a role, where arriving at the sign-in screen is itself the thing to check.
+
+Then add the two or three ordinary pages that carry the most of the app's character — a populated list, a detail view with real data in it, the screen where the main workflow happens.
+
+Write them once the scenarios exist, since that's when you know which ids and slugs will be there. Paths are not validated, so a link to a route you later rename will 404 — revisit the list when routes move.
 
 ### Frontend SDK
 
