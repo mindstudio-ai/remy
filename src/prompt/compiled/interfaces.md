@@ -43,11 +43,22 @@ All fields are nested under the `"web"` key.
 | `devPort` | `number` | `5173` | Port for the dev server |
 | `devCommand` | `string` | `"npm run dev"` | Command to start the dev server |
 | `defaultPreviewMode` | `"desktop"` \| `"mobile"` | `"desktop"` | Default preview viewport in the editor. Set to `"mobile"` for mobile-first apps. |
+| `previewLinks` | `array` | — | A few places worth opening directly, as chips under the editor's preview address bar. See "Preview links" below. |
 | `prerender` | `object` | — | Opt into prerendering the listed routes/patterns for crawlers/unfurlers. See "Prerendering" below. |
 | `mounts` | `array` | — | Serve other same-workspace apps under path prefixes of this app's hosts. See "Mounting other apps" below. |
 | `redirects` | `array` | — | Path-level redirects. See "Redirects" below. |
 | `rewrites` | `array` | — | Serve different content at the same URL. See "Rewrites" below. |
 | `trailingSlash` | `"strip"` \| `"append"` | — | Enforce a canonical trailing-slash form with a 308. Off by default. |
+
+### Preview links
+
+`{ "web": { "previewLinks": [{ "label": "Admin console", "path": "/console" }] } }` — each entry a short human `label` and a `/`-prefixed `path` on this app. The editor shows them as chips under the preview's address bar so the user can reach a place in one click. Order is preserved; a chip for an agent interface's `webInterfacePath` is appended automatically unless an entry already points there.
+
+Curate these with the same judgement as scenarios — a few places worth visiting, not a chip per route. Four good ones beat fifteen. Highest value first: surfaces nothing links to (an admin console behind its own sign-in), pages needing a token or id in the URL (point them at a record the scenarios seed, using its known id/slug, so the link lands on real content), and role-gated routes where hitting the sign-in screen is itself worth seeing. Then two or three ordinary pages carrying the most of the app's character — a populated list, a detail view with real data, the screen where the main workflow happens.
+
+Leave the root out. The address bar directly above these chips already has back, forward, refresh and home buttons.
+
+Write them after the scenarios, when you know which ids and slugs exist. Paths aren't validated — revisit the list when you rename a route, or the chip 404s.
 
 ### Frontend SDK
 
