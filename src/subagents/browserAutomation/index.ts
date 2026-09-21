@@ -13,7 +13,7 @@ import {
 } from '../../tools/index.js';
 import { runSubAgent } from '../runner.js';
 import { dropToolResultMessages } from '../../historyLimits.js';
-import { collectRecordings } from '../../recording.js';
+import { collectRecordings, replayWindow } from '../../recording.js';
 import { BROWSER_TOOLS, BROWSER_EXTERNAL_TOOLS } from './tools.js';
 import { COMMON_READ_TOOL_NAMES } from '../common/tools.js';
 import { readSpecTool } from '../../tools/spec/readSpec.js';
@@ -42,6 +42,9 @@ export interface BrowserAutomationResult {
   text: string;
   /** True when any browserCommand in the run was recorded (see recording.ts). */
   recorded: boolean;
+  /** The rrweb window this run recorded, if any — what names the replay to
+   *  `remy-admin recordings export`. */
+  replay?: { sessionId: string; startTs: number; endTs: number };
   screenshot?: { url: string; styleMap?: string; analysis?: string };
 }
 
@@ -249,10 +252,12 @@ export async function runBrowserAutomation(
     // Recorded batches leave a `recording` on their browserCommand block (the
     // runner lifts it off the result string). Any one means the run has a
     // replay the caller can reference.
-    const recorded = collectRecordings(result.messages).length > 0;
+    const recordings = collectRecordings(result.messages);
+    const replay = replayWindow(recordings);
     return {
       text: result.text,
-      recorded,
+      recorded: recordings.length > 0,
+      ...(replay ? { replay } : {}),
       ...(preferred?.url ? { screenshot: preferred } : {}),
     };
   } finally {
@@ -296,6 +301,18 @@ export const browserAutomationTool: Tool = {
     // tool description, so a reference can't be composed from memory.
     if (result.recorded) {
       text += `\n\nReplay of this run: ![Browser test replay](replay:${context.toolCallId})`;
+    }
+    // ...and the same replay as something the agent can act on. A replay is an
+    // ordinary private app file, so turning one into a shareable video (for a
+    // changelog entry, a release note, a bug report) is a CLI call away. Said
+    // here rather than in a prompt or a tool description on purpose: this is
+    // the only moment it is relevant, and the line costs nothing until a run
+    // has actually recorded something.
+    if (result.replay) {
+      const { sessionId, startTs, endTs } = result.replay;
+      text +=
+        `\n\nTo render this replay as an mp4 (returns a public URL): ` +
+        `\`remy-admin recordings export --session ${sessionId} --from ${startTs} --to ${endTs}\``;
     }
     return text;
   },
