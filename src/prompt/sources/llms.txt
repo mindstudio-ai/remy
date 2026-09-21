@@ -1501,6 +1501,17 @@ Search and list podcasts in the Particle catalog by keyword, topic, or language.
 - Input: `{ q?: string, topic?: string, language?: string, suitabilityTier?: string, limit?: number, cursor?: string }`
 - Output: `unknown`
 
+### QuickBooks
+
+#### quickbooksApiRequest
+Call any QuickBooks Online Accounting API route using a connected company.
+- Requires a QuickBooks OAuth connection (connectionId).
+- Route is relative to /v3/company/{realmId}/, e.g. "account", "account/93", "query", "invoice".
+- Use queryParams for query-string values such as query=select * from Account.
+- Body is JSON for POST, PUT, and PATCH.
+- Input: `{ connectionId?: string, method: string, route: string, queryParams: object, body: string }`
+- Output: `{ ok: boolean, status: number, body: unknown }`
+
 ### X
 
 #### postToX
