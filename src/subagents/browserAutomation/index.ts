@@ -43,7 +43,7 @@ export interface BrowserAutomationResult {
   /** True when any browserCommand in the run was recorded (see recording.ts). */
   recorded: boolean;
   /** The rrweb window this run recorded, if any — what names the replay to
-   *  `remy-admin recordings export`. */
+   *  `remy-admin qa-recordings export`. */
   replay?: { sessionId: string; startTs: number; endTs: number };
   screenshot?: { url: string; styleMap?: string; analysis?: string };
 }
@@ -312,7 +312,7 @@ export const browserAutomationTool: Tool = {
       const { sessionId, startTs, endTs } = result.replay;
       text +=
         `\n\nTo render this replay as an mp4 (returns a public URL): ` +
-        `\`remy-admin recordings export --session ${sessionId} --from ${startTs} --to ${endTs}\``;
+        `\`remy-admin qa-recordings export --session ${sessionId} --from ${startTs} --to ${endTs}\``;
     }
     return text;
   },

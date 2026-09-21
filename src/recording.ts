@@ -13,7 +13,7 @@
  * (session, run, store, key). A replay is an ordinary private app file, so
  * those identifiers are all the agent needs to enumerate, download or publish
  * one with `remy-admin files`, or to render it as an mp4 with `remy-admin
- * recordings export` — no tool, and nothing resident in the prompt. The
+ * qa-recordings export` — no tool, and nothing resident in the prompt. The
  * heavyweight storage ref still stays out of the capped string.
  *
  * The surviving blocks aren't a reliable carrier either, which is the other
@@ -79,7 +79,7 @@ export function collectRecordings(messages: Message[]): RecordingRef[] {
  * chunk's end. Null when there is nothing to play.
  *
  * This is what names a replay to anything outside remy — the editor's embed and
- * `remy-admin recordings export` both take exactly (session, startTs, endTs).
+ * `remy-admin qa-recordings export` both take exactly (session, startTs, endTs).
  */
 export function replayWindow(
   recordings: RecordingRef[],
@@ -148,7 +148,7 @@ export function liftRecording(result: string): {
   // What the MODEL sees. The storage ref stays off this string (the cap), but
   // the identifiers do not: they are ~100 bytes and they are how the agent gets
   // from "a replay exists" to the file — `remy-admin files` takes store+key,
-  // and `remy-admin recordings` takes the session. Named `replay` rather than
+  // and `remy-admin qa-recordings` takes the session. Named `replay` rather than
   // `recording` so the idempotency check at the top of this function still
   // holds after a round trip.
   return {
