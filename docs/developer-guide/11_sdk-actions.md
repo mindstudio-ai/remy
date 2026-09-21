@@ -115,7 +115,7 @@ Actions that produce files can write straight into a file store rather than retu
 
 850+ additional actions from the MindStudio Connector Registry, covering services like HubSpot, Salesforce, Airtable, Google Workspace, Notion, and Coda. These require OAuth connections set up by the user in Remy.
 
-Built-in connector methods include: ActiveCampaign, Airtable, Apollo, Coda, Facebook, Gmail, Google Docs/Sheets/Calendar/Drive, HubSpot, Hunter.io, Instagram, LinkedIn, Notion, X (Twitter), YouTube.
+Built-in connector methods include: ActiveCampaign, Airtable, Apollo, Coda, Facebook, Gmail, Google Docs/Sheets/Calendar/Drive, HubSpot, Hunter.io, Instagram, LinkedIn, Notion, QuickBooks, X (Twitter), YouTube.
 
 For other services, use `runFromConnectorRegistry`:
 
