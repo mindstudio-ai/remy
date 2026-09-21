@@ -1,16 +1,13 @@
 /**
- * Structured NDJSON logger with configurable level and output target.
+ * Structured NDJSON logger with a configurable level.
  *
  * Each log line is a self-contained JSON object:
  *   {"ts":1711234567890,"level":"info","module":"agent","msg":"Turn started","requestId":"ac-4"}
  *
- * - Headless mode: writes to stderr (stdout reserved for wire protocol)
- * - Interactive mode: writes to .logs/agent.ndjson
+ * Writes to stderr; stdout is reserved for the wire protocol.
  *
  * Levels: error > warn > info > debug
  */
-
-import fs from 'node:fs';
 
 type LogLevel = 'error' | 'warn' | 'info' | 'debug';
 
@@ -98,28 +95,16 @@ export function createLogger(module: string): Logger {
 // Init
 // ---------------------------------------------------------------------------
 
-/** Configure logger for headless mode — NDJSON to stderr. */
+/**
+ * Configure the logger — NDJSON to stderr.
+ *
+ * Stderr rather than a file because stdout is the JSON protocol and the
+ * sandbox captures this stream into the agent's log for debug bundles.
+ */
 export function initLoggerHeadless(level: LogLevel = 'info'): void {
   currentLevel = LEVELS[level];
   writeFn = (line) => {
     process.stderr.write(line + '\n');
-  };
-}
-
-/** Configure logger for interactive mode — NDJSON to .logs/agent.ndjson. */
-export function initLoggerInteractive(level: LogLevel = 'error'): void {
-  currentLevel = LEVELS[level];
-  let fd: number | null = null;
-  writeFn = (line) => {
-    try {
-      if (fd === null) {
-        fs.mkdirSync('.logs', { recursive: true });
-        fd = fs.openSync('.logs/agent.ndjson', 'a');
-      }
-      fs.writeSync(fd, line + '\n');
-    } catch {
-      // Best-effort — don't crash if we can't write logs
-    }
   };
 }
 

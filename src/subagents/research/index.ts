@@ -100,10 +100,7 @@ export const researchTool: Tool = {
     },
   },
 
-  async execute(input, context?: ToolExecutionContext) {
-    if (!context) {
-      return 'Error: research requires execution context';
-    }
+  async execute(input, context: ToolExecutionContext) {
     return runResearch(input.task as string, context);
   },
 };

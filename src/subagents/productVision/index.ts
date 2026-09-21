@@ -46,11 +46,7 @@ export const productVisionTool: Tool = {
     },
   },
 
-  async execute(input, context?: ToolExecutionContext) {
-    if (!context) {
-      return 'Error: product vision requires execution context';
-    }
-
+  async execute(input, context: ToolExecutionContext) {
     const history = context.conversationMessages
       ? getSubAgentHistory(context.conversationMessages, 'productVision')
       : [];

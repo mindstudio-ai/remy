@@ -162,12 +162,8 @@ export const buildOverviewTool: Tool = {
 
   async execute(
     input: Record<string, any>,
-    context?: ToolExecutionContext,
+    context: ToolExecutionContext,
   ): Promise<string> {
-    if (!context) {
-      return 'Error: writeBuildOverview requires execution context for design expert delegation';
-    }
-
     const content = ((input.content as string) ?? '').trim();
 
     // File present = refresh; absent = initial generation. The initial overview

@@ -31,7 +31,7 @@ export const updatePlanStatusTool: Tool = {
     // approved out-of-band: the user presses "Start Building", which fires the
     // approveInitialPlan action (that flips the file itself). The agent must
     // not self-approve it from a chat signal, so no-op and say why.
-    if (context?.onboardingState === 'intake') {
+    if (context.onboardingState === 'intake') {
       return 'The initial plan isn\'t approved or rejected through this tool — the user decides via "Start Building". Keep discussing, and revise the plan with writePlan if they want changes.';
     }
 

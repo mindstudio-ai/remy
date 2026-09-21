@@ -36,11 +36,7 @@ export const codeSanityCheckTool: Tool = {
     },
   },
 
-  async execute(input, context?: ToolExecutionContext) {
-    if (!context) {
-      return 'Error: code sanity check requires execution context';
-    }
-
+  async execute(input, context: ToolExecutionContext) {
     const specIndex = loadSpecIndex();
     const parts = [BASE_PROMPT, loadPlatformBrief()];
     parts.push('<!-- cache_breakpoint -->');

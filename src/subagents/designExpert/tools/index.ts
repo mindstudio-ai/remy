@@ -45,12 +45,9 @@ const research = {
   },
   execute: (
     input: Record<string, any>,
-    _onLog?: (line: string) => void,
-    context?: ToolExecutionContext,
+    _onLog: ((line: string) => void) | undefined,
+    context: ToolExecutionContext,
   ): Promise<string> => {
-    if (!context) {
-      return Promise.resolve('Error: research requires execution context');
-    }
     return runResearch(input.task as string, context);
   },
 };
@@ -81,7 +78,7 @@ export const DESIGN_EXPERT_TOOLS: ToolDefinition[] = [
 export async function executeDesignExpertTool(
   name: string,
   input: Record<string, any>,
-  context?: ToolExecutionContext,
+  context: ToolExecutionContext,
   toolCallId?: string,
   onLog?: (line: string) => void,
 ): Promise<string> {
@@ -89,7 +86,8 @@ export async function executeDesignExpertTool(
   if (!tool) {
     return `Error: unknown tool "${name}"`;
   }
-  const childContext =
-    context && toolCallId ? deriveContext(context, toolCallId, onLog) : context;
+  const childContext = toolCallId
+    ? deriveContext(context, toolCallId, onLog)
+    : context;
   return tool.execute(input, onLog, childContext);
 }

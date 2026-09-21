@@ -44,7 +44,7 @@ export const bashTool: Tool = {
     },
   },
 
-  async execute(input, context?: ToolExecutionContext) {
+  async execute(input, context: ToolExecutionContext) {
     const maxLines =
       input.maxLines === 0 ? Infinity : input.maxLines || DEFAULT_MAX_LINES;
     const timeoutMs = input.timeout ? input.timeout * 1000 : DEFAULT_TIMEOUT_MS;
@@ -83,13 +83,13 @@ export const bashTool: Tool = {
       child.stdout.on('data', (chunk: Buffer) => {
         const text = chunk.toString();
         output += text;
-        context?.onLog?.(text);
+        context.onLog?.(text);
       });
 
       child.stderr.on('data', (chunk: Buffer) => {
         const text = chunk.toString();
         output += text;
-        context?.onLog?.(text);
+        context.onLog?.(text);
       });
 
       const timer = setTimeout(() => {

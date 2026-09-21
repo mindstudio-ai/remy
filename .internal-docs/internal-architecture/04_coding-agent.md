@@ -4,7 +4,7 @@ AI coding assistant. Runs a tool-use loop: receives a message, calls the LLM wit
 
 In the three-layer hierarchy, the agent is the compiler: it reads the spec (`src/`) and produces the contract (`dist/`). This is the core of the "spec is the application" thesis. The agent's awareness of `mindstudio.json` and MSFM is what makes the hierarchy work in practice.
 
-Works as a standalone CLI (interactive terminal UI) or in headless mode (JSON protocol over stdin/stdout, driven by the C&C server).
+Runs one way: as a subprocess speaking a JSON protocol over stdin/stdout, driven by the C&C server. There is no interactive terminal UI — the editor is the user interface.
 
 Source: `/Users/sean/Dropbox/Projects/youai/remy/src/`
 
@@ -54,28 +54,22 @@ LSP tools are only available when `--lsp-url` is configured (always the case in 
 
 ---
 
-## Standalone CLI
+## Headless Mode
 
 ```bash
-remy --api-key sk... --base-url https://api.mindstudio.ai
+remy --api-key sk... --base-url https://... --lsp-url http://localhost:4388
 ```
 
-Interactive terminal UI (React Ink). The developer types messages, the agent responds with tool calls visible in the terminal. Session persists in `.remy-session.json` in the working directory.
+The only mode. Stdout is reserved for JSON events; all logging goes to stderr. The C&C server spawns remy this way and communicates via stdin/stdout. Session persists in `.remy-session.json` in the working directory.
+
+An interactive React Ink terminal UI used to live alongside this and was removed in September 2026 — unused since March, and wrong where it ran: it supplied no external-tool resolver, so `presentPublishPlan` and `confirmDestructiveAction` answered themselves from local stubs. `runTurn` now requires those callbacks so the same gap cannot reopen.
+
+The C&C server still passes a `--headless` flag. It means nothing and is ignored; the flag parser drops unrecognized arguments so the sandbox image and this package never have to ship together.
 
 **Config resolution** (priority order):
 1. CLI flags (`--api-key`, `--base-url`)
 2. Environment variables (`MINDSTUDIO_API_KEY`, `MINDSTUDIO_BASE_URL`)
 3. Tunnel config file (`~/.mindstudio-local-tunnel/config.json`)
-
----
-
-## Headless Mode
-
-```bash
-remy --headless --api-key sk... --base-url https://... --lsp-url http://localhost:4388
-```
-
-No TUI. Stdout is reserved for JSON events; all logging goes to stderr. The C&C server spawns remy in this mode and communicates via stdin/stdout.
 
 ### Stdin Protocol (C&C → Agent)
 

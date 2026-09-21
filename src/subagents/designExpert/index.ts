@@ -137,11 +137,7 @@ export const designExpertTool: Tool = {
     },
   },
 
-  async execute(input, context?: ToolExecutionContext) {
-    if (!context) {
-      return 'Error: visual design expert requires execution context';
-    }
-
+  async execute(input, context: ToolExecutionContext) {
     const result = await runDesignExpert(
       {
         task: input.task as string,

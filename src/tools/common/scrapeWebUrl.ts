@@ -129,7 +129,7 @@ export const scrapeWebUrlTool: Tool = {
     return fetchWebPage(input.url as string, {
       screenshot: true,
       caller: 'parent',
-      onLog: context?.onLog,
+      onLog: context.onLog,
     });
   },
 };

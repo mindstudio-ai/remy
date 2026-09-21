@@ -63,11 +63,7 @@ export const specSyncTool: Tool = {
     },
   },
 
-  async execute(input, context?: ToolExecutionContext) {
-    if (!context) {
-      return 'Error: spec sync requires execution context';
-    }
-
+  async execute(input, context: ToolExecutionContext) {
     // Available only once the app is built. Before then Remy authors the spec
     // directly (there is nothing to reconcile), so no-op with an explanation
     // rather than spawning the agent. The tool stays in the list in every state

@@ -130,10 +130,7 @@ export const reviewExistingProjectTool: Tool = {
     },
   },
 
-  async execute(input, context?: ToolExecutionContext) {
-    if (!context) {
-      return 'Error: reviewExistingProject requires execution context';
-    }
+  async execute(input, context: ToolExecutionContext) {
     return runReviewExistingProject(input as ReviewInput, context);
   },
 };

@@ -27,7 +27,7 @@ function resolve(filePath: string): string {
 export async function executeVisionTool(
   name: string,
   input: Record<string, any>,
-  context?: ToolExecutionContext,
+  context: ToolExecutionContext,
 ): Promise<string> {
   switch (name) {
     case 'writeFile': {
@@ -66,10 +66,6 @@ export async function executeVisionTool(
     }
 
     case 'writePitchDeck': {
-      if (!context) {
-        return 'Error: writePitchDeck requires execution context for design expert delegation';
-      }
-
       const filePath = resolve('pitch.html'); // src/roadmap/pitch.html
 
       try {

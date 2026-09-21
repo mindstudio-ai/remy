@@ -15,6 +15,17 @@ import type { Message, ToolDefinition } from '../api.js';
 import type { ToolRegistry } from '../toolRegistry.js';
 import type { ApiConfig } from '../config.js';
 
+/**
+ * Everything a tool needs from the turn that invoked it.
+ *
+ * Built in exactly two places — the main tool loop in agent.ts and the
+ * sub-agent loop in subagents/runner.ts — and handed down to child tools
+ * through `deriveContext`. Fields are optional here only where absence is
+ * real state (no LSP URL, no onboarding phase, a tool that does not stream);
+ * the wiring a tool cannot run correctly without is required, so a new
+ * construction site fails to compile rather than producing a tool that
+ * quietly answers from a stub. See the note on runTurn for what that cost us.
+ */
 export interface ToolExecutionContext {
   apiConfig: ApiConfig;
   /** Global fallback model from startup-time options. Used when the
@@ -25,7 +36,7 @@ export interface ToolExecutionContext {
   models?: Record<string, string>;
   signal?: AbortSignal;
   onEvent: (event: AgentEvent) => void;
-  resolveExternalTool?: ExternalToolResolver;
+  resolveExternalTool: ExternalToolResolver;
   toolCallId: string;
   /** Correlation ID from the headless protocol — threaded for structured logging. */
   requestId?: string;
@@ -38,9 +49,9 @@ export interface ToolExecutionContext {
   /** Called for each log line emitted during tool execution (e.g., CLI stderr). */
   onLog?: (line: string) => void;
   /** Shared registry for tool lifecycle management (stop/restart). */
-  toolRegistry?: ToolRegistry;
+  toolRegistry: ToolRegistry;
   /** Called when a backgrounded sub-agent completes. */
-  onBackgroundComplete?: (
+  onBackgroundComplete: (
     toolCallId: string,
     name: string,
     result: string,
@@ -81,7 +92,7 @@ export interface Tool {
   backgroundNotify?: 'wake' | 'passive' | 'silent';
   execute: (
     input: Record<string, any>,
-    context?: ToolExecutionContext,
+    context: ToolExecutionContext,
   ) => Promise<string>;
 
   /** Streaming configuration. Omit for tools that don't stream. */
@@ -244,7 +255,7 @@ export function getToolByName(name: string): Tool | undefined {
 export function executeTool(
   name: string,
   input: Record<string, any>,
-  context?: ToolExecutionContext,
+  context: ToolExecutionContext,
 ): Promise<string> {
   const tool = getToolByName(name);
   if (!tool) {
