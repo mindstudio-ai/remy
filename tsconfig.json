@@ -9,7 +9,10 @@
     "skipLibCheck": true,
     "declaration": false,
     "outDir": "./dist",
-    "rootDir": "./src"
+    "rootDir": "./src",
+    // tsup's dts step hardcodes `baseUrl: "."`, which the TS6 compiler API it
+    // generates declarations with treats as a hard error. Nothing here sets it.
+    "ignoreDeprecations": "6.0"
   },
   "include": ["src"]
 }
