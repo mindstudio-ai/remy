@@ -119,8 +119,8 @@ function splitFrontmatter(raw: string): {
 
 export async function execute(
   input: Record<string, any>,
-  onLog?: (line: string) => void,
-  context?: ToolExecutionContext,
+  onLog: ((line: string) => void) | undefined,
+  context: ToolExecutionContext,
 ): Promise<string> {
   const url = String(input.url ?? '').trim();
   if (!url) {
@@ -194,16 +194,16 @@ export async function execute(
 async function analyze(
   image: string,
   prompt: string,
-  onLog?: (line: string) => void,
-  context?: ToolExecutionContext,
+  onLog: ((line: string) => void) | undefined,
+  context: ToolExecutionContext,
   extra?: Record<string, unknown>,
 ): Promise<string> {
   const analyzed = await analyzeImage({
     prompt,
     image,
-    apiConfig: context?.apiConfig,
+    apiConfig: context.apiConfig,
     onLog,
-    model: resolveModel('imageAnalysis', context?.models, context?.model),
+    model: resolveModel('imageAnalysis', context.models, context.model),
   });
   return JSON.stringify({
     url: analyzed.url,
@@ -221,8 +221,8 @@ async function analyze(
 async function analyzeLocalHtml(
   path: string,
   customPrompt: string | undefined,
-  onLog?: (line: string) => void,
-  context?: ToolExecutionContext,
+  onLog: ((line: string) => void) | undefined,
+  context: ToolExecutionContext,
 ): Promise<string> {
   let raw: string;
   try {

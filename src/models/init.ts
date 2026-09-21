@@ -1,9 +1,9 @@
 /**
  * Boot-time load of the platform's model-surface registry.
  *
- * Called from BOTH entry points — the TUI (index.tsx) and the headless session
- * that runs inside a dev box (headless/index.ts) — before anything resolves a
- * model or validates an org default.
+ * Called once from the headless session that runs inside a dev box
+ * (headless/index.ts), before anything resolves a model or validates an org
+ * default.
  *
  * Deliberately fatal on failure, unlike `initOrgContext` beside it. Org context
  * is an enrichment: absent, Remy builds exactly as before. The surface registry

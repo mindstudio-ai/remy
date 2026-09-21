@@ -31,8 +31,8 @@ export const definition: ToolDefinition = {
 
 export async function execute(
   input: Record<string, any>,
-  onLog?: (line: string) => void,
-  context?: ToolExecutionContext,
+  onLog: ((line: string) => void) | undefined,
+  context: ToolExecutionContext,
 ): Promise<string> {
   const prompt = buildScreenshotAnalysisPrompt({
     prompt: input.prompt as string | undefined,
@@ -41,9 +41,9 @@ export async function execute(
   const { url, analysis } = await analyzeImage({
     prompt,
     image: input.imageUrl as string,
-    apiConfig: context?.apiConfig,
+    apiConfig: context.apiConfig,
     onLog,
-    model: resolveModel('imageAnalysis', context?.models, context?.model),
+    model: resolveModel('imageAnalysis', context.models, context.model),
   });
   return JSON.stringify({ url, analysis });
 }

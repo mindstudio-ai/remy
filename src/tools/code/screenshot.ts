@@ -82,11 +82,11 @@ export const screenshotDefinition: ToolDefinition = {
  */
 export async function executeScreenshot(
   input: Record<string, any>,
-  onLog?: (line: string) => void,
-  context?: ToolExecutionContext,
+  onLog: ((line: string) => void) | undefined,
+  context: ToolExecutionContext,
 ): Promise<string> {
   const fullPage = input.fullPage === true;
-  const model = resolveModel('imageAnalysis', context?.models, context?.model);
+  const model = resolveModel('imageAnalysis', context.models, context.model);
 
   try {
     if (input.imageUrl) {
@@ -95,13 +95,13 @@ export async function executeScreenshot(
         image: input.imageUrl as string,
         onLog,
         model,
-        apiConfig: context?.apiConfig,
+        apiConfig: context.apiConfig,
       });
     }
 
     // Interactive screenshot — delegate to browser automation, which takes the
     // browser lock itself for the whole run.
-    if (input.instructions && context) {
+    if (input.instructions) {
       const shotKind = fullPage ? 'full-page' : 'viewport';
       const task = input.path
         ? `Navigate to "${input.path}", then: ${input.instructions}. After completing these steps, take a ${shotKind} screenshot.`
@@ -137,7 +137,7 @@ export async function executeScreenshot(
         styleMap,
         onLog,
         model,
-        apiConfig: context?.apiConfig,
+        apiConfig: context.apiConfig,
       });
     }
 
@@ -152,7 +152,7 @@ export async function executeScreenshot(
         format: input.format as 'png' | 'jpeg' | undefined,
         onLog,
         model,
-        apiConfig: context?.apiConfig,
+        apiConfig: context.apiConfig,
       });
     } finally {
       release();
@@ -164,6 +164,5 @@ export async function executeScreenshot(
 
 export const screenshotTool: Tool = {
   definition: screenshotDefinition,
-  execute: (input, context) =>
-    executeScreenshot(input, context?.onLog, context),
+  execute: (input, context) => executeScreenshot(input, context.onLog, context),
 };

@@ -25,8 +25,11 @@ export const compactConversationTool: Tool = {
   },
 
   async execute(_input, context) {
-    if (!context?.conversationMessages || !context.apiConfig) {
-      return 'Error: compaction requires execution context.';
+    // `conversationMessages` is genuinely optional on the context — sub-agent
+    // tools run without Remy's history — and compaction is meaningless
+    // without it.
+    if (!context.conversationMessages) {
+      return 'Error: compaction requires the conversation history.';
     }
 
     // Lifecycle events are emitted by the trigger's registered listener; the

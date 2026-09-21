@@ -63,8 +63,8 @@ const ARCHIVE_MSG_CACHE_MAX = 3;
 
 export function loadSession(state: AgentState): boolean {
   // Heal already-bloated apps on boot: enforce the archive cap once per
-  // process, before touching the live file. Runs on both surfaces — headless
-  // and TUI both call loadSession once at startup.
+  // process, before touching the live file. Called exactly once at startup,
+  // by the headless session.
   pruneArchives();
   try {
     const raw = fs.readFileSync(SESSION_FILE, 'utf-8');

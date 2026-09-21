@@ -175,13 +175,9 @@ async function uploadMirror(
 
 export async function execute(
   input: Record<string, any>,
-  onLog?: (line: string) => void,
-  context?: ToolExecutionContext,
+  onLog: ((line: string) => void) | undefined,
+  context: ToolExecutionContext,
 ): Promise<string> {
-  if (!context) {
-    return 'Error: createWireframe requires execution context';
-  }
-
   const name = String(input.name ?? '');
   const slug = String(input.slug ?? '');
   const description = String(input.description ?? '');

@@ -29,6 +29,9 @@
  * start, not just to the start of the live (post-rotation) array.
  */
 
+import os from 'node:os';
+import fs from 'node:fs';
+import path from 'node:path';
 import { createLogger } from '../logger.js';
 import type { Attachment, ContentBlock, Message } from '../api.js';
 import { resolveConfig } from '../config.js';
@@ -111,12 +114,63 @@ import {
 } from '../automatedActions/sentinel.js';
 
 const log = createLogger('headless');
+const startupLog = createLogger('startup');
 
 export interface HeadlessOptions {
   apiKey?: string;
   baseUrl?: string;
   model?: string;
   lspUrl?: string;
+}
+
+/**
+ * One structured record of what this process is, written before any turn runs.
+ *
+ * It is the first thing worth knowing when reading a debug bundle: which
+ * version answered, on which node, against which base URL, with the key from
+ * where. Goes through the logger, so it lands on stderr and never touches the
+ * stdout protocol.
+ *
+ * The version read is best-effort. `import.meta.dirname` is `dist/` in both
+ * bundles that contain this file, so `../package.json` resolves for the CLI
+ * and for anyone importing the library build — but a consumer who bundles
+ * further could move it, and an absent version is not worth failing a boot.
+ */
+function logStartup(
+  config: { apiKey: string; baseUrl: string },
+  model: string | undefined,
+  flagApiKey: string | undefined,
+): void {
+  let version = '(unknown)';
+  try {
+    version = JSON.parse(
+      fs.readFileSync(
+        path.join(import.meta.dirname, '..', 'package.json'),
+        'utf-8',
+      ),
+    ).version;
+  } catch {
+    // Best-effort — see above.
+  }
+
+  startupLog.info('Startup', {
+    version,
+    node: process.version,
+    platform: `${os.platform()} ${os.arch()}`,
+    os: `${os.type()} ${os.release()}`,
+    cwd: process.cwd(),
+    bin: process.argv[1],
+    model: model || '(default)',
+    baseUrl: config.baseUrl,
+    apiKey: config.apiKey
+      ? `${config.apiKey.slice(0, 8)}...${config.apiKey.slice(-4)}`
+      : '(none)',
+    keySource: flagApiKey
+      ? 'cli flag'
+      : process.env.MINDSTUDIO_API_KEY
+        ? 'env var'
+        : 'config file',
+  });
 }
 
 const EXTERNAL_TOOL_TIMEOUT_MS = 300_000; // 5 minutes
@@ -273,6 +327,8 @@ export class HeadlessSession {
       apiKey: this.opts.apiKey,
       baseUrl: this.opts.baseUrl,
     });
+
+    logStartup(this.config, this.opts.model, this.opts.apiKey);
 
     // The model-surface registry, FIRST and required: org defaults are
     // validated against the allow-list it carries, and no agent can resolve a

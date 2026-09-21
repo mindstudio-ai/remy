@@ -1,8 +1,9 @@
 /**
  * Agent loop — the core tool-call loop.
  *
- * Pure async, no UI dependencies. The TUI (or later the sandbox C&C
- * server) provides an onEvent callback to render agent activity.
+ * Pure async, no UI dependencies. The caller — the headless session driven by
+ * the sandbox C&C server — provides an onEvent callback to render agent
+ * activity.
  *
  * Flow per user message:
  *   1. Send conversation + tools to the platform
@@ -23,8 +24,6 @@ import {
   MAX_RETRIES,
   type Message,
   type ContentBlock,
-  type Attachment,
-  type StreamEvent,
 } from './api.js';
 import {
   executeTool,
@@ -157,6 +156,16 @@ export function createAgentState(): AgentState {
  * Run one user turn — may involve multiple LLM round-trips if the
  * model requests tool calls. Returns when the model is done responding
  * or the signal is aborted.
+ *
+ * `resolveExternalTool`, `toolRegistry`, `takeSteering` and
+ * `onBackgroundComplete` are required rather than optional, which is a
+ * correctness constraint and not just tidiness. A caller that omitted
+ * `resolveExternalTool` did not lose a feature: every EXTERNAL_TOOLS call
+ * fell through to its local stub, so `presentPublishPlan` answered
+ * `'approved'` and `confirmDestructiveAction` answered `'confirmed'` without
+ * a human ever seeing them. The removed TUI did exactly that. Making them
+ * required means no future surface can be wired up half way and have the
+ * model silently told a person agreed to something.
  */
 export async function runTurn(params: {
   state: AgentState;
@@ -179,12 +188,12 @@ export async function runTurn(params: {
    * returned entries are injected into the running turn as plain user
    * messages. The caller owns removal from its queue and terminal
    * (`absorbed`) accounting for the consumed requestIds. */
-  takeSteering?: () => Promise<TurnEntry[]>;
-  resolveExternalTool?: ExternalToolResolver;
+  takeSteering: () => Promise<TurnEntry[]>;
+  resolveExternalTool: ExternalToolResolver;
   /** Correlation ID from the headless protocol — threaded for structured logging. */
   requestId?: string;
-  toolRegistry?: import('./toolRegistry.js').ToolRegistry;
-  onBackgroundComplete?: (
+  toolRegistry: import('./toolRegistry.js').ToolRegistry;
+  onBackgroundComplete: (
     toolCallId: string,
     name: string,
     result: string,
@@ -1116,7 +1125,7 @@ export async function runTurn(params: {
           const run = async (input: Record<string, any>) => {
             try {
               let result: string;
-              if (EXTERNAL_TOOLS.has(tc.name) && resolveExternalTool) {
+              if (EXTERNAL_TOOLS.has(tc.name)) {
                 saveSession(state);
                 log.info('Waiting for external tool result', {
                   requestId,
@@ -1184,7 +1193,7 @@ export async function runTurn(params: {
               run(newInput);
             },
           };
-          toolRegistry?.register(entry);
+          toolRegistry.register(entry);
 
           // Start execution
           run(tc.input);
@@ -1194,7 +1203,7 @@ export async function runTurn(params: {
           // Background tools stay registered — the sub-agent runner manages
           // their lifecycle and unregisters on completion.
           if (!isBackgroundCall(tc)) {
-            toolRegistry?.unregister(tc.id);
+            toolRegistry.unregister(tc.id);
           }
 
           log.info('Tool completed', {
@@ -1284,7 +1293,7 @@ export async function runTurn(params: {
       // the model reconciles them on its next call without the turn restarting.
       // Skipped once the turn is aborted so a cancelled turn never consumes
       // queue items.
-      if (takeSteering && !signal?.aborted) {
+      if (!signal?.aborted) {
         const injected = (await takeSteering()).filter(
           (e) => e.text.trim().length > 0 || (e.attachments?.length ?? 0) > 0,
         );

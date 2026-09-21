@@ -52,8 +52,8 @@ export interface SubAgentConfig {
   /** Correlation ID from the headless protocol — threaded for structured logging. */
   requestId?: string;
   onEvent: (event: AgentEvent) => void;
-  resolveExternalTool?: ExternalToolResolver;
-  toolRegistry?: ToolRegistry;
+  resolveExternalTool: ExternalToolResolver;
+  toolRegistry: ToolRegistry;
   /** Prior conversation history for this subagent — prepended to messages for continuity. */
   history?: Message[];
   /** Prompt-caching profile for this run's LLM calls. Defaults to 'run'
@@ -489,7 +489,7 @@ export async function runSubAgent(
             try {
               let result: string;
               let recording: RecordingRef | undefined;
-              if (externalTools.has(tc.name) && resolveExternalTool) {
+              if (externalTools.has(tc.name)) {
                 result = await resolveExternalTool(tc.id, tc.name, input);
                 // browserCommand carries its replay reference inside the
                 // result JSON. Move it onto the block before the cap below
@@ -553,13 +553,13 @@ export async function runSubAgent(
               run(newInput);
             },
           };
-          toolRegistry?.register(entry);
+          toolRegistry.register(entry);
 
           const toolStart = Date.now();
           run(tc.input);
 
           const r = await resultPromise;
-          toolRegistry?.unregister(tc.id);
+          toolRegistry.unregister(tc.id);
 
           log.info('Tool completed', {
             requestId,
@@ -655,7 +655,7 @@ export async function runSubAgent(
   // Register the background agent in the tool registry so it can be stopped.
   // Uses the parentToolId (the tool call ID visible to the user) and the
   // background-specific AbortController so stop_tool actually cancels the work.
-  toolRegistry?.register({
+  toolRegistry.register({
     id: parentToolId,
     name: agentName,
     input: { task },
@@ -686,11 +686,14 @@ export async function runSubAgent(
   };
   runDetached()
     .then((finalResult) => {
-      toolRegistry?.unregister(parentToolId);
+      toolRegistry.unregister(parentToolId);
+      // Stays optional: only a backgrounded dispatch supplies this, and the
+      // callers that do (designExpert, productVision) gate it on their own
+      // `background` input. Absence here is real state, not a missed wiring.
       onBackgroundComplete?.(finalResult);
     })
     .catch((err) => {
-      toolRegistry?.unregister(parentToolId);
+      toolRegistry.unregister(parentToolId);
       onBackgroundComplete?.({ text: `Error: ${err.message}`, messages: [] });
     });
 

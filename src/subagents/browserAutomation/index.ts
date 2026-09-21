@@ -139,9 +139,6 @@ export async function runBrowserAutomation(
       requestId: context.requestId,
       onEvent: context.onEvent,
       resolveExternalTool: async (id, name, input) => {
-        if (!context.resolveExternalTool) {
-          return 'Error: no external tool resolver';
-        }
         const result = await context.resolveExternalTool(id, name, input);
 
         // Auto-analyze any captures the batch produced
@@ -283,10 +280,7 @@ export const browserAutomationTool: Tool = {
     },
   },
 
-  async execute(input, context?: ToolExecutionContext) {
-    if (!context) {
-      return 'Error: browser automation requires execution context (only available in headless mode)';
-    }
+  async execute(input, context: ToolExecutionContext) {
     const result = await runBrowserAutomation(input.task as string, context);
     let text = result.text;
     // When a final-state screenshot was captured, append it as a markdown

@@ -76,8 +76,8 @@ export const definition: ToolDefinition = {
 
 export async function execute(
   input: Record<string, any>,
-  onLog?: (line: string) => void,
-  context?: ToolExecutionContext,
+  onLog: ((line: string) => void) | undefined,
+  context: ToolExecutionContext,
 ): Promise<string> {
   const html = typeof input.html === 'string' ? input.html : '';
   const width = Math.round(Number(input.width));
@@ -164,7 +164,7 @@ export async function execute(
     prompt: RENDER_ANALYZE_PROMPT,
     image: url,
     onLog,
-    model: resolveModel('imageAnalysis', context?.models, context?.model),
+    model: resolveModel('imageAnalysis', context.models, context.model),
   })
     .then((r) => r.analysis)
     .catch((err: any) => `Could not review this image: ${err.message}`);

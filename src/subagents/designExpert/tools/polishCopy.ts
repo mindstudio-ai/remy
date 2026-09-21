@@ -29,8 +29,8 @@ export const definition: ToolDefinition = {
 
 export async function execute(
   input: Record<string, any>,
-  _onLog?: (line: string) => void,
-  context?: ToolExecutionContext,
+  _onLog: ((line: string) => void) | undefined,
+  context: ToolExecutionContext,
 ): Promise<string> {
   return copyEditorTool.execute(input, context);
 }

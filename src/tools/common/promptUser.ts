@@ -142,33 +142,12 @@ export const promptUserTool: Tool = {
     },
   },
 
-  async execute(input) {
-    // The sandbox intercepts this tool and handles the UI.
-    // This fallback runs outside the sandbox (e.g., local CLI).
-    const questions = input.questions as Array<{
-      id: string;
-      question: string;
-      type: string;
-      options?: Array<string | { label: string }>;
-      multiple?: boolean;
-    }>;
-
-    const lines = questions.map((q) => {
-      let line = `- ${q.question}`;
-      if (q.type === 'select' || q.type === 'checklist') {
-        const opts = (q.options || []).map((o) =>
-          typeof o === 'string' ? o : o.label,
-        );
-        line +=
-          q.type === 'checklist'
-            ? ` (pick one or more: ${opts.join(' / ')})`
-            : ` (${opts.join(' / ')})`;
-      } else if (q.type === 'file') {
-        line += ' (upload file)';
-      }
-      return line;
-    });
-
-    return `Please answer these questions:\n${lines.join('\n')}`;
+  // Unreachable: promptUser is in EXTERNAL_TOOLS, so every call is answered by
+  // the sandbox rather than here. Present because the Tool interface requires
+  // it, and identical to the other nine external tools for that reason. It
+  // used to render the questions as prose for a local CLI — see the note on
+  // runTurn for why a plausible-looking local answer was the dangerous part.
+  async execute() {
+    return 'ok';
   },
 };

@@ -6,7 +6,7 @@
  * chip above the composer and sends the payload as the user's next message.
  *
  * This is the single implementation of that syntax. It runs where the text is
- * produced, so every consumer — the editor, the TUI, a future client — reads a
+ * produced, so every consumer — the editor, a future client — reads a
  * structured field instead of re-deriving one from prose. The links stay in the
  * model-facing text; only the *display* copy has them removed.
  *

@@ -1,6 +1,6 @@
 {
   "name": "@mindstudio-ai/remy",
-  "version": "0.1.341",
+  "version": "0.1.342",
   "description": "Remy coding agent",
   "repository": {
     "type": "git",
@@ -36,15 +36,10 @@
   },
   "dependencies": {
     "chalk": "^5.4.1",
-    "fast-glob": "^3.3.3",
-    "ink": "^6.6.0",
-    "ink-spinner": "^5.0.0",
-    "ink-text-input": "^6.0.0",
-    "react": "^19.1.0"
+    "fast-glob": "^3.3.3"
   },
   "devDependencies": {
     "@types/node": "^22.16.0",
-    "@types/react": "^19.1.8",
     "@typescript/native": "npm:typescript@^7.0.2",
     "husky": "^9.1.7",
     "lint-staged": "^16.3.2",

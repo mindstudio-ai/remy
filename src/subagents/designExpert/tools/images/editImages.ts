@@ -46,8 +46,8 @@ export const definition: ToolDefinition = {
 
 export async function execute(
   input: Record<string, any>,
-  onLog?: (line: string) => void,
-  context?: ToolExecutionContext,
+  onLog: ((line: string) => void) | undefined,
+  context: ToolExecutionContext,
 ): Promise<string> {
   return generateImageAssets({
     prompts: input.prompts as string[],
@@ -57,21 +57,21 @@ export async function execute(
     transparentBackground: input.transparentBackground as boolean | undefined,
     enhancePrompts: false,
     onLog,
-    apiConfig: context?.apiConfig,
+    apiConfig: context.apiConfig,
     imageGenerationModel: resolveModel(
       'imageGeneration',
-      context?.models,
-      context?.model,
+      context.models,
+      context.model,
     ),
     imageAnalysisModel: resolveModel(
       'imageAnalysis',
-      context?.models,
-      context?.model,
+      context.models,
+      context.model,
     ),
     imagePromptEnhancerModel: resolveModel(
       'imagePromptEnhancer',
-      context?.models,
-      context?.model,
+      context.models,
+      context.model,
     ),
   });
 }

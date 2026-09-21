@@ -107,7 +107,7 @@ For developers writing apps that run on Remy. The three-layer model (spec → co
 
 ## Other places worth poking around
 
-- [`/src/`](../src) — The Remy agent itself. `agent.ts` is the tool-use loop. `subagents/` contains the specialist sub-agents (design, browser automation, code sanity check, product vision, conversation summarizer, brand extractor). `tools/` is what the agent can do. `headless/` is the stdin/stdout protocol the editor uses. `tui/` is the terminal UI. `prompt/` is the prompt machinery. `models/` is the model registry. The repo is open source — read it.
+- [`/src/`](../src) — The Remy agent itself. `agent.ts` is the tool-use loop. `subagents/` contains the specialist sub-agents (design, browser automation, code sanity check, product vision, conversation summarizer, brand extractor). `tools/` is what the agent can do. `headless/` is the stdin/stdout protocol the editor uses, and the agent's only interface. `prompt/` is the prompt machinery. `models/` is the model registry. The repo is open source — read it.
 - [`/README.md`](../README.md) — The root README for the repo itself.
 - [Whitepaper](https://goremy.ai/whitepaper) — The longer technical argument behind Remy.
 - [Debut](https://debut.msagent.ai) — Live gallery of real products built on Remy by alpha users. Concrete evidence of what the system actually produces.

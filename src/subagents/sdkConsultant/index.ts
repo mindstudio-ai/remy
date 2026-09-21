@@ -42,7 +42,7 @@ export const askMindStudioSdkTool: Tool = {
     const result = await runCli('mindstudio', ['ask', query], {
       timeout: 480_000,
       maxBuffer: 512 * 1024,
-      onLog: context?.onLog,
+      onLog: context.onLog,
     });
     return formatCliResult(result);
   },

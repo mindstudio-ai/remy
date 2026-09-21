@@ -2,19 +2,21 @@
 
 A spec-building and coding agent for building apps.
 
-Remy helps users design, spec, build, and iterate on app projects. It runs locally in a terminal or as a headless subprocess in the sandbox. It has tools for reading/writing specs and code, running shell commands, searching code, prompting users with structured forms, and (in the sandbox) TypeScript language server integration. LLM calls are routed through the Remy platform for billing and model routing.
+Remy helps users design, spec, build, and iterate on app projects. It runs as a subprocess of the sandbox, driven over a stdin/stdout JSON protocol — the editor is the user interface. It has tools for reading/writing specs and code, running shell commands, searching code, prompting users with structured forms, and (in the sandbox) TypeScript language server integration. LLM calls are routed through the Remy platform for billing and model routing.
 
 ## Quick Start
+
+Remy is normally spawned by the sandbox, not launched by hand. To drive it directly — for protocol work or debugging — run it in a project directory and write JSON actions to its stdin:
 
 ```bash
 # Make sure you're logged in (shares credentials with @mindstudio-ai/agent)
 mindstudio login
 
-# Navigate to your project
 cd my-app
+npx remy --log-level debug
 
-# Run remy
-npx remy
+# then, on stdin:
+{"action":"message","requestId":"r1","text":"add a settings page"}
 ```
 
 ## Usage
@@ -26,20 +28,15 @@ Options:
   --api-key <key>    API key (overrides env/config)
   --base-url <url>   Platform API base URL
   --model <id>       Model ID (defaults to org's default model)
-  --headless         Run in headless mode (stdin/stdout JSON protocol)
   --lsp-url <url>    LSP sidecar URL (enables LSP tools when set)
+  --log-level <lvl>  error | warn | info | debug (default: info)
 ```
 
-### Slash Commands
-
-| Command | Description |
-|---------|-------------|
-| `/clear` | Clear conversation history and start a fresh session |
-| `Escape` | Cancel the current turn (while agent is running) |
+There is one mode. Remy speaks the stdin/stdout JSON protocol described under [Headless Mode](#headless-mode) and has no interactive terminal surface — the editor is the front end. Unrecognized flags are ignored, so the `--headless` that older callers pass is harmless.
 
 ### Session Persistence
 
-Remy saves conversation history to `.remy-session.json` in the working directory after each turn and before blocking on external tools. On restart, it picks up where you left off. Use `/clear` to start fresh.
+Remy saves conversation history to `.remy-session.json` in the working directory after each turn and before blocking on external tools. On restart, it picks up where you left off. Send the `clear` action to start fresh.
 
 ## Tools
 
@@ -130,7 +127,7 @@ User input
     → Save session to .remy-session.json
 ```
 
-The agent core (`src/agent.ts`) is a pure async function with no UI dependencies. The TUI (`src/tui/`) is an Ink + React layer on top. Headless mode (`src/headless.ts`) provides the same agent over a stdin/stdout JSON protocol for the sandbox.
+The agent core (`src/agent.ts`) is a pure async function with no UI dependencies, and `src/headless/` is its single caller: it owns the session, the message queue, and the stdin/stdout JSON protocol the sandbox drives. `runTurn` requires its callbacks (`onEvent`, `resolveExternalTool`, `toolRegistry`, `takeSteering`, `onBackgroundComplete`) rather than accepting them optionally — a surface wired up halfway used to get local stubs for the external tools, which answered "approved" on the user's behalf.
 
 ### Sub-Agents
 
@@ -158,11 +155,11 @@ Some tools are resolved by the sandbox rather than executed locally. Remy emits 
 
 ```
 src/
-  index.tsx              CLI entry point
+  index.ts               CLI entry point — flags, then the headless session
   agent.ts               Core tool-call loop (pure async, no UI)
   api.ts                 SSE streaming client for platform API
   types.ts               Shared types (AgentEvent, StdinCommand, etc.)
-  headless.ts            stdin/stdout JSON protocol for sandbox
+  headless/              stdin/stdout JSON protocol for sandbox
   session.ts             .remy-session.json persistence
   config.ts              API key/URL resolution
   errors.ts              Friendly error message mapping
@@ -230,13 +227,6 @@ src/
     productVision/       Product roadmap manager
     codeSanityCheck/     Architecture sanity checker
     browserAutomation/   Automated browser testing
-
-  tui/                   Interactive terminal UI (Ink + React)
-    App.tsx
-    InputPrompt.tsx
-    MessageList.tsx
-    ThinkingBlock.tsx
-    ToolCall.tsx
 ```
 
 ### Project Instructions
@@ -247,7 +237,7 @@ Remy automatically loads project-level agent instructions on startup. It checks 
 
 ## Headless Mode
 
-Run `remy --headless` for programmatic control via newline-delimited JSON. This is how the sandbox C&C server runs remy as a managed child process.
+Remy is controlled entirely through newline-delimited JSON on stdin/stdout. This is how the sandbox C&C server runs it as a managed child process, and there is no other mode. Stdout is reserved for protocol traffic; everything else goes to stderr.
 
 ### Protocol Overview
 
@@ -399,9 +389,7 @@ All command responses include the `requestId` from the originating command.
 
 ### Logging
 
-In headless mode, structured logs go to **stderr**. Stdout is reserved for the JSON protocol. Log levels: `error`, `warn`, `info`, `debug`.
-
-In interactive mode, logs go to `.remy-debug.log` in the working directory (default level: `error`). Override with `--log-level`.
+Structured NDJSON logs go to **stderr**; stdout is reserved for the JSON protocol. Levels are `error`, `warn`, `info`, `debug`, defaulting to `info` and overridable with `--log-level`. The first line of every run is a `startup` record — version, node, platform, cwd, base URL, and where the API key came from — which is the first thing to read in a debug bundle.
 
 ## Design Data Dev Tool
 
