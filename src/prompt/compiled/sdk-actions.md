@@ -105,7 +105,7 @@ Inputs are safe either way: a private file or a `shareUrl` handed to an action i
 
 850+ additional actions from the MindStudio Connector Registry, covering services like HubSpot, Salesforce, Airtable, Google Workspace, Notion, Coda, and many more. These require OAuth connections set up by the user in Remy.
 
-Built-in connector methods include: ActiveCampaign, Airtable, Apollo, Coda, Facebook, Gmail, Google Docs/Sheets/Calendar/Drive, HubSpot, Hunter.io, Instagram, LinkedIn, Notion, X (Twitter), YouTube.
+Built-in connector methods include: ActiveCampaign, Airtable, Apollo, Coda, Facebook, Gmail, Google Docs/Sheets/Calendar/Drive, HubSpot, Hunter.io, Instagram, LinkedIn, Notion, QuickBooks, X (Twitter), YouTube.
 
 For other services, use `runFromConnectorRegistry`:
 

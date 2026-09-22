@@ -435,9 +435,16 @@ npm run typecheck     # Type check only
 
 ## Config
 
-Remy reads credentials from `~/.mindstudio-local-tunnel/config.json`, using the active environment's `apiKey` and `apiBaseUrl`.
-
-Resolution order for API key:
+Resolution order for the API key:
 1. `--api-key` flag
 2. `MINDSTUDIO_API_KEY` environment variable
-3. `~/.mindstudio-local-tunnel/config.json` (active environment)
+
+And for the base URL: `--base-url`, then `MINDSTUDIO_BASE_URL`, then
+`https://api.mindstudio.ai`. `MINDSTUDIO_APP_ID` is env-only and optional — when unset the platform
+attributes cost to a shared per-org service-account app.
+
+Inside a dev box, the C&C server sets both variables when it spawns remy; there is nothing to
+configure. Running remy by hand means exporting them yourself.
+
+Remy used to fall back to `~/.mindstudio-local-tunnel/config.json`, written by the dev tunnel's
+login flow when the tunnel was a standalone CLI. Nothing writes that file any more.

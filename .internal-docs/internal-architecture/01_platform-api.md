@@ -185,7 +185,7 @@ Two execution paths:
 6. Log execution and record metrics (fire-and-forget)
 7. Return result
 
-**Why poll-based dev sessions:** The tunnel (running on the developer's machine or in the sandbox) polls the platform for method requests. This works through any NAT or firewall, with no inbound connections needed. The platform queues requests in Redis, the tunnel claims them, executes locally, and posts results back. Simple, reliable, debuggable.
+**Why poll-based dev sessions:** The tunnel (in the dev box) polls the platform for method requests. This works through any NAT or firewall, with no inbound connections needed. The platform queues requests in Redis, the tunnel claims them, executes locally, and posts results back. Simple, reliable, debuggable.
 
 **Streaming support:** When `stream: true`, the response is SSE. A `streamId` is generated and passed to the executor. Token chunks are published via Redis pub/sub and forwarded to the client as they arrive. The final response is sent as a `{ type: 'done', ... }` event.
 
@@ -217,7 +217,7 @@ Inbound webhook endpoint. The secret identifies which endpoint and method to inv
 
 ## Dev Session Management
 
-The dev session is how the local CLI (or sandbox tunnel) connects to the platform for live development. It's a release with `status: 'dev'` that serves as the execution context for poll-based method execution.
+The dev session is how the dev box's tunnel connects to the platform for live development. It's a release with `status: 'dev'` that serves as the execution context for poll-based method execution.
 
 ### Start Dev Session
 

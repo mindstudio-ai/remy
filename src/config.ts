@@ -1,56 +1,29 @@
 /**
  * Config resolution — API key, base URL, and app id.
  *
- * Shares ~/.mindstudio/config.json with @mindstudio-ai/agent, so
- * `mindstudio login` sets up credentials for both tools.
- *
  * Resolution order (first wins):
  *   1. CLI flags (--api-key, --base-url)
  *   2. Environment variables (MINDSTUDIO_API_KEY, MINDSTUDIO_BASE_URL,
  *      MINDSTUDIO_APP_ID)
- *   3. Config file (~/.mindstudio/config.json) — credentials only
- *   4. Default base URL (https://api.mindstudio.ai)
+ *   3. Default base URL (https://api.mindstudio.ai)
  *
- * `appId` is env-only — there's no CLI flag or config-file fallback. When
- * unset, requests omit the field and the platform attributes cost to a
- * shared per-org service-account app.
+ * There used to be a third source: `~/.mindstudio-local-tunnel/config.json`,
+ * written by the dev tunnel's login flow when the tunnel was a standalone CLI a
+ * developer ran on their own machine. Nothing writes that file any more — the
+ * tunnel ships inside the sandbox's C&C server, which hands both of us our
+ * credentials on the environment — so reading it could only ever have returned
+ * something stale.
+ *
+ * `appId` is env-only — there's no CLI flag. When unset, requests omit the
+ * field and the platform attributes cost to a shared per-org service-account
+ * app.
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
-import os from 'node:os';
 import { createLogger } from './logger.js';
 
 const log = createLogger('config');
 
-interface TunnelConfig {
-  environment?: string;
-  environments?: Record<
-    string,
-    { apiBaseUrl?: string; apiKey?: string; userId?: string }
-  >;
-}
-
-const CONFIG_PATH = path.join(
-  os.homedir(),
-  '.mindstudio-local-tunnel',
-  'config.json',
-);
 const DEFAULT_BASE_URL = 'https://api.mindstudio.ai';
-
-function loadConfigFile(): TunnelConfig {
-  try {
-    const raw = fs.readFileSync(CONFIG_PATH, 'utf-8');
-    log.debug('Loaded config file', { path: CONFIG_PATH });
-    return JSON.parse(raw);
-  } catch (err: any) {
-    log.debug('No config file found', {
-      path: CONFIG_PATH,
-      error: err.message,
-    });
-    return {};
-  }
-}
 
 export interface ApiConfig {
   apiKey: string;
@@ -65,39 +38,23 @@ export function resolveConfig(flags?: {
   apiKey?: string;
   baseUrl?: string;
 }): ApiConfig {
-  const file = loadConfigFile();
-  const activeEnv = file.environment || 'prod';
-  const env = file.environments?.[activeEnv];
-
-  const apiKey =
-    flags?.apiKey || process.env.MINDSTUDIO_API_KEY || env?.apiKey || '';
+  const apiKey = flags?.apiKey || process.env.MINDSTUDIO_API_KEY || '';
 
   const baseUrl =
-    flags?.baseUrl ||
-    process.env.MINDSTUDIO_BASE_URL ||
-    env?.apiBaseUrl ||
-    DEFAULT_BASE_URL;
+    flags?.baseUrl || process.env.MINDSTUDIO_BASE_URL || DEFAULT_BASE_URL;
 
   const appId = process.env.MINDSTUDIO_APP_ID || undefined;
 
   if (!apiKey) {
     log.error('No API key found');
     throw new Error(
-      'No API key found. Set MINDSTUDIO_API_KEY or configure ~/.mindstudio-local-tunnel/config.json.',
+      'No API key found. Pass --api-key or set MINDSTUDIO_API_KEY. ' +
+        'Inside a dev box the C&C server sets it when it spawns this process.',
     );
   }
 
-  const keySource = flags?.apiKey
-    ? 'cli flag'
-    : process.env.MINDSTUDIO_API_KEY
-      ? 'env var'
-      : 'config file';
-  log.info('Config resolved', {
-    baseUrl,
-    keySource,
-    environment: activeEnv,
-    appId,
-  });
+  const keySource = flags?.apiKey ? 'cli flag' : 'env var';
+  log.info('Config resolved', { baseUrl, keySource, appId });
 
   return { apiKey, baseUrl, appId };
 }

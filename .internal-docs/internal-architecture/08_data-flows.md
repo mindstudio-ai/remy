@@ -112,11 +112,11 @@ User clicks button in web interface (served via tunnel proxy)
   │    │    })
   │    └─ Wait for result (Redis pub/sub, 30s timeout)
   │
-  ├─ Tunnel (on developer's machine):
+  ├─ Tunnel (in the dev box):
   │    ├─ GET /_internal/v2/apps/{appId}/dev/poll (long-poll)
   │    ├─ Receives the queued request
   │    ├─ Transpile method source with esbuild
-  │    ├─ Spawn child process:
+  │    ├─ Hand to the warm worker process:
   │    │    ├─ Set CALLBACK_TOKEN = authorizationToken
   │    │    ├─ Set globalThis.ai = { auth, databases }
   │    │    ├─ Import transpiled module

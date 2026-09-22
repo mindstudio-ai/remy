@@ -15,20 +15,21 @@ Sequential, instrumented with progress broadcasts to connected clients. Each ste
 1. **Load config** — parse environment variables (`GIT_REPO_URL`, `MINDSTUDIO_API_KEY`, `USER_ID`, `API_BASE_URL`, `PORT`, `SANDBOX_TOKEN`)
 2. **Create infrastructure** — BroadcastBatcher, ProcessRegistry, EditorStateManager, register system pseudo-process
 3. **Start HTTP/WS server** — listen on port 4387, health endpoint returns `{ status: 'bootstrapping' }`
-4. **Install tunnel & agent** — clone and build `mindstudio-local` and `remy` from GitHub, npm link globally
+4. **Install agent** — `remy` from npm (or from a branch, when `AGENT_DEV_BRANCH` is set). The dev tunnel needs no install step: it is this package's second bin
 5. **Install LSP** — `npm install -g typescript-language-server typescript`
-6. **Write tunnel config** — `~/.mindstudio-local-tunnel/config.json` with API key, user ID, environment
-7. **Clone app repo** — `git clone --depth 1` into workspace dir (skips if `mindstudio.json` already exists, i.e., resuming from snapshot)
-8. **Read app config** — parse `mindstudio.json`, extract methods, tables, interfaces
-9. **Read web config** — find web interface, extract `devPort` (default 5173) and `devCommand` (default `npm run dev`)
-10. **Install dependencies** — `npm install` in `dist/methods/` and `dist/interfaces/web/` if `package.json` exists
-11. **Start processes** (concurrently):
+6. **Clone app repo** — `git clone --depth 1` into workspace dir (skips if `mindstudio.json` already exists, i.e., resuming from snapshot)
+7. **Read app config** — parse `mindstudio.json`, extract methods, tables, interfaces
+8. **Read web config** — find web interface, extract `devPort` (default 5173) and `devCommand` (default `npm run dev`)
+9. **Install dependencies** — `npm install` in `dist/methods/` and `dist/interfaces/web/` if `package.json` exists
+10. **Start processes** (concurrently):
     - Dev server (Vite or custom command)
-    - Tunnel (`mindstudio-local --headless`)
-    - Agent (`remy --headless`)
+    - Dev tunnel — `node dist/devTunnel/cli.js`, resolved relative to the C&C's own module rather than looked up on PATH, so a branch build runs a matched pair
+    - Agent (`remy`)
     - File watcher (chokidar)
     - LSP server + HTTP sidecar
-12. **Mark ready** — set status to `ready`, broadcast progress
+11. **Mark ready** — set status to `ready`, broadcast progress
+
+Both children receive their platform credentials on their environment, never on argv — the C&C logs every command line it spawns and serves the process list to the editor.
 
 If any step fails, status is set to `error` (does not exit; clients can retry or inspect the error).
 
@@ -114,12 +115,15 @@ Client sends a request, server responds with the same `requestId`:
 - `agentClear()` → clear agent session
 
 **Tunnel:**
-- `tunnelRunScenario(scenarioId)` → execute scenario seed
-- `tunnelSyncSchema()` → sync table definitions
-- `tunnelListScenarios()` → list available scenarios
-- `tunnelImpersonate(roles)` → set role override
-- `tunnelClearImpersonation()` → clear override
-- `tunnelListRoles()` → list app roles
+- `tunnelRunScenario(scenarioId, skipTruncate?)` → truncate, seed, set roles
+- `tunnelRunMethod(method, input?, roles?, userId?)` → run one method, optionally under a scoped auth context
+- `tunnelBrowser(steps)` → browser automation; returns step results, a DOM snapshot and logs
+- `tunnelScreenshot(path?)` → full-page capture
+- `tunnelSetTestUserRoles(roles)` / `tunnelGetTestUser()` → the dev test user's roles
+- `listDatabases()` → databases available to the session
+- `tunnelExportRecording(...)` / `tunnelCancelExportRecording(jobId)` → replay video render
+
+Schema sync is automatic — the tunnel watches the declared table sources. Scenario and role lists come from `mindstudio.json` via the init frame, not from a command. The full surface, with params and result shapes, is typed in `@madewithremy/sandbox`'s `src/devTunnel/protocol.ts`.
 
 ### Pushed Events (broadcast to all clients)
 
@@ -177,9 +181,11 @@ Events are mapped to WebSocket broadcasts so the browser sees agent activity in 
 
 ### Tunnel Integration
 
-The tunnel runs in headless mode and communicates via stdin/stdout JSON. The C&C server sends control messages (run scenario, sync schema, impersonate) and receives status events (session started, method execution, errors).
+The tunnel is a sibling, not a dependency: same package, same repo, spawned as a child process and driven over stdin/stdout JSON. The C&C sends commands (run a method, run a scenario, drive the browser, query the database) and receives system events (session lifecycle, method execution, schema sync, browser state).
 
-The key event is `session-started` with `proxyPort`. This is how the C&C server discovers where to point the reverse proxy.
+Both sides import the protocol from one module — `src/devTunnel/protocol.ts` — so the producer is checked when it emits and the consumer when it reads. A hand-written mirror of that union used to live on the C&C side and had drifted into declaring three fields that were never sent.
+
+The key event is `session-started` with `proxyPort`. That is how the C&C discovers where to point the reverse proxy.
 
 ---
 
