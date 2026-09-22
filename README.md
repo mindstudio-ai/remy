@@ -360,10 +360,10 @@ All command responses include the `requestId` from the originating command.
 | `user_message` | `text`, `attachments?`, `queued?`, `hidden?` | Echo of a user message entering the turn. Queue-delivered messages (including ASAP items injected mid-turn) carry `queued: true` and their own original `requestId` (a merged turn emits one per absorbed message); idle sends echo with the turn's requestId and no `queued` flag. `hidden: true` marks internal entries (e.g. passive background results) that should not render. |
 | `tool_start` | `id`, `name`, `input`, `partial?`, `parentToolId?` | Tool execution started. `partial: true` means more `tool_start` events will follow for this id (progressive input streaming). |
 | `tool_input_delta` | `id`, `name`, `result`, `parentToolId?` | Progressive tool content (streaming tools only) |
-| `tool_done` | `id`, `name`, `result`, `isError`, `parentToolId?` | Tool execution completed. For a background tool this carries the synchronous ack; for a synthesized user/gate compaction block it arrives late, when the compaction finishes, carrying the summary (or error). |
+| `tool_done` | `id`, `name`, `result`, `isError`, `parentToolId?`, `recording?` | Tool execution completed. For a background tool this carries the synchronous ack; for a synthesized user/gate compaction block it arrives late, when the compaction finishes, carrying the summary (or error). `recording` is a browser-test replay chunk, lifted off the result string so the history cap cannot lose it. |
 | `tool_background_complete` | `id`, `name`, `result`, `parentToolId?` | A background tool's detached work finished; `result` belongs in the block's `backgroundResult`. Emitted for all `backgroundNotify` classes. |
 | `status` | `message` | Contextual status label (e.g., "Writing files...") |
-| `error` | `error` | Error message (may precede `completed`) |
+| `error` | `error`, `code?`, `badModelId?` | Error message (may precede `completed`). `code` is the server's structured classifier when it sent one; `badModelId` accompanies `code: 'invalid_model_override'` and names the rejected model. |
 | `history` | `messages` | Response to `get_history` |
 | `session_cleared` | | Response to `clear` |
 | `models_changed` | `models?`, `modelSurfaces`, `allowedModelsByType` | Response to `changeModels` |

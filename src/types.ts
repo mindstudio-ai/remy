@@ -111,6 +111,10 @@ export type AgentEvent =
       type: 'error';
       error: string;
       code?: string;
+      /** Set when `code === 'invalid_model_override'` — the bad ID the server
+       * rejected, so the frontend can point the user back to settings. Rides
+       * beside `code` from `api.ts` all the way to stdout. */
+      badModelId?: string;
       /** Input-token size of the LLM call that failed, when known. The
        * headless layer records it as `lastContextSize` so the forced-compaction
        * gate stays armed after an error turn (turn_done is the only other
