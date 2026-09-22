@@ -69,7 +69,11 @@ The C&C server still passes a `--headless` flag. It means nothing and is ignored
 **Config resolution** (priority order):
 1. CLI flags (`--api-key`, `--base-url`)
 2. Environment variables (`MINDSTUDIO_API_KEY`, `MINDSTUDIO_BASE_URL`)
-3. Tunnel config file (`~/.mindstudio-local-tunnel/config.json`)
+
+In practice the C&C server sets the environment variables when it spawns remy, and passes no
+credential flags — argv is logged and served to the editor's process list, so a key does not belong
+there. A third source used to sit below these, the dev tunnel's `~/.mindstudio-local-tunnel/config.json`;
+it was removed when the tunnel stopped being a standalone CLI with its own login flow.
 
 ### Stdin Protocol (C&C → Agent)
 

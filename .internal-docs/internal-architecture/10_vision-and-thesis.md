@@ -24,10 +24,13 @@ This isn't about replacing code with natural language. It's about recognizing th
 
 ### The Development Environment
 
-- **Local CLI** (`mindstudio-local`) for local-first development: poll-based method execution, proxy injection, schema sync, scenarios
+- **The dev box** — a container running the C&C server and the dev tunnel: poll-based method
+  execution, proxy injection with `__MINDSTUDIO__`, schema sync, scenarios
 - **Hosted sandbox editor** — Vercel containers running the C&C server with file tree, Monaco editor, live preview, terminal, AI agent, and TypeScript LSP, all on a single port
-- **AI coding agent** (`remy`) that reads specs, understands the domain, and generates/modifies code, working standalone or inside the sandbox
-- **Zero divergence** between local and hosted development: same tunnel, same execution pipeline, same database, same SDK
+- **AI coding agent** (`remy`) that reads specs, understands the domain, and generates/modifies code
+- **Zero divergence between development and production**: the same execution pipeline, the same
+  database, the same SDK. A dev box is where development happens; it is not a second
+  implementation of it
 
 ### The SDK
 
@@ -47,9 +50,11 @@ This isn't about replacing code with natural language. It's about recognizing th
 
 These aren't just current decisions; they're constraints that should guide future work.
 
-**Zero divergence.** Local dev, sandbox editor, and production use the same execution pipeline, the same database, the same SDK. If something works in one environment, it works in all of them. Any divergence is a bug.
+**Zero divergence.** A dev box and production use the same execution pipeline, the same database, the same SDK. If something works in one, it works in the other. Any divergence is a bug.
 
-**Every tool is useful standalone.** The tunnel works without the sandbox. Remy works without the platform. The SDK works with just a token. Each piece has independent value. Composing them creates something greater, but none requires the others.
+This principle once spanned a third environment — a developer's own machine, running the tunnel as a standalone CLI. That was retired in September 2026: every dev session now runs in a hosted box, which is what makes the platform self-hostable as a single artifact. The principle is narrower and considerably easier to hold.
+
+**Every tool is useful standalone — where standalone is real.** Remy works without the platform; the SDK works with just a token. Each piece has independent value. The dev tunnel is the exception that proves the rule: it was a standalone CLI for years, nothing but a dev box ever ran it, and in September 2026 it was folded into the C&C server it had always been a child of. Optionality is worth keeping only where something actually exercises it.
 
 **Protect user work above all else.** Snapshot by default on every stop. Never-expiring snapshots. Verify before returning stale state. The sandbox is the user's working environment; losing it means losing their work. Every lifecycle decision should default to preserving state.
 

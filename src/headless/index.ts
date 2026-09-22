@@ -1097,7 +1097,11 @@ export class HeadlessSession {
         }
         this.emit(
           'error',
-          { error: e.error, ...(e.code ? { code: e.code } : {}) },
+          {
+            error: e.error,
+            ...(e.code ? { code: e.code } : {}),
+            ...(e.badModelId ? { badModelId: e.badModelId } : {}),
+          },
           rid,
         );
         return;

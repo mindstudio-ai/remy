@@ -43,7 +43,7 @@ Push to git, the platform compiles and deploys. Every release is a snapshot. Rol
 │  Key surfaces:                                                                   │
 │  ├── V2 App routes — CRUD, rebuild, dashboard, releases                          │
 │  ├── Method invocation — resolve release → dispatch to sandbox                   │
-│  ├── Dev sessions — poll-based loop for local CLI development                    │
+│  ├── Dev sessions — poll-based loop driving a dev box's tunnel                   │
 │  ├── Sandbox sessions — lifecycle for hosted editor environments                 │
 │  ├── Database management — SQLite-on-S3 with local caching                       │
 │  ├── Roles & permissions — app-level RBAC                                        │
@@ -72,12 +72,13 @@ Push to git, the platform compiles and deploys. Every release is a snapshot. Rol
                                                 └──────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────────────────────────────┐
-│  Developer Tools (standalone, composable)                                        │
+│  Developer Tools                                                                 │
 │                                                                                  │
-│  mindstudio-local          — CLI for local development. Polls platform for       │
-│  (local tunnel)              method requests, transpiles + executes locally,     │
-│                              proxies frontend with __MINDSTUDIO__ injection.     │
-│                              Works standalone or headless inside sandbox.        │
+│  @madewithremy/sandbox     — what runs inside a dev box, as two bins:            │
+│  (remy-sandbox,              the C&C server, and the dev tunnel it spawns.       │
+│   remy-tunnel)               The tunnel polls the platform for method requests,  │
+│                              transpiles + executes them, syncs schemas, and      │
+│                              proxies the frontend with __MINDSTUDIO__ injected.  │
 │                                                                                  │
 │  remy                      — AI coding agent.                                    │
 │  (coding agent)              Reads specs, writes code, runs commands.            │
@@ -115,7 +116,7 @@ Deliberately stateless. Vercel is the source of truth for sandbox state. The exe
 
 ### Sandbox C&C Server (`mindstudio-sandbox`)
 
-Runs *inside* each sandbox container on a single port (4387). Orchestrates the entire hosted editor experience: file system access, process management (dev server, tunnel, agent, LSP), WebSocket protocol for the browser editor, reverse proxy for live preview, and state persistence across hibernation.
+Runs *inside* each sandbox container on a single port (4387). Orchestrates the entire hosted editor experience: file system access, process management (dev server, the dev tunnel it ships with, agent, LSP), WebSocket protocol for the browser editor, reverse proxy for live preview, and state persistence across hibernation.
 
 The browser connects directly to the C&C server's WebSocket; the platform API is not in the editor's data path. This gives the editor the same responsiveness as a local development environment.
 
@@ -129,13 +130,13 @@ Works as a standalone CLI (interactive terminal UI) or in headless mode (JSON pr
 
 **Docs:** [coding-agent.md](04_coding-agent.md)
 
-### Local Dev Tunnel (`mindstudio-local`)
+### Dev Tunnel (`remy-tunnel`)
 
-CLI tool that bridges a local development environment to the platform. Polls the platform for method execution requests, transpiles TypeScript with esbuild, executes methods in isolated child processes, and reports results back. Also runs a proxy server that injects `__MINDSTUDIO__` into HTML responses so the frontend SDK works without configuration.
+The second bin of `@madewithremy/sandbox`, spawned as a child by the C&C server in the same container. Polls the platform for method execution requests, transpiles TypeScript with esbuild, executes methods in a warm worker process, and reports results back. Also runs the proxy that injects `__MINDSTUDIO__` into HTML responses so the frontend SDK works without configuration, and supervises the box's headless Chrome for browser automation.
 
-Designed to be useful standalone: a developer can use it for local development without the sandbox editor. The sandbox uses it in headless mode (same binary, `--headless` flag) to execute methods inside the container.
+It was a standalone CLI (`mindstudio-local`, `@mindstudio-ai/local-model-tunnel`) until September 2026, installed into the box at boot and spawned by name. Laptop development was retired and the tunnel folded into the package it had always been a child of.
 
-**Docs:** [local-tunnel.md](05_local-tunnel.md)
+**Docs:** [dev-tunnel.md](05_dev-tunnel.md)
 
 ### Backend SDK (`@mindstudio-ai/agent`)
 
@@ -163,9 +164,11 @@ A user interacts with an app through an interface (web, API, Discord, etc.). The
 
 ### Development (building apps)
 
-A developer works on an app through either the local CLI or the hosted sandbox editor. Both use the same underlying mechanism: the tunnel polls the platform for method requests, executes them locally (in the CLI's Node.js process or in the sandbox container), and reports results back. The developer sees live preview, can run scenarios, impersonate roles, and reset databases, all without deploying.
+A developer works on an app through the hosted editor, backed by a dev box. The tunnel inside that box polls the platform for method requests, executes them in the container, and reports results back. The developer sees live preview, can run scenarios, set test-user roles, and reset databases, all without deploying.
 
-The key design principle: **zero divergence between local and hosted development.** The same tunnel binary, the same method execution pipeline, the same database, the same SDK. Code that works locally works in the sandbox works in production.
+The key design principle: **zero divergence between development and production.** The same method execution pipeline, the same database, the same SDK. Code that works in a dev box works in production.
+
+This used to read "between local and hosted development", covering a third environment where the developer ran the tunnel on their own machine. That was retired in September 2026 — every dev session runs in a box now, which is both simpler to reason about and what lets the whole platform ship as one self-hostable artifact.
 
 ---
 

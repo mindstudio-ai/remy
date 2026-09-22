@@ -639,7 +639,11 @@ export async function runTurn(params: {
       // a context overflow (or a harness-detected reasoning loop) can recover
       // instead of ending the turn. streamChatWithRetry runs the repetition
       // guard as SSE arrives and surfaces a trip as a `repetition_loop` error.
-      let streamError: { error: string; code?: string } | null = null;
+      let streamError: {
+        error: string;
+        code?: string;
+        badModelId?: string;
+      } | null = null;
 
       // Stream one LLM turn using the per-turn parent model resolved above.
       try {
@@ -857,7 +861,11 @@ export async function runTurn(params: {
               // detected repetition loop recovers rather than ending the turn,
               // so we can't emit + return inline. The stream has already ended
               // (streamChatWithRetry returned the error), so just break out.
-              streamError = { error: event.error, code: event.code };
+              streamError = {
+                error: event.error,
+                code: event.code,
+                badModelId: event.badModelId,
+              };
               break;
           }
 
@@ -918,7 +926,7 @@ export async function runTurn(params: {
       // Recoverable cases discard this call's partial (which for an error is
       // empty) and loop back; everything else is surfaced and ends the turn.
       if (streamError) {
-        const { error, code } = streamError;
+        const { error, code, badModelId } = streamError;
 
         // Runaway reasoning loop caught mid-stream (streamChatWithRetry
         // aborted the call). Within the recovery budget, nudge and re-issue;
@@ -979,6 +987,7 @@ export async function runTurn(params: {
           type: 'error',
           error: friendlyError(error),
           ...(code ? { code } : {}),
+          ...(badModelId ? { badModelId } : {}),
           lastCallInputTokens,
         });
         return;
