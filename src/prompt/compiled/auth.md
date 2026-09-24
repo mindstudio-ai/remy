@@ -33,7 +33,7 @@ Some apps are owned by an organization that centralizes sign-in. The `<org_conte
 - **When it says "Sign in with Remy" is available** — offer delegated sign-in: a "Continue with {Org}" button (exact organization name from the block). For an org-owned app this is usually the primary sign-in — members already have platform identities, so a verification-code form is redundant.
 - **When it says the organization requires delegated sign-in** — `remy` is the *only* human method: do not add `email-code` or `sms-code`. Those are blocked at the platform edge for the org's apps, so building them yields a login that can't work.
 - **When the block is absent, or has no delegated-sign-in line** (the common case) — do not build or offer it. It's an enterprise scheme for internal apps only.
-- Delegated users' **roles and email are platform-managed** — enforce with `requireRole`/`hasRole` as usual, but never assign their roles from app code.
+- Delegated users' **email is platform-managed** (their Remy identity; the app can't change it). Their roles are app data like any other user's, assigned and enforced with `requireRole`/`hasRole` as usual.
 
 ## Designing Auth Into the Experience
 

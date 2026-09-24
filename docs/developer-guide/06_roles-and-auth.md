@@ -35,11 +35,12 @@ Apps without auth config use anonymous guest sessions. Add auth only when the ap
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `auth.enabled` | `boolean` | Yes | `true` to enable auth |
-| `auth.methods` | `string[]` | Yes | `"email-code"`, `"sms-code"`, and/or `"remy"` (platform-delegated sign-in — see below). At least one. |
+| `auth.methods` | `string[]` | Yes | `"email-code"`, `"sms-code"`, `"api-key"`, and/or `"remy"` (platform-delegated sign-in — see below). At least one. |
 | `auth.table.name` | `string` | Yes | Name of the `defineTable` table for user records |
 | `auth.table.columns.email` | `string` | If email-code | Column name for email (read-only from code) |
 | `auth.table.columns.phone` | `string` | If sms-code | Column name for phone (read-only from code) |
 | `auth.table.columns.roles` | `string` | No | Column name for roles array (bidirectional sync) |
+| `auth.table.columns.apiKey` | `string` | If api-key | Column name for API key (platform-managed, stores masked value) |
 
 ### Roles
 
@@ -157,7 +158,7 @@ useEffect(() => auth.onAuthStateChanged(setUser), []);
 
 - `auth.signInWithRemy(options?)` → `Promise<AppUser | null>`. Top-level apps redirect to the platform and back. The page navigates away, so the promise never settles: drive UI off `onAuthStateChanged`, not the return value. Apps embedded in a cross-origin iframe (the dev IDE preview) use a popup and the promise resolves. Options: `redirectUri` (default current URL), `state` (CSRF, auto-generated), `mode: 'auto' | 'popup' | 'redirect'` (default `'auto'`).
 - `auth.handleRemyRedirect()` → `Promise<AppUser | null>`. Call once on load; handles both the button return and the dashboard-launch entry, updates the session in-place (fires `onAuthStateChanged`), and cleans the URL.
-- Delegated users have `provider: 'remy'`; their roles and email are platform-managed — enforce with `requireRole`/`hasRole`, but don't assign roles from app code.
+- Delegated users have `provider: 'remy'`; their email is their Remy identity and can't be changed from the app. Their roles are app data like any other user's: assign them from the dashboard, a scenario or the app's own admin UI, and enforce with `requireRole`/`hasRole`.
 
 ### Email/Phone Changes (must be authenticated)
 

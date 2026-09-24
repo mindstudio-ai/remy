@@ -42,12 +42,11 @@ git push origin main
 
 The platform builds and deploys automatically:
 
-1. **Parse manifest** — read `mindstudio.json` from the commit
+1. **Parse manifest** — read `mindstudio.json` and every declared interface config from the commit; a missing or broken config fails the build
 2. **Compile methods** — esbuild bundles each method into a single JS file
-3. **Compile interfaces** — build web SPA (`npm install && npm run build`), generate configs for API/cron/webhook/etc.
-4. **Parse table schemas** — TypeScript AST to column definitions, diff against live database
-5. **Compute effects** — roles diff, cron diff, bot command diffs, table DDL
-6. **Apply** — create/update roles, sync bot commands, apply DDL to a staging database copy, swap the live pointer
+3. **Compile interfaces** — build web SPA (`npm install && npm run build`), check and compile API/MCP/agent/voice/cron/webhook/email configs; a referenced markdown file that doesn't exist, or an agent `model` that isn't a chat model, fails the build
+4. **Parse table schemas** — TypeScript AST to column definitions, diff against live database, rehearse any change on a copy
+5. **Promote** — apply the DDL to a fresh copy of the live database, apply the jewel identity, update cron jobs, swap the live pointer. Everything else is read from the live release at request time
 
 All deployed apps are available on `<uuid>.madewithremy.com` where uuid is their app ID. Apps can also be served on a custom platform subdomain (`<subdomain>.madewithremy.com`) or on a fully custom domain the user owns (pointed at the platform via CNAME or A records). Configure either via the `remy-admin` CLI.
 
@@ -59,11 +58,11 @@ Every live deploy runs an automated Lighthouse audit of the app. Pull it via `re
 
 ### Database Migrations on Deploy
 
-Schema changes are automatic — adds and drops of tables/columns are diffed from the table definitions and applied as DDL (type changes and renames are not supported; full rules in the Tables docs). Changes are always applied to a clone of the live database, never directly. If DDL fails, the live database is untouched and the release is marked `failed`.
+Schema changes are automatic — added, dropped and retyped columns, changed `unique` constraints, and added and dropped tables are diffed from the table definitions and applied as DDL (a rename is a drop plus an add, so its data doesn't carry over; full rules in the Tables docs). Changes are always applied to a clone of the live database, never directly. If DDL fails, the live database is untouched and the release is marked `failed`.
 
 ### Rollback
 
-Rollback is a git revert — creates a new commit, triggers a new build. The previous release's database still exists (databases are per-release), so data isn't lost.
+Rollback is a git revert — creates a new commit, triggers a new build from the current live data, so nothing written since is lost. A schema change the revert undoes is migrated like any other (a column the reverted commit added is dropped with its data). There is no way to move the live pointer back to an earlier release without a build.
 
 ### Common Build Failures
 

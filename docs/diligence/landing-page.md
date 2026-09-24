@@ -171,7 +171,7 @@ Whatever you're building, Remy's infrastructure is ready for it. Consumer-scale 
 | **Data** | Serverless SQL • Typed schemas • Automatic migrations • Encrypted backups |
 | **Compute** | Auto-scaling runtime • Background jobs • Cron schedules • Sandboxed execution |
 | **Identity** | Email & SMS auth • SSO & SAML • Role-based access • Rate limiting |
-| **Deployment** | Global CDN • Custom domains • Git-native deploys • One-click rollback |
+| **Deployment** | Global CDN • Custom domains • Git-native deploys • Rollback by revert |
 | **Observability** | Product analytics • Error tracking • Live logs • Performance metrics |
 | **Compliance** | SOC 2 Type 1 & 2 • GDPR • Audit logs • Data residency |
 | **Models & Agents SDK** | 200+ AI models • Text, image, video • Voice & vision • Autonomous agents |

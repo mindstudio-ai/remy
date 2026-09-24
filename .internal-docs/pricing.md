@@ -156,7 +156,7 @@ Draft content for the display:
 | | |
 |---|---|
 | **Builds your app end-to-end** | Six specialist agents work as a team: coding, design, architecture, QA, research, roadmap |
-| **Deploys it for you** | Git-backed, push-to-deploy, one-click rollback |
+| **Deploys it for you** | Git-backed, push-to-deploy, rollback by revert |
 | **Hosts it on a real URL** | Global CDN, custom domains, SSL handled |
 | **Runs the database** | Managed, typed schemas, automatic migrations, backups |
 | **Manages auth** | Email/SMS verification codes, sessions, role-based access |

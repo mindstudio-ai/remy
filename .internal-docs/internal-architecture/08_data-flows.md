@@ -230,40 +230,38 @@ git push to default branch
   │
   │    ├─ 1. Read package.json at commit (for npm dependencies)
   │    │
-  │    ├─ 2. Compile methods (parallel):
-  │    │    For each method in manifest:
-  │    │    ├─ Read source from git (git show)
-  │    │    ├─ esbuild bundle → single JS file
-  │    │    ├─ Extract npm packages + versions
-  │    │    ├─ Upload to S3: v2-builds/{appId}/{sha}/methods/{methodId}.js
-  │    │    └─ Track bundle size
+  │    ├─ 2. Compile methods + build the web interface (parallel, in job sandboxes):
+  │    │    ├─ method compiler: esbuild bundle per method, jewel and mapper,
+  │    │    │    npm closure resolved once into a dependency artifact,
+  │    │    │    uploaded to S3: v2-builds/{appId}/{sha}/…
+  │    │    └─ web build: the interface's own build → v2-static/{releaseId}/
   │    │
-  │    ├─ 3. Compile interfaces (parallel):
-  │    │    ├─ web: build service → archive → S3
-  │    │    ├─ api/mcp: generate method index with schemas
-  │    │    └─ cron/email/webhook/discord/telegram: generate config
+  │    ├─ 3. Compile the other interfaces:
+  │    │    └─ api/mcp/agent/voice/cron/webhook/email: checked against the
+  │    │         compiled methods, markdown inlined; a missing file fails the build
   │    │
   │    ├─ 4. Compute pending effects:
-  │    │    ├─ Roles diff (manifest vs current app roles)
-  │    │    ├─ Cron diff (from interface config)
-  │    │    ├─ Bot command diffs (Discord, Telegram)
-  │    │    ├─ Webhook endpoint diffs
+  │    │    ├─ Cron schedule (from the interface config)
+  │    │    ├─ Jewel identity (the app's jewel user and roles)
   │    │    └─ Table schema diff:
   │    │         ├─ Parse TypeScript table files (AST)
-  │    │         ├─ Compare columns against live database
-  │    │         └─ Generate DDL (CREATE TABLE, ALTER TABLE ADD COLUMN)
+  │    │         ├─ Compare columns, types and unique constraints against live
+  │    │         └─ Create, rebuild-by-copy, or drop
   │    │
-  │    ├─ 5. Create staging database:
-  │    │    ├─ Clone live database to staging version
-  │    │    └─ Apply table DDL to staging copy
+  │    ├─ 5. Rehearse the migration (when the diff is non-empty):
+  │    │    ├─ Clone live database to a staging version
+  │    │    └─ Apply table DDL to the staging copy
   │    │
   │    └─ 6. Promote to live:
-  │         ├─ Apply role changes (create/update/delete)
-  │         ├─ Apply cron changes
-  │         ├─ Sync bot commands (Discord API, Telegram API)
-  │         ├─ Update webhook registrations
-  │         ├─ Swap current_v2_release_id pointer
-  │         └─ Mark release as 'live', old release as 'superseded'
+  │         ├─ Clone live database afresh to the release, apply DDL
+  │         │    (live SQL held from the clone to the pointer swap)
+  │         ├─ Apply the jewel identity
+  │         ├─ Reconcile cron jobs
+  │         └─ One transaction: mark release 'live', old release 'superseded',
+  │              move current_v2_release_id (only ever forward)
+  │
+  │    Everything else (api routes, mcp tools, agent/voice config, webhooks,
+  │    email routing, roles) is read from the live release at request time.
   │
   └─ Feature branch (non-default):
        └─ Same compilation, but marked as 'preview' instead of 'live'

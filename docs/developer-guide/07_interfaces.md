@@ -277,6 +277,7 @@ Under the mount, everything is the child's: its live web bundle, its session (so
 Notes:
 - **One signed-in state per host.** The auth cookie is per-host, so a parent and a mounted child that both use login on the same host will sign each other out. Mount auth-enabled apps only when the parent doesn't use auth (or vice versa).
 - A mount whose target has no live web build yet falls through to the parent's SPA until the child deploys one.
+- A mount whose target is no longer in the parent's workspace (either app was moved to another workspace) stops serving and falls through to the parent's SPA, and the parent's next build fails until the mount is removed.
 - Mounts are single-level: a mounted child's own `mounts` are not served under the parent.
 - **Redirects, rewrites and `trailingSlash` follow the same rule as prerendering**: within the mount prefix, the child's config applies, written against the child's own paths (`/old`, not `/demos/vector-search/old`). Redirect destinations get the mount prefix added back; rewrite destinations resolve against the child's own build output and file store. A parent can't route inside a prefix it has handed to a child.
 
@@ -650,7 +651,7 @@ Resources carry inline metadata only — no per-resource file. Don't hand-author
 | `tools[].method` | Method `id` from `mindstudio.json` (kebab-case) |
 | `tools[].name` | Tool name exposed to clients. Optional — defaults to the method `id`; must match `[a-zA-Z0-9_-]` and be unique |
 | `tools[].title` | Optional human-friendly display name |
-| `tools[].description` | Relative path to the tool's markdown description |
+| `tools[].description` | Relative path to the tool's markdown description; a path that doesn't exist fails the build |
 | `tools[].annotations` | Optional client hints (auto-call vs. confirm): `readOnly`, `destructive`, `idempotent`, `openWorld` (map to MCP's `readOnlyHint` etc.) |
 | `resources[].method` | The read method invoked when the resource is read |
 | `resources[].uri` / `uriTemplate` | A static URI, or a template whose `{param}` maps to the method's input |
@@ -731,12 +732,12 @@ dist/interfaces/agent/
 
 | Field | Description |
 |-------|-------------|
-| `model` | MindStudio model ID (e.g. `claude-4-5-haiku`, `claude-4-6-sonnet`) |
+| `model` | **Required.** MindStudio model ID (e.g. `claude-4-5-haiku`, `claude-4-6-sonnet`). Checked at build: an id that isn't a chat model the workspace can use fails the build. |
 | `temperature` | Model temperature |
 | `maxTokens` | Max response tokens |
 | `systemPrompt` | Relative path to the compiled system prompt markdown file |
 | `auth` | **Required.** Who may open the lobby: `{ "requireUser": boolean, "requireRole"?: string[] }`. See Auth below. |
-| `tools` | Array of tool entries. `method` references a method `id` from `mindstudio.json`. `description` is a relative path to a markdown file with rich tool docs. A browser-side tool sets `target: "client"` with `name` + `inputSchema` instead of `method` — see Client tools below. |
+| `tools` | Array of tool entries. `method` references a method `id` from `mindstudio.json`. `description` is a relative path to a markdown file with rich tool docs; a path that doesn't exist fails the build. A browser-side tool sets `target: "client"` with `name` + `inputSchema` instead of `method` — see Client tools below. |
 | `webInterfacePath` | Optional. If the app has a web interface with a chat page, this path tells the IDE where to show the agent preview. |
 
 ### Auth
