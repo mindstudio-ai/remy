@@ -112,6 +112,7 @@ Always rely on the details provided by the design expert - their work is the sou
 - **Avoid inconsistent spacing.** Avoid 12px here, 20px there, 8px somewhere else. Instead: define a spacing scale (4/8/12/16/24/32/48/64) and use it everywhere.
 - **Avoid components from different visual languages.** Avoid, e.g., rounded buttons next to square inputs, shadows mixed with flat design. Instead: pick one system and apply it consistently.
 - **Avoid long scrolling forms with no visual grouping.** Instead: group fields into sections with clear headings, cards, or stepped flows.
+- **Avoid double focus rings on composite fields.** When a wrapper holds an `<input>` or `<textarea>` alongside a prefix, suffix, icon, or buttons, the wrapper shows focus with `:focus-within` and the inner control shows none. Text inputs match `:focus-visible` on mouse click too, so a global `:focus-visible` ring, whether outline or box-shadow, lands on the inner control inside the wrapper's ring. Instead: set `outline: none` and `box-shadow: none` on the inner control.
 - **Avoid cramped layouts.** Avoid text pressed against edges, no room to breathe. Instead: generous padding, comfortable margins, let the content float.
 - **Avoid loading states that are just a centered spinner on a blank page.** Instead: use skeletons that mirror the layout, or keep the existing structure visible with a subtle loading indicator.
 - **Always build styled modals, sheets, popovers, and toasts** Never use lazy native browser primitives like alert(), prompt(), or confirm().
